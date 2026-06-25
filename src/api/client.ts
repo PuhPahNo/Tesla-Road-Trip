@@ -48,6 +48,18 @@ export interface PlannerAgentResponse {
   }
 }
 
+export interface HealthResponse {
+  ok: boolean
+  service: string
+  time: string
+  roadRouting?: { enabled: boolean }
+}
+
+export async function fetchHealth() {
+  const response = await fetch('/api/health')
+  return parseJsonResponse<HealthResponse>(response)
+}
+
 async function parseJsonResponse<T>(response: Response): Promise<T> {
   const payload = await response.json()
 

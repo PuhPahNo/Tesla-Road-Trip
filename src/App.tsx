@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
+  fetchHealth,
   fetchStations,
   optimizeRoutes,
   refineRoute,
@@ -72,6 +73,8 @@ function App() {
   const [error, setError] = useState<string>()
   const [roadRoutes, setRoadRoutes] = useState<Record<string, Coordinate[]>>({})
   const [refinedRoutes, setRefinedRoutes] = useState<Record<string, RoutePlan>>({})
+  // True only when a real (non-demo) OSRM engine is configured server-side.
+  const [roadRoutingEnabled, setRoadRoutingEnabled] = useState(false)
   const [roadRouteState, setRoadRouteState] = useState<RoadRouteState>({ status: 'idle' })
   const [selectedStateCode, setSelectedStateCode] = useState<string>()
 
@@ -164,6 +167,9 @@ function App() {
   useEffect(() => {
     void loadStations()
     void runOptimize()
+    void fetchHealth()
+      .then((health) => setRoadRoutingEnabled(Boolean(health.roadRouting?.enabled)))
+      .catch(() => setRoadRoutingEnabled(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -181,6 +187,11 @@ function App() {
   // road geometry for the selected route (OSRM), cached per route.
   useEffect(() => {
     if (!selectedRoute) return
+    // No real routing engine configured -> use the estimate, don't call OSRM.
+    if (!roadRoutingEnabled) {
+      setRoadRouteState({ status: 'idle', routeId: selectedRoute.id })
+      return
+    }
     if (roadRoutes[selectedRoute.id]) {
       setRoadRouteState({
         status: 'ready',
@@ -230,7 +241,7 @@ function App() {
     return () => {
       cancelled = true
     }
-  }, [config, roadRoutes, selectedRoute])
+  }, [config, roadRoutes, selectedRoute, roadRoutingEnabled])
 
   // ---- derived ----
   const visibleStations = result?.stations ?? stationStatus?.stations ?? EMPTY_STATIONS
@@ -262,13 +273,14 @@ function App() {
   const roadStatus = useMemo<RoadStatusVM>(() => {
     if (!selectedRoute) return { status: 'idle' }
     const routeName = selectedRoute.name
+    if (!roadRoutingEnabled) return { status: 'estimate', routeName }
     if (roadRouteState.routeId !== selectedRoute.id) return { status: 'idle', routeName }
     if (roadRouteState.status === 'error')
       return { status: 'error', routeName, message: roadRouteState.message }
     if (roadRouteState.status === 'loading') return { status: 'loading', routeName }
     if (roadRouteState.status === 'ready') return { status: 'ready', routeName }
     return { status: 'idle', routeName }
-  }, [selectedRoute, roadRouteState])
+  }, [selectedRoute, roadRouteState, roadRoutingEnabled])
 
   const feasibility = result?.universe.allSitesFeasibility
   const mapCaption = `${(result?.universe.filteredStations ?? stationStatus?.filteredStations ?? visibleStations.length).toLocaleString()} SITES`

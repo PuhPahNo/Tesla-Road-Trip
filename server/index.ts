@@ -24,8 +24,12 @@ const METERS_PER_MILE = 1609.344
 
 const SUPERCHARGE_INFO_URL =
   'https://supercharge.info/service/supercharge/allSites'
-const OSRM_BASE_URL =
-  process.env.OSRM_BASE_URL ?? 'https://router.project-osrm.org'
+const OSRM_DEMO_URL = 'https://router.project-osrm.org'
+const OSRM_BASE_URL = process.env.OSRM_BASE_URL ?? OSRM_DEMO_URL
+// Road-accurate distances are only worth fetching when a real (non-demo) OSRM
+// engine is configured. With the demo (or unset), the app uses fast estimates.
+const ROAD_ROUTING_ENABLED =
+  OSRM_BASE_URL.length > 0 && OSRM_BASE_URL !== OSRM_DEMO_URL
 const CACHE_TTL_MS = 1000 * 60 * 60
 const MAX_OSRM_COORDINATES = 32
 const PORT = Number(process.env.PORT ?? 4177)
@@ -114,6 +118,7 @@ app.get('/api/health', (_request, response) => {
     ok: true,
     service: 'tesla-supercharger-quest',
     time: new Date().toISOString(),
+    roadRouting: { enabled: ROAD_ROUTING_ENABLED },
   })
 })
 

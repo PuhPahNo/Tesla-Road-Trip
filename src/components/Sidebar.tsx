@@ -17,7 +17,7 @@ import { AlertIcon, InfoIcon, RefreshIcon } from '../ui/icons'
 /* Types                                                               */
 /* ------------------------------------------------------------------ */
 export type RoadStatusVM = {
-  status: 'idle' | 'loading' | 'ready' | 'error'
+  status: 'idle' | 'loading' | 'ready' | 'error' | 'estimate'
   routeName?: string
   message?: string
 }
@@ -392,13 +392,18 @@ function roadStatusNote(roadStatus: RoadStatusVM): { tone: Tone; text: string } 
   const name = roadStatus.routeName ?? 'route'
   switch (roadStatus.status) {
     case 'ready':
-      return { tone: 'good', text: `OSRM polyline loaded for ${name}.` }
+      return { tone: 'good', text: `Road-accurate distances loaded for ${name}.` }
     case 'loading':
-      return { tone: 'info', text: `Mapping ${name} through OSRM roads…` }
+      return { tone: 'info', text: `Mapping ${name} through real roads…` }
     case 'error':
       return {
         tone: 'warn',
         text: `Road geometry fallback: ${roadStatus.message ?? 'using straight-line legs.'}`,
+      }
+    case 'estimate':
+      return {
+        tone: 'neutral',
+        text: 'Distances are estimated (straight-line × road factor). Set OSRM_BASE_URL to a routing engine for exact road miles.',
       }
     default:
       return { tone: 'neutral', text: 'Waiting for route.' }

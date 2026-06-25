@@ -1,15 +1,20 @@
 # Local OSRM for true road distances
 
 By default the planner estimates leg distances as great-circle miles × a road
-factor (`roadDistanceFactor`, ~1.18). That's a good approximation, but for
-**true** road-accurate mileage / drive times / range flags, point the app at a
-local [OSRM](https://project-osrm.org/) routing engine. The app's
-`/api/refine-route` endpoint then rebuilds the selected route's mileage and day
-plan from real per-leg road distances.
+factor (`roadDistanceFactor`, ~1.18). That's a good approximation (within ~10–20%
+of true) and needs **no external service** — it's what the app uses out of the
+box and what a cheap hosted deployment should rely on.
 
-The public demo server (`router.project-osrm.org`) is fine for a few stops but
-**cannot reliably route a 650-stop national loop**, which is why you'll see
-straight-line fallbacks on big routes until you run your own.
+Road-accurate distances are **opt-in**: only when `OSRM_BASE_URL` points at a
+*real* (non-demo) OSRM engine does the app fetch per-leg road distances and have
+`/api/refine-route` rebuild the selected route's mileage and day plan from them.
+With the URL unset or left at the public demo (`router.project-osrm.org`), the
+app stays in fast estimate mode and makes no routing calls — the demo can't
+reliably route a 650-stop national loop anyway.
+
+> Note: this path speaks **OSRM's** API. A local OSRM (below) or any
+> OSRM-compatible endpoint works by just setting the URL. OpenRouteService,
+> Mapbox, etc. use different APIs and would need a small adapter.
 
 ## One-time setup
 
