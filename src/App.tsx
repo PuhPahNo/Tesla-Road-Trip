@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  fetchRoadRoute,
   fetchStations,
   optimizeRoutes,
+  refineRoute,
   type PlannerAgentResponse,
   type StationsResponse,
 } from './api/client'
@@ -16,6 +16,7 @@ import type {
   Coordinate,
   OptimizeResponse,
   PlannerConfig,
+  RoutePlan,
   Station,
 } from './domain/types'
 import { useIsMobile } from './hooks/useMediaQuery'
@@ -70,6 +71,7 @@ function App() {
   const [isOptimizing, setIsOptimizing] = useState(false)
   const [error, setError] = useState<string>()
   const [roadRoutes, setRoadRoutes] = useState<Record<string, Coordinate[]>>({})
+  const [refinedRoutes, setRefinedRoutes] = useState<Record<string, RoutePlan>>({})
   const [roadRouteState, setRoadRouteState] = useState<RoadRouteState>({ status: 'idle' })
   const [selectedStateCode, setSelectedStateCode] = useState<string>()
 
@@ -127,6 +129,7 @@ function App() {
     setSelectedRouteId(routeId)
     setSelectedStateCode(undefined)
     setRoadRoutes({})
+    setRefinedRoutes({})
     setRoadRouteState({ status: 'idle' })
   }
 
@@ -189,21 +192,29 @@ function App() {
 
     let cancelled = false
     setRoadRouteState({ status: 'loading', routeId: selectedRoute.id })
-    const coordinates = [
-      config.start,
-      ...selectedRoute.visits.map((visit) => visit.station.position),
-      config.start,
-    ]
 
-    void fetchRoadRoute(coordinates)
-      .then((roadRoute) => {
+    // Ask the server for real OSRM road geometry + per-leg distances, and use
+    // them to rebuild this route's mileage/day plan (road-accurate). Falls back
+    // to the estimate if OSRM is unavailable.
+    void refineRoute(
+      config,
+      {
+        id: selectedRoute.id,
+        name: selectedRoute.name,
+        strategy: selectedRoute.strategy,
+        color: selectedRoute.color,
+      },
+      selectedRoute.visits.map((visit) => visit.station),
+    )
+      .then((response) => {
         if (cancelled) return
-        setRoadRoutes((current) => ({ ...current, [selectedRoute.id]: roadRoute.roadLine }))
+        setRoadRoutes((current) => ({ ...current, [selectedRoute.id]: response.roadLine }))
+        setRefinedRoutes((current) => ({ ...current, [selectedRoute.id]: response.route }))
         setRoadRouteState({
           status: 'ready',
           routeId: selectedRoute.id,
-          line: roadRoute.roadLine,
-          warning: roadRoute.warnings[0],
+          line: response.roadLine,
+          warning: response.warnings[0],
         })
       })
       .catch((requestError) => {
@@ -219,21 +230,27 @@ function App() {
     return () => {
       cancelled = true
     }
-  }, [config.start, roadRoutes, selectedRoute])
+  }, [config, roadRoutes, selectedRoute])
 
   // ---- derived ----
   const visibleStations = result?.stations ?? stationStatus?.stations ?? EMPTY_STATIONS
+  // The route shown everywhere: the road-accurate refined version once it loads,
+  // otherwise the fast estimate.
+  const displayRoute =
+    selectedRoute && refinedRoutes[selectedRoute.id]
+      ? refinedRoutes[selectedRoute.id]
+      : selectedRoute
   const routeStateStats = useMemo(
-    () => buildStateRouteStats(selectedRoute, visibleStations),
-    [selectedRoute, visibleStations],
+    () => buildStateRouteStats(displayRoute, visibleStations),
+    [displayRoute, visibleStations],
   )
   const allStateStats = useMemo(
-    () => buildAllStateRouteStats(selectedRoute, visibleStations),
-    [selectedRoute, visibleStations],
+    () => buildAllStateRouteStats(displayRoute, visibleStations),
+    [displayRoute, visibleStations],
   )
   const selectedStateStats = allStateStats.find((s) => s.state === selectedStateCode)
   const activeDay =
-    selectedRoute && selectedDayIndex != null ? selectedRoute.days[selectedDayIndex] : undefined
+    displayRoute && selectedDayIndex != null ? displayRoute.days[selectedDayIndex] : undefined
 
   const activeRoadLine =
     selectedRoute &&
@@ -270,7 +287,7 @@ function App() {
   }
 
   const sidebarData = {
-    route: selectedRoute,
+    route: displayRoute,
     stationStatus,
     isLoadingStations,
     routeStateStats,
@@ -326,7 +343,7 @@ function App() {
         <div className="relative min-w-0 flex-1">
           <MapView
             stations={visibleStations}
-            route={selectedRoute}
+            route={displayRoute}
             start={config.start}
             showAllStations={config.showAllStations}
             roadLine={activeRoadLine}
@@ -349,7 +366,7 @@ function App() {
       {/* Desktop daily-plan drawer */}
       {!isMobile && (
         <DailyPlanDrawer
-          route={selectedRoute}
+          route={displayRoute}
           open={drawerOpen}
           onToggleOpen={() => setDrawerOpen((o) => !o)}
           onOpenDay={handleOpenDay}
@@ -380,7 +397,7 @@ function App() {
               onClose={() => setMobileSheet(null)}
             />
             <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
-              <HeroStats route={selectedRoute} />
+              <HeroStats route={displayRoute} />
               <MobileRouteList
                 routes={result?.routes ?? []}
                 selectedRouteId={selectedRoute?.id}
@@ -414,7 +431,7 @@ function App() {
               onClose={() => setMobileSheet(null)}
             />
             <div className="min-h-0 flex-1 overflow-y-auto">
-              <DayTable route={selectedRoute} onOpenDay={handleOpenDay} />
+              <DayTable route={displayRoute} onOpenDay={handleOpenDay} />
             </div>
           </Overlay>
 
@@ -449,7 +466,7 @@ function App() {
       />
       <DayDetailModal
         day={activeDay}
-        route={selectedRoute}
+        route={displayRoute}
         onClose={() => setSelectedDayIndex(undefined)}
       />
       <StateDetailModal

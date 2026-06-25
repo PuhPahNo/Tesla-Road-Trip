@@ -347,8 +347,11 @@ function emptyDay(day: number): DayPlan {
 
 function buildDayPlans(
   selectedStations: ScoredStation[],
-  variant: RouteVariant,
+  routeName: string,
   config: PlannerConfig,
+  /** Real per-leg miles (e.g. from OSRM): index i = arrival leg for station i,
+   *  index selectedStations.length = the return leg. Falls back to the estimate. */
+  precomputedLegMiles?: number[],
 ) {
   const days: DayPlan[] = []
   const visits: RouteStationVisit[] = []
@@ -361,11 +364,13 @@ function buildDayPlans(
 
   for (let index = 0; index < selectedStations.length; index += 1) {
     const scoredStation = selectedStations[index]
-    const legMiles = roadLegMiles(
-      previous.position,
-      scoredStation.station.position,
-      config.roadDistanceFactor,
-    )
+    const legMiles =
+      precomputedLegMiles?.[index] ??
+      roadLegMiles(
+        previous.position,
+        scoredStation.station.position,
+        config.roadDistanceFactor,
+      )
     const driveHours = legMiles / config.averageMph
 
     const projectedDriveHours = day.driveHours + driveHours
@@ -375,6 +380,7 @@ function buildDayPlans(
       selectedStations,
       previous,
       config,
+      precomputedLegMiles,
     )
 
     if (day.visits.length > 0 && projectedDriveHours > config.dailyDriveTargetHours) {
@@ -422,11 +428,9 @@ function buildDayPlans(
     }
   }
 
-  const returnLegMiles = roadLegMiles(
-    previous.position,
-    config.start,
-    config.roadDistanceFactor,
-  )
+  const returnLegMiles =
+    precomputedLegMiles?.[selectedStations.length] ??
+    roadLegMiles(previous.position, config.start, config.roadDistanceFactor)
   const returnDriveHours = returnLegMiles / config.averageMph
 
   if (
@@ -478,7 +482,7 @@ function buildDayPlans(
   }
   if (visits.length < config.targetStations) {
     warnings.push(
-      `Only ${visits.length} matching sites were available for ${variant.name} under the current station filters.`,
+      `Only ${visits.length} matching sites were available for ${routeName} under the current station filters.`,
     )
   }
   if (visits.length / Math.max(1, days.length) > 18) {
@@ -523,6 +527,7 @@ function evaluateLongDayOpportunity(
   selectedStations: ScoredStation[],
   previous: { position: Coordinate; order: number; distanceMiles: number },
   config: PlannerConfig,
+  precomputedLegMiles?: number[],
 ) {
   if (!config.longDayOptimization) {
     return { allow: false }
@@ -539,11 +544,13 @@ function evaluateLongDayOpportunity(
 
   for (let index = startIndex; index < selectedStations.length; index += 1) {
     const station = selectedStations[index]
-    const legMiles = roadLegMiles(
-      simulatedPrevious.position,
-      station.station.position,
-      config.roadDistanceFactor,
-    )
+    const legMiles =
+      precomputedLegMiles?.[index] ??
+      roadLegMiles(
+        simulatedPrevious.position,
+        station.station.position,
+        config.roadDistanceFactor,
+      )
     const legDriveHours = legMiles / config.averageMph
 
     if (simulatedDriveHours + legDriveHours > config.longDayMaxHours) {
@@ -799,6 +806,56 @@ function finalizeDay(day: DayPlan, config: PlannerConfig): DayPlan {
   }
 }
 
+/**
+ * Rebuild a single route's mileage and day plan from real per-leg road miles
+ * (e.g. OSRM). The visiting order is preserved; only the leg distances change,
+ * so totals, day boundaries, gaps and range flags all become road-accurate.
+ * `legMiles` length must be orderedStations.length + 1 (the last is the return leg).
+ */
+export function refineRouteWithRoadLegs(
+  orderedStations: Station[],
+  partialConfig: Partial<PlannerConfig>,
+  meta: { id: string; name: string; strategy: string; color: string },
+  legMiles: number[],
+): RoutePlan {
+  const config = sanitizePlannerConfig(partialConfig)
+  const scored: ScoredStation[] = orderedStations.map((station) => ({
+    station,
+    distanceMiles: 0,
+    order: 0,
+    segmentIndex: 0,
+    segmentProgress: 0,
+  }))
+  const plans = buildDayPlans(scored, meta.name, config, legMiles)
+  const totalDays = Math.max(1, plans.days.length)
+  const uniqueStations = plans.visits.length
+  const totalVisitLegMiles = plans.visits.reduce((sum, v) => sum + v.legMiles, 0)
+
+  return {
+    id: meta.id,
+    name: meta.name,
+    strategy: meta.strategy,
+    color: meta.color,
+    uniqueStations,
+    totalMiles: plans.totals.totalMiles,
+    totalDriveHours: plans.totals.totalDriveHours,
+    totalStopHours: plans.totals.totalStopHours,
+    totalDays: plans.days.length,
+    averageMilesPerDay: round(plans.totals.totalMiles / totalDays),
+    averageDriveHoursPerDay: round(plans.totals.totalDriveHours / totalDays, 2),
+    averageStopHoursPerDay: round(plans.totals.totalStopHours / totalDays, 2),
+    averageDistanceBetweenSuperchargers:
+      uniqueStations > 0 ? round(totalVisitLegMiles / uniqueStations) : 0,
+    stationsPerDay: round(uniqueStations / totalDays, 1),
+    days: plans.days,
+    visits: plans.visits,
+    warnings: plans.totals.warnings,
+    advisories: plans.totals.advisories,
+    longDays: plans.totals.longDays,
+    routeLine: buildDisplayRouteLine(scored, config.start),
+  }
+}
+
 export function optimizeRoutes(
   allStations: Station[],
   partialConfig: Partial<PlannerConfig> = defaultPlannerConfig,
@@ -824,7 +881,7 @@ export function optimizeRoutes(
       stationChoice.selected,
       config.start,
     )
-    const plans = buildDayPlans(orderedStations, variant, config)
+    const plans = buildDayPlans(orderedStations, variant.name, config)
     const totalDays = plans.days.length
     const uniqueStations = plans.visits.length
     const totalVisitLegMiles = plans.visits.reduce(

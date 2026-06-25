@@ -3,8 +3,18 @@ import type {
   OptimizeResponse,
   PlannerConfig,
   RoadRouteResponse,
+  RoutePlan,
   Station,
 } from '../domain/types'
+
+export interface RefineRouteResponse {
+  generatedAt: string
+  source: { name: string; url: string }
+  requestCount: number
+  route: RoutePlan
+  roadLine: Coordinate[]
+  warnings: string[]
+}
 
 export interface StationsResponse {
   source: {
@@ -79,6 +89,23 @@ export async function fetchRoadRoute(coordinates: Coordinate[]) {
   })
 
   return parseJsonResponse<RoadRouteResponse>(response)
+}
+
+/** Recompute a route's mileage + day plan from real OSRM road distances. */
+export async function refineRoute(
+  config: PlannerConfig,
+  route: { id: string; name: string; strategy: string; color: string },
+  stations: Station[],
+) {
+  const response = await fetch('/api/refine-route', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ config, route, stations }),
+  })
+
+  return parseJsonResponse<RefineRouteResponse>(response)
 }
 
 export async function sendPlannerAgentMessage(request: PlannerAgentRequest) {

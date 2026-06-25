@@ -3,15 +3,24 @@ import cors from 'cors'
 import { createHash } from 'node:crypto'
 import express from 'express'
 import { registerAgentRoutes } from './agent'
-import { defaultPlannerConfig, plannerConfigSchema } from '../src/domain/config'
-import { optimizeRoutes } from '../src/domain/optimizer'
+import {
+  defaultPlannerConfig,
+  plannerConfigSchema,
+} from '../src/domain/config'
+import {
+  optimizeRoutes,
+  refineRouteWithRoadLegs,
+} from '../src/domain/optimizer'
+import { haversineMiles } from '../src/domain/geo'
 import {
   filterOpenStations,
   filterStationsForConfig,
   normalizeSuperchargeSites,
 } from '../src/domain/stations'
-import type { Station } from '../src/domain/types'
+import type { PlannerConfig, Station } from '../src/domain/types'
 import { z } from 'zod'
+
+const METERS_PER_MILE = 1609.344
 
 const SUPERCHARGE_INFO_URL =
   'https://supercharge.info/service/supercharge/allSites'
@@ -39,6 +48,29 @@ const roadRouteSchema = z.object({
     )
     .min(2)
     .max(2000),
+})
+
+const refineRouteSchema = z.object({
+  config: z.record(z.string(), z.unknown()).optional(),
+  route: z.object({
+    id: z.string().min(1),
+    name: z.string().min(1),
+    strategy: z.string().default(''),
+    color: z.string().default('#e82127'),
+  }),
+  stations: z
+    .array(
+      z
+        .object({
+          position: z.object({
+            lat: z.coerce.number().min(-90).max(90),
+            lon: z.coerce.number().min(-180).max(180),
+          }),
+        })
+        .passthrough(),
+    )
+    .min(1)
+    .max(5000),
 })
 
 async function loadStations(force = false): Promise<StationCache> {
@@ -156,7 +188,7 @@ app.post('/api/road-route', async (request, response) => {
       return
     }
 
-    const roadRoute = await fetchOsrmRoadLine(coordinates)
+    const roadRoute = await fetchOsrmRoute(coordinates)
     const payload = {
       generatedAt: new Date().toISOString(),
       source: {
@@ -166,14 +198,7 @@ app.post('/api/road-route', async (request, response) => {
       coordinateCount: coordinates.length,
       requestCount: roadRoute.requestCount,
       roadLine: roadRoute.roadLine,
-      warnings: [
-        ...(OSRM_BASE_URL === 'https://router.project-osrm.org'
-          ? [
-              'Using the public OSRM demo server. For heavy planning, point OSRM_BASE_URL at a local OSRM instance.',
-            ]
-          : []),
-        ...roadRoute.warnings,
-      ],
+      warnings: [...demoWarning(), ...roadRoute.warnings],
     }
 
     roadRouteCache.set(cacheKey, payload)
@@ -189,11 +214,79 @@ app.post('/api/road-route', async (request, response) => {
   }
 })
 
+app.post('/api/refine-route', async (request, response) => {
+  try {
+    const { config, route, stations } = refineRouteSchema.parse(request.body)
+    const partialConfig = (config ?? {}) as Partial<PlannerConfig>
+    const sanitized = plannerConfigSchema.parse({
+      ...defaultPlannerConfig,
+      ...partialConfig,
+      start: { ...defaultPlannerConfig.start, ...(partialConfig.start ?? {}) },
+    })
+    const orderedStations = stations as unknown as Station[]
+
+    // start -> every stop -> back to start
+    const coordinates = [
+      sanitized.start,
+      ...orderedStations.map((station) => station.position),
+      sanitized.start,
+    ]
+    const osrm = await fetchOsrmRoute(coordinates)
+
+    // Need one mile value per leg (orderedStations.length + 1). If OSRM came up
+    // short (a failed segment), pad with straight-line miles so the plan is complete.
+    const expectedLegs = orderedStations.length + 1
+    const legMiles = Array.from({ length: expectedLegs }, (_, i) =>
+      osrm.legMiles[i] ?? haversineMiles(coordinates[i], coordinates[i + 1]),
+    )
+
+    const refined = refineRouteWithRoadLegs(
+      orderedStations,
+      sanitized,
+      route,
+      legMiles,
+    )
+
+    response.json({
+      generatedAt: new Date().toISOString(),
+      source: { name: 'OSRM', url: OSRM_BASE_URL },
+      requestCount: osrm.requestCount,
+      route: refined,
+      roadLine: osrm.roadLine,
+      warnings: [...demoWarning(), ...osrm.warnings],
+    })
+  } catch (error) {
+    response.status(502).json({
+      error: 'refine_route_failed',
+      message:
+        error instanceof Error
+          ? error.message
+          : 'Unable to compute road-accurate route.',
+    })
+  }
+})
+
+function demoWarning(): string[] {
+  return OSRM_BASE_URL === 'https://router.project-osrm.org'
+    ? [
+        'Using the public OSRM demo server, which is unreliable for long routes. Point OSRM_BASE_URL at a local OSRM instance for accurate road distances.',
+      ]
+    : []
+}
+
 registerAgentRoutes(app, () => loadStations())
 
-async function fetchOsrmRoadLine(coordinates: Array<{ lat: number; lon: number }>) {
+interface OsrmSegment {
+  geometry: Array<{ lat: number; lon: number }>
+  /** Miles per leg, length = coordinates.length - 1. */
+  legMiles: number[]
+}
+
+/** Fetch road geometry AND real per-leg mileage for the whole coordinate list. */
+async function fetchOsrmRoute(coordinates: Array<{ lat: number; lon: number }>) {
   const chunks = chunkCoordinates(coordinates, MAX_OSRM_COORDINATES)
   const roadLine: Array<{ lat: number; lon: number }> = []
+  const legMiles: number[] = []
   const warnings: string[] = []
   let requestCount = 0
 
@@ -202,18 +295,21 @@ async function fetchOsrmRoadLine(coordinates: Array<{ lat: number; lon: number }
       requestCount += 1
     })
 
-    if (roadLine.length > 0) segment.shift()
-    roadLine.push(...segment)
+    // Chunks overlap by one coordinate; drop the duplicate geometry point.
+    // Legs are contiguous across chunks, so they concatenate directly.
+    if (roadLine.length > 0) segment.geometry.shift()
+    roadLine.push(...segment.geometry)
+    legMiles.push(...segment.legMiles)
   }
 
-  return { roadLine, warnings, requestCount }
+  return { roadLine, legMiles, warnings, requestCount }
 }
 
 async function fetchOsrmChunk(
   coordinates: Array<{ lat: number; lon: number }>,
   warnings: string[],
   countRequest: () => void,
-): Promise<Array<{ lat: number; lon: number }>> {
+): Promise<OsrmSegment> {
   try {
     return await requestOsrmChunk(coordinates, countRequest)
   } catch {
@@ -229,25 +325,34 @@ async function fetchOsrmChunk(
         warnings,
         countRequest,
       )
-      second.shift()
-      return [...first, ...second]
+      second.geometry.shift()
+      return {
+        geometry: [...first.geometry, ...second.geometry],
+        legMiles: [...first.legMiles, ...second.legMiles],
+      }
     }
 
     warnings.push(
-      `OSRM could not route one short segment near ${coordinates[0].lat.toFixed(3)}, ${coordinates[0].lon.toFixed(3)}; displayed a direct fallback for that segment.`,
+      `OSRM could not route one short segment near ${coordinates[0].lat.toFixed(3)}, ${coordinates[0].lon.toFixed(3)}; used a straight-line fallback for that leg.`,
     )
-    return coordinates
+    return {
+      geometry: coordinates,
+      legMiles:
+        coordinates.length === 2
+          ? [haversineMiles(coordinates[0], coordinates[1])]
+          : [],
+    }
   }
 }
 
 async function requestOsrmChunk(
   coordinates: Array<{ lat: number; lon: number }>,
   countRequest: () => void,
-) {
+): Promise<OsrmSegment> {
   const encoded = coordinates
     .map((coordinate) => `${coordinate.lon},${coordinate.lat}`)
     .join(';')
-  const routeUrl = `${OSRM_BASE_URL.replace(/\/$/, '')}/route/v1/driving/${encoded}?overview=full&geometries=geojson&steps=false`
+  const routeUrl = `${OSRM_BASE_URL.replace(/\/$/, '')}/route/v1/driving/${encoded}?overview=simplified&geometries=geojson&steps=false`
   countRequest()
   const routeResponse = await fetch(routeUrl, {
     headers: {
@@ -271,6 +376,7 @@ async function requestOsrmChunk(
       geometry?: {
         coordinates?: Array<[number, number]>
       }
+      legs?: Array<{ distance?: number; duration?: number }>
     }>
   }
 
@@ -278,10 +384,15 @@ async function requestOsrmChunk(
     throw new Error(payload.message ?? `OSRM route failed with ${payload.code}`)
   }
 
-  return payload.routes[0].geometry.coordinates.map(([lon, lat]) => ({
+  const geometry = payload.routes[0].geometry.coordinates.map(([lon, lat]) => ({
     lat,
     lon,
   }))
+  const legMiles = (payload.routes[0].legs ?? []).map(
+    (leg) => (leg.distance ?? 0) / METERS_PER_MILE,
+  )
+
+  return { geometry, legMiles }
 }
 
 function chunkCoordinates<T>(coordinates: T[], maxChunkSize: number) {
