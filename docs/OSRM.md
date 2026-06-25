@@ -1,4 +1,33 @@
-# Local OSRM for true road distances
+# Road-accurate distances & true drive times
+
+Two engines are supported, both **opt-in** and both with automatic fallback to
+the estimate. The server picks: **OpenRouteService** if `ORS_API_KEY` is set,
+else a real `OSRM_BASE_URL`, else estimates.
+
+## Recommended: OpenRouteService (free, no self-hosting)
+
+ORS is a hosted routing API — no Docker, no local engine. Its free tier returns
+real road distances **and real speed-limit drive times**, so the app's
+`/api/refine-route` rebuilds the selected route's mileage *and* drive hours from
+true durations.
+
+1. Sign up free at [openrouteservice.org](https://openrouteservice.org) and copy
+   your API key.
+2. Add it to `.env` (locally — for your own planning):
+   ```bash
+   echo 'ORS_API_KEY=your-key' >> .env
+   ```
+   Then restart the API. Selecting a route now shows true road miles + drive
+   times (and the map line follows real roads).
+
+**Keep the key off on a public/hosted deploy.** ORS free is ~2,000 requests/day;
+one route refine ≈ ~14 cached calls, which is fine for personal planning but
+would be exhausted by public traffic. With no key, the hosted site uses the fast
+estimate (free, unlimited).
+
+---
+
+# Self-hosted OSRM (advanced)
 
 By default the planner estimates leg distances as great-circle miles × a road
 factor (`roadDistanceFactor`, ~1.18). That's a good approximation (within ~10–20%

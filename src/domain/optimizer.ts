@@ -349,9 +349,12 @@ function buildDayPlans(
   selectedStations: ScoredStation[],
   routeName: string,
   config: PlannerConfig,
-  /** Real per-leg miles (e.g. from OSRM): index i = arrival leg for station i,
+  /** Real per-leg miles (e.g. from OSRM/ORS): index i = arrival leg for station i,
    *  index selectedStations.length = the return leg. Falls back to the estimate. */
   precomputedLegMiles?: number[],
+  /** Real per-leg drive hours (e.g. ORS durations, speed-limit aware). When
+   *  present, drive time uses these instead of distance / averageMph. */
+  precomputedDriveHours?: number[],
 ) {
   const days: DayPlan[] = []
   const visits: RouteStationVisit[] = []
@@ -371,7 +374,7 @@ function buildDayPlans(
         scoredStation.station.position,
         config.roadDistanceFactor,
       )
-    const driveHours = legMiles / config.averageMph
+    const driveHours = precomputedDriveHours?.[index] ?? legMiles / config.averageMph
 
     const projectedDriveHours = day.driveHours + driveHours
     const longDayOpportunity = evaluateLongDayOpportunity(
@@ -381,6 +384,7 @@ function buildDayPlans(
       previous,
       config,
       precomputedLegMiles,
+      precomputedDriveHours,
     )
 
     if (day.visits.length > 0 && projectedDriveHours > config.dailyDriveTargetHours) {
@@ -394,7 +398,7 @@ function buildDayPlans(
     }
 
     const activeLegMiles = legMiles
-    const activeDriveHours = activeLegMiles / config.averageMph
+    const activeDriveHours = driveHours
     const activeStopMinutes = stopMinutesForLeg(activeLegMiles, config)
 
     if (
@@ -431,7 +435,9 @@ function buildDayPlans(
   const returnLegMiles =
     precomputedLegMiles?.[selectedStations.length] ??
     roadLegMiles(previous.position, config.start, config.roadDistanceFactor)
-  const returnDriveHours = returnLegMiles / config.averageMph
+  const returnDriveHours =
+    precomputedDriveHours?.[selectedStations.length] ??
+    returnLegMiles / config.averageMph
 
   if (
     day.visits.length > 0 &&
@@ -528,6 +534,7 @@ function evaluateLongDayOpportunity(
   previous: { position: Coordinate; order: number; distanceMiles: number },
   config: PlannerConfig,
   precomputedLegMiles?: number[],
+  precomputedDriveHours?: number[],
 ) {
   if (!config.longDayOptimization) {
     return { allow: false }
@@ -551,7 +558,8 @@ function evaluateLongDayOpportunity(
         station.station.position,
         config.roadDistanceFactor,
       )
-    const legDriveHours = legMiles / config.averageMph
+    const legDriveHours =
+      precomputedDriveHours?.[index] ?? legMiles / config.averageMph
 
     if (simulatedDriveHours + legDriveHours > config.longDayMaxHours) {
       break
@@ -817,6 +825,8 @@ export function refineRouteWithRoadLegs(
   partialConfig: Partial<PlannerConfig>,
   meta: { id: string; name: string; strategy: string; color: string },
   legMiles: number[],
+  /** Optional real drive hours per leg (e.g. ORS speed-limit durations). */
+  driveHours?: number[],
 ): RoutePlan {
   const config = sanitizePlannerConfig(partialConfig)
   const scored: ScoredStation[] = orderedStations.map((station) => ({
@@ -826,7 +836,7 @@ export function refineRouteWithRoadLegs(
     segmentIndex: 0,
     segmentProgress: 0,
   }))
-  const plans = buildDayPlans(scored, meta.name, config, legMiles)
+  const plans = buildDayPlans(scored, meta.name, config, legMiles, driveHours)
   const totalDays = Math.max(1, plans.days.length)
   const uniqueStations = plans.visits.length
   const totalVisitLegMiles = plans.visits.reduce((sum, v) => sum + v.legMiles, 0)
