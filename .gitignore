@@ -14,6 +14,9 @@ dist-ssr
 .env
 .quest-agent-usage.json
 
+# Local OSRM map extracts + built routing graph (multi-GB)
+osrm-data/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
