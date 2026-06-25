@@ -6,6 +6,10 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
+    // Opt-in (SQP_TUNNEL=1): expose on the LAN and accept tunnel hostnames
+    // (e.g. a cloudflared quick tunnel) for testing on other devices.
+    host: process.env.SQP_TUNNEL ? true : undefined,
+    allowedHosts: process.env.SQP_TUNNEL ? true : undefined,
     proxy: {
       '/api': 'http://localhost:4177',
     },

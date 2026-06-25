@@ -84,7 +84,7 @@ export function Overlay({
         )}
       >
         {isMobile && (
-          <div className="flex justify-center pt-2.5 pb-1" aria-hidden>
+          <div className="flex flex-none justify-center pt-2.5 pb-1" aria-hidden>
             <span className="h-1 w-9 rounded-full bg-edge2" />
           </div>
         )}
@@ -112,7 +112,7 @@ export function OverlayHeader({
   onClose: () => void
 }) {
   return (
-    <div className="flex items-start gap-3.5 border-b border-edge px-5 py-4 md:px-6 md:py-5">
+    <div className="flex flex-none items-start gap-3.5 border-b border-edge px-5 py-4 md:px-6 md:py-5">
       {badge}
       <div className="min-w-0 flex-1">
         {kicker ? (

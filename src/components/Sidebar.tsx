@@ -70,6 +70,35 @@ function advisoryTone(severity: 'info' | 'medium' | 'high'): Tone {
   return 'info'
 }
 
+/* Spacious, always-expanded card — used on mobile sheets where the compact
+   desktop collapsibles read as cramped. */
+function BareCard({
+  eyebrow,
+  title,
+  meta,
+  children,
+}: {
+  eyebrow: ReactNode
+  title: ReactNode
+  meta?: ReactNode
+  children: ReactNode
+}) {
+  return (
+    <section className="flex flex-col gap-2.5 rounded-xl border border-edge bg-panel p-4">
+      <div className="flex items-baseline justify-between gap-2">
+        <div className="min-w-0">
+          <Eyebrow>{eyebrow}</Eyebrow>
+          <div className="mt-1 text-[15px] font-semibold leading-snug text-ink">{title}</div>
+        </div>
+        {meta ? (
+          <span className="flex-none font-mono text-[11.5px] text-dim">{meta}</span>
+        ) : null}
+      </div>
+      {children}
+    </section>
+  )
+}
+
 /* ------------------------------------------------------------------ */
 /* Hero stats — 2x2 grid of StatTiles                                  */
 /* ------------------------------------------------------------------ */
@@ -144,34 +173,54 @@ const FEASIBILITY_VERDICT: Record<
 
 export function FeasibilitySection({
   feasibility,
+  bare,
 }: {
   feasibility?: AllSitesFeasibility
+  bare?: boolean
 }) {
   if (!feasibility) return null
   const verdict = FEASIBILITY_VERDICT[feasibility.verdict]
   const strong = feasibility.verdict === 'not_plausible'
 
+  const body = (
+    <>
+      <div
+        className={cx(
+          'font-mono leading-[1.6] text-dim',
+          bare ? 'text-[12.5px]' : 'text-[11.5px]',
+        )}
+      >
+        <span className="text-ink">{feasibility.totalStations.toLocaleString()}</span> open
+        filtered sites ·{' '}
+        <span className="text-ink">{feasibility.requiredStationsPerDay}</span> sites/day
+        needed
+      </div>
+      <NoteCard tone={verdict.tone} icon={strong ? <AlertIcon size={13} /> : undefined}>
+        {feasibility.explanation}
+      </NoteCard>
+      <div
+        className={cx(
+          'font-mono leading-[1.5] text-faint',
+          bare ? 'text-[12px]' : 'text-[11px]',
+        )}
+      >
+        Min stop-only <span className="text-dim">{feasibility.minimumStopHours}h</span> ·
+        distance-charge <span className="text-dim">{feasibility.distanceStopHours}h</span>
+      </div>
+    </>
+  )
+
+  if (bare) {
+    return (
+      <BareCard eyebrow="All-sites reality check" title={verdict.title}>
+        {body}
+      </BareCard>
+    )
+  }
+
   return (
     <Collapsible defaultOpen eyebrow="All-sites reality check" title={verdict.title}>
-      <div className="flex flex-col gap-2.5 px-3.5 pb-3.5 pt-0.5">
-        <div className="font-mono text-[11.5px] leading-[1.5] text-dim">
-          <span className="text-ink">
-            {feasibility.totalStations.toLocaleString()}
-          </span>{' '}
-          open filtered sites ·{' '}
-          <span className="text-ink">{feasibility.requiredStationsPerDay}</span>{' '}
-          sites/day needed
-        </div>
-        <NoteCard tone={verdict.tone} icon={strong ? <AlertIcon size={13} /> : undefined}>
-          {feasibility.explanation}
-        </NoteCard>
-        <div className="font-mono text-[11px] leading-[1.5] text-faint">
-          Min stop-only{' '}
-          <span className="text-dim">{feasibility.minimumStopHours}h</span> ·
-          distance-charge{' '}
-          <span className="text-dim">{feasibility.distanceStopHours}h</span>
-        </div>
-      </div>
+      <div className="flex flex-col gap-2.5 px-3.5 pb-3.5 pt-0.5">{body}</div>
     </Collapsible>
   )
 }
@@ -280,10 +329,12 @@ export function SourceSection({
   stationStatus,
   isLoadingStations,
   onRefresh,
+  bare,
 }: {
   stationStatus?: StationsResponse
   isLoadingStations: boolean
   onRefresh: () => void
+  bare?: boolean
 }) {
   const filtered = stationStatus?.filteredStations
   const title =
@@ -296,21 +347,39 @@ export function SourceSection({
     ? new Date(fetchedAt).toLocaleString()
     : 'not loaded yet'
 
+  const refreshButton = (
+    <button
+      type="button"
+      onClick={onRefresh}
+      disabled={isLoadingStations}
+      className={cx(
+        'flex min-h-11 w-full items-center justify-center gap-2 rounded-[9px] border border-edge bg-panel2 px-3.5 font-medium text-ink transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60',
+        bare ? 'text-[13px]' : 'text-[12.5px] md:h-[34px] md:min-h-0',
+      )}
+    >
+      <RefreshIcon size={14} className={isLoadingStations ? 'anim-spin' : ''} />
+      {isLoadingStations ? 'Refreshing…' : 'Refresh stations'}
+    </button>
+  )
+
+  if (bare) {
+    return (
+      <BareCard eyebrow="Station source" title={title}>
+        <div className="font-mono text-[12.5px] leading-[1.6] text-faint">
+          Supercharge.info · fetched {fetchedLabel}
+        </div>
+        {refreshButton}
+      </BareCard>
+    )
+  }
+
   return (
     <Collapsible eyebrow="Station source" title={title}>
       <div className="px-3.5 pb-3.5 pt-0.5">
         <div className="mb-[11px] font-mono text-[11.5px] leading-[1.5] text-faint">
           Supercharge.info · fetched {fetchedLabel}
         </div>
-        <button
-          type="button"
-          onClick={onRefresh}
-          disabled={isLoadingStations}
-          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-[9px] border border-edge bg-panel2 px-3.5 text-[12.5px] font-medium text-ink transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60 md:min-h-0 md:h-[34px]"
-        >
-          <RefreshIcon size={14} className={isLoadingStations ? 'anim-spin' : ''} />
-          {isLoadingStations ? 'Refreshing…' : 'Refresh stations'}
-        </button>
+        {refreshButton}
       </div>
     </Collapsible>
   )
@@ -339,34 +408,47 @@ function roadStatusNote(roadStatus: RoadStatusVM): { tone: Tone; text: string } 
 export function GuardrailsSection({
   passportDeadline,
   roadStatus,
+  bare,
 }: {
   passportDeadline: string
   roadStatus: RoadStatusVM
+  bare?: boolean
 }) {
   const note = roadStatusNote(roadStatus)
-  return (
-    <Collapsible
-      eyebrow="Rule guardrails"
-      title={`Passport deadline ${passportDeadline}`}
-    >
-      <div className="flex flex-col gap-2.5 px-3.5 pb-3.5 pt-0.5">
-        <div className="text-[11.5px] leading-[1.5] text-dim">
-          No minimum charge duration is stated in the contest rules. The planner
-          treats stop time as a configurable assumption.
-        </div>
-        <NoteCard
-          tone={note.tone}
-          icon={
-            note.tone === 'warn' ? (
-              <AlertIcon size={13} />
-            ) : note.tone === 'info' ? (
-              <InfoIcon size={13} />
-            ) : undefined
-          }
-        >
-          {note.text}
-        </NoteCard>
+  const body = (
+    <>
+      <div
+        className={cx('leading-[1.6] text-dim', bare ? 'text-[12.5px]' : 'text-[11.5px]')}
+      >
+        No minimum charge duration is stated in the contest rules. The planner treats
+        stop time as a configurable assumption.
       </div>
+      <NoteCard
+        tone={note.tone}
+        icon={
+          note.tone === 'warn' ? (
+            <AlertIcon size={13} />
+          ) : note.tone === 'info' ? (
+            <InfoIcon size={13} />
+          ) : undefined
+        }
+      >
+        {note.text}
+      </NoteCard>
+    </>
+  )
+
+  if (bare) {
+    return (
+      <BareCard eyebrow="Rule guardrails" title={`Passport deadline ${passportDeadline}`}>
+        {body}
+      </BareCard>
+    )
+  }
+
+  return (
+    <Collapsible eyebrow="Rule guardrails" title={`Passport deadline ${passportDeadline}`}>
+      <div className="flex flex-col gap-2.5 px-3.5 pb-3.5 pt-0.5">{body}</div>
     </Collapsible>
   )
 }

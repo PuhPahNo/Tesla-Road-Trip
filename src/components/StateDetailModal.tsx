@@ -130,7 +130,7 @@ export function StateDetailModal({ state, onClose }: StateDetailModalProps) {
         onClose={onClose}
       />
 
-      <div className="overflow-y-auto px-5 py-5 md:px-6">
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 md:px-6">
         {/* Stat grid */}
         <div className="grid grid-cols-3 gap-2.5">
           <StatTile

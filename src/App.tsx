@@ -379,7 +379,7 @@ function App() {
               title="Routes & stats"
               onClose={() => setMobileSheet(null)}
             />
-            <div className="flex flex-col gap-3 overflow-y-auto p-4">
+            <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
               <HeroStats route={selectedRoute} />
               <MobileRouteList
                 routes={result?.routes ?? []}
@@ -388,13 +388,15 @@ function App() {
                   handleSelectRoute(id)
                 }}
               />
-              <FeasibilitySection feasibility={feasibility} />
+              <FeasibilitySection bare feasibility={feasibility} />
               <SourceSection
+                bare
                 stationStatus={stationStatus}
                 isLoadingStations={isLoadingStations}
                 onRefresh={loadStations}
               />
               <GuardrailsSection
+                bare
                 passportDeadline={TESLA_CONTEST_RULES.passportDeadline}
                 roadStatus={roadStatus}
               />
@@ -426,7 +428,7 @@ function App() {
               title="Stations by state"
               onClose={() => setMobileSheet(null)}
             />
-            <div className="overflow-y-auto p-4">
+            <div className="min-h-0 flex-1 overflow-y-auto p-4">
               <CoverageSection
                 bare
                 stats={routeStateStats}
