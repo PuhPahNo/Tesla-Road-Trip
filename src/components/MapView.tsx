@@ -10,6 +10,9 @@ import {
 } from 'react-leaflet'
 import type { StateRouteStats } from '../domain/routeStats'
 import type { Coordinate, RoutePlan, Station } from '../domain/types'
+import { useTheme } from '../theme/theme'
+import { cx, IconButton } from '../ui/primitives'
+import { MinusIcon, PlusIcon } from '../ui/icons'
 
 interface MapViewProps {
   stations: Station[]
@@ -19,6 +22,7 @@ interface MapViewProps {
   roadLine?: Coordinate[]
   stateStats?: StateRouteStats[]
   onSelectState?: (state: string) => void
+  caption?: string
 }
 
 const STATE_LABELS = [
@@ -76,6 +80,11 @@ const STATE_LABELS = [
 const MAX_ROUTE_MARKERS = 220
 const MAX_POLYLINE_POINTS = 3500
 
+const TILE_URL = {
+  tesla: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+  dash: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+} as const
+
 export const MapView = memo(function MapView({
   stations,
   route,
@@ -84,7 +93,15 @@ export const MapView = memo(function MapView({
   roadLine,
   stateStats = [],
   onSelectState,
+  caption,
 }: MapViewProps) {
+  const { theme, isDark } = useTheme()
+  // preferCanvas means Leaflet vector strokes/fills are painted to <canvas>,
+  // which cannot resolve CSS var(), so theme colors are picked here in JS.
+  const ink = isDark ? '#e9edf2' : '#171a20'
+  const node = isDark ? '#0e131a' : '#ffffff'
+  const faintLine = isDark ? '#3a4150' : '#475569'
+  const faintFill = isDark ? '#4b5563' : '#94a3b8'
   const stateStatsByCode = useMemo(
     () => new Map(stateStats.map((state) => [state.state, state])),
     [stateStats],
@@ -103,18 +120,22 @@ export const MapView = memo(function MapView({
 
   return (
     <MapContainer
-      className="planner-map"
+      className="h-full w-full"
       center={[start.lat, start.lon]}
       preferCanvas
       zoom={5}
+      zoomControl={false}
       scrollWheelZoom
     >
       <TileLayer
+        key={theme}
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
         detectRetina
         subdomains="abcd"
-        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+        url={isDark ? TILE_URL.dash : TILE_URL.tesla}
       />
+      <ZoomControl />
+      <ResizeHandler />
       <StateClickOverlay
         stateStatsByCode={stateStatsByCode}
         onSelectState={onSelectState}
@@ -127,8 +148,8 @@ export const MapView = memo(function MapView({
             center={[station.position.lat, station.position.lon]}
             radius={2}
             pathOptions={{
-              color: '#475569',
-              fillColor: '#94a3b8',
+              color: faintLine,
+              fillColor: faintFill,
               fillOpacity: 0.32,
               opacity: 0.28,
               weight: 1,
@@ -140,19 +161,31 @@ export const MapView = memo(function MapView({
         center={[start.lat, start.lon]}
         radius={8}
         pathOptions={{
-          color: '#111827',
-          fillColor: '#ffffff',
+          color: ink,
+          fillColor: node,
           fillOpacity: 1,
           weight: 3,
         }}
       >
         <Tooltip direction="top" offset={[0, -4]}>
-          Chattanooga start/end
+          Start / end
         </Tooltip>
       </CircleMarker>
 
       {route && (
         <>
+          {isDark && (
+            <Polyline
+              positions={routePositions}
+              pathOptions={{
+                color: route.color,
+                opacity: 0.25,
+                weight: roadLine ? 16 : 13,
+                lineCap: 'round',
+                lineJoin: 'round',
+              }}
+            />
+          )}
           <Polyline
             positions={routePositions}
             pathOptions={{
@@ -175,11 +208,11 @@ export const MapView = memo(function MapView({
               center={[visit.station.position.lat, visit.station.position.lon]}
               radius={visit.sequence % 10 === 0 ? 5 : 4}
               pathOptions={{
-                color: route.color,
-                fillColor: '#ffffff',
-                fillOpacity: 0.92,
+                color: node,
+                fillColor: route.color,
+                fillOpacity: 0.95,
                 opacity: 0.95,
-                weight: 2,
+                weight: 1.5,
               }}
             >
               <Popup>
@@ -194,9 +227,91 @@ export const MapView = memo(function MapView({
           ))}
         </>
       )}
+
+      <MapChrome caption={caption} />
     </MapContainer>
   )
 })
+
+/* ------------------------------------------------------------------ */
+/* Custom zoom control (top-left, 16px inset)                          */
+/* ------------------------------------------------------------------ */
+/**
+ * Keep Leaflet's canvas/panes sized to the container. The map lives in a flex
+ * layout that reflows when the drawer collapses, the sidebar/sheets toggle, or
+ * the device rotates — without this the route canvas can render at 0 height.
+ */
+function ResizeHandler() {
+  const map = useMap()
+  useEffect(() => {
+    const container = map.getContainer()
+    const fix = () => map.invalidateSize({ animate: false })
+    const observer = new ResizeObserver(fix)
+    observer.observe(container)
+    const raf = requestAnimationFrame(fix)
+    const timer = window.setTimeout(fix, 250)
+    return () => {
+      observer.disconnect()
+      cancelAnimationFrame(raf)
+      window.clearTimeout(timer)
+    }
+  }, [map])
+  return null
+}
+
+function ZoomControl() {
+  const map = useMap()
+  return (
+    <div className="absolute left-4 top-4 z-[800] flex flex-col overflow-hidden rounded-[9px] border border-edge bg-panel shadow-card">
+      <IconButton
+        label="Zoom in"
+        size={44}
+        className="rounded-none border-0 border-b border-edge bg-panel"
+        onClick={() => map.zoomIn()}
+      >
+        <PlusIcon size={18} />
+      </IconButton>
+      <IconButton
+        label="Zoom out"
+        size={44}
+        className="rounded-none border-0 bg-panel"
+        onClick={() => map.zoomOut()}
+      >
+        <MinusIcon size={18} />
+      </IconButton>
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* Legend (bottom-left) + caption (bottom-right)                       */
+/* ------------------------------------------------------------------ */
+function MapChrome({ caption }: { caption?: string }) {
+  return (
+    <>
+      <div className="absolute bottom-4 left-4 z-[800] hidden max-w-[calc(100%-2rem)] flex-wrap items-center gap-x-4 gap-y-1.5 rounded-[9px] border border-edge bg-panel px-3 py-2 text-[11.5px] text-dim shadow-card md:flex">
+        <span className="flex items-center gap-[7px]">
+          <span className="h-[3px] w-[18px] flex-none rounded-[2px] bg-route" />
+          Route
+        </span>
+        <span className="flex items-center gap-[7px]">
+          <span className="h-[9px] w-[9px] flex-none rounded-[3px] border border-good-bd bg-good-bg" />
+          Visited state
+        </span>
+        <span className="flex items-center gap-[7px]">
+          <span className="h-2 w-2 flex-none rounded-full border-[1.5px] border-node bg-route" />
+          Supercharger
+        </span>
+      </div>
+
+      {caption ? (
+        <div className="pointer-events-none absolute bottom-4 right-4 z-[800] hidden font-mono text-[10px] uppercase tracking-[0.04em] text-faint md:block">
+          {caption}
+        </div>
+      ) : null}
+    </>
+  )
+}
 
 interface StateClickOverlayProps {
   stateStatsByCode: Map<string, StateRouteStats>
@@ -249,7 +364,10 @@ function StateClickOverlay({
 
   return (
     <div
-      className={`state-click-overlay ${isMoving ? 'moving' : ''}`}
+      className={cx(
+        'pointer-events-none absolute inset-0 z-[650] transition-opacity duration-200',
+        isMoving ? 'opacity-0' : 'opacity-100',
+      )}
       aria-label="State map shortcuts"
     >
       {points.map(({ state, label, x, y, stats }) => {
@@ -259,8 +377,8 @@ function StateClickOverlay({
         return (
           <button
             key={state}
+            type="button"
             aria-label={`${label} state details`}
-            className={`state-map-button ${isVisited ? 'visited' : ''}`}
             disabled={!isClickable}
             style={{ left: x, top: y }}
             title={
@@ -268,18 +386,25 @@ function StateClickOverlay({
                 ? `${label}: ${stats.routeStations} of ${stats.totalStations} sites`
                 : label
             }
-            type="button"
+            className={cx(
+              'pointer-events-auto absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-px rounded-lg px-[7px] py-1 font-mono leading-none whitespace-nowrap transition cursor-pointer disabled:cursor-default',
+              isVisited
+                ? 'z-[4] border border-good-bd bg-good-bg text-good shadow-card'
+                : stats
+                  ? 'z-[2] border border-idle-bd bg-idle-bg text-idle'
+                  : 'z-[2] border border-idle-bd bg-idle-bg text-idle opacity-70',
+            )}
             onClick={(event) => {
               event.stopPropagation()
               if (stats) onSelectState?.(state)
             }}
             onMouseDown={(event) => event.stopPropagation()}
           >
-            <span>{state}</span>
+            <span className="text-[11px] font-semibold tracking-[0.02em]">{state}</span>
             {isVisited && stats && (
-              <strong>
+              <span className="text-[9.5px] leading-none opacity-85">
                 {stats.routeStations}/{stats.totalStations}
-              </strong>
+              </span>
             )}
           </button>
         )
@@ -290,10 +415,6 @@ function StateClickOverlay({
 
 function FitRoute({ positions }: { positions: [number, number][] }) {
   const map = useMap()
-
-  useEffect(() => {
-    ;(window as Window & { __questMap?: typeof map }).__questMap = map
-  }, [map])
 
   useEffect(() => {
     if (positions.length < 2) return

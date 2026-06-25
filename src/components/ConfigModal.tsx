@@ -1,23 +1,293 @@
-import {
-  Gauge,
-  Globe2,
-  MapPinned,
-  Route,
-  Timer,
-  TrendingUp,
-  X,
-  Zap,
-} from 'lucide-react'
+import { useId, type ReactNode } from 'react'
 import type { PlannerConfig } from '../domain/types'
-import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
+import { Overlay, OverlayHeader } from '../ui/Overlay'
+import { Button, cx } from '../ui/primitives'
 
-interface ConfigModalProps {
+export interface ConfigModalProps {
   config: PlannerConfig
   open: boolean
   isOptimizing: boolean
   onClose: () => void
   onChange: (config: PlannerConfig) => void
-  onOptimize: () => void
+  onApply: () => void
+}
+
+/** Numeric config keys that drive a slider. */
+type SliderKey = {
+  [K in keyof PlannerConfig]: PlannerConfig[K] extends number ? K : never
+}[keyof PlannerConfig]
+
+/** Boolean config keys that drive a toggle. */
+type ToggleKey = {
+  [K in keyof PlannerConfig]: PlannerConfig[K] extends boolean ? K : never
+}[keyof PlannerConfig]
+
+interface SliderSpec {
+  key: SliderKey
+  label: string
+  hint: string
+  min: number
+  max: number
+  step: number
+  unit?: string
+}
+
+interface ToggleSpec {
+  key: ToggleKey
+  label: string
+  hint: string
+}
+
+const TRIP_TARGETS: SliderSpec[] = [
+  {
+    key: 'targetStations',
+    label: 'Target stations',
+    hint: 'Target unique sites',
+    min: 25,
+    max: 5000,
+    step: 25,
+  },
+  {
+    key: 'tripWeeks',
+    label: 'Trip length',
+    hint: 'Trip length',
+    min: 1,
+    max: 52,
+    step: 0.5,
+    unit: 'wks',
+  },
+  {
+    key: 'averageMph',
+    label: 'Average speed',
+    hint: 'Average moving speed',
+    min: 25,
+    max: 85,
+    step: 1,
+    unit: 'mph',
+  },
+  {
+    key: 'practicalRangeMiles',
+    label: 'Practical range',
+    hint: 'Practical range',
+    min: 80,
+    max: 350,
+    step: 5,
+    unit: 'mi',
+  },
+]
+
+const DAILY_LIMITS: SliderSpec[] = [
+  {
+    key: 'dailyDriveTargetHours',
+    label: 'Daily drive target',
+    hint: 'Daily drive target',
+    min: 1,
+    max: 14,
+    step: 0.25,
+    unit: 'h',
+  },
+  {
+    key: 'dailyDriveMaxHours',
+    label: 'Normal-day cap',
+    hint: 'Normal-day cap',
+    min: 1,
+    max: 16,
+    step: 0.25,
+    unit: 'h',
+  },
+  {
+    key: 'longDayMaxHours',
+    label: 'Long-day cap',
+    hint: 'Long-day cap',
+    min: 2,
+    max: 14,
+    step: 0.25,
+    unit: 'h',
+  },
+  {
+    key: 'longDayMinSitesPerExtraHour',
+    label: 'Long-day min return',
+    hint: 'Long-day min return',
+    min: 0.1,
+    max: 30,
+    step: 0.1,
+    unit: 'sites/h',
+  },
+]
+
+const STOP_MODEL: SliderSpec[] = [
+  {
+    key: 'closeStationRadiusMiles',
+    label: 'Close-site radius',
+    hint: 'Close-site radius',
+    min: 0.5,
+    max: 25,
+    step: 0.5,
+    unit: 'mi',
+  },
+  {
+    key: 'closeStationStopMinutes',
+    label: 'Close-site stop',
+    hint: 'Close-site stop',
+    min: 1,
+    max: 60,
+    step: 1,
+    unit: 'min',
+  },
+  {
+    key: 'distanceChargeStopMinutes',
+    label: 'Distance-charge stop',
+    hint: 'Distance-charge stop',
+    min: 2,
+    max: 90,
+    step: 1,
+    unit: 'min',
+  },
+  {
+    key: 'roadDistanceFactor',
+    label: 'Road distance factor',
+    hint: 'Road distance factor',
+    min: 1,
+    max: 1.8,
+    step: 0.01,
+    unit: 'x',
+  },
+]
+
+const OPTIONS: ToggleSpec[] = [
+  {
+    key: 'longDayOptimization',
+    label: 'Long-day optimization',
+    hint: 'Allow longer days when the return is worth it',
+  },
+  {
+    key: 'includeCanada',
+    label: 'Include Canada',
+    hint: 'Count eligible Canadian sites',
+  },
+  {
+    key: 'includeMexico',
+    label: 'Include Mexico',
+    hint: 'Count eligible Mexican sites',
+  },
+  {
+    key: 'showAllStations',
+    label: 'Show all station dots',
+    hint: 'Render every filtered site on the map',
+  },
+]
+
+/** Format a numeric value compactly for the mono readout. */
+function formatValue(value: number, step: number): string {
+  if (Number.isInteger(value)) return value.toLocaleString('en-US')
+  const decimals = step < 0.1 ? 2 : 1
+  return value.toFixed(decimals)
+}
+
+/* ------------------------------------------------------------------ */
+/* Section heading — mono uppercase micro-label                        */
+/* ------------------------------------------------------------------ */
+function SectionHeading({ children }: { children: ReactNode }) {
+  return (
+    <div className="px-5 pt-5 pb-1 font-mono text-[10px] uppercase tracking-[0.12em] text-faint md:px-6">
+      {children}
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* Slider row                                                          */
+/* ------------------------------------------------------------------ */
+function SliderRow({
+  spec,
+  value,
+  onChange,
+}: {
+  spec: SliderSpec
+  value: number
+  onChange: (next: number) => void
+}) {
+  const inputId = useId()
+  return (
+    <div className="border-b border-edge px-5 py-3.5 md:px-6">
+      <div className="mb-2.5 flex items-center justify-between gap-3">
+        <label htmlFor={inputId} className="min-w-0 cursor-pointer">
+          <div className="truncate text-[13.5px] font-semibold text-ink">
+            {spec.label}
+          </div>
+          <div className="mt-0.5 truncate text-[11.5px] text-faint">{spec.hint}</div>
+        </label>
+        <div className="flex-none whitespace-nowrap font-mono text-[15px] font-semibold text-accent">
+          {formatValue(value, spec.step)}
+          {spec.unit ? (
+            <span className="ml-1 text-[11.5px] font-normal text-faint">{spec.unit}</span>
+          ) : null}
+        </div>
+      </div>
+      {/* >=44px tap area via vertical centering around the native range input */}
+      <div className="flex min-h-11 items-center">
+        <input
+          id={inputId}
+          type="range"
+          min={spec.min}
+          max={spec.max}
+          step={spec.step}
+          value={value}
+          onChange={(e) => onChange(Number(e.target.value))}
+          aria-label={spec.label}
+          className="w-full cursor-pointer"
+          style={{ accentColor: 'var(--accent)' }}
+        />
+      </div>
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* Toggle row                                                          */
+/* ------------------------------------------------------------------ */
+function ToggleRow({
+  spec,
+  checked,
+  onChange,
+  last,
+}: {
+  spec: ToggleSpec
+  checked: boolean
+  onChange: (next: boolean) => void
+  last?: boolean
+}) {
+  return (
+    <div
+      className={cx(
+        'flex min-h-11 items-center justify-between gap-4 px-5 py-3.5 md:px-6',
+        last ? '' : 'border-b border-edge',
+      )}
+    >
+      <div className="min-w-0">
+        <div className="truncate text-[13.5px] font-semibold text-ink">{spec.label}</div>
+        <div className="mt-0.5 truncate text-[11.5px] text-faint">{spec.hint}</div>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-label={spec.label}
+        onClick={() => onChange(!checked)}
+        className={cx(
+          'relative inline-flex h-[26px] w-11 flex-none cursor-pointer items-center rounded-full border border-edge transition-colors',
+          checked ? 'bg-accent' : 'bg-chip',
+        )}
+      >
+        <span
+          className={cx(
+            'inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform',
+            checked ? 'translate-x-[19px]' : 'translate-x-[2px]',
+          )}
+        />
+      </button>
+    </div>
+  )
 }
 
 export function ConfigModal({
@@ -26,278 +296,94 @@ export function ConfigModal({
   isOptimizing,
   onClose,
   onChange,
-  onOptimize,
+  onApply,
 }: ConfigModalProps) {
-  useBodyScrollLock(open)
+  const titleId = useId()
 
-  if (!open) return null
+  const setNumber = (key: SliderKey, value: number) =>
+    onChange({ ...config, [key]: value })
+  const setBool = (key: ToggleKey, value: boolean) =>
+    onChange({ ...config, [key]: value })
 
-  const setNumber = (key: keyof PlannerConfig, value: string) => {
-    onChange({
-      ...config,
-      [key]: Number(value),
-    })
-  }
-
-  const setBoolean = (key: keyof PlannerConfig, value: boolean) => {
-    onChange({
-      ...config,
-      [key]: value,
-    })
-  }
-
-  return (
-    <div className="modal-backdrop" role="presentation">
-      <section
-        aria-modal="true"
-        className="config-modal"
-        role="dialog"
-        aria-labelledby="config-title"
-      >
-        <header className="modal-header">
-          <div>
-            <p className="eyebrow">Route configuration</p>
-            <h2 id="config-title">Competition planner settings</h2>
-          </div>
-          <button
-            aria-label="Close configuration"
-            className="icon-button"
-            type="button"
-            onClick={onClose}
-          >
-            <X size={18} />
-          </button>
-        </header>
-
-        <div className="config-grid">
-          <NumberField
-            icon={<MapPinned size={16} />}
-            label="Target unique sites"
-            min={25}
-            max={5000}
-            step={25}
-            value={config.targetStations}
-            onChange={(value) => setNumber('targetStations', value)}
-          />
-          <NumberField
-            icon={<Timer size={16} />}
-            label="Trip weeks"
-            min={1}
-            max={52}
-            step={0.5}
-            value={config.tripWeeks}
-            onChange={(value) => setNumber('tripWeeks', value)}
-          />
-          <NumberField
-            icon={<Route size={16} />}
-            label="Daily drive target"
-            suffix="hours"
-            min={1}
-            max={14}
-            step={0.25}
-            value={config.dailyDriveTargetHours}
-            onChange={(value) => setNumber('dailyDriveTargetHours', value)}
-          />
-          <NumberField
-            icon={<Route size={16} />}
-            label="Normal-day cap"
-            suffix="hours"
-            min={1}
-            max={16}
-            step={0.25}
-            value={config.dailyDriveMaxHours}
-            onChange={(value) => setNumber('dailyDriveMaxHours', value)}
-          />
-          <NumberField
-            icon={<Timer size={16} />}
-            label="Long-day cap"
-            suffix="hours"
-            min={2}
-            max={14}
-            step={0.25}
-            value={config.longDayMaxHours}
-            onChange={(value) => setNumber('longDayMaxHours', value)}
-          />
-          <NumberField
-            icon={<TrendingUp size={16} />}
-            label="Long-day min return"
-            suffix="sites/hr"
-            min={0.1}
-            max={30}
-            step={0.1}
-            value={config.longDayMinSitesPerExtraHour}
-            onChange={(value) =>
-              setNumber('longDayMinSitesPerExtraHour', value)
-            }
-          />
-          <NumberField
-            icon={<Gauge size={16} />}
-            label="Average moving speed"
-            suffix="mph"
-            min={25}
-            max={85}
-            step={1}
-            value={config.averageMph}
-            onChange={(value) => setNumber('averageMph', value)}
-          />
-          <NumberField
-            icon={<Zap size={16} />}
-            label="Practical range"
-            suffix="miles"
-            min={80}
-            max={350}
-            step={5}
-            value={config.practicalRangeMiles}
-            onChange={(value) => setNumber('practicalRangeMiles', value)}
-          />
-          <NumberField
-            icon={<MapPinned size={16} />}
-            label="Close-site radius"
-            suffix="miles"
-            min={0.5}
-            max={25}
-            step={0.5}
-            value={config.closeStationRadiusMiles}
-            onChange={(value) => setNumber('closeStationRadiusMiles', value)}
-          />
-          <NumberField
-            icon={<Timer size={16} />}
-            label="Close-site stop"
-            suffix="minutes"
-            min={1}
-            max={60}
-            step={1}
-            value={config.closeStationStopMinutes}
-            onChange={(value) => setNumber('closeStationStopMinutes', value)}
-          />
-          <NumberField
-            icon={<Zap size={16} />}
-            label="Distance-charge stop"
-            suffix="minutes"
-            min={2}
-            max={90}
-            step={1}
-            value={config.distanceChargeStopMinutes}
-            onChange={(value) => setNumber('distanceChargeStopMinutes', value)}
-          />
-          <NumberField
-            icon={<Route size={16} />}
-            label="Road distance factor"
-            min={1}
-            max={1.8}
-            step={0.01}
-            value={config.roadDistanceFactor}
-            onChange={(value) => setNumber('roadDistanceFactor', value)}
-          />
-        </div>
-
-        <div className="toggle-grid">
-          <ToggleRow
-            icon={<Globe2 size={16} />}
-            label="Include Canada"
-            checked={config.includeCanada}
-            onChange={(checked) => setBoolean('includeCanada', checked)}
-          />
-          <ToggleRow
-            icon={<Globe2 size={16} />}
-            label="Include Mexico"
-            checked={config.includeMexico}
-            onChange={(checked) => setBoolean('includeMexico', checked)}
-          />
-          <ToggleRow
-            icon={<MapPinned size={16} />}
-            label="Show all station dots"
-            checked={config.showAllStations}
-            onChange={(checked) => setBoolean('showAllStations', checked)}
-          />
-          <ToggleRow
-            icon={<TrendingUp size={16} />}
-            label="Long-day optimization"
-            checked={config.longDayOptimization}
-            onChange={(checked) => setBoolean('longDayOptimization', checked)}
-          />
-        </div>
-
-        <footer className="modal-actions">
-          <button className="secondary-button" type="button" onClick={onClose}>
-            Close
-          </button>
-          <button
-            className="primary-button"
-            type="button"
-            disabled={isOptimizing}
-            onClick={onOptimize}
-          >
-            <Route size={18} />
-            {isOptimizing ? 'Optimizing...' : 'Optimize routes'}
-          </button>
-        </footer>
-      </section>
-    </div>
-  )
-}
-
-interface NumberFieldProps {
-  icon: React.ReactNode
-  label: string
-  value: number
-  min: number
-  max: number
-  step: number
-  suffix?: string
-  onChange: (value: string) => void
-}
-
-function NumberField({
-  icon,
-  label,
-  value,
-  min,
-  max,
-  step,
-  suffix,
-  onChange,
-}: NumberFieldProps) {
-  return (
-    <label className="field">
-      <span className="field-label">
-        {icon}
-        {label}
-      </span>
-      <span className="input-row">
-        <input
-          type="number"
-          min={min}
-          max={max}
-          step={step}
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-        />
-        {suffix && <span className="suffix">{suffix}</span>}
-      </span>
-    </label>
-  )
-}
-
-interface ToggleRowProps {
-  icon: React.ReactNode
-  label: string
-  checked: boolean
-  onChange: (checked: boolean) => void
-}
-
-function ToggleRow({ icon, label, checked, onChange }: ToggleRowProps) {
-  return (
-    <label className="toggle-row">
-      <span className="field-label">
-        {icon}
-        {label}
-      </span>
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(event) => onChange(event.target.checked)}
+  const renderSliders = (specs: SliderSpec[]) =>
+    specs.map((spec) => (
+      <SliderRow
+        key={spec.key}
+        spec={spec}
+        value={config[spec.key]}
+        onChange={(next) => setNumber(spec.key, next)}
       />
-    </label>
+    ))
+
+  return (
+    <Overlay open={open} onClose={onClose} size="config" labelledBy={titleId}>
+      <OverlayHeader
+        kicker="Planner assumptions"
+        title="Configure optimization"
+        titleId={titleId}
+        onClose={onClose}
+      />
+
+      <div className="min-h-0 flex-1 overflow-y-auto pb-2">
+        {/* Vehicle */}
+        <SectionHeading>Vehicle</SectionHeading>
+        <div className="flex items-center justify-between gap-4 border-b border-edge px-5 py-3.5 md:px-6">
+          <div className="min-w-0">
+            <div className="truncate text-[13.5px] font-semibold text-ink">Vehicle</div>
+            <div className="mt-0.5 truncate text-[11.5px] text-faint">
+              Range model used for legs
+            </div>
+          </div>
+          <span className="flex-none whitespace-nowrap rounded-lg border border-edge bg-panel2 px-3 py-1.5 font-mono text-[12.5px] text-ink">
+            Tesla Model Y LR
+          </span>
+        </div>
+
+        {/* Trip targets */}
+        <SectionHeading>Trip targets</SectionHeading>
+        {renderSliders(TRIP_TARGETS)}
+
+        {/* Daily limits */}
+        <SectionHeading>Daily limits</SectionHeading>
+        {renderSliders(DAILY_LIMITS)}
+
+        {/* Stop model */}
+        <SectionHeading>Stop model</SectionHeading>
+        {renderSliders(STOP_MODEL)}
+
+        {/* Options */}
+        <SectionHeading>Options</SectionHeading>
+        {OPTIONS.map((spec, i) => (
+          <ToggleRow
+            key={spec.key}
+            spec={spec}
+            checked={config[spec.key]}
+            onChange={(next) => setBool(spec.key, next)}
+            last={i === OPTIONS.length - 1}
+          />
+        ))}
+      </div>
+
+      {/* Footer */}
+      <div className="flex flex-none gap-3 border-t border-edge px-6 py-5">
+        <Button
+          variant="secondary"
+          size="lg"
+          className="min-h-11 flex-1"
+          onClick={onClose}
+        >
+          Cancel
+        </Button>
+        <Button
+          variant="primary"
+          size="lg"
+          className="min-h-11 flex-1"
+          onClick={onApply}
+          disabled={isOptimizing}
+        >
+          {isOptimizing ? 'Optimizing…' : 'Apply & re-optimize'}
+        </Button>
+      </div>
+    </Overlay>
   )
 }

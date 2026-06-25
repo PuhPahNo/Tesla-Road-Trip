@@ -1,10 +1,38 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dash">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>tesla-supercharger-quest</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1"
+    />
+    <meta name="theme-color" content="#0a0d12" id="theme-color-meta" />
+    <meta
+      name="description"
+      content="Plan a record-setting 2026 Tesla Supercharger Quest road trip — routes, daily plans, and live station data."
+    />
+    <title>Supercharger Quest Planner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      // No-flash theme init. Dark ("dash") is the default.
+      (function () {
+        try {
+          var t = localStorage.getItem('sqp-theme')
+          if (t !== 'tesla' && t !== 'dash') t = 'dash'
+          document.documentElement.setAttribute('data-theme', t)
+          var meta = document.getElementById('theme-color-meta')
+          if (meta) meta.setAttribute('content', t === 'tesla' ? '#ffffff' : '#0a0d12')
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'dash')
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

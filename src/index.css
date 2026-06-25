@@ -1,60 +1,314 @@
-:root {
-  font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
-  color: #152033;
-  background: #eef2f7;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@import 'tailwindcss';
+
+/* =====================================================================
+   THEME TOKENS — captured from the Claude Design ("Tesla" + "Dashboard")
+   Dark ("dash") is the default (:root). The no-flash script in index.html
+   and the ThemeProvider toggle [data-theme] on <html>.
+   ===================================================================== */
+
+:root,
+[data-theme='dash'] {
+  color-scheme: dark;
+  --app-bg: #0a0d12;
+  --canvas-bg: #080b10;
+  --panel: #11151c;
+  --panel-2: #171c25;
+  --border: rgba(255, 255, 255, 0.075);
+  --border-2: rgba(255, 255, 255, 0.14);
+  --text: #e9edf2;
+  --dim: #8b929e;
+  --faint: #5f6671;
+  --accent: #ff453a;
+  --accent-2: #0bd5d0;
+  --on-accent: #ffffff;
+  --on-accent-2: #04211f;
+  --node: #0e131a;
+  --good-bg: rgba(11, 213, 208, 0.12);
+  --good-bd: rgba(11, 213, 208, 0.4);
+  --good-tx: #5ce6e1;
+  --warn-bg: rgba(255, 176, 32, 0.12);
+  --warn-bd: rgba(255, 176, 32, 0.32);
+  --warn-tx: #ffc15e;
+  --info-bg: rgba(11, 160, 213, 0.12);
+  --info-bd: rgba(11, 160, 213, 0.32);
+  --info-tx: #5bc8f0;
+  --idle-bg: rgba(255, 255, 255, 0.035);
+  --idle-bd: rgba(255, 255, 255, 0.09);
+  --idle-tx: #7b828d;
+  --map-land: #10151d;
+  --map-line: rgba(255, 255, 255, 0.05);
+  --chip: rgba(255, 255, 255, 0.06);
+  --route: #ff453a;
+  --shadow: 0 10px 40px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.03);
+  --backdrop: rgba(3, 5, 8, 0.62);
+  --glow: 1;
 }
 
-* {
-  box-sizing: border-box;
+[data-theme='tesla'] {
+  color-scheme: light;
+  --app-bg: #ffffff;
+  --canvas-bg: #eef1f3;
+  --panel: #ffffff;
+  --panel-2: #f6f7f9;
+  --border: #e7e8ec;
+  --border-2: #d7d9df;
+  --text: #171a20;
+  --dim: #5c5e62;
+  --faint: #9296a0;
+  --accent: #e82127;
+  --accent-2: #0f7d6b;
+  --on-accent: #ffffff;
+  --on-accent-2: #ffffff;
+  --node: #ffffff;
+  --good-bg: #e9f4ee;
+  --good-bd: #bfe0cb;
+  --good-tx: #1c6b3f;
+  --warn-bg: #fff5e8;
+  --warn-bd: #f4d6a8;
+  --warn-tx: #9a5b15;
+  --info-bg: #eef4ff;
+  --info-bd: #cfe0ff;
+  --info-tx: #2b5fb3;
+  --idle-bg: #ffffff;
+  --idle-bd: #e3e5ea;
+  --idle-tx: #6b6e73;
+  --map-land: #e4e8ec;
+  --map-line: #ffffff;
+  --chip: #eceef1;
+  --route: #e82127;
+  --shadow: 0 1px 3px rgba(20, 22, 28, 0.1), 0 12px 32px rgba(20, 22, 28, 0.08);
+  --backdrop: rgba(23, 26, 32, 0.3);
+  --glow: 0;
+}
+
+/* =====================================================================
+   Tailwind token aliases — `inline` so utilities resolve the runtime
+   var (theme-switched), not a build-time snapshot.
+   ===================================================================== */
+@theme inline {
+  --color-app: var(--app-bg);
+  --color-canvas: var(--canvas-bg);
+  --color-panel: var(--panel);
+  --color-panel2: var(--panel-2);
+  --color-edge: var(--border);
+  --color-edge2: var(--border-2);
+  --color-ink: var(--text);
+  --color-dim: var(--dim);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-accent2: var(--accent-2);
+  --color-on-accent: var(--on-accent);
+  --color-on-accent2: var(--on-accent-2);
+  --color-node: var(--node);
+  --color-chip: var(--chip);
+  --color-route: var(--route);
+  --color-good: var(--good-tx);
+  --color-good-bg: var(--good-bg);
+  --color-good-bd: var(--good-bd);
+  --color-warn: var(--warn-tx);
+  --color-warn-bg: var(--warn-bg);
+  --color-warn-bd: var(--warn-bd);
+  --color-info: var(--info-tx);
+  --color-info-bg: var(--info-bg);
+  --color-info-bd: var(--info-bd);
+  --color-idle: var(--idle-tx);
+  --color-idle-bg: var(--idle-bg);
+  --color-idle-bd: var(--idle-bd);
+
+  --font-sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
+
+  --shadow-card: var(--shadow);
+}
+
+/* =====================================================================
+   Base
+   ===================================================================== */
+html,
+body,
+#root {
+  height: 100%;
 }
 
 body {
   margin: 0;
-  min-width: 320px;
-  overflow-x: hidden;
+  background: var(--app-bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overscroll-behavior: none;
 }
 
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-2);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* lock body scroll while a sheet/modal owns the viewport */
 body.modal-open {
   overflow: hidden;
 }
 
-button,
-input {
-  font: inherit;
+/* =====================================================================
+   Keyframes from the design
+   ===================================================================== */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes sheetUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
 }
 
-h1,
-h2,
-p {
-  margin: 0;
+.anim-fadeup {
+  animation: fadeUp 0.2s ease;
+}
+.anim-pop {
+  animation: pop 0.22s ease;
+}
+.anim-slidein {
+  animation: slideIn 0.25s ease;
+}
+.anim-sheet {
+  animation: sheetUp 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.anim-pulse {
+  animation: pulse 1.2s ease infinite;
+}
+.anim-spin {
+  animation: spin 0.8s linear infinite;
 }
 
-h1 {
-  color: #0f172a;
-  font-size: 28px;
-  line-height: 1.08;
-  font-weight: 900;
-  letter-spacing: 0;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }
 
-h2 {
-  color: #132033;
-  font-size: 17px;
-  line-height: 1.22;
-  font-weight: 900;
-  letter-spacing: 0;
+/* =====================================================================
+   Leaflet — theme-aware chrome so the real map matches the design
+   ===================================================================== */
+.leaflet-container {
+  background: var(--canvas-bg);
+  font-family: var(--font-sans);
+}
+.leaflet-control-attribution {
+  background: color-mix(in srgb, var(--panel) 78%, transparent) !important;
+  color: var(--faint) !important;
+  border-radius: 7px 0 0 0;
+  font-size: 10px;
+}
+.leaflet-control-attribution a {
+  color: var(--dim) !important;
+}
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-2);
+}
+.leaflet-popup-content-wrapper {
+  border-radius: 12px;
+}
+.leaflet-popup-content {
+  font-size: 12.5px;
+  line-height: 1.5;
+  margin: 11px 14px;
+}
+.leaflet-popup-close-button {
+  color: var(--faint) !important;
+}
+.leaflet-tooltip {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border-2);
+  box-shadow: var(--shadow);
+  border-radius: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.leaflet-tooltip-top::before {
+  border-top-color: var(--border-2);
+}
+.leaflet-bar a {
+  background: var(--panel);
+  color: var(--text);
+  border-color: var(--border);
+}
+.leaflet-bar a:hover {
+  background: var(--panel-2);
 }
 
-a {
-  color: inherit;
+/* safe-area helpers for mobile */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
 }
-
-#root {
-  min-height: 100vh;
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+.inset-safe-b {
+  bottom: env(safe-area-inset-bottom);
 }

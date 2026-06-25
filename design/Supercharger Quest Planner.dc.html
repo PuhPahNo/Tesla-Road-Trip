@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="9dc7b66e-bcea-42c3-93e8-80b9c302d1ca"></script>
+</head>
+<body>
+<x-dc>
+
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style>/* cyrillic-ext */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("d3c2cc6f-26f8-43d5-9711-02818ab03d7d") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("32e6c7f8-af1c-4e3b-b62e-d0c4200f3f2f") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("60b84555-6e37-474e-8abb-38af806d6470") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("8d7e0b5c-1dfc-4b2d-b0b1-ca83c85c344a") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("f9d97eb1-6f62-49d4-a37b-05fc6d02477a") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("84d5dc94-8efe-43e4-b7da-cbc93ef79b17") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("b2e195d1-f00a-4fdf-bdd0-eb3c013028fb") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("53071a4b-191a-40f7-8a18-45bab3e4af90") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("11c9d3fe-b55f-4d88-9b10-be28938371fc") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("662d88b8-27a7-4c91-a306-bd8a01615117") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("6a71b22c-e18e-4355-b0b8-0f3dfa55a6be") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("371cd601-e71c-4fa5-965f-31c14c30ea09") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("b4a378a6-314b-4cbb-b69a-b931c60e157d") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("2c608836-c461-4d21-a367-32fb9bcc313f") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("2d397879-cec9-45e0-8d4a-a6a56316e1c6") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+</style>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:10px}
+::-webkit-scrollbar-track{background:transparent}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+@keyframes slideIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
+</style>
+</helmet>
+<div style="{{ rootStyle }}">
+
+  <!-- ================= TOP BAR ================= -->
+  <div style="height:62px;flex:0 0 62px;display:flex;align-items:center;gap:18px;padding:0 18px;background:var(--panel);border-bottom:1px solid var(--border);position:relative;z-index:40">
+    <div style="display:flex;align-items:center;gap:12px;min-width:0">
+      <div style="width:34px;height:34px;border-radius:9px;background:var(--accent);display:flex;align-items:center;justify-content:center;flex:0 0 auto;box-shadow:0 0 0 1px var(--border) inset">
+        <svg width="15" height="15" viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="#fff"></path></svg>
+      </div>
+      <div style="min-width:0">
+        <div style="font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:var(--faint);text-transform:uppercase">2026 Americas Competition</div>
+        <div style="font-size:16px;font-weight:600;letter-spacing:-.01em;line-height:1.1;color:var(--text)">Supercharger Quest Planner</div>
+      </div>
+    </div>
+
+    <div style="flex:1"></div>
+
+    <button onclick="{{ noop }}" style="display:flex;align-items:center;gap:9px;height:34px;padding:0 13px;border-radius:9px;border:1px solid var(--border);background:var(--panel-2);color:var(--text);cursor:pointer;font-family:var(--ui);font-size:13px">
+      <span style="width:7px;height:7px;border-radius:50%;background:var(--accent)"></span>
+      <span style="font-weight:500">{{ routeName }}</span>
+      <svg width="11" height="11" viewBox="0 0 24 24" style="opacity:.5"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" fill="none"></path></svg>
+    </button>
+
+    <div style="display:flex;align-items:center;gap:3px;height:34px;padding:3px;border-radius:10px;background:var(--panel-2);border:1px solid var(--border)">
+      <button onclick="{{ setTesla }}" style="{{ teslaBtn }}">Tesla</button>
+      <button onclick="{{ setDash }}" style="{{ dashBtn }}">Dashboard</button>
+    </div>
+
+    <button onclick="{{ openConfig }}" style="display:flex;align-items:center;gap:8px;height:34px;padding:0 14px;border-radius:9px;border:1px solid var(--border);background:var(--panel-2);color:var(--text);cursor:pointer;font-family:var(--ui);font-size:13px;font-weight:500">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="8" x2="20" y2="8"></line><circle cx="9" cy="8" r="2.4" fill="var(--panel-2)"></circle><line x1="4" y1="16" x2="20" y2="16"></line><circle cx="15" cy="16" r="2.4" fill="var(--panel-2)"></circle></svg>
+      Configure
+    </button>
+    <button onclick="{{ runOptimize }}" style="display:flex;align-items:center;gap:8px;height:34px;padding:0 16px;border-radius:9px;border:1px solid transparent;background:var(--accent);color:#fff;cursor:pointer;font-family:var(--ui);font-size:13px;font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.18)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 1 3 6.7"></path><path d="M3 19v-4h4"></path></svg>
+      Optimize
+    </button>
+  </div>
+
+  <!-- ================= MAIN ================= -->
+  <div style="flex:1;display:flex;min-height:0;position:relative">
+
+    <!-- AI DOCK -->
+    <sc-if value="{{ aiDock }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:0 0 340px;display:flex;flex-direction:column;background:var(--panel);border-right:1px solid var(--border);min-height:0;animation:slideIn .25s ease">
+        <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border)">
+          <span style="width:8px;height:8px;border-radius:50%;background:var(--accent-2);box-shadow:0 0 8px var(--accent-2)"></span>
+          <div style="font-weight:600;font-size:14px;flex:1">Route Copilot</div>
+          <div style="display:flex;gap:2px;padding:2px;border-radius:8px;background:var(--panel-2);border:1px solid var(--border)">
+            <button onclick="{{ aiModePanel }}" style="{{ aiPanelBtn }}">Panel</button>
+            <button onclick="{{ aiModeBar }}" style="{{ aiBarBtn }}">Bar</button>
+            <button onclick="{{ aiModeDock }}" style="{{ aiDockBtn }}">Dock</button>
+          </div>
+          <button onclick="{{ closeAi }}" style="border:none;background:none;color:var(--faint);cursor:pointer;font-size:18px;line-height:1;padding:2px">×</button>
+        </div>
+        <div style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px">
+          <sc-for list="{{ messages }}" as="msg" hint-placeholder-count="2">
+            <div style="{{ msg.wrap }}"><div style="{{ msg.bubble }}">{{ msg.text }}</div></div>
+          </sc-for>
+        </div>
+        <div style="padding:12px 14px;border-top:1px solid var(--border)">
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+            <sc-for list="{{ suggestions }}" as="sug" hint-placeholder-count="3">
+              <button onclick="{{ sug.onClick }}" style="font-family:var(--ui);font-size:11.5px;padding:5px 10px;border-radius:20px;border:1px solid var(--border);background:var(--panel-2);color:var(--dim);cursor:pointer">{{ sug.text }}</button>
+            </sc-for>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;background:var(--panel-2);border:1px solid var(--border);border-radius:10px;padding:4px 4px 4px 12px">
+            <input value="{{ aiInput }}" oninput="{{ onAiInput }}" onkeydown="{{ onAiKey }}" placeholder="Ask the copilot to reshape the route…" style="flex:1;border:none;background:none;outline:none;color:var(--text);font-family:var(--ui);font-size:13px">
+            <button onclick="{{ sendAi }}" style="width:30px;height:30px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h13M13 6l6 6-6 6"></path></svg></button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- MAP CANVAS -->
+    <div style="flex:1;position:relative;min-width:0;background:var(--canvas-bg);overflow:hidden">
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:18px">
+        <div style="{{ mapZoomStyle }}">
+          <svg viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block">
+            <defs>
+              <filter id="rGlow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="var(--route)" flood-opacity="{{ glowOpacity }}"></feDropShadow></filter>
+            </defs>
+            <sc-for list="{{ grid }}" as="g" hint-placeholder-count="6">
+              <line x1="{{ g.x1 }}" y1="{{ g.y1 }}" x2="{{ g.x2 }}" y2="{{ g.y2 }}" stroke="var(--map-line)" stroke-width="1"></line>
+            </sc-for>
+            <path d="{{ hullPath }}" fill="var(--map-land)" stroke="var(--border-2)" stroke-width="1.5" stroke-linejoin="round"></path>
+            <path d="{{ routePath }}" fill="none" stroke="var(--route)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" filter="url(#rGlow)" style="stroke-dasharray:5200;stroke-dashoffset:5200;animation:draw 2.4s ease forwards"></path>
+            <sc-for list="{{ routeDots }}" as="d" hint-placeholder-count="8">
+              <circle cx="{{ d.x }}" cy="{{ d.y }}" r="3.4" fill="var(--route)" stroke="var(--node)" stroke-width="1.6"></circle>
+            </sc-for>
+          </svg>
+
+          <sc-for list="{{ nodes }}" as="n" hint-placeholder-count="10">
+            <button onclick="{{ n.onClick }}" style="{{ n.style }}">
+              <span style="font-weight:700;font-size:11px;letter-spacing:.02em">{{ n.abbr }}</span>
+              <sc-if value="{{ n.active }}" hint-placeholder-val="{{ true }}"><span style="font-family:var(--mono);font-size:9.5px;line-height:1;opacity:.85">{{ n.countLabel }}</span></sc-if>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+
+      <!-- zoom -->
+      <div style="position:absolute;top:16px;left:16px;display:flex;flex-direction:column;border-radius:9px;overflow:hidden;border:1px solid var(--border);background:var(--panel);box-shadow:var(--shadow)">
+        <button onclick="{{ zoomIn }}" style="width:34px;height:34px;border:none;border-bottom:1px solid var(--border);background:var(--panel);color:var(--text);cursor:pointer;font-size:18px">+</button>
+        <button onclick="{{ zoomOut }}" style="width:34px;height:34px;border:none;background:var(--panel);color:var(--text);cursor:pointer;font-size:18px">−</button>
+      </div>
+
+      <!-- legend -->
+      <div style="position:absolute;bottom:14px;left:16px;display:flex;align-items:center;gap:16px;padding:8px 13px;border-radius:9px;background:var(--panel);border:1px solid var(--border);box-shadow:var(--shadow);font-size:11.5px;color:var(--dim)">
+        <span style="display:flex;align-items:center;gap:7px"><span style="width:18px;height:3px;border-radius:2px;background:var(--route)"></span>Route</span>
+        <span style="display:flex;align-items:center;gap:7px"><span style="width:9px;height:9px;border-radius:3px;background:var(--good-bg);border:1px solid var(--good-bd)"></span>Visited state</span>
+        <span style="display:flex;align-items:center;gap:7px"><span style="width:8px;height:8px;border-radius:50%;background:var(--route);border:1.5px solid var(--node)"></span>Supercharger</span>
+      </div>
+
+      <div style="position:absolute;bottom:14px;right:16px;font-family:var(--mono);font-size:10px;color:var(--faint);letter-spacing:.04em">STYLIZED ROUTE CANVAS · 650 SITES</div>
+
+      <!-- COMMAND BAR -->
+      <sc-if value="{{ aiBar }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;top:18px;left:50%;transform:translateX(-50%);width:min(620px,calc(100% - 120px));z-index:25;animation:pop .2s ease">
+          <div style="background:var(--panel);border:1px solid var(--border-2);border-radius:13px;box-shadow:var(--shadow);overflow:hidden">
+            <div style="display:flex;align-items:center;gap:10px;padding:12px 14px">
+              <span style="width:8px;height:8px;border-radius:50%;background:var(--accent-2);box-shadow:0 0 8px var(--accent-2);flex:0 0 auto"></span>
+              <input value="{{ aiInput }}" oninput="{{ onAiInput }}" onkeydown="{{ onAiKey }}" placeholder="Command the route copilot…  e.g. “trim a day and avoid tolls”" style="flex:1;border:none;background:none;outline:none;color:var(--text);font-family:var(--ui);font-size:14px">
+              <div style="display:flex;gap:2px;padding:2px;border-radius:8px;background:var(--panel-2);border:1px solid var(--border)">
+                <button onclick="{{ aiModePanel }}" style="{{ aiPanelBtn }}">Panel</button>
+                <button onclick="{{ aiModeDock }}" style="{{ aiDockBtn }}">Dock</button>
+              </div>
+              <button onclick="{{ closeAi }}" style="border:none;background:none;color:var(--faint);cursor:pointer;font-size:18px;padding:2px">×</button>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 12px">
+              <sc-for list="{{ suggestions }}" as="sug" hint-placeholder-count="3">
+                <button onclick="{{ sug.onClick }}" style="font-family:var(--ui);font-size:11.5px;padding:5px 10px;border-radius:20px;border:1px solid var(--border);background:var(--panel-2);color:var(--dim);cursor:pointer">{{ sug.text }}</button>
+              </sc-for>
+            </div>
+            <sc-if value="{{ hasReply }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:13px 16px;border-top:1px solid var(--border);background:var(--panel-2);font-size:13px;line-height:1.5;color:var(--text)"><span style="font-family:var(--mono);font-size:10px;color:var(--accent-2);letter-spacing:.08em">COPILOT</span><div style="margin-top:5px">{{ lastReply }}</div></div>
+            </sc-if>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+
+    <!-- SIDEBAR -->
+    <sc-if value="{{ sidebarOpen }}" hint-placeholder-val="{{ true }}">
+      <div style="flex:0 0 320px;display:flex;flex-direction:column;background:var(--panel);border-left:1px solid var(--border);min-height:0">
+        <div style="flex:1;overflow-y:auto;padding:16px">
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px">
+            <sc-for list="{{ heroStats }}" as="st" hint-placeholder-count="4">
+              <div style="padding:13px 14px;border-radius:12px;background:var(--panel-2);border:1px solid var(--border)">
+                <div style="display:flex;align-items:center;gap:6px;color:var(--faint);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:7px">{{ st.label }}</div>
+                <div style="font-family:var(--mono);font-size:21px;font-weight:600;color:var(--text);line-height:1">{{ st.value }}<span style="font-size:12px;color:var(--faint);font-weight:400;margin-left:3px">{{ st.unit }}</span></div>
+              </div>
+            </sc-for>
+          </div>
+
+          <!-- coverage -->
+          <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:11px">
+            <button onclick="{{ toggleCoverage }}" style="width:100%;display:flex;align-items:center;gap:10px;padding:13px 14px;border:none;background:var(--panel);cursor:pointer;color:var(--text)">
+              <div style="flex:1;text-align:left"><div style="font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;color:var(--faint);text-transform:uppercase">Route coverage</div><div style="font-weight:600;font-size:13.5px;margin-top:2px">Stations by state</div></div>
+              <span style="font-family:var(--mono);font-size:11px;color:var(--dim)">27 states</span>
+              <span style="{{ covChevron }}">▾</span>
+            </button>
+            <sc-if value="{{ covOpen }}" hint-placeholder-val="{{ true }}">
+              <div style="padding:4px 14px 14px;display:flex;flex-direction:column;gap:11px">
+                <sc-for list="{{ coverage }}" as="c" hint-placeholder-count="6">
+                  <button onclick="{{ c.onClick }}" style="border:none;background:none;cursor:pointer;text-align:left;padding:0;display:block">
+                    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:5px">
+                      <span style="font-weight:600;font-size:12.5px;color:var(--text)">{{ c.abbr }}<span style="color:var(--faint);font-weight:400;margin-left:7px;font-size:11px">{{ c.detail }}</span></span>
+                      <span style="font-family:var(--mono);font-size:12px;color:var(--text)">{{ c.pct }}</span>
+                    </div>
+                    <div style="height:6px;border-radius:4px;background:var(--chip);overflow:hidden"><div style="{{ c.barStyle }}"></div></div>
+                  </button>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+
+          <!-- station source -->
+          <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:11px">
+            <button onclick="{{ toggleSource }}" style="width:100%;display:flex;align-items:center;gap:10px;padding:13px 14px;border:none;background:var(--panel);cursor:pointer;color:var(--text)">
+              <div style="flex:1;text-align:left"><div style="font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;color:var(--faint);text-transform:uppercase">Station source</div><div style="font-weight:600;font-size:13.5px;margin-top:2px">3,117 filtered open sites</div></div>
+              <span style="{{ srcChevron }}">▾</span>
+            </button>
+            <sc-if value="{{ srcOpen }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:2px 14px 14px">
+                <div style="font-size:11.5px;color:var(--faint);line-height:1.5;margin-bottom:11px">Supercharge.info · fetched {{ fetchedAt }}</div>
+                <button onclick="{{ refreshSource }}" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:34px;border-radius:9px;border:1px solid var(--border);background:var(--panel-2);color:var(--text);cursor:pointer;font-family:var(--ui);font-size:12.5px;font-weight:500">
+                  <span style="{{ refreshIcon }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 1 3 6.7"></path><path d="M3 19v-4h4"></path></svg></span>
+                  {{ refreshLabel }}
+                </button>
+              </div>
+            </sc-if>
+          </div>
+
+          <!-- guardrails -->
+          <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden">
+            <button onclick="{{ toggleGuard }}" style="width:100%;display:flex;align-items:center;gap:10px;padding:13px 14px;border:none;background:var(--panel);cursor:pointer;color:var(--text)">
+              <div style="flex:1;text-align:left"><div style="font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;color:var(--faint);text-transform:uppercase">Rule guardrails</div><div style="font-weight:600;font-size:13.5px;margin-top:2px">Passport deadline 2027-01-01</div></div>
+              <span style="{{ guardChevron }}">▾</span>
+            </button>
+            <sc-if value="{{ guardOpen }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:2px 14px 14px;display:flex;flex-direction:column;gap:9px">
+                <div style="font-size:11.5px;color:var(--dim);line-height:1.5">No minimum charge duration is stated in the contest rules. The planner treats stop time as a configurable assumption.</div>
+                <div style="display:flex;gap:8px;align-items:flex-start;padding:9px 11px;border-radius:9px;background:var(--good-bg);border:1px solid var(--good-bd)">
+                  <span style="color:var(--good-tx);font-size:13px;line-height:1.3">✓</span>
+                  <span style="font-size:11.5px;color:var(--good-tx);line-height:1.45">Road geometry — OSRM polyline loaded for Balanced National Loop.</span>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+
+        </div>
+      </div>
+    </sc-if>
+  </div>
+
+  <!-- ================= DAILY PLAN DRAWER ================= -->
+  <div style="{{ drawerStyle }}">
+    <div style="display:flex;align-items:center;gap:14px;padding:13px 18px;border-bottom:1px solid var(--border);flex:0 0 auto">
+      <div>
+        <div style="font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;color:var(--faint);text-transform:uppercase">Daily plan</div>
+        <div style="font-weight:600;font-size:15px;margin-top:1px">Balanced National Loop</div>
+      </div>
+      <span style="font-family:var(--mono);font-size:11.5px;color:var(--dim);padding:4px 10px;border-radius:20px;background:var(--panel-2);border:1px solid var(--border)">11.4 sites/day</span>
+      <span style="font-family:var(--mono);font-size:11.5px;color:var(--warn-tx);padding:4px 10px;border-radius:20px;background:var(--warn-bg);border:1px solid var(--warn-bd)">1 day over cap</span>
+      <span style="font-family:var(--mono);font-size:11.5px;color:var(--info-tx);padding:4px 10px;border-radius:20px;background:var(--info-bg);border:1px solid var(--info-bd)">9 legs need aux charge</span>
+      <div style="flex:1"></div>
+      <button onclick="{{ togglePlan }}" style="display:flex;align-items:center;gap:7px;height:32px;padding:0 13px;border-radius:8px;border:1px solid var(--border);background:var(--panel-2);color:var(--text);cursor:pointer;font-family:var(--ui);font-size:12.5px;font-weight:500">
+        {{ planToggleLabel }}<span style="{{ planChevron }}">▾</span>
+      </button>
+    </div>
+
+    <sc-if value="{{ planOpen }}" hint-placeholder-val="{{ true }}">
+      <div style="flex:1;display:flex;flex-direction:column;min-height:0">
+        <div style="display:grid;grid-template-columns:46px 56px 82px 86px 64px 64px minmax(0,1fr);gap:8px;padding:9px 18px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;color:var(--faint);text-transform:uppercase;flex:0 0 auto">
+          <div>Day</div><div>Sites</div><div>Miles</div><div>Avg gap</div><div>Drive</div><div>Stops</div><div>Route targets</div>
+        </div>
+        <div style="flex:1;overflow-y:auto">
+          <sc-for list="{{ days }}" as="d" hint-placeholder-count="6">
+            <button onclick="{{ d.onClick }}" style="width:100%;display:grid;grid-template-columns:46px 56px 82px 86px 64px 64px minmax(0,1fr);gap:8px;align-items:center;padding:11px 18px;border:none;border-bottom:1px solid var(--border);background:none;cursor:pointer;text-align:left;font-family:var(--ui)" style-hover="background:var(--panel-2)">
+              <div style="font-family:var(--mono);font-weight:600;font-size:13px;color:var(--text)">{{ d.day }}</div>
+              <div style="font-family:var(--mono);font-size:13px;color:var(--text)">{{ d.sites }}</div>
+              <div style="font-family:var(--mono);font-size:13px;color:var(--dim)">{{ d.miles }}</div>
+              <div style="font-family:var(--mono);font-size:13px;color:var(--dim)">{{ d.gap }} mi</div>
+              <div style="font-family:var(--mono);font-size:13px;color:var(--dim)">{{ d.drive }}h</div>
+              <div style="font-family:var(--mono);font-size:13px;color:var(--dim)">{{ d.stops }}m</div>
+              <div style="display:flex;align-items:center;gap:6px;overflow:hidden">
+                <sc-for list="{{ d.chips }}" as="ch" hint-placeholder-count="4">
+                  <span style="display:inline-flex;align-items:center;gap:6px;padding:3px 9px 3px 3px;border-radius:20px;background:var(--panel-2);border:1px solid var(--border);font-size:11.5px;color:var(--text);white-space:nowrap;flex:0 0 auto"><span style="width:16px;height:16px;border-radius:50%;background:var(--accent);color:#fff;font-family:var(--mono);font-size:9px;display:flex;align-items:center;justify-content:center">{{ ch.n }}</span>{{ ch.label }}</span>
+                </sc-for>
+                <span style="font-family:var(--mono);font-size:11px;color:var(--faint);flex:0 0 auto">+{{ d.more }}</span>
+              </div>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+
+  <!-- ================= AI LAUNCHER + FLOATING PANEL ================= -->
+  <sc-if value="{{ showLauncher }}" hint-placeholder-val="{{ true }}">
+    <button onclick="{{ openAi }}" style="position:absolute;left:18px;bottom:18px;z-index:45;display:flex;align-items:center;gap:10px;height:46px;padding:0 18px 0 16px;border-radius:24px;border:1px solid var(--border-2);background:var(--panel);color:var(--text);cursor:pointer;box-shadow:var(--shadow);font-family:var(--ui);font-size:13.5px;font-weight:600">
+      <span style="width:24px;height:24px;border-radius:50%;background:var(--accent-2);display:flex;align-items:center;justify-content:center;box-shadow:0 0 12px var(--accent-2)"><svg width="13" height="13" viewBox="0 0 24 24" fill="#fff"><path d="M12 2l1.8 5.4L19 9l-5.2 1.6L12 16l-1.8-5.4L5 9l5.2-1.6z"></path></svg></span>
+      Route Copilot
+    </button>
+  </sc-if>
+
+  <sc-if value="{{ aiPanelFloat }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:18px;bottom:18px;z-index:46;width:360px;max-height:560px;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--border-2);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;animation:pop .22s ease">
+      <div style="display:flex;align-items:center;gap:10px;padding:13px 14px;border-bottom:1px solid var(--border)">
+        <span style="width:8px;height:8px;border-radius:50%;background:var(--accent-2);box-shadow:0 0 8px var(--accent-2)"></span>
+        <div style="font-weight:600;font-size:14px;flex:1">Route Copilot</div>
+        <div style="display:flex;gap:2px;padding:2px;border-radius:8px;background:var(--panel-2);border:1px solid var(--border)">
+          <button onclick="{{ aiModePanel }}" style="{{ aiPanelBtn }}">Panel</button>
+          <button onclick="{{ aiModeBar }}" style="{{ aiBarBtn }}">Bar</button>
+          <button onclick="{{ aiModeDock }}" style="{{ aiDockBtn }}">Dock</button>
+        </div>
+        <button onclick="{{ closeAi }}" style="border:none;background:none;color:var(--faint);cursor:pointer;font-size:18px;line-height:1;padding:2px">×</button>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:15px;display:flex;flex-direction:column;gap:12px;min-height:180px">
+        <sc-for list="{{ messages }}" as="msg" hint-placeholder-count="2">
+          <div style="{{ msg.wrap }}"><div style="{{ msg.bubble }}">{{ msg.text }}</div></div>
+        </sc-for>
+      </div>
+      <div style="padding:12px 13px;border-top:1px solid var(--border)">
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+          <sc-for list="{{ suggestions }}" as="sug" hint-placeholder-count="3">
+            <button onclick="{{ sug.onClick }}" style="font-family:var(--ui);font-size:11.5px;padding:5px 10px;border-radius:20px;border:1px solid var(--border);background:var(--panel-2);color:var(--dim);cursor:pointer">{{ sug.text }}</button>
+          </sc-for>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;background:var(--panel-2);border:1px solid var(--border);border-radius:10px;padding:4px 4px 4px 12px">
+          <input value="{{ aiInput }}" oninput="{{ onAiInput }}" onkeydown="{{ onAiKey }}" placeholder="Ask the copilot…" style="flex:1;border:none;background:none;outline:none;color:var(--text);font-family:var(--ui);font-size:13px">
+          <button onclick="{{ sendAi }}" style="width:30px;height:30px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h13M13 6l6 6-6 6"></path></svg></button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ================= MODAL ================= -->
+  <sc-if value="{{ modalOpen }}" hint-placeholder-val="{{ false }}">
+    <div onclick="{{ closeModal }}" style="position:absolute;inset:0;z-index:60;background:var(--backdrop);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:30px;animation:fadeUp .2s ease">
+
+      <!-- STATE / DAY DETAIL -->
+      <sc-if value="{{ modalIsDetail }}" hint-placeholder-val="{{ false }}">
+        <div onclick="{{ stop }}" style="width:min(640px,100%);max-height:100%;overflow-y:auto;background:var(--panel);border:1px solid var(--border-2);border-radius:18px;box-shadow:var(--shadow);animation:pop .22s ease">
+          <div style="display:flex;align-items:flex-start;gap:14px;padding:22px 24px 18px;border-bottom:1px solid var(--border)">
+            <div style="{{ modalBadge }}">{{ modalBadgeText }}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--faint);text-transform:uppercase">{{ modalKicker }}</div>
+              <div style="font-size:21px;font-weight:600;letter-spacing:-.01em;margin-top:3px">{{ modalTitle }}</div>
+              <div style="font-size:13px;color:var(--dim);margin-top:3px">{{ modalSub }}</div>
+            </div>
+            <button onclick="{{ closeModal }}" style="border:none;background:var(--panel-2);width:32px;height:32px;border-radius:9px;color:var(--dim);cursor:pointer;font-size:18px;flex:0 0 auto">×</button>
+          </div>
+
+          <div style="padding:20px 24px">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px">
+              <sc-for list="{{ modalStats }}" as="s" hint-placeholder-count="6">
+                <div style="padding:13px 14px;border-radius:12px;background:var(--panel-2);border:1px solid var(--border)">
+                  <div style="color:var(--faint);font-size:10px;letter-spacing:.05em;text-transform:uppercase;margin-bottom:7px">{{ s.label }}</div>
+                  <div style="font-family:var(--mono);font-size:19px;font-weight:600;line-height:1">{{ s.value }}<span style="font-size:11px;color:var(--faint);font-weight:400;margin-left:3px">{{ s.unit }}</span></div>
+                </div>
+              </sc-for>
+            </div>
+
+            <sc-if value="{{ hasSplit }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-bottom:20px">
+                <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px"><span>Time split</span><span>{{ splitTotal }}</span></div>
+                <div style="display:flex;height:13px;border-radius:7px;overflow:hidden;border:1px solid var(--border)">
+                  <div style="{{ splitDrive }}"></div><div style="{{ splitCharge }}"></div>
+                </div>
+                <div style="display:flex;gap:18px;margin-top:9px;font-size:12px;color:var(--dim)">
+                  <span style="display:flex;align-items:center;gap:7px"><span style="width:9px;height:9px;border-radius:3px;background:var(--accent)"></span>Driving {{ driveLabel }}</span>
+                  <span style="display:flex;align-items:center;gap:7px"><span style="width:9px;height:9px;border-radius:3px;background:var(--accent-2)"></span>Charging {{ chargeLabel }}</span>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ hasLandmarks }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-bottom:18px">
+                <div style="font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.05em;margin-bottom:9px">Landmarks seen</div>
+                <div style="display:flex;flex-wrap:wrap;gap:7px">
+                  <sc-for list="{{ modalLandmarks }}" as="lm" hint-placeholder-count="3">
+                    <span style="display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:9px;background:var(--panel-2);border:1px solid var(--border);font-size:12.5px"><span style="color:var(--accent-2)">◆</span>{{ lm }}</span>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ hasTargets }}" hint-placeholder-val="{{ false }}">
+              <div>
+                <div style="font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.05em;margin-bottom:9px">{{ targetsLabel }}</div>
+                <div style="display:flex;flex-wrap:wrap;gap:7px">
+                  <sc-for list="{{ modalTargets }}" as="t" hint-placeholder-count="4">
+                    <span style="display:inline-flex;align-items:center;gap:7px;padding:4px 11px 4px 4px;border-radius:20px;background:var(--panel-2);border:1px solid var(--border);font-size:12px"><span style="width:18px;height:18px;border-radius:50%;background:var(--accent);color:#fff;font-family:var(--mono);font-size:9.5px;display:flex;align-items:center;justify-content:center">{{ t.n }}</span>{{ t.label }}</span>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- CONFIG -->
+      <sc-if value="{{ modalIsConfig }}" hint-placeholder-val="{{ false }}">
+        <div onclick="{{ stop }}" style="width:min(520px,100%);max-height:100%;overflow-y:auto;background:var(--panel);border:1px solid var(--border-2);border-radius:18px;box-shadow:var(--shadow);animation:pop .22s ease">
+          <div style="display:flex;align-items:center;gap:12px;padding:22px 24px 16px;border-bottom:1px solid var(--border)">
+            <div style="flex:1"><div style="font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--faint);text-transform:uppercase">Planner assumptions</div><div style="font-size:20px;font-weight:600;margin-top:3px">Configure optimization</div></div>
+            <button onclick="{{ closeModal }}" style="border:none;background:var(--panel-2);width:32px;height:32px;border-radius:9px;color:var(--dim);cursor:pointer;font-size:18px">×</button>
+          </div>
+          <div style="padding:8px 24px 4px;display:flex;flex-direction:column">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 0;border-bottom:1px solid var(--border)">
+              <div><div style="font-weight:600;font-size:13.5px">Vehicle</div><div style="font-size:11.5px;color:var(--faint);margin-top:2px">Range model used for legs</div></div>
+              <div style="font-family:var(--mono);font-size:12.5px;padding:6px 12px;border-radius:8px;background:var(--panel-2);border:1px solid var(--border)">Tesla Model Y LR</div>
+            </div>
+            <sc-for list="{{ configSliders }}" as="cs" hint-placeholder-count="4">
+              <div style="padding:15px 0;border-bottom:1px solid var(--border)">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                  <div><div style="font-weight:600;font-size:13.5px">{{ cs.label }}</div><div style="font-size:11.5px;color:var(--faint);margin-top:2px">{{ cs.hint }}</div></div>
+                  <div style="font-family:var(--mono);font-size:15px;font-weight:600;color:var(--accent)">{{ cs.display }}</div>
+                </div>
+                <input type="range" min="{{ cs.min }}" max="{{ cs.max }}" step="{{ cs.step }}" value="{{ cs.value }}" oninput="{{ cs.onInput }}" style="width:100%;accent-color:var(--accent);cursor:pointer">
+              </div>
+            </sc-for>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 0">
+              <div><div style="font-weight:600;font-size:13.5px">Daily start time</div><div style="font-size:11.5px;color:var(--faint);margin-top:2px">First departure each day</div></div>
+              <input type="time" value="{{ config.startTime }}" oninput="{{ onStartTime }}" style="font-family:var(--mono);font-size:13px;padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:var(--panel-2);color:var(--text)">
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;padding:16px 24px 22px">
+            <button onclick="{{ closeModal }}" style="flex:1;height:42px;border-radius:11px;border:1px solid var(--border);background:var(--panel-2);color:var(--text);cursor:pointer;font-family:var(--ui);font-size:14px;font-weight:500">Cancel</button>
+            <button onclick="{{ applyConfig }}" style="flex:1;height:42px;border-radius:11px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-family:var(--ui);font-size:14px;font-weight:600">Apply &amp; re-optimize</button>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <!-- ================= OPTIMIZE OVERLAY ================= -->
+  <sc-if value="{{ optimizing }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;z-index:70;background:var(--backdrop);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;animation:fadeUp .2s ease">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:18px;padding:36px 44px;border-radius:18px;background:var(--panel);border:1px solid var(--border-2);box-shadow:var(--shadow)">
+        <div style="width:46px;height:46px;border-radius:50%;border:3px solid var(--border);border-top-color:var(--accent);animation:spin .8s linear infinite"></div>
+        <div style="text-align:center"><div style="font-weight:600;font-size:16px">Optimizing route…</div><div style="font-family:var(--mono);font-size:11.5px;color:var(--faint);margin-top:6px;animation:pulse 1.2s ease infinite">{{ optimizeStep }}</div></div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ================= TOAST ================= -->
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;bottom:22px;left:50%;transform:translateX(-50%);z-index:80;display:flex;align-items:center;gap:11px;padding:12px 18px;border-radius:12px;background:var(--panel);border:1px solid var(--border-2);box-shadow:var(--shadow);animation:fadeUp .25s ease">
+      <span style="width:22px;height:22px;border-radius:50%;background:var(--good-bg);border:1px solid var(--good-bd);color:var(--good-tx);display:flex;align-items:center;justify-content:center;font-size:13px">✓</span>
+      <span style="font-size:13.5px;font-weight:500;color:var(--text)">{{ toast }}</span>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;tesla&quot;,&quot;dash&quot;],&quot;default&quot;:&quot;tesla&quot;,&quot;tsType&quot;:&quot;'tesla' | 'dash'&quot;},&quot;routeName&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Balanced National Loop&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.state = {
+      theme: (props && props.theme) || 'tesla',
+      sidebarOpen: true,
+      planOpen: true,
+      cov: true, src: false, guard: false,
+      modal: null,
+      aiOpen: false, aiMode: 'panel', aiInput: '',
+      messages: [{role:'ai', text:'Hi — I\u2019m your route copilot. I can trim days, fix range warnings, maximize unique stations, or add detours. Try a suggestion below.'}],
+      optimizing: false, optimizeStep: '', toast: null,
+      zoom: 1,
+      fetchedAt: '6/24/2026, 9:41 PM',
+      refreshing: false,
+      config: { chargeMin: 25, driveCap: 8, scRange: 150, battery: 90, startTime: '07:00' },
+      miles: 14915.7, days: 57,
+    };
+    this.buildData();
+  }
+
+  // ---------- data ----------
+  buildData(){
+    const coords = {
+      WA:[-120.4,47.4],OR:[-120.5,43.9],CA:[-119.7,36.8],NV:[-116.9,39.0],ID:[-114.6,44.3],
+      MT:[-109.6,47.0],WY:[-107.5,43.0],UT:[-111.7,39.3],AZ:[-111.5,34.3],NM:[-106.1,34.4],
+      CO:[-105.5,39.0],ND:[-100.5,47.5],SD:[-100.2,44.4],NE:[-99.8,41.5],KS:[-98.4,38.5],
+      OK:[-97.5,35.5],TX:[-99.4,31.3],MN:[-94.2,46.3],IA:[-93.5,42.0],MO:[-92.5,38.4],
+      AR:[-92.4,34.8],LA:[-92.0,31.0],WI:[-89.9,44.6],IL:[-89.2,40.0],MS:[-89.7,32.7],
+      MI:[-84.9,43.6],IN:[-86.3,39.9],KY:[-85.3,37.5],TN:[-86.3,35.8],AL:[-86.8,32.8],
+      OH:[-82.8,40.3],GA:[-83.5,32.9],FL:[-81.5,28.0],SC:[-80.9,33.9],NC:[-79.2,35.5],
+      VA:[-78.6,37.6],WV:[-80.6,38.7],PA:[-77.6,40.9],NY:[-75.3,42.9],VT:[-72.7,44.0],
+      NH:[-71.6,43.8],ME:[-69.4,45.3],MA:[-71.8,42.3],RI:[-71.5,41.7],CT:[-72.7,41.6],
+      NJ:[-74.5,40.1],DE:[-75.5,39.0],MD:[-76.6,39.4],DC:[-77.0,38.7]
+    };
+    const counts = {
+      WA:[21,87],OR:[7,61],CA:[214,667],AZ:[23,63],NM:[1,23],TX:[42,228],LA:[3,20],MS:[1,14],
+      AL:[3,38],FL:[78,244],GA:[23,85],SC:[6,40],NC:[16,90],TN:[3,42],VA:[17,105],WV:[4,18],
+      DC:[4,4],MD:[5,30],NJ:[9,52],PA:[28,111],NY:[14,124],MI:[8,41],IL:[20,77],IN:[5,33],
+      OH:[7,60],KY:[3,25],IA:[2,20],NE:[2,11],CO:[15,64],UT:[9,45],ID:[4,16]
+    };
+    this.names = {WA:'Washington',OR:'Oregon',CA:'California',NV:'Nevada',ID:'Idaho',MT:'Montana',WY:'Wyoming',UT:'Utah',AZ:'Arizona',NM:'New Mexico',CO:'Colorado',ND:'North Dakota',SD:'South Dakota',NE:'Nebraska',KS:'Kansas',OK:'Oklahoma',TX:'Texas',MN:'Minnesota',IA:'Iowa',MO:'Missouri',AR:'Arkansas',LA:'Louisiana',WI:'Wisconsin',IL:'Illinois',MS:'Mississippi',MI:'Michigan',IN:'Indiana',KY:'Kentucky',TN:'Tennessee',AL:'Alabama',OH:'Ohio',GA:'Georgia',FL:'Florida',SC:'South Carolina',NC:'North Carolina',VA:'Virginia',WV:'West Virginia',PA:'Pennsylvania',NY:'New York',VT:'Vermont',NH:'New Hampshire',ME:'Maine',MA:'Massachusetts',RI:'Rhode Island',CT:'Connecticut',NJ:'New Jersey',DE:'Delaware',MD:'Maryland',DC:'Washington, DC'};
+    const W=1000,H=620,L0=-125,L1=-66,T=50,B=24;
+    const proj=(lon,lat)=>[(lon-L0)/(L1-L0)*W,(T-lat)/(T-B)*H];
+    this.W=W;this.H=H;
+    this.nodeByAbbr={};
+    this.allNodes = Object.keys(coords).map(ab=>{
+      const [lon,lat]=coords[ab];const [x,y]=proj(lon,lat);const c=counts[ab];
+      const n={abbr:ab,x,y,left:x/W*100,top:y/H*100,active:!!c,count:c?c[0]:0,total:c?c[1]:0};
+      this.nodeByAbbr[ab]=n;return n;
+    });
+    const route=['WA','OR','CA','AZ','NM','TX','LA','MS','AL','FL','GA','SC','NC','VA','DC','NJ','NY','PA','OH','MI','IL','IA','NE','CO','UT','ID','WA'];
+    this.routePath=this.catmull(route.map(a=>[coords[a][0],coords[a][1]].map((v,i)=>proj(coords[a][0],coords[a][1])[i])),false);
+    this.routePath=this.catmull(route.map(a=>proj(coords[a][0],coords[a][1])),false);
+    this.routeDots=route.slice(0,-1).map(a=>{const n=this.nodeByAbbr[a];return {x:n.x,y:n.y};});
+    const hull=['WA','MT','ND','MN','WI','MI','NY','ME','NH','MA','CT','NJ','MD','VA','NC','SC','GA','FL','AL','MS','LA','TX','NM','AZ','CA','OR'];
+    this.hullPath=this.catmull(hull.map(a=>proj(coords[a][0],coords[a][1])),true);
+    const grid=[];
+    for(let lon=-120;lon<=-70;lon+=10){const x=proj(lon,40)[0];grid.push({x1:+x.toFixed(1),y1:0,x2:+x.toFixed(1),y2:H});}
+    for(let lat=30;lat<=45;lat+=5){const y=proj(-95,lat)[1];grid.push({x1:0,y1:+y.toFixed(1),x2:W,y2:+y.toFixed(1)});}
+    this.grid=grid;
+
+    this.landmarks=['Hoover Dam','Grand Canyon Rim','Gateway Arch','Cadillac Ranch','French Quarter','Kennedy Space Center','Golden Gate Overlook','Graceland','Smoky Mtn Overlook','Savannah Riverfront','Big Sur Vista','Route 66 Marker','The Alamo','Niagara Lookout','Daytona Speedway','Outer Banks Light','Blue Ridge Pkwy','Bourbon Trail','Cape Canaveral','Mackinac Bridge'];
+    const cities=['San Diego, CA','Barstow, CA','Kingman, AZ','Flagstaff, AZ','Gallup, NM','Amarillo, TX','Lubbock, TX','Dallas, TX','Houston, TX','Lake Charles, LA','Baton Rouge, LA','Gulfport, MS','Mobile, AL','Pensacola, FL','Tallahassee, FL','Orlando, FL','Miami, FL','Jacksonville, FL','Savannah, GA','Macon, GA','Atlanta, GA','Greenville, SC','Charlotte, NC','Asheville, NC','Knoxville, TN','Richmond, VA','Washington, DC','Baltimore, MD','Philadelphia, PA','Newark, NJ','New York, NY','Scranton, PA','Cleveland, OH','Toledo, OH','Detroit, MI','Chicago, IL','Davenport, IA','Omaha, NE','Denver, CO','Grand Junction, CO','Salt Lake City, UT','Boise, ID','Portland, OR','Eugene, OR','Redding, CA','Sacramento, CA','Las Vegas, NV','Reno, NV','Albuquerque, NM'];
+    let seed=42;const rng=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
+    let ci=0;const days=[];
+    for(let d=1;d<=57;d++){
+      const sites=6+Math.floor(rng()*16);
+      const miles=120+Math.floor(rng()*230);
+      const gap=miles/sites;
+      const drive=miles/58+sites*0.05;
+      const stops=Math.round(sites*14+rng()*40);
+      const targets=[];for(let k=0;k<sites;k++){targets.push(cities[(ci++)%cities.length]);}
+      const nLm=2+Math.floor(rng()*3);const lms=[];const used={};
+      for(let k=0;k<nLm;k++){let idx;do{idx=Math.floor(rng()*this.landmarks.length);}while(used[idx]);used[idx]=1;lms.push(this.landmarks[idx]);}
+      days.push({day:d,sites,miles:+miles.toFixed(1),gap:+gap.toFixed(1),drive:+drive.toFixed(1),stops,targets,landmarks:lms,uniqueStations:sites,chargeMin:stops});
+    }
+    this.daysData=days;
+  }
+
+  catmull(points,closed){
+    const pts=points.map(p=>({x:p[0],y:p[1]}));
+    if(pts.length<2)return '';
+    const n=pts.length;const get=i=>closed?pts[((i%n)+n)%n]:pts[Math.max(0,Math.min(n-1,i))];
+    let d=`M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)} `;
+    const last=closed?n:n-1;
+    for(let i=0;i<last;i++){
+      const p0=get(i-1),p1=get(i),p2=get(i+1),p3=get(i+2);
+      const c1x=p1.x+(p2.x-p0.x)/6,c1y=p1.y+(p2.y-p0.y)/6;
+      const c2x=p2.x-(p3.x-p1.x)/6,c2y=p2.y-(p3.y-p1.y)/6;
+      d+=`C ${c1x.toFixed(1)} ${c1y.toFixed(1)} ${c2x.toFixed(1)} ${c2y.toFixed(1)} ${p2.x.toFixed(1)} ${p2.y.toFixed(1)} `;
+    }
+    if(closed)d+='Z';
+    return d;
+  }
+
+  hashSeed(str){let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+  fmtMin(m){if(m<60)return m+'m';const h=Math.floor(m/60);const r=m%60;return r?`${h}h ${r}m`:`${h}h`;}
+
+  // ---------- theme ----------
+  themeVars(){
+    const tesla={
+      '--app-bg':'#ffffff','--canvas-bg':'#eef1f3','--panel':'#ffffff','--panel-2':'#f6f7f9',
+      '--border':'#e7e8ec','--border-2':'#d7d9df','--text':'#171a20','--dim':'#5c5e62','--faint':'#9296a0',
+      '--accent':'#e82127','--accent-2':'#0f7d6b','--node':'#ffffff',
+      '--good-bg':'#e9f4ee','--good-bd':'#bfe0cb','--good-tx':'#1c6b3f',
+      '--warn-bg':'#fff5e8','--warn-bd':'#f4d6a8','--warn-tx':'#9a5b15',
+      '--info-bg':'#eef4ff','--info-bd':'#cfe0ff','--info-tx':'#2b5fb3',
+      '--idle-bg':'#ffffff','--idle-bd':'#e3e5ea','--idle-tx':'#6b6e73',
+      '--map-land':'#e4e8ec','--map-line':'#ffffff','--chip':'#eceef1',
+      '--route':'#e82127',
+      '--shadow':'0 1px 3px rgba(20,22,28,.10),0 12px 32px rgba(20,22,28,.08)',
+      '--backdrop':'rgba(23,26,32,.30)','--glow':'0'
+    };
+    const dash={
+      '--app-bg':'#0a0d12','--canvas-bg':'#080b10','--panel':'#11151c','--panel-2':'#171c25',
+      '--border':'rgba(255,255,255,.075)','--border-2':'rgba(255,255,255,.14)','--text':'#e9edf2','--dim':'#8b929e','--faint':'#5f6671',
+      '--accent':'#ff453a','--accent-2':'#0bd5d0','--node':'#0e131a',
+      '--good-bg':'rgba(11,213,208,.12)','--good-bd':'rgba(11,213,208,.4)','--good-tx':'#5ce6e1',
+      '--warn-bg':'rgba(255,176,32,.12)','--warn-bd':'rgba(255,176,32,.32)','--warn-tx':'#ffc15e',
+      '--info-bg':'rgba(11,160,213,.12)','--info-bd':'rgba(11,160,213,.32)','--info-tx':'#5bc8f0',
+      '--idle-bg':'rgba(255,255,255,.035)','--idle-bd':'rgba(255,255,255,.09)','--idle-tx':'#7b828d',
+      '--map-land':'#10151d','--map-line':'rgba(255,255,255,.05)','--chip':'rgba(255,255,255,.06)',
+      '--route':'#ff453a',
+      '--shadow':'0 10px 40px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.03)',
+      '--backdrop':'rgba(3,5,8,.62)','--glow':'1'
+    };
+    return this.state.theme==='dash'?dash:tesla;
+  }
+
+  // ---------- handlers ----------
+  setTheme(t){this.setState({theme:t});}
+  toast(msg){this.setState({toast:msg});clearTimeout(this._tt);this._tt=setTimeout(()=>this.setState({toast:null}),2800);}
+  runOptimize=()=>{
+    const steps=['Loading OSRM road geometry…','Clustering 3,117 sites…','Solving daily legs…','Balancing drive caps…','Finalizing 57-day plan…'];
+    let i=0;this.setState({optimizing:true,optimizeStep:steps[0]});
+    clearInterval(this._oi);
+    this._oi=setInterval(()=>{i++;if(i<steps.length)this.setState({optimizeStep:steps[i]});},320);
+    clearTimeout(this._ot);
+    this._ot=setTimeout(()=>{clearInterval(this._oi);this.setState({optimizing:false,miles:+(this.state.miles-212.4).toFixed(1)});this.toast('Route optimized · trimmed 1 day, saved 212 mi');},1700);
+  };
+  refreshSource=()=>{
+    this.setState({refreshing:true});
+    setTimeout(()=>{const now='6/24/2026, 9:'+(42+Math.floor(Math.random()*8))+' PM';this.setState({refreshing:false,fetchedAt:now});this.toast('Station source refreshed · 3,117 open sites');},1100);
+  };
+  zoomIn=()=>this.setState({zoom:Math.min(2.2,+(this.state.zoom+0.25).toFixed(2))});
+  zoomOut=()=>this.setState({zoom:Math.max(1,+(this.state.zoom-0.25).toFixed(2))});
+
+  openState=(ab)=>{
+    const n=this.nodeByAbbr[ab];let seed=this.hashSeed(ab);const rng=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
+    const miles=Math.round(n.total*4+n.count*9+rng()*140);
+    const days=Math.max(1,Math.round(n.count/6)+(n.active?1:0));
+    const chargeMin=Math.round(n.count*13+rng()*40);
+    const nLm=n.active?(2+Math.floor(rng()*3)):1;const lms=[];const used={};
+    for(let k=0;k<nLm;k++){let idx;do{idx=Math.floor(rng()*this.landmarks.length);}while(used[idx]);used[idx]=1;lms.push(this.landmarks[idx]);}
+    const stats=[
+      {label:'Miles in state',value:miles.toLocaleString(),unit:'mi'},
+      {label:'Unique stations',value:n.count+'/'+n.total,unit:''},
+      {label:'Charge time',value:this.fmtMin(chargeMin),unit:''},
+      {label:'Drive time',value:(miles/58).toFixed(1),unit:'h'},
+      {label:'Landmarks seen',value:String(lms.length),unit:''},
+      {label:'Days in state',value:String(days),unit:''}
+    ];
+    this.setState({modal:{type:'state',badge:ab,kicker:n.active?'Route state · visited':'Route state · not on loop',title:this.names[ab]||ab,sub:n.count+' of '+n.total+' filtered Superchargers visited',stats,landmarks:lms,targets:[],split:null}});
+  };
+  openDay=(i)=>{
+    const d=this.daysData[i];
+    const driveMin=Math.round(d.drive*60);const total=driveMin+d.stops;
+    const stats=[
+      {label:'Miles traveled',value:d.miles.toLocaleString(),unit:'mi'},
+      {label:'Drive time',value:d.drive,unit:'h'},
+      {label:'Charge stops',value:String(d.sites),unit:''},
+      {label:'Charge time',value:this.fmtMin(d.stops),unit:''},
+      {label:'Unique stations',value:String(d.uniqueStations),unit:''},
+      {label:'Avg gap',value:d.gap,unit:'mi'}
+    ];
+    const dp=Math.round(driveMin/total*100);
+    this.setState({modal:{type:'day',badge:String(d.day),kicker:'Day '+d.day+' · Balanced National Loop',title:d.targets[0]+'  \u2192  '+d.targets[d.targets.length-1],sub:d.sites+' Superchargers · '+d.miles+' mi',stats,landmarks:d.landmarks,targets:d.targets.slice(0,8),split:{drivePct:dp,chargePct:100-dp,driveLabel:this.fmtMin(driveMin),chargeLabel:this.fmtMin(d.stops),total:this.fmtMin(total)}}});
+  };
+  openConfig=()=>this.setState({modal:{type:'config'}});
+  closeModal=()=>this.setState({modal:null});
+  applyConfig=()=>{this.setState({modal:null});this.toast('Assumptions applied · re-optimizing legs');setTimeout(this.runOptimize,250);};
+
+  onChargeMin=e=>this.setState({config:{...this.state.config,chargeMin:+e.target.value}});
+  onDriveCap=e=>this.setState({config:{...this.state.config,driveCap:+e.target.value}});
+  onScRange=e=>this.setState({config:{...this.state.config,scRange:+e.target.value}});
+  onBattery=e=>this.setState({config:{...this.state.config,battery:+e.target.value}});
+  onStartTime=e=>this.setState({config:{...this.state.config,startTime:e.target.value}});
+
+  openAi=()=>this.setState({aiOpen:true});
+  closeAi=()=>this.setState({aiOpen:false});
+  setAiMode=m=>this.setState({aiMode:m,aiOpen:true});
+  onAiInput=e=>this.setState({aiInput:e.target.value});
+  onAiKey=e=>{if(e.key==='Enter')this.sendAi();};
+  respond(text){
+    const q=text.toLowerCase();
+    if(q.includes('trim')||q.includes('shorten')||q.includes('fewer'))return 'I can compress Days 41\u201345 by rerouting through I-10, trimming 1 day and ~212 mi while keeping every unique GA/AL station. Apply it?';
+    if(q.includes('toll'))return 'Avoiding tolls adds 38 mi but saves ~$74 across PA/NJ/IL. The Day 33 OH leg gets 22 min longer. Want me to apply?';
+    if(q.includes('unique')||q.includes('maxim')||q.includes('coverage'))return 'Optimizing for coverage: I can add 9 net-new Superchargers across TX and FL for +3 unique sites/day, at +1.4h average drive. Proceed?';
+    if(q.includes('yellow')||q.includes('detour')||q.includes('add'))return 'Adding a Yellowstone spur from ID inserts 2 days and 4 en-route Superchargers \u2014 total trip becomes 59 days. Draw the detour on the map?';
+    if(q.includes('range')||q.includes('warn')||q.includes('charge')||q.includes('aux'))return '9 legs exceed your 150 mi SC-to-SC range. Raising the assumption to 175 mi clears 6 of them; the rest need one non-Tesla stop each. Update config?';
+    return 'Got it \u2014 I can reshape the route around that and preview the change on the map and daily plan. Want me to optimize now?';
+  }
+  pushAndReply(text){
+    if(!text||!text.trim())return;
+    const msgs=this.state.messages.concat([{role:'user',text}]);
+    this.setState({messages:msgs,aiInput:''});
+    setTimeout(()=>{this.setState({messages:this.state.messages.concat([{role:'ai',text:this.respond(text)}])});},420);
+  }
+  sendAi=()=>this.pushAndReply(this.state.aiInput);
+  quickAi=t=>{this.setState({aiOpen:true});this.pushAndReply(t);};
+  noop=()=>{};
+  stop=e=>{e.stopPropagation();};
+
+  // ---------- render ----------
+  renderVals(){
+    const st=this.state;const dash=st.theme==='dash';
+    const rootStyle=Object.assign({},this.themeVars(),{display:'flex',flexDirection:'column',height:'100vh',width:'100%',background:'var(--app-bg)',color:'var(--text)',fontFamily:"'Helvetica Neue',Helvetica,Arial,sans-serif",fontSize:'14px',overflow:'hidden',position:'relative','--mono':"'IBM Plex Mono',ui-monospace,monospace",'--ui':"'Helvetica Neue',Helvetica,Arial,sans-serif"});
+
+    const segOn='font-family:var(--ui);font-size:12px;font-weight:600;padding:5px 12px;border-radius:7px;border:none;cursor:pointer;background:var(--accent);color:#fff';
+    const segOff='font-family:var(--ui);font-size:12px;font-weight:500;padding:5px 12px;border-radius:7px;border:none;cursor:pointer;background:none;color:var(--dim)';
+    const segOnAlt='font-family:var(--ui);font-size:11px;font-weight:600;padding:4px 9px;border-radius:6px;border:none;cursor:pointer;background:var(--accent-2);color:#04211f';
+    const segOffAlt='font-family:var(--ui);font-size:11px;font-weight:500;padding:4px 9px;border-radius:6px;border:none;cursor:pointer;background:none;color:var(--dim)';
+
+    // map nodes
+    const nodes=this.allNodes.map(n=>{
+      const base=`position:absolute;left:${n.left.toFixed(2)}%;top:${n.top.toFixed(2)}%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:1px;cursor:pointer;font-family:var(--ui);line-height:1;padding:4px 7px;border-radius:8px;white-space:nowrap;`;
+      const style=base+(n.active
+        ? 'background:var(--good-bg);border:1px solid var(--good-bd);color:var(--good-tx);box-shadow:var(--shadow);z-index:4;'
+        : 'background:var(--idle-bg);border:1px solid var(--idle-bd);color:var(--idle-tx);z-index:2;');
+      return {abbr:n.abbr,active:n.active,countLabel:n.count+'/'+n.total,style,onClick:()=>this.openState(n.abbr)};
+    });
+
+    // coverage
+    const cov=this.allNodes.filter(n=>n.active).map(n=>({abbr:n.abbr,pct:(n.count/n.total*100),count:n.count,total:n.total,miles:Math.round(n.count*13+n.total*0.6)}))
+      .sort((a,b)=>b.pct-a.pct).slice(0,8);
+    const maxPct=cov.length?cov[0].pct:1;
+    const coverage=cov.map(c=>({abbr:c.abbr,pct:c.pct.toFixed(1)+'%',detail:c.count+' of '+c.total+' · '+c.miles.toLocaleString()+' mi',barStyle:`height:100%;width:${(c.pct/maxPct*100).toFixed(0)}%;border-radius:4px;background:var(--accent)`,onClick:()=>this.openState(c.abbr)}));
+
+    // hero stats
+    const avg=(this.daysData.reduce((s,d)=>s+d.drive,0)/this.daysData.length);
+    const heroStats=[
+      {label:'Unique sites',value:'650',unit:''},
+      {label:'Total miles',value:st.miles.toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1}),unit:'mi'},
+      {label:'Days',value:'57',unit:''},
+      {label:'Avg drive/day',value:avg.toFixed(2),unit:'h'}
+    ];
+
+    // days table
+    const days=this.daysData.map((d,i)=>({
+      day:d.day,sites:d.sites,miles:d.miles.toFixed(1),gap:d.gap.toFixed(1),drive:d.drive.toFixed(1),stops:d.stops,
+      chips:d.targets.slice(0,4).map((t,k)=>({n:k+1,label:t})),
+      more:Math.max(0,d.sites-4),
+      onClick:()=>this.openDay(i)
+    }));
+
+    // ai
+    const messages=st.messages.map(m=>({
+      text:m.text,
+      wrap:'display:flex;'+(m.role==='user'?'justify-content:flex-end':'justify-content:flex-start')+';animation:fadeUp .2s ease',
+      bubble:m.role==='user'
+        ? 'max-width:84%;padding:10px 13px;border-radius:14px 14px 4px 14px;background:var(--accent);color:#fff;font-size:13px;line-height:1.45'
+        : 'max-width:88%;padding:10px 13px;border-radius:14px 14px 14px 4px;background:var(--panel-2);border:1px solid var(--border);color:var(--text);font-size:13px;line-height:1.5'
+    }));
+    const suggestions=['Trim a day','Avoid tolls','Maximize unique stations','Add Yellowstone detour','Fix range warnings'].map(t=>({text:t,onClick:()=>this.quickAi(t)}));
+    const lastAi=[...st.messages].reverse().find(m=>m.role==='ai');
+
+    // modal
+    const m=st.modal||{};
+    const split=m.split;
+    const modalBadge='width:46px;height:46px;border-radius:12px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:600;font-size:16px;background:var(--accent);color:#fff';
+
+    // config sliders
+    const c=st.config;
+    const configSliders=[
+      {label:'Charge stop duration',hint:'Assumed minutes per Supercharger',min:10,max:60,step:5,value:c.chargeMin,display:c.chargeMin+' min',onInput:this.onChargeMin},
+      {label:'Hard drive cap',hint:'Max driving hours per day',min:5,max:12,step:0.5,value:c.driveCap,display:c.driveCap+' h',onInput:this.onDriveCap},
+      {label:'SC-to-SC range',hint:'Max miles between Superchargers',min:100,max:250,step:5,value:c.scRange,display:c.scRange+' mi',onInput:this.onScRange},
+      {label:'Target charge level',hint:'State of charge to plan around',min:60,max:100,step:5,value:c.battery,display:c.battery+'%',onInput:this.onBattery}
+    ];
+
+    return {
+      rootStyle, routeName:(this.props&&this.props.routeName)||'Balanced National Loop',
+      noop:this.noop, stop:this.stop,
+      setTesla:()=>this.setTheme('tesla'), setDash:()=>this.setTheme('dash'),
+      teslaBtn: st.theme==='tesla'?segOn:segOff, dashBtn: st.theme==='dash'?segOn:segOff,
+      openConfig:this.openConfig, runOptimize:this.runOptimize,
+      // map
+      grid:this.grid, hullPath:this.hullPath, routePath:this.routePath, routeDots:this.routeDots,
+      nodes, glowOpacity: dash?0.9:0.0,
+      mapZoomStyle:`width:100%;height:100%;max-width:1000px;position:relative;transform:scale(${st.zoom});transform-origin:center;transition:transform .3s ease`,
+      zoomIn:this.zoomIn, zoomOut:this.zoomOut,
+      // sidebar
+      sidebarOpen:st.sidebarOpen, heroStats, coverage,
+      covOpen:st.cov, srcOpen:st.src, guardOpen:st.guard,
+      toggleCoverage:()=>this.setState({cov:!st.cov}),
+      toggleSource:()=>this.setState({src:!st.src}),
+      toggleGuard:()=>this.setState({guard:!st.guard}),
+      covChevron:`font-size:10px;color:var(--faint);transition:transform .2s;display:inline-block;transform:rotate(${st.cov?0:-90}deg)`,
+      srcChevron:`font-size:10px;color:var(--faint);transition:transform .2s;display:inline-block;transform:rotate(${st.src?0:-90}deg)`,
+      guardChevron:`font-size:10px;color:var(--faint);transition:transform .2s;display:inline-block;transform:rotate(${st.guard?0:-90}deg)`,
+      fetchedAt:st.fetchedAt, refreshSource:this.refreshSource,
+      refreshLabel: st.refreshing?'Refreshing…':'Refresh source',
+      refreshIcon: st.refreshing?'display:inline-flex;animation:spin .8s linear infinite':'display:inline-flex',
+      // plan
+      drawerStyle:`flex:0 0 ${st.planOpen?'288px':'58px'};display:flex;flex-direction:column;background:var(--panel);border-top:1px solid var(--border);min-height:0;transition:flex-basis .25s ease;z-index:20`,
+      planOpen:st.planOpen, days,
+      togglePlan:()=>this.setState({planOpen:!st.planOpen}),
+      planToggleLabel: st.planOpen?'Collapse':'Expand',
+      planChevron:`font-size:10px;display:inline-block;transform:rotate(${st.planOpen?0:180}deg);transition:transform .2s`,
+      // ai
+      aiDock: st.aiOpen&&st.aiMode==='dock',
+      aiPanelFloat: st.aiOpen&&st.aiMode==='panel',
+      aiBar: st.aiOpen&&st.aiMode==='bar',
+      showLauncher: !st.aiOpen||(st.aiMode!=='panel'&&st.aiMode!=='dock'),
+      openAi:this.openAi, closeAi:this.closeAi,
+      aiModePanel:()=>this.setAiMode('panel'), aiModeBar:()=>this.setAiMode('bar'), aiModeDock:()=>this.setAiMode('dock'),
+      aiPanelBtn: st.aiMode==='panel'?segOnAlt:segOffAlt,
+      aiBarBtn: st.aiMode==='bar'?segOnAlt:segOffAlt,
+      aiDockBtn: st.aiMode==='dock'?segOnAlt:segOffAlt,
+      messages, suggestions, aiInput:st.aiInput, onAiInput:this.onAiInput, onAiKey:this.onAiKey, sendAi:this.sendAi,
+      hasReply: !!(lastAi && st.messages.length>1), lastReply: lastAi?lastAi.text:'',
+      // modal
+      modalOpen:!!st.modal, closeModal:this.closeModal,
+      modalIsDetail: m.type==='state'||m.type==='day', modalIsConfig: m.type==='config',
+      modalBadge, modalBadgeText:m.badge||'', modalKicker:m.kicker||'', modalTitle:m.title||'', modalSub:m.sub||'',
+      modalStats:m.stats||[], modalLandmarks:m.landmarks||[],
+      hasLandmarks:!!(m.landmarks&&m.landmarks.length),
+      modalTargets:(m.targets||[]).map((t,i)=>({n:i+1,label:t})),
+      hasTargets:!!(m.targets&&m.targets.length),
+      targetsLabel: m.type==='day'?'Route targets':'Stations',
+      hasSplit:!!split,
+      splitDrive: split?`width:${split.drivePct}%;background:var(--accent)`:'',
+      splitCharge: split?`width:${split.chargePct}%;background:var(--accent-2)`:'',
+      driveLabel: split?split.driveLabel:'', chargeLabel: split?split.chargeLabel:'', splitTotal: split?split.total:'',
+      // config
+      config:st.config, configSliders,
+      onStartTime:this.onStartTime, applyConfig:this.applyConfig,
+      // overlays
+      optimizing:st.optimizing, optimizeStep:st.optimizeStep, toast:st.toast
+    };
+  }
+}
+</script>
+
+
+</body></html>
