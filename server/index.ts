@@ -31,6 +31,9 @@ const OSRM_REAL = OSRM_BASE_URL.length > 0 && OSRM_BASE_URL !== OSRM_DEMO_URL
 const ORS_API_KEY = process.env.ORS_API_KEY ?? ''
 const ORS_BASE_URL = process.env.ORS_BASE_URL ?? 'https://api.openrouteservice.org'
 const MAX_ORS_COORDINATES = 48 // ORS free directions waypoint cap is ~50
+// ORS free caps each request's route distance at 6,000 km; chunk well under that
+// (straight-line, since the actual road route runs ~20-40% longer).
+const MAX_ORS_CHUNK_METERS = 4_000_000
 
 // Road-accurate distances/times are only fetched when a real engine is set:
 // OpenRouteService (preferred — true speed-limit durations) or a real OSRM.
@@ -274,7 +277,7 @@ app.post('/api/refine-route', async (request, response) => {
       requestCount: road.requestCount,
       route: refined,
       roadLine: road.roadLine,
-      warnings: [...demoWarning(), ...road.warnings],
+      warnings: road.warnings,
     })
   } catch (error) {
     response.status(502).json({
@@ -325,7 +328,11 @@ async function fetchRoadProvider(coordinates: LatLon[]) {
 
 /* ---- OpenRouteService (true speed-limit durations) ---- */
 async function fetchOrsRoute(coordinates: LatLon[]): Promise<RoadResult> {
-  const chunks = chunkCoordinates(coordinates, MAX_ORS_COORDINATES)
+  const chunks = chunkByDistance(
+    coordinates,
+    MAX_ORS_COORDINATES,
+    MAX_ORS_CHUNK_METERS,
+  )
   const roadLine: LatLon[] = []
   const legMiles: number[] = []
   const legDriveHours: number[] = []
@@ -358,7 +365,7 @@ async function requestOrsChunk(
         headers: {
           Authorization: ORS_API_KEY,
           'Content-Type': 'application/json',
-          Accept: 'application/json',
+          Accept: 'application/geo+json',
         },
         body: JSON.stringify({
           coordinates: coordinates.map((c) => [c.lon, c.lat]),
@@ -513,6 +520,34 @@ function chunkCoordinates<T>(coordinates: T[], maxChunkSize: number) {
     const end = Math.min(coordinates.length, index + maxChunkSize)
     chunks.push(coordinates.slice(index, end))
     index = end - 1
+  }
+
+  return chunks
+}
+
+/** Chunk by BOTH waypoint count and cumulative straight-line distance, so no
+ *  single request exceeds the engine's per-route distance limit (ORS free). */
+function chunkByDistance(
+  coordinates: LatLon[],
+  maxCount: number,
+  maxMeters: number,
+) {
+  const chunks: LatLon[][] = []
+  let start = 0
+
+  while (start < coordinates.length - 1) {
+    let end = start + 1
+    let meters = 0
+    while (end < coordinates.length && end - start < maxCount) {
+      const leg =
+        haversineMiles(coordinates[end - 1], coordinates[end]) * METERS_PER_MILE
+      // Always include at least one leg, even if it alone exceeds the cap.
+      if (meters + leg > maxMeters && end > start + 1) break
+      meters += leg
+      end += 1
+    }
+    chunks.push(coordinates.slice(start, end))
+    start = end - 1 // overlap by one coordinate so legs stay contiguous
   }
 
   return chunks
