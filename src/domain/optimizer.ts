@@ -1,8 +1,6 @@
 import { defaultPlannerConfig, sanitizePlannerConfig } from './config'
 import {
-  anchorOrders,
   haversineMiles,
-  polylineLengthMiles,
   round,
   scoreAgainstPolyline,
 } from './geo'
@@ -360,13 +358,12 @@ function buildDayPlans(
     order: 0,
     distanceMiles: 0,
   }
-  const routeLength = polylineLengthMiles(variant.anchors)
 
   for (let index = 0; index < selectedStations.length; index += 1) {
     const scoredStation = selectedStations[index]
-    const legMiles = corridorLegMiles(
-      previous,
-      scoredStation,
+    const legMiles = roadLegMiles(
+      previous.position,
+      scoredStation.station.position,
       config.roadDistanceFactor,
     )
     const driveHours = legMiles / config.averageMph
@@ -390,10 +387,7 @@ function buildDayPlans(
       }
     }
 
-    const activeLegMiles =
-      day.visits.length === 0 && projectedDriveHours > config.dailyDriveTargetHours
-        ? corridorLegMiles(previous, scoredStation, config.roadDistanceFactor)
-        : legMiles
+    const activeLegMiles = legMiles
     const activeDriveHours = activeLegMiles / config.averageMph
     const activeStopMinutes = stopMinutesForLeg(activeLegMiles, config)
 
@@ -428,10 +422,9 @@ function buildDayPlans(
     }
   }
 
-  const returnLegMiles = corridorReturnMiles(
-    previous,
+  const returnLegMiles = roadLegMiles(
+    previous.position,
     config.start,
-    routeLength,
     config.roadDistanceFactor,
   )
   const returnDriveHours = returnLegMiles / config.averageMph
@@ -546,9 +539,9 @@ function evaluateLongDayOpportunity(
 
   for (let index = startIndex; index < selectedStations.length; index += 1) {
     const station = selectedStations[index]
-    const legMiles = corridorLegMiles(
-      simulatedPrevious,
-      station,
+    const legMiles = roadLegMiles(
+      simulatedPrevious.position,
+      station.station.position,
       config.roadDistanceFactor,
     )
     const legDriveHours = legMiles / config.averageMph
@@ -588,46 +581,99 @@ function evaluateLongDayOpportunity(
   }
 }
 
-function corridorLegMiles(
-  previous: { position: Coordinate; order: number; distanceMiles: number },
-  next: ScoredStation,
-  roadDistanceFactor: number,
-) {
-  const corridorMiles =
-    Math.abs(next.order - previous.order) +
-    previous.distanceMiles +
-    next.distanceMiles
-  const directMiles = haversineMiles(previous.position, next.station.position)
-
-  return Math.max(corridorMiles, directMiles) * roadDistanceFactor
+/** Point-to-point leg distance: great-circle miles inflated by the road factor.
+ *  With a sensible visiting order this is a realistic per-leg estimate. */
+function roadLegMiles(from: Coordinate, to: Coordinate, roadDistanceFactor: number) {
+  return haversineMiles(from, to) * roadDistanceFactor
 }
 
-function corridorReturnMiles(
-  previous: { position: Coordinate; order: number; distanceMiles: number },
+/**
+ * Order selected stations into a sensible driving sequence: nearest-neighbour
+ * from the start, then a bounded 2-opt pass to remove crossings. Ordering uses a
+ * fast equirectangular projection (relative distances only); real leg mileage is
+ * computed separately with haversine. This is what stops the route from zig-zagging.
+ */
+function optimizeStationOrder(
+  selected: ScoredStation[],
   start: Coordinate,
-  routeLength: number,
-  roadDistanceFactor: number,
-) {
-  const corridorMiles =
-    Math.max(0, routeLength - previous.order) + previous.distanceMiles
-  const directMiles = haversineMiles(previous.position, start)
+): ScoredStation[] {
+  if (selected.length <= 2) return selected
 
-  return Math.max(corridorMiles, directMiles) * roadDistanceFactor
+  const cosLat = Math.cos((start.lat * Math.PI) / 180) || 1
+  const projX = (p: Coordinate) => p.lon * cosLat
+  const startX = projX(start)
+  const startY = start.lat
+
+  // Nearest-neighbour tour from the start point.
+  const remaining = selected.slice()
+  const ordered: ScoredStation[] = []
+  let curX = startX
+  let curY = startY
+  while (remaining.length > 0) {
+    let bestIndex = 0
+    let bestDist = Infinity
+    for (let i = 0; i < remaining.length; i += 1) {
+      const p = remaining[i].station.position
+      const dx = curX - projX(p)
+      const dy = curY - p.lat
+      const d = dx * dx + dy * dy
+      if (d < bestDist) {
+        bestDist = d
+        bestIndex = i
+      }
+    }
+    const next = remaining.splice(bestIndex, 1)[0]
+    ordered.push(next)
+    curX = projX(next.station.position)
+    curY = next.station.position.lat
+  }
+
+  // Bounded 2-opt over the closed loop (start -> ordered -> start).
+  const xs = ordered.map((s) => projX(s.station.position))
+  const ys = ordered.map((s) => s.station.position.lat)
+  const n = ordered.length
+  const dist = (ax: number, ay: number, bx: number, by: number) =>
+    Math.sqrt((ax - bx) * (ax - bx) + (ay - by) * (ay - by))
+  const edge = (i: number, j: number) => dist(xs[i], ys[i], xs[j], ys[j])
+  const toStart = (i: number) => dist(xs[i], ys[i], startX, startY)
+
+  const MAX_PASSES = 8
+  for (let pass = 0; pass < MAX_PASSES; pass += 1) {
+    let improved = false
+    for (let i = 0; i < n - 1; i += 1) {
+      for (let j = i + 1; j < n; j += 1) {
+        const before =
+          (i === 0 ? toStart(i) : edge(i - 1, i)) +
+          (j === n - 1 ? toStart(j) : edge(j, j + 1))
+        const after =
+          (i === 0 ? toStart(j) : edge(i - 1, j)) +
+          (j === n - 1 ? toStart(i) : edge(i, j + 1))
+        if (after + 1e-9 < before) {
+          let lo = i
+          let hi = j
+          while (lo < hi) {
+            ;[xs[lo], xs[hi]] = [xs[hi], xs[lo]]
+            ;[ys[lo], ys[hi]] = [ys[hi], ys[lo]]
+            ;[ordered[lo], ordered[hi]] = [ordered[hi], ordered[lo]]
+            lo += 1
+            hi -= 1
+          }
+          improved = true
+        }
+      }
+    }
+    if (!improved) break
+  }
+
+  return ordered
 }
 
+/** Display polyline: the start, every stop in visiting order, then back to start. */
 function buildDisplayRouteLine(
-  selectedStations: ScoredStation[],
-  anchors: Coordinate[],
-) {
-  const anchorPoints = anchorOrders(anchors)
-  const stationPoints = selectedStations.map((selected) => ({
-    order: selected.order,
-    point: selected.station.position,
-  }))
-
-  return [...anchorPoints, ...stationPoints]
-    .sort((a, b) => a.order - b.order)
-    .map((item) => item.point)
+  orderedStations: ScoredStation[],
+  start: Coordinate,
+): Coordinate[] {
+  return [start, ...orderedStations.map((s) => s.station.position), start]
 }
 
 function insertRequiredWaypoints(
@@ -774,7 +820,11 @@ export function optimizeRoutes(
       config.targetStations,
       variant.forcedWaypoints,
     )
-    const plans = buildDayPlans(stationChoice.selected, variant, config)
+    const orderedStations = optimizeStationOrder(
+      stationChoice.selected,
+      config.start,
+    )
+    const plans = buildDayPlans(orderedStations, variant, config)
     const totalDays = plans.days.length
     const uniqueStations = plans.visits.length
     const totalVisitLegMiles = plans.visits.reduce(
@@ -806,7 +856,7 @@ export function optimizeRoutes(
       warnings: [...stationChoice.waypointWarnings, ...plans.totals.warnings],
       advisories: plans.totals.advisories,
       longDays: plans.totals.longDays,
-      routeLine: buildDisplayRouteLine(stationChoice.selected, variant.anchors),
+      routeLine: buildDisplayRouteLine(orderedStations, config.start),
     }
   })
 
