@@ -293,6 +293,11 @@ body.modal-open {
 .leaflet-tooltip-top::before {
   border-top-color: var(--border-2);
 }
+.sqp-state-tooltip {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.01em;
+}
 .leaflet-bar a {
   background: var(--panel);
   color: var(--text);

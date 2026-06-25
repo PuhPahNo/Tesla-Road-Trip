@@ -81,6 +81,7 @@ function App() {
   const [copilotOpen, setCopilotOpen] = useState(false)
   const [copilotMode, setCopilotMode] = useState<CopilotMode>('dock')
   const [mobileSheet, setMobileSheet] = useState<MobileSheet>(null)
+  const [hoveredState, setHoveredState] = useState<string>()
   const [toast, setToast] = useState<string | null>(null)
   const [optimizeStep, setOptimizeStep] = useState(OPTIMIZE_STEPS[0])
   const toastTimer = useRef<number>(0)
@@ -277,6 +278,8 @@ function App() {
     roadStatus,
     passportDeadline: TESLA_CONTEST_RULES.passportDeadline,
     onSelectState: handleSelectState,
+    onHoverState: setHoveredState,
+    highlightedState: hoveredState,
     onRefresh: loadStations,
   }
 
@@ -329,6 +332,8 @@ function App() {
             roadLine={activeRoadLine}
             stateStats={allStateStats}
             onSelectState={handleSelectState}
+            onHoverState={setHoveredState}
+            highlightedState={hoveredState}
             caption={mapCaption}
           />
         </div>
@@ -422,7 +427,11 @@ function App() {
               onClose={() => setMobileSheet(null)}
             />
             <div className="overflow-y-auto p-4">
-              <CoverageSection stats={routeStateStats} onSelectState={handleSelectState} />
+              <CoverageSection
+                bare
+                stats={routeStateStats}
+                onSelectState={handleSelectState}
+              />
             </div>
           </Overlay>
         </>

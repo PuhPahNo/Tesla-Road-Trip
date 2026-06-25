@@ -1,6 +1,7 @@
-import { memo, useEffect, useMemo, useState } from 'react'
+import { memo, useEffect, useMemo, useRef } from 'react'
 import {
   CircleMarker,
+  GeoJSON,
   MapContainer,
   Polyline,
   Popup,
@@ -8,10 +9,14 @@ import {
   Tooltip,
   useMap,
 } from 'react-leaflet'
+import type { Feature, FeatureCollection, Geometry } from 'geojson'
+import type { Layer, Path, PathOptions } from 'leaflet'
 import type { StateRouteStats } from '../domain/routeStats'
 import type { Coordinate, RoutePlan, Station } from '../domain/types'
+import { STATE_NAME_TO_CODE } from '../domain/usStates'
+import usStatesRaw from '../assets/us-states.json'
 import { useTheme } from '../theme/theme'
-import { cx, IconButton } from '../ui/primitives'
+import { IconButton } from '../ui/primitives'
 import { MinusIcon, PlusIcon } from '../ui/icons'
 
 interface MapViewProps {
@@ -22,60 +27,12 @@ interface MapViewProps {
   roadLine?: Coordinate[]
   stateStats?: StateRouteStats[]
   onSelectState?: (state: string) => void
+  onHoverState?: (state: string | undefined) => void
+  highlightedState?: string
   caption?: string
 }
 
-const STATE_LABELS = [
-  ['WA', 'Washington', 47.4, -120.7],
-  ['OR', 'Oregon', 44.0, -120.6],
-  ['CA', 'California', 37.2, -119.7],
-  ['ID', 'Idaho', 44.2, -114.6],
-  ['NV', 'Nevada', 39.4, -116.6],
-  ['MT', 'Montana', 46.9, -110.4],
-  ['WY', 'Wyoming', 43.0, -107.6],
-  ['UT', 'Utah', 39.3, -111.7],
-  ['AZ', 'Arizona', 34.2, -111.7],
-  ['CO', 'Colorado', 39.0, -105.6],
-  ['NM', 'New Mexico', 34.4, -106.1],
-  ['ND', 'North Dakota', 47.5, -100.5],
-  ['SD', 'South Dakota', 44.4, -100.0],
-  ['NE', 'Nebraska', 41.5, -99.8],
-  ['KS', 'Kansas', 38.5, -98.0],
-  ['OK', 'Oklahoma', 35.6, -97.5],
-  ['TX', 'Texas', 31.0, -99.2],
-  ['MN', 'Minnesota', 46.0, -94.5],
-  ['IA', 'Iowa', 42.1, -93.5],
-  ['MO', 'Missouri', 38.5, -92.4],
-  ['AR', 'Arkansas', 35.0, -92.4],
-  ['LA', 'Louisiana', 31.0, -92.0],
-  ['WI', 'Wisconsin', 44.6, -89.8],
-  ['IL', 'Illinois', 40.0, -89.2],
-  ['MI', 'Michigan', 44.3, -85.4],
-  ['IN', 'Indiana', 39.9, -86.3],
-  ['OH', 'Ohio', 40.3, -82.8],
-  ['KY', 'Kentucky', 37.6, -85.3],
-  ['TN', 'Tennessee', 35.8, -86.4],
-  ['MS', 'Mississippi', 32.7, -89.7],
-  ['AL', 'Alabama', 32.8, -86.7],
-  ['GA', 'Georgia', 32.7, -83.4],
-  ['FL', 'Florida', 28.1, -81.7],
-  ['SC', 'South Carolina', 33.8, -80.9],
-  ['NC', 'North Carolina', 35.5, -79.4],
-  ['VA', 'Virginia', 37.5, -78.8],
-  ['WV', 'West Virginia', 38.6, -80.6],
-  ['PA', 'Pennsylvania', 41.0, -77.8],
-  ['NY', 'New York', 42.9, -75.0],
-  ['ME', 'Maine', 45.1, -69.0],
-  ['VT', 'Vermont', 44.0, -72.7],
-  ['NH', 'New Hampshire', 43.9, -71.6],
-  ['MA', 'Massachusetts', 42.2, -71.8],
-  ['CT', 'Connecticut', 41.6, -72.7],
-  ['RI', 'Rhode Island', 41.7, -71.6],
-  ['NJ', 'New Jersey', 40.1, -74.7],
-  ['DE', 'Delaware', 39.1, -75.5],
-  ['MD', 'Maryland', 39.0, -76.7],
-  ['DC', 'District of Columbia', 38.9, -77.0],
-] as const
+const US_STATES = usStatesRaw as unknown as FeatureCollection<Geometry, { name: string }>
 
 const MAX_ROUTE_MARKERS = 220
 const MAX_POLYLINE_POINTS = 3500
@@ -93,6 +50,8 @@ export const MapView = memo(function MapView({
   roadLine,
   stateStats = [],
   onSelectState,
+  onHoverState,
+  highlightedState,
   caption,
 }: MapViewProps) {
   const { theme, isDark } = useTheme()
@@ -102,15 +61,18 @@ export const MapView = memo(function MapView({
   const node = isDark ? '#0e131a' : '#ffffff'
   const faintLine = isDark ? '#3a4150' : '#475569'
   const faintFill = isDark ? '#4b5563' : '#94a3b8'
-  const stateStatsByCode = useMemo(
+  const coverage = isDark ? '#0bd5d0' : '#0f7d6b'
+
+  const coverageByCode = useMemo(
     () => new Map(stateStats.map((state) => [state.state, state])),
     [stateStats],
   )
   const rawRouteLine = roadLine ?? route?.routeLine
   const routePositions = useMemo(
-    () => downsampleLine(rawRouteLine ?? [], MAX_POLYLINE_POINTS).map(
-      (point) => [point.lat, point.lon] as [number, number],
-    ),
+    () =>
+      downsampleLine(rawRouteLine ?? [], MAX_POLYLINE_POINTS).map(
+        (point) => [point.lat, point.lon] as [number, number],
+      ),
     [rawRouteLine],
   )
   const routeVisits = useMemo(
@@ -136,10 +98,16 @@ export const MapView = memo(function MapView({
       />
       <ZoomControl />
       <ResizeHandler />
-      <StateClickOverlay
-        stateStatsByCode={stateStatsByCode}
+
+      <StateChoropleth
+        key={`${theme}-${route?.id ?? 'none'}`}
+        coverageByCode={coverageByCode}
+        coverageColor={coverage}
+        highlightedState={highlightedState}
         onSelectState={onSelectState}
+        onHoverState={onHoverState}
       />
+
       {route && <FitRoute positions={routePositions} />}
       {showAllStations &&
         stations.map((station) => (
@@ -216,7 +184,9 @@ export const MapView = memo(function MapView({
               }}
             >
               <Popup>
-                <strong>{visit.sequence}. {visit.station.name}</strong>
+                <strong>
+                  {visit.sequence}. {visit.station.name}
+                </strong>
                 <br />
                 Day {visit.day} · {Math.round(visit.legMiles)} mi leg ·{' '}
                 {visit.stopMinutes} min stop
@@ -234,13 +204,116 @@ export const MapView = memo(function MapView({
 })
 
 /* ------------------------------------------------------------------ */
-/* Custom zoom control (top-left, 16px inset)                          */
+/* Coverage choropleth — states tinted by % of sites visited          */
 /* ------------------------------------------------------------------ */
-/**
- * Keep Leaflet's canvas/panes sized to the container. The map lives in a flex
- * layout that reflows when the drawer collapses, the sidebar/sheets toggle, or
- * the device rotates — without this the route canvas can render at 0 height.
- */
+interface StateChoroplethProps {
+  coverageByCode: Map<string, StateRouteStats>
+  coverageColor: string
+  highlightedState?: string
+  onSelectState?: (state: string) => void
+  onHoverState?: (state: string | undefined) => void
+}
+
+function codeOf(feature?: Feature<Geometry, { name: string }>): string | undefined {
+  const name = feature?.properties?.name
+  return name ? STATE_NAME_TO_CODE[name] : undefined
+}
+
+function StateChoropleth({
+  coverageByCode,
+  coverageColor,
+  highlightedState,
+  onSelectState,
+  onHoverState,
+}: StateChoroplethProps) {
+  const layersByCode = useRef(new Map<string, Path>())
+
+  const baseStyle = (code?: string): PathOptions => {
+    const stat = code ? coverageByCode.get(code) : undefined
+    if (!stat) return { weight: 0, fill: false, interactive: false, opacity: 0 }
+    const visited = stat.routeStations > 0
+    if (!visited) {
+      return {
+        weight: 0.5,
+        color: coverageColor,
+        opacity: 0.14,
+        fill: true,
+        fillColor: coverageColor,
+        fillOpacity: 0,
+        interactive: true,
+      }
+    }
+    const pct = Math.max(0, Math.min(100, stat.coveragePct))
+    return {
+      weight: 1,
+      color: coverageColor,
+      opacity: 0.5,
+      fill: true,
+      fillColor: coverageColor,
+      fillOpacity: 0.14 + (pct / 100) * 0.34,
+      interactive: true,
+    }
+  }
+
+  const highlightStyle = (code?: string): PathOptions => {
+    const base = baseStyle(code)
+    if (!base.interactive) return base
+    return {
+      ...base,
+      weight: 2.5,
+      opacity: 0.95,
+      fillOpacity: Math.max(base.fillOpacity ?? 0, 0.3),
+    }
+  }
+
+  // Sidebar -> map link: re-style when the externally highlighted state changes.
+  useEffect(() => {
+    layersByCode.current.forEach((layer, code) => {
+      layer.setStyle(code === highlightedState ? highlightStyle(code) : baseStyle(code))
+      if (code === highlightedState) layer.bringToFront()
+    })
+    // baseStyle/highlightStyle close over the current (remounted) coverage data.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [highlightedState])
+
+  return (
+    <GeoJSON
+      data={US_STATES}
+      style={(feature) => baseStyle(codeOf(feature))}
+      onEachFeature={(feature, layer: Layer) => {
+        const code = codeOf(feature as Feature<Geometry, { name: string }>)
+        const path = layer as Path
+        const stat = code ? coverageByCode.get(code) : undefined
+        const name = (feature as Feature<Geometry, { name: string }>).properties?.name ?? ''
+        if (!stat) return
+
+        layersByCode.current.set(code!, path)
+        path.bindTooltip(
+          stat.routeStations > 0
+            ? `${name} · ${stat.routeStations}/${stat.totalStations} sites · ${stat.coveragePct}%`
+            : `${name} · not on this route`,
+          { sticky: true, direction: 'top', className: 'sqp-state-tooltip' },
+        )
+        path.on({
+          mouseover: () => {
+            path.setStyle(highlightStyle(code))
+            path.bringToFront()
+            onHoverState?.(code)
+          },
+          mouseout: () => {
+            path.setStyle(baseStyle(code))
+            onHoverState?.(undefined)
+          },
+          click: () => onSelectState?.(code!),
+        })
+      }}
+    />
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* Keep Leaflet sized to the (flex-reflowing) container               */
+/* ------------------------------------------------------------------ */
 function ResizeHandler() {
   const map = useMap()
   useEffect(() => {
@@ -259,6 +332,9 @@ function ResizeHandler() {
   return null
 }
 
+/* ------------------------------------------------------------------ */
+/* Custom zoom control (top-left)                                      */
+/* ------------------------------------------------------------------ */
 function ZoomControl() {
   const map = useMap()
   return (
@@ -295,8 +371,14 @@ function MapChrome({ caption }: { caption?: string }) {
           Route
         </span>
         <span className="flex items-center gap-[7px]">
-          <span className="h-[9px] w-[9px] flex-none rounded-[3px] border border-good-bd bg-good-bg" />
-          Visited state
+          <span
+            className="h-[10px] w-[18px] flex-none rounded-[3px]"
+            style={{
+              background:
+                'linear-gradient(90deg, color-mix(in srgb, var(--accent-2) 16%, transparent), var(--accent-2))',
+            }}
+          />
+          State coverage
         </span>
         <span className="flex items-center gap-[7px]">
           <span className="h-2 w-2 flex-none rounded-full border-[1.5px] border-node bg-route" />
@@ -310,106 +392,6 @@ function MapChrome({ caption }: { caption?: string }) {
         </div>
       ) : null}
     </>
-  )
-}
-
-interface StateClickOverlayProps {
-  stateStatsByCode: Map<string, StateRouteStats>
-  onSelectState?: (state: string) => void
-}
-
-function StateClickOverlay({
-  stateStatsByCode,
-  onSelectState,
-}: StateClickOverlayProps) {
-  const map = useMap()
-  const [points, setPoints] = useState<
-    Array<{
-      state: string
-      label: string
-      x: number
-      y: number
-      stats?: StateRouteStats
-    }>
-  >([])
-  const [isMoving, setIsMoving] = useState(false)
-
-  useEffect(() => {
-    const updatePoints = () => {
-      setPoints(
-        STATE_LABELS.map(([state, label, lat, lon]) => {
-          const point = map.latLngToContainerPoint([lat, lon])
-          return {
-            state,
-            label,
-            x: point.x,
-            y: point.y,
-            stats: stateStatsByCode.get(state),
-          }
-        }),
-      )
-      setIsMoving(false)
-    }
-    const markMoving = () => setIsMoving(true)
-
-    updatePoints()
-    map.on('movestart zoomstart', markMoving)
-    map.on('moveend zoomend resize', updatePoints)
-
-    return () => {
-      map.off('movestart zoomstart', markMoving)
-      map.off('moveend zoomend resize', updatePoints)
-    }
-  }, [map, stateStatsByCode])
-
-  return (
-    <div
-      className={cx(
-        'pointer-events-none absolute inset-0 z-[650] transition-opacity duration-200',
-        isMoving ? 'opacity-0' : 'opacity-100',
-      )}
-      aria-label="State map shortcuts"
-    >
-      {points.map(({ state, label, x, y, stats }) => {
-        const isVisited = Boolean(stats && stats.routeStations > 0)
-        const isClickable = Boolean(stats && onSelectState)
-
-        return (
-          <button
-            key={state}
-            type="button"
-            aria-label={`${label} state details`}
-            disabled={!isClickable}
-            style={{ left: x, top: y }}
-            title={
-              stats
-                ? `${label}: ${stats.routeStations} of ${stats.totalStations} sites`
-                : label
-            }
-            className={cx(
-              'pointer-events-auto absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-px rounded-lg px-[7px] py-1 font-mono leading-none whitespace-nowrap transition cursor-pointer disabled:cursor-default',
-              isVisited
-                ? 'z-[4] border border-good-bd bg-good-bg text-good shadow-card'
-                : stats
-                  ? 'z-[2] border border-idle-bd bg-idle-bg text-idle'
-                  : 'z-[2] border border-idle-bd bg-idle-bg text-idle opacity-70',
-            )}
-            onClick={(event) => {
-              event.stopPropagation()
-              if (stats) onSelectState?.(state)
-            }}
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <span className="text-[11px] font-semibold tracking-[0.02em]">{state}</span>
-            {isVisited && stats && (
-              <span className="text-[9.5px] leading-none opacity-85">
-                {stats.routeStations}/{stats.totalStations}
-              </span>
-            )}
-          </button>
-        )
-      })}
-    </div>
   )
 }
 

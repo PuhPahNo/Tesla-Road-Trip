@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import type { RoutePlan, StationUniverseStats } from '../domain/types'
 import type { StateRouteStats } from '../domain/routeStats'
 import type { StationsResponse } from '../api/client'
@@ -33,6 +33,8 @@ export interface SidebarProps {
   roadStatus: RoadStatusVM
   passportDeadline: string
   onSelectState: (state: string) => void
+  onHoverState?: (state: string | undefined) => void
+  highlightedState?: string
   onRefresh: () => void
   className?: string
 }
@@ -150,7 +152,7 @@ export function FeasibilitySection({
   const strong = feasibility.verdict === 'not_plausible'
 
   return (
-    <Collapsible eyebrow="All-sites reality check" title={verdict.title}>
+    <Collapsible defaultOpen eyebrow="All-sites reality check" title={verdict.title}>
       <div className="flex flex-col gap-2.5 px-3.5 pb-3.5 pt-0.5">
         <div className="font-mono text-[11.5px] leading-[1.5] text-dim">
           <span className="text-ink">
@@ -182,13 +184,82 @@ const MAX_COVERAGE_ROWS = 12
 export function CoverageSection({
   stats,
   onSelectState,
+  onHoverState,
+  highlightedState,
+  bare,
 }: {
   stats: StateRouteStats[]
   onSelectState: (s: string) => void
+  onHoverState?: (s: string | undefined) => void
+  highlightedState?: string
+  /** Render the list without the collapsible chrome (e.g. inside a dedicated tab). */
+  bare?: boolean
 }) {
   const maxPct = stats.reduce((max, stat) => Math.max(max, stat.coveragePct), 0)
   const rows = stats.slice(0, MAX_COVERAGE_ROWS)
   const overflow = Math.max(0, stats.length - MAX_COVERAGE_ROWS)
+
+  const list = (
+    <div className="flex flex-col gap-1.5">
+      {rows.length === 0 ? (
+        <div className="text-[12px] text-faint">No states on this route yet.</div>
+      ) : (
+        rows.map((stat) => {
+          const barPct = maxPct > 0 ? (stat.coveragePct / maxPct) * 100 : 0
+          const active = highlightedState === stat.state
+          return (
+            <button
+              key={`${stat.country}-${stat.state}`}
+              type="button"
+              onClick={() => onSelectState(stat.state)}
+              onMouseEnter={() => onHoverState?.(stat.state)}
+              onMouseLeave={() => onHoverState?.(undefined)}
+              onFocus={() => onHoverState?.(stat.state)}
+              onBlur={() => onHoverState?.(undefined)}
+              aria-label={`${stat.state} coverage ${stat.coveragePct}%`}
+              className={cx(
+                'block w-full min-h-11 cursor-pointer rounded-lg px-2 py-1.5 text-left transition md:min-h-0',
+                active ? 'bg-panel2 ring-1 ring-accent2/40' : 'hover:bg-panel2',
+              )}
+            >
+              <div className="mb-[5px] flex items-baseline justify-between gap-2">
+                <span className="min-w-0 truncate text-[12.5px] font-semibold text-ink">
+                  {stat.state}
+                  <span className="ml-[7px] font-mono text-[11px] font-normal text-faint">
+                    {stat.routeStations} of {stat.totalStations} ·{' '}
+                    {stat.miles.toLocaleString()} mi
+                  </span>
+                </span>
+                <span className="flex-none font-mono text-[12px] text-ink">
+                  {stat.coveragePct}%
+                </span>
+              </div>
+              <ProgressBar pct={barPct} tone="accent2" className="h-1.5" />
+            </button>
+          )
+        })
+      )}
+      {overflow > 0 ? (
+        <div className="px-2 font-mono text-[11px] text-faint">
+          +{overflow} more {overflow === 1 ? 'state' : 'states'}
+        </div>
+      ) : null}
+    </div>
+  )
+
+  if (bare) {
+    return (
+      <div className="flex flex-col gap-2">
+        <div className="flex items-baseline justify-between px-1">
+          <Eyebrow>Stations by state</Eyebrow>
+          <span className="font-mono text-[11px] text-dim">
+            {stats.length} {stats.length === 1 ? 'state' : 'states'}
+          </span>
+        </div>
+        {list}
+      </div>
+    )
+  }
 
   return (
     <Collapsible
@@ -197,43 +268,7 @@ export function CoverageSection({
       title="Stations by state"
       meta={`${stats.length} ${stats.length === 1 ? 'state' : 'states'}`}
     >
-      <div className="flex flex-col gap-[11px] px-3.5 pb-3.5 pt-1">
-        {rows.length === 0 ? (
-          <div className="text-[12px] text-faint">No states on this route yet.</div>
-        ) : (
-          rows.map((stat) => {
-            const barPct = maxPct > 0 ? (stat.coveragePct / maxPct) * 100 : 0
-            return (
-              <button
-                key={`${stat.country}-${stat.state}`}
-                type="button"
-                onClick={() => onSelectState(stat.state)}
-                aria-label={`${stat.state} coverage ${stat.coveragePct}%`}
-                className="block w-full min-h-11 cursor-pointer rounded-md text-left transition hover:brightness-110 md:min-h-0"
-              >
-                <div className="mb-[5px] flex items-baseline justify-between gap-2">
-                  <span className="min-w-0 truncate text-[12.5px] font-semibold text-ink">
-                    {stat.state}
-                    <span className="ml-[7px] font-mono text-[11px] font-normal text-faint">
-                      {stat.routeStations} of {stat.totalStations} ·{' '}
-                      {stat.miles.toLocaleString()} mi
-                    </span>
-                  </span>
-                  <span className="flex-none font-mono text-[12px] text-ink">
-                    {stat.coveragePct}%
-                  </span>
-                </div>
-                <ProgressBar pct={barPct} className="h-1.5" />
-              </button>
-            )
-          })
-        )}
-        {overflow > 0 ? (
-          <div className="font-mono text-[11px] text-faint">
-            +{overflow} more {overflow === 1 ? 'state' : 'states'}
-          </div>
-        ) : null}
-      </div>
+      <div className="px-3.5 pb-3.5 pt-1">{list}</div>
     </Collapsible>
   )
 }
@@ -337,8 +372,16 @@ export function GuardrailsSection({
 }
 
 /* ------------------------------------------------------------------ */
-/* Sidebar — stacks the sections                                       */
+/* Sidebar — Overview / Coverage / Status tabs                         */
 /* ------------------------------------------------------------------ */
+type SidebarTab = 'overview' | 'coverage' | 'status'
+
+const SIDEBAR_TABS: { key: SidebarTab; label: string }[] = [
+  { key: 'overview', label: 'Overview' },
+  { key: 'coverage', label: 'Coverage' },
+  { key: 'status', label: 'Status' },
+]
+
 export function Sidebar({
   route,
   stationStatus,
@@ -348,27 +391,80 @@ export function Sidebar({
   roadStatus,
   passportDeadline,
   onSelectState,
+  onHoverState,
+  highlightedState,
   onRefresh,
   className,
 }: SidebarProps) {
+  const [tab, setTab] = useState<SidebarTab>('overview')
+
   return (
-    <aside
-      aria-label="Trip overview"
-      className={cx('flex flex-col gap-3 overflow-y-auto p-4', className)}
-    >
-      <div className="flex flex-col gap-2">
-        <Eyebrow>Trip overview</Eyebrow>
-        <HeroStats route={route} />
+    <div className={cx('flex min-h-0 flex-col', className)}>
+      <div role="tablist" aria-label="Trip panels" className="flex flex-none border-b border-edge px-2">
+        {SIDEBAR_TABS.map((t) => {
+          const active = tab === t.key
+          return (
+            <button
+              key={t.key}
+              role="tab"
+              type="button"
+              aria-selected={active}
+              onClick={() => setTab(t.key)}
+              className={cx(
+                'relative flex-1 px-2 py-2.5 text-[12.5px] font-semibold transition cursor-pointer',
+                active ? 'text-ink' : 'text-faint hover:text-dim',
+              )}
+            >
+              {t.label}
+              {active && (
+                <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-accent" />
+              )}
+            </button>
+          )
+        })}
       </div>
-      <RouteNotes route={route} />
-      <FeasibilitySection feasibility={feasibility} />
-      <CoverageSection stats={routeStateStats} onSelectState={onSelectState} />
-      <SourceSection
-        stationStatus={stationStatus}
-        isLoadingStations={isLoadingStations}
-        onRefresh={onRefresh}
-      />
-      <GuardrailsSection passportDeadline={passportDeadline} roadStatus={roadStatus} />
-    </aside>
+
+      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
+        {tab === 'overview' && (
+          <>
+            <div className="flex flex-col gap-2">
+              <Eyebrow>Trip overview</Eyebrow>
+              <HeroStats route={route} />
+            </div>
+            <RouteNotes route={route} />
+            <FeasibilitySection feasibility={feasibility} />
+            {!route && (
+              <div className="text-[12.5px] text-faint">
+                Run Optimize to generate a route, then explore coverage and status here.
+              </div>
+            )}
+          </>
+        )}
+
+        {tab === 'coverage' && (
+          <CoverageSection
+            bare
+            stats={routeStateStats}
+            onSelectState={onSelectState}
+            onHoverState={onHoverState}
+            highlightedState={highlightedState}
+          />
+        )}
+
+        {tab === 'status' && (
+          <>
+            <SourceSection
+              stationStatus={stationStatus}
+              isLoadingStations={isLoadingStations}
+              onRefresh={onRefresh}
+            />
+            <GuardrailsSection
+              passportDeadline={passportDeadline}
+              roadStatus={roadStatus}
+            />
+          </>
+        )}
+      </div>
+    </div>
   )
 }
