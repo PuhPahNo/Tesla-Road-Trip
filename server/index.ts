@@ -1,6 +1,8 @@
 import 'dotenv/config'
 import cors from 'cors'
 import { createHash } from 'node:crypto'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import express from 'express'
 import { registerAgentRoutes } from './agent'
 import {
@@ -551,6 +553,24 @@ function chunkByDistance(
   }
 
   return chunks
+}
+
+// In production (single Render web service), serve the built frontend from this
+// same server so the SPA and /api share one origin. SERVE_CLIENT gates it so the
+// dev API server stays API-only (Vite serves the client in dev).
+if (process.env.SERVE_CLIENT) {
+  const clientDir = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    '../dist',
+  )
+  app.use(express.static(clientDir))
+  app.use((request, response) => {
+    if (request.method === 'GET' && !request.path.startsWith('/api')) {
+      response.sendFile(path.join(clientDir, 'index.html'))
+      return
+    }
+    response.status(404).json({ error: 'not_found' })
+  })
 }
 
 app.listen(PORT, () => {
