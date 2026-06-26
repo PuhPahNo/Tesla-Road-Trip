@@ -14,6 +14,8 @@ export interface RefineRouteResponse {
   route: RoutePlan
   roadLine: Coordinate[]
   warnings: string[]
+  /** True when the engine was rejected and these legs are straight-line estimates. */
+  degraded?: boolean
 }
 
 export interface StationsResponse {

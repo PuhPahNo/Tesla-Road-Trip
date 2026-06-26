@@ -7,6 +7,9 @@ export interface ConfigModalProps {
   config: PlannerConfig
   open: boolean
   isOptimizing: boolean
+  /** When a routing engine is live, drive times come from real durations, so the
+   *  averageMph slider is bypassed and hidden in favor of a read-only note. */
+  roadRoutingEnabled: boolean
   onClose: () => void
   onChange: (config: PlannerConfig) => void
   onApply: () => void
@@ -290,10 +293,36 @@ function ToggleRow({
   )
 }
 
+/* ------------------------------------------------------------------ */
+/* Read-only info row (e.g. averageMph bypassed by a live engine)      */
+/* ------------------------------------------------------------------ */
+function InfoRow({
+  label,
+  hint,
+  badge,
+}: {
+  label: string
+  hint: string
+  badge: string
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 border-b border-edge px-5 py-3.5 md:px-6">
+      <div className="min-w-0">
+        <div className="truncate text-[13.5px] font-semibold text-ink">{label}</div>
+        <div className="mt-0.5 text-[11.5px] text-faint">{hint}</div>
+      </div>
+      <span className="flex-none whitespace-nowrap rounded-full border border-accent/30 bg-accent/10 px-2.5 py-1 font-mono text-[10.5px] uppercase tracking-[0.08em] text-accent">
+        {badge}
+      </span>
+    </div>
+  )
+}
+
 export function ConfigModal({
   config,
   open,
   isOptimizing,
+  roadRoutingEnabled,
   onClose,
   onChange,
   onApply,
@@ -341,7 +370,23 @@ export function ConfigModal({
 
         {/* Trip targets */}
         <SectionHeading>Trip targets</SectionHeading>
-        {renderSliders(TRIP_TARGETS)}
+        {TRIP_TARGETS.map((spec) =>
+          spec.key === 'averageMph' && roadRoutingEnabled ? (
+            <InfoRow
+              key={spec.key}
+              label="Average speed"
+              hint="Bypassed — drive times use real road speed limits"
+              badge="Live road times"
+            />
+          ) : (
+            <SliderRow
+              key={spec.key}
+              spec={spec}
+              value={config[spec.key]}
+              onChange={(next) => setNumber(spec.key, next)}
+            />
+          ),
+        )}
 
         {/* Daily limits */}
         <SectionHeading>Daily limits</SectionHeading>

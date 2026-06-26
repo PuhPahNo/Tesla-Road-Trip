@@ -73,7 +73,9 @@ function App() {
   const [error, setError] = useState<string>()
   const [roadRoutes, setRoadRoutes] = useState<Record<string, Coordinate[]>>({})
   const [refinedRoutes, setRefinedRoutes] = useState<Record<string, RoutePlan>>({})
-  // True only when a real (non-demo) OSRM engine is configured server-side.
+  // True only when a routing engine (OpenRouteService / real OSRM) is configured
+  // AND currently working — a missing, invalid, or quota-exhausted key reports
+  // false, which restores estimate mode and the manual Average-speed control.
   const [roadRoutingEnabled, setRoadRoutingEnabled] = useState(false)
   const [roadRouteState, setRoadRouteState] = useState<RoadRouteState>({ status: 'idle' })
   const [selectedStateCode, setSelectedStateCode] = useState<string>()
@@ -227,6 +229,13 @@ function App() {
           line: response.roadLine,
           warning: response.warnings[0],
         })
+        // The ORS key was rejected/exhausted: these legs are straight-line
+        // estimates. Drop back to estimate mode so the manual Average-speed
+        // control returns and the status reads "estimate".
+        if (response.degraded) {
+          setRoadRoutingEnabled(false)
+          showToast(response.warnings[0] ?? 'Road routing unavailable — using estimates')
+        }
       })
       .catch((requestError) => {
         if (cancelled) return
@@ -489,6 +498,7 @@ function App() {
         config={config}
         open={configOpen}
         isOptimizing={isOptimizing}
+        roadRoutingEnabled={roadRoutingEnabled}
         onClose={() => setConfigOpen(false)}
         onChange={(next) => setConfig(sanitizePlannerConfig(next))}
         onApply={runOptimize}

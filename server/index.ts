@@ -45,7 +45,45 @@ const ROAD_PROVIDER: 'ors' | 'osrm' | 'none' = ORS_API_KEY
   : OSRM_REAL
     ? 'osrm'
     : 'none'
-const ROAD_ROUTING_ENABLED = ROAD_PROVIDER !== 'none'
+// ORS health: the UI should treat road routing as "on" only when the key actually
+// works. A present-but-invalid or quota-exhausted ORS key must flip the site back
+// to estimate mode (which brings back the manual Average-speed control), so we
+// validate the key with a cheap cached probe and also mark it unhealthy whenever a
+// real routing call is rejected.
+const ORS_HEALTH_TTL_MS = 1000 * 60 * 5
+// Two close, reliably-routable points (downtown SF -> Oakland) used only to probe
+// whether the ORS key authenticates and still has quota.
+const ORS_PROBE_COORDS: LatLon[] = [
+  { lat: 37.7749, lon: -122.4194 },
+  { lat: 37.8044, lon: -122.2712 },
+]
+let orsHealth = { ok: true, checkedAt: 0, reason: '' }
+
+function markOrsHealth(ok: boolean, reason = ''): void {
+  orsHealth = { ok, checkedAt: Date.now(), reason }
+}
+
+/** One cheap ORS request to confirm the key authenticates and has quota. */
+async function probeOrsKey(): Promise<boolean> {
+  try {
+    await requestOrsChunk(ORS_PROBE_COORDS, () => {}, 1)
+    markOrsHealth(true)
+    return true
+  } catch (error) {
+    markOrsHealth(false, error instanceof Error ? error.message : 'ORS probe failed')
+    return false
+  }
+}
+
+/** Whether road routing is actually usable right now (presence AND validity). */
+async function isRoadRoutingHealthy(): Promise<boolean> {
+  if (ROAD_PROVIDER === 'none') return false
+  if (ROAD_PROVIDER === 'osrm') return true
+  // ORS: serve cached health, refreshing with a cheap probe when stale.
+  if (Date.now() - orsHealth.checkedAt < ORS_HEALTH_TTL_MS) return orsHealth.ok
+  return probeOrsKey()
+}
+
 const CACHE_TTL_MS = 1000 * 60 * 60
 const MAX_OSRM_COORDINATES = 32
 const PORT = Number(process.env.PORT ?? 4177)
@@ -129,12 +167,13 @@ const app = express()
 app.use(cors())
 app.use(express.json({ limit: '1mb' }))
 
-app.get('/api/health', (_request, response) => {
+app.get('/api/health', async (_request, response) => {
+  const enabled = await isRoadRoutingHealthy()
   response.json({
     ok: true,
     service: 'tesla-supercharger-quest',
     time: new Date().toISOString(),
-    roadRouting: { enabled: ROAD_ROUTING_ENABLED, provider: ROAD_PROVIDER },
+    roadRouting: { enabled, provider: ROAD_PROVIDER },
   })
 })
 
@@ -280,6 +319,10 @@ app.post('/api/refine-route', async (request, response) => {
       route: refined,
       roadLine: road.roadLine,
       warnings: road.warnings,
+      // True when the engine was rejected (bad key / exhausted quota) and these
+      // are straight-line estimates — the client uses this to drop back to
+      // estimate mode and restore the manual Average-speed control.
+      degraded: road.degraded ?? false,
     })
   } catch (error) {
     response.status(502).json({
@@ -318,6 +361,8 @@ interface RoadResult {
   legDriveHours: number[]
   warnings: string[]
   requestCount: number
+  /** True when the engine failed and the result is a straight-line estimate. */
+  degraded?: boolean
 }
 
 /** Dispatch to the configured engine: OpenRouteService (preferred) or OSRM. */
@@ -329,6 +374,16 @@ async function fetchRoadProvider(coordinates: LatLon[]) {
 }
 
 /* ---- OpenRouteService (true speed-limit durations) ---- */
+
+/** Carries the HTTP status so callers can tell auth/quota failures apart. */
+class OrsError extends Error {
+  status?: number
+  constructor(message: string, status?: number) {
+    super(message)
+    this.status = status
+  }
+}
+
 async function fetchOrsRoute(coordinates: LatLon[]): Promise<RoadResult> {
   const chunks = chunkByDistance(
     coordinates,
@@ -340,26 +395,50 @@ async function fetchOrsRoute(coordinates: LatLon[]): Promise<RoadResult> {
   const legDriveHours: number[] = []
   let requestCount = 0
 
-  for (const chunk of chunks) {
-    const segment = await requestOrsChunk(chunk, () => {
-      requestCount += 1
-    })
-    if (roadLine.length > 0) segment.geometry.shift()
-    roadLine.push(...segment.geometry)
-    legMiles.push(...segment.legMiles)
-    legDriveHours.push(...segment.legDriveHours)
+  try {
+    for (const chunk of chunks) {
+      const segment = await requestOrsChunk(chunk, () => {
+        requestCount += 1
+      })
+      if (roadLine.length > 0) segment.geometry.shift()
+      roadLine.push(...segment.geometry)
+      legMiles.push(...segment.legMiles)
+      legDriveHours.push(...segment.legDriveHours)
+    }
+    markOrsHealth(true)
+    return { roadLine, legMiles, legDriveHours, warnings: [], requestCount }
+  } catch (error) {
+    // ORS failed — most often an expired key (401/403) or an exhausted free-tier
+    // quota (429). Don't 502 the whole route: return straight-line geometry with
+    // NO per-leg data so the caller fills every leg with the haversine estimate,
+    // and flag the key unhealthy so /api/health flips the UI back to estimate mode.
+    const status = error instanceof OrsError ? error.status : undefined
+    markOrsHealth(false, error instanceof Error ? error.message : 'ORS request failed')
+    const note =
+      status === 429
+        ? 'OpenRouteService quota is exhausted — showing straight-line estimates for this route.'
+        : status === 401 || status === 403
+          ? 'OpenRouteService rejected the API key — showing straight-line estimates for this route.'
+          : 'OpenRouteService was unavailable — showing straight-line estimates for this route.'
+    return {
+      roadLine: coordinates,
+      legMiles: [],
+      legDriveHours: [],
+      warnings: [note],
+      requestCount,
+      degraded: true,
+    }
   }
-
-  return { roadLine, legMiles, legDriveHours, warnings: [], requestCount }
 }
 
 async function requestOrsChunk(
   coordinates: LatLon[],
   countRequest: () => void,
+  maxAttempts = 2,
 ): Promise<RoadSegment> {
   const url = `${ORS_BASE_URL.replace(/\/$/, '')}/v2/directions/driving-car/geojson`
   let lastError: unknown
-  for (let attempt = 0; attempt < 2; attempt += 1) {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     countRequest()
     try {
       const res = await fetch(url, {
@@ -375,7 +454,10 @@ async function requestOrsChunk(
       })
       if (!res.ok) {
         const body = await res.text()
-        throw new Error(`ORS responded with ${res.status}: ${body.slice(0, 240)}`)
+        throw new OrsError(
+          `ORS responded with ${res.status}: ${body.slice(0, 240)}`,
+          res.status,
+        )
       }
       const payload = (await res.json()) as {
         features?: Array<{
@@ -394,6 +476,14 @@ async function requestOrsChunk(
       }
     } catch (error) {
       lastError = error
+      // A bad key (401/403) or exhausted quota (429) won't recover on retry —
+      // don't burn a second billed call.
+      if (
+        error instanceof OrsError &&
+        (error.status === 401 || error.status === 403 || error.status === 429)
+      ) {
+        break
+      }
     }
   }
   throw lastError
@@ -575,4 +665,7 @@ if (process.env.SERVE_CLIENT) {
 
 app.listen(PORT, () => {
   console.log(`Tesla Supercharger Quest API listening on http://localhost:${PORT}`)
+  // Warm the ORS health cache so the first /api/health reflects key validity
+  // immediately (and the UI shows estimate mode right away if the key is bad).
+  if (ROAD_PROVIDER === 'ors') void probeOrsKey()
 })
