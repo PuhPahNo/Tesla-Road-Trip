@@ -388,6 +388,7 @@ function App() {
       {!isMobile && (
         <DailyPlanDrawer
           route={displayRoute}
+          roadStatus={roadStatus.status}
           open={drawerOpen}
           onToggleOpen={() => setDrawerOpen((o) => !o)}
           onOpenDay={handleOpenDay}
@@ -452,7 +453,11 @@ function App() {
               onClose={() => setMobileSheet(null)}
             />
             <div className="min-h-0 flex-1 overflow-y-auto">
-              <DayTable route={displayRoute} onOpenDay={handleOpenDay} />
+              <DayTable
+                route={displayRoute}
+                roadStatus={roadStatus.status}
+                onOpenDay={handleOpenDay}
+              />
             </div>
           </Overlay>
 

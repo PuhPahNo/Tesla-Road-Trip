@@ -1,4 +1,6 @@
 import {
+  useEffect,
+  useRef,
   useState,
   type FormEvent,
   type KeyboardEvent,
@@ -33,6 +35,7 @@ interface RouteCopilotProps {
 interface CopilotMessage {
   role: 'user' | 'assistant'
   text: string
+  actions?: string[]
 }
 
 const SEED_MESSAGE: CopilotMessage = {
@@ -77,6 +80,13 @@ function MessageBubble({ message }: { message: CopilotMessage }) {
         )}
       >
         {message.text}
+        {!isUser && message.actions && message.actions.length > 0 ? (
+          <div className="mt-2 border-t border-edge pt-2 font-mono text-[10.5px] leading-snug text-faint">
+            {message.actions.map((action, index) => (
+              <div key={`${action}-${index}`}>{action}</div>
+            ))}
+          </div>
+        ) : null}
       </div>
     </div>
   )
@@ -84,16 +94,35 @@ function MessageBubble({ message }: { message: CopilotMessage }) {
 
 function MessageList({
   messages,
+  sending,
   className,
 }: {
   messages: CopilotMessage[]
+  sending?: boolean
   className?: string
 }) {
+  const endRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ block: 'end' })
+  }, [messages, sending])
+
   return (
-    <div className={cx('flex flex-col gap-3', className)}>
+    <div className={cx('flex flex-col gap-3', className)} aria-live="polite">
       {messages.map((message, i) => (
         <MessageBubble key={i} message={message} />
       ))}
+      {sending ? (
+        <div className="flex justify-start">
+          <div className="rounded-[14px_14px_14px_4px] border border-edge bg-panel2 px-3 py-2 text-[13px] leading-relaxed text-ink">
+            <span className="inline-flex items-center gap-2">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-accent2" />
+              Working with the route planner...
+            </span>
+          </div>
+        </div>
+      ) : null}
+      <div ref={endRef} />
     </div>
   )
 }
@@ -234,6 +263,7 @@ export function RouteCopilot({
     if (!trimmed || sending) return
 
     setMessages((prev) => [...prev, { role: 'user', text: trimmed }])
+    setInput('')
     setSending(true)
     try {
       const response = await sendPlannerAgentMessage({
@@ -241,14 +271,20 @@ export function RouteCopilot({
         config,
         selectedRouteId,
       })
-      setMessages((prev) => [...prev, { role: 'assistant', text: response.message }])
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          text: response.message,
+          actions: response.actions,
+        },
+      ])
       onApply(response)
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Something went wrong. Please try again.'
       setMessages((prev) => [...prev, { role: 'assistant', text: message }])
     } finally {
-      setInput('')
       setSending(false)
     }
   }
@@ -303,7 +339,7 @@ export function RouteCopilot({
           onClose={onClose}
         />
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-4">
-          <MessageList messages={messages} />
+          <MessageList messages={messages} sending={sending} />
         </div>
         <div className="flex flex-col gap-2.5 border-t border-edge px-5 pt-3 pb-[max(16px,env(safe-area-inset-bottom))]">
           <SuggestionChips onPick={handleSuggestion} disabled={sending} />
@@ -324,7 +360,7 @@ export function RouteCopilot({
       <div className="anim-slidein flex min-h-0 w-[340px] flex-none flex-col border-r border-edge bg-panel">
         <CopilotHeader mode={mode} onSetMode={onSetMode} onClose={onClose} />
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
-          <MessageList messages={messages} />
+          <MessageList messages={messages} sending={sending} />
         </div>
         <div className="flex flex-col gap-2.5 border-t border-edge px-3.5 py-3">
           <SuggestionChips onPick={handleSuggestion} disabled={sending} />
@@ -347,7 +383,7 @@ export function RouteCopilot({
       <div className="anim-pop fixed bottom-[max(18px,env(safe-area-inset-bottom))] left-[18px] z-[901] flex max-h-[560px] w-[360px] flex-col overflow-hidden rounded-2xl border border-edge2 bg-panel shadow-card">
         <CopilotHeader mode={mode} onSetMode={onSetMode} onClose={onClose} />
         <div className="min-h-[180px] flex-1 overflow-y-auto p-[15px]">
-          <MessageList messages={messages} />
+          <MessageList messages={messages} sending={sending} />
         </div>
         <div className="flex flex-col gap-2.5 border-t border-edge px-3.5 py-3">
           <SuggestionChips onPick={handleSuggestion} disabled={sending} />
@@ -381,7 +417,14 @@ export function RouteCopilot({
           <div className="flex flex-wrap gap-1.5 px-3.5 pb-3">
             <SuggestionChips onPick={handleSuggestion} disabled={sending} />
           </div>
-          {lastAssistant ? (
+          {sending ? (
+            <div className="border-t border-edge bg-panel2 px-4 py-3 text-[13px] leading-relaxed text-ink">
+              <span className="inline-flex items-center gap-2">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-accent2" />
+                Working with the route planner...
+              </span>
+            </div>
+          ) : lastAssistant ? (
             <div className="border-t border-edge bg-panel2 px-4 py-3 text-[13px] leading-relaxed text-ink">
               <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-accent2">
                 Copilot

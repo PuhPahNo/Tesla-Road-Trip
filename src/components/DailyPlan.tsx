@@ -12,6 +12,7 @@ const GRID_MIN_WIDTH = 600
 export interface DayTableProps {
   route?: RoutePlan
   onOpenDay: (dayIndex: number) => void
+  roadStatus?: 'idle' | 'loading' | 'ready' | 'error' | 'estimate'
 }
 
 function DayRow({
@@ -74,7 +75,7 @@ function DayRow({
   )
 }
 
-export function DayTable({ route, onOpenDay }: DayTableProps) {
+export function DayTable({ route, onOpenDay, roadStatus }: DayTableProps) {
   if (!route) {
     return (
       <div className="flex flex-1 items-center justify-center px-6 py-10 text-center text-[13px] text-dim">
@@ -85,12 +86,27 @@ export function DayTable({ route, onOpenDay }: DayTableProps) {
 
   const longDays = route.days.filter((day) => day.longDayOptimized).length
   const auxLegs = route.visits.filter((visit) => visit.rangeWarning).length
+  const routeStatus =
+    roadStatus === 'loading'
+      ? 'Refining road miles...'
+      : roadStatus === 'ready'
+        ? 'Road miles loaded'
+        : roadStatus === 'estimate'
+          ? 'Estimate mode'
+          : roadStatus === 'error'
+            ? 'Road fallback'
+            : undefined
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {/* Pills row */}
       <div className="flex flex-wrap items-center gap-2 border-b border-edge px-[18px] py-2.5">
         <Pill tone="neutral">{route.stationsPerDay} sites/day</Pill>
+        {routeStatus ? (
+          <Pill tone={roadStatus === 'ready' ? 'good' : roadStatus === 'error' ? 'warn' : 'info'}>
+            {routeStatus}
+          </Pill>
+        ) : null}
         {longDays > 0 && (
           <Pill tone="warn">
             {longDays} long {longDays === 1 ? 'day' : 'days'}
@@ -139,6 +155,7 @@ export function DailyPlanDrawer({
   onOpenDay,
   open,
   onToggleOpen,
+  roadStatus,
 }: DailyPlanDrawerProps) {
   return (
     <div
@@ -171,7 +188,7 @@ export function DailyPlanDrawer({
         </Button>
       </div>
 
-      {open && <DayTable route={route} onOpenDay={onOpenDay} />}
+      {open && <DayTable route={route} onOpenDay={onOpenDay} roadStatus={roadStatus} />}
     </div>
   )
 }

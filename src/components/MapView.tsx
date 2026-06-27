@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useRef } from 'react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import {
   CircleMarker,
   GeoJSON,
@@ -73,20 +73,6 @@ export const MapView = memo(function MapView({
     () => new Map(stateStats.map((state) => [state.state, state])),
     [stateStats],
   )
-  const rawRouteLine = useMemo(
-    () =>
-      roadLine
-        ? simplifyPolyline(roadLine, ROAD_OVERVIEW_TOLERANCE_MILES)
-        : route?.routeLine,
-    [roadLine, route?.routeLine],
-  )
-  const routePositions = useMemo(
-    () =>
-      downsampleLine(rawRouteLine ?? [], MAX_POLYLINE_POINTS).map(
-        (point) => [point.lat, point.lon] as [number, number],
-      ),
-    [rawRouteLine],
-  )
   const routeVisits = useMemo(
     () => selectRouteMarkers(route?.visits ?? [], MAX_ROUTE_MARKERS),
     [route?.visits],
@@ -120,7 +106,6 @@ export const MapView = memo(function MapView({
         onHoverState={onHoverState}
       />
 
-      {route && <FitRoute positions={routePositions} />}
       {showAllStations &&
         stations.map((station) => (
           <CircleMarker
@@ -154,37 +139,7 @@ export const MapView = memo(function MapView({
 
       {route && (
         <>
-          {isDark && (
-            <Polyline
-              positions={routePositions}
-              smoothFactor={roadLine ? ROAD_POLYLINE_SMOOTH_FACTOR : 1}
-              pathOptions={{
-                color: route.color,
-                opacity: 0.25,
-                weight: roadLine ? 16 : 13,
-                lineCap: 'round',
-                lineJoin: 'round',
-              }}
-            />
-          )}
-          <Polyline
-            positions={routePositions}
-            smoothFactor={roadLine ? ROAD_POLYLINE_SMOOTH_FACTOR : 1}
-            pathOptions={{
-              color: '#ffffff',
-              opacity: roadLine ? 0.9 : 0.72,
-              weight: roadLine ? 9 : 7,
-            }}
-          />
-          <Polyline
-            positions={routePositions}
-            smoothFactor={roadLine ? ROAD_POLYLINE_SMOOTH_FACTOR : 1}
-            pathOptions={{
-              color: route.color,
-              opacity: roadLine ? 0.92 : 0.78,
-              weight: roadLine ? 4 : 3,
-            }}
-          />
+          <RouteLine route={route} roadLine={roadLine} isDark={isDark} />
           {routeVisits.map((visit) => (
             <CircleMarker
               key={`${route.id}-${visit.sequence}-${visit.station.id}`}
@@ -332,6 +287,114 @@ function StateChoropleth({
   )
 }
 
+function RouteLine({
+  route,
+  roadLine,
+  isDark,
+}: {
+  route: RoutePlan
+  roadLine?: Coordinate[]
+  isDark: boolean
+}) {
+  const zoom = useMapZoom()
+  const hasRoadLine = Boolean(roadLine?.length)
+  const sourceLine = hasRoadLine ? roadLine! : route.routeLine
+  const routePositions = useMemo(
+    () =>
+      downsampleLine(
+        hasRoadLine
+          ? simplifyPolyline(sourceLine, roadToleranceMilesForZoom(zoom))
+          : sourceLine,
+        maxPolylinePointsForZoom(zoom),
+      ).map((point) => [point.lat, point.lon] as [number, number]),
+    [hasRoadLine, sourceLine, zoom],
+  )
+  const fitPositions = useMemo(
+    () =>
+      downsampleLine(route.routeLine, MAX_POLYLINE_POINTS).map(
+        (point) => [point.lat, point.lon] as [number, number],
+      ),
+    [route.routeLine],
+  )
+  const smoothFactor = hasRoadLine ? roadSmoothFactorForZoom(zoom) : 1
+
+  return (
+    <>
+      <FitRoute
+        positions={fitPositions}
+        routeKey={`${route.id}-${hasRoadLine ? 'road' : 'estimate'}`}
+      />
+      {isDark && (
+        <Polyline
+          positions={routePositions}
+          smoothFactor={smoothFactor}
+          pathOptions={{
+            color: route.color,
+            opacity: 0.25,
+            weight: hasRoadLine ? 16 : 13,
+            lineCap: 'round',
+            lineJoin: 'round',
+          }}
+        />
+      )}
+      <Polyline
+        positions={routePositions}
+        smoothFactor={smoothFactor}
+        pathOptions={{
+          color: '#ffffff',
+          opacity: hasRoadLine ? 0.9 : 0.72,
+          weight: hasRoadLine ? 9 : 7,
+        }}
+      />
+      <Polyline
+        positions={routePositions}
+        smoothFactor={smoothFactor}
+        pathOptions={{
+          color: route.color,
+          opacity: hasRoadLine ? 0.92 : 0.78,
+          weight: hasRoadLine ? 4 : 3,
+        }}
+      />
+    </>
+  )
+}
+
+function useMapZoom() {
+  const map = useMap()
+  const [zoom, setZoom] = useState(map.getZoom())
+
+  useEffect(() => {
+    const update = () => setZoom(map.getZoom())
+    map.on('zoomend', update)
+    return () => {
+      map.off('zoomend', update)
+    }
+  }, [map])
+
+  return zoom
+}
+
+function roadToleranceMilesForZoom(zoom: number) {
+  if (zoom >= 10) return 0
+  if (zoom >= 8) return 0.15
+  if (zoom >= 6) return 0.75
+  return ROAD_OVERVIEW_TOLERANCE_MILES
+}
+
+function roadSmoothFactorForZoom(zoom: number) {
+  if (zoom >= 10) return 0.15
+  if (zoom >= 8) return 0.6
+  if (zoom >= 6) return 1.4
+  return ROAD_POLYLINE_SMOOTH_FACTOR
+}
+
+function maxPolylinePointsForZoom(zoom: number) {
+  if (zoom >= 10) return 50_000
+  if (zoom >= 8) return 25_000
+  if (zoom >= 6) return 10_000
+  return MAX_POLYLINE_POINTS
+}
+
 /* ------------------------------------------------------------------ */
 /* Keep Leaflet sized to the (flex-reflowing) container               */
 /* ------------------------------------------------------------------ */
@@ -420,7 +483,13 @@ function MapChrome({ caption }: { caption?: string }) {
   )
 }
 
-function FitRoute({ positions }: { positions: [number, number][] }) {
+function FitRoute({
+  positions,
+  routeKey,
+}: {
+  positions: [number, number][]
+  routeKey: string
+}) {
   const map = useMap()
 
   useEffect(() => {
@@ -429,7 +498,7 @@ function FitRoute({ positions }: { positions: [number, number][] }) {
       padding: [28, 28],
       maxZoom: 7,
     })
-  }, [map, positions])
+  }, [map, positions, routeKey])
 
   return null
 }
