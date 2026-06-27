@@ -71,6 +71,40 @@ describe('route optimizer', () => {
     expect(result.routes[0].routeLine[0]).toEqual(defaultPlannerConfig.start)
   })
 
+  it('starts every loop with a northbound first stop that is not west when available', () => {
+    const stations = [
+      makeStation(
+        900,
+        defaultPlannerConfig.start.lat - 0.01,
+        defaultPlannerConfig.start.lon - 0.02,
+        'GA',
+      ),
+      makeStation(
+        901,
+        defaultPlannerConfig.start.lat + 0.005,
+        defaultPlannerConfig.start.lon - 0.005,
+      ),
+      ...buildStationGrid(),
+    ]
+    const result = optimizeRoutes(stations, {
+      ...defaultPlannerConfig,
+      targetStations: 25,
+      tripWeeks: 9,
+    })
+
+    result.routes.forEach((route) => {
+      expect(route.visits[0]?.station.position.lat).toBeGreaterThan(
+        defaultPlannerConfig.start.lat,
+      )
+      expect(route.routeLine[1]?.lat).toBeGreaterThan(
+        defaultPlannerConfig.start.lat,
+      )
+      expect(route.routeLine[1]?.lon).toBeGreaterThanOrEqual(
+        defaultPlannerConfig.start.lon,
+      )
+    })
+  })
+
   it('reports medium auxiliary-charging advisories when practical range is too low', () => {
     const result = optimizeRoutes(buildStationGrid(), {
       ...defaultPlannerConfig,

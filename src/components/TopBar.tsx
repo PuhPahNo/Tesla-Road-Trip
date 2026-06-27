@@ -23,8 +23,8 @@ export interface TopBarProps {
 }
 
 const THEME_OPTIONS: { value: ThemeName; label: string }[] = [
-  { value: 'tesla', label: 'Tesla' },
-  { value: 'dash', label: 'Dashboard' },
+  { value: 'tesla', label: 'Light' },
+  { value: 'dash', label: 'Dark' },
 ]
 
 export function TopBar({
@@ -75,7 +75,7 @@ export function TopBar({
         />
       </div>
       <IconButton
-        label={isDark ? 'Switch to Tesla light theme' : 'Switch to Dashboard dark theme'}
+        label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
         size={44}
         className="flex-none md:hidden"
         onClick={toggleTheme}

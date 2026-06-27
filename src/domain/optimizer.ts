@@ -308,12 +308,81 @@ function chooseStationsForVariant(
     selected = [...forced, ...regular].slice(0, Math.max(target, forced.length))
   }
 
+  selected = ensureNorthFirstCandidate(
+    selected,
+    scored,
+    variant.anchors[0],
+    target,
+    forcedStationIds,
+  )
+
   return {
     selected: selected.sort(
       (a, b) => a.order - b.order || a.distanceMiles - b.distanceMiles,
     ),
     waypointWarnings,
   }
+}
+
+function ensureNorthFirstCandidate(
+  selected: ScoredStation[],
+  scored: ScoredStation[],
+  start: Coordinate,
+  target: number,
+  protectedStationIds: Set<string>,
+) {
+  if (selected.some((station) => isNorthNotWest(station.station, start))) {
+    return selected
+  }
+
+  const candidate = nearestMatchingScoredStation(scored, start, (station) =>
+    isNorthNotWest(station, start),
+  )
+  if (!candidate) return selected
+
+  const next = selected.some(
+    (station) => station.station.id === candidate.station.id,
+  )
+    ? selected.slice()
+    : [...selected, candidate]
+
+  if (next.length <= target) return next
+
+  const removable = next
+    .map((station, index) => ({ station, index }))
+    .filter(
+      ({ station }) =>
+        station.station.id !== candidate.station.id &&
+        !protectedStationIds.has(station.station.id),
+    )
+    .sort((a, b) => b.station.distanceMiles - a.station.distanceMiles)[0]
+
+  if (removable) {
+    next.splice(removable.index, 1)
+  }
+
+  return next
+}
+
+function nearestMatchingScoredStation(
+  stations: ScoredStation[],
+  start: Coordinate,
+  matches: (station: Station) => boolean,
+) {
+  let best: ScoredStation | undefined
+  let bestMiles = Infinity
+
+  stations.forEach((station) => {
+    if (!matches(station.station)) return
+
+    const miles = haversineMiles(start, station.station.position)
+    if (miles < bestMiles) {
+      bestMiles = miles
+      best = station
+    }
+  })
+
+  return best
 }
 
 function scoreStations(anchors: Coordinate[], stations: Station[]) {
@@ -612,18 +681,30 @@ function optimizeStationOrder(
   selected: ScoredStation[],
   start: Coordinate,
 ): ScoredStation[] {
-  if (selected.length <= 2) return selected
+  if (selected.length === 0) return selected
 
   const cosLat = Math.cos((start.lat * Math.PI) / 180) || 1
   const projX = (p: Coordinate) => p.lon * cosLat
   const startX = projX(start)
   const startY = start.lat
 
-  // Nearest-neighbour tour from the start point.
   const remaining = selected.slice()
   const ordered: ScoredStation[] = []
-  let curX = startX
-  let curY = startY
+  const northFirstIndex = chooseNorthFirstStationIndex(remaining, start)
+  const fixedNorthFirst = northFirstIndex >= 0
+
+  if (fixedNorthFirst) {
+    const first = remaining.splice(northFirstIndex, 1)[0]
+    ordered.push(first)
+  }
+
+  // Nearest-neighbour tour from the start point, after the north-first stop.
+  let curX = fixedNorthFirst
+    ? projX(ordered[0].station.position)
+    : startX
+  let curY = fixedNorthFirst
+    ? ordered[0].station.position.lat
+    : startY
   while (remaining.length > 0) {
     let bestIndex = 0
     let bestDist = Infinity
@@ -643,6 +724,8 @@ function optimizeStationOrder(
     curY = next.station.position.lat
   }
 
+  if (ordered.length <= 2) return ordered
+
   // Bounded 2-opt over the closed loop (start -> ordered -> start).
   const xs = ordered.map((s) => projX(s.station.position))
   const ys = ordered.map((s) => s.station.position.lat)
@@ -655,7 +738,7 @@ function optimizeStationOrder(
   const MAX_PASSES = 8
   for (let pass = 0; pass < MAX_PASSES; pass += 1) {
     let improved = false
-    for (let i = 0; i < n - 1; i += 1) {
+    for (let i = fixedNorthFirst ? 1 : 0; i < n - 1; i += 1) {
       for (let j = i + 1; j < n; j += 1) {
         const before =
           (i === 0 ? toStart(i) : edge(i - 1, i)) +
@@ -681,6 +764,48 @@ function optimizeStationOrder(
   }
 
   return ordered
+}
+
+function chooseNorthFirstStationIndex(
+  stations: ScoredStation[],
+  start: Coordinate,
+) {
+  const northNotWestIndex = chooseNearestStationIndex(stations, start, (station) =>
+    isNorthNotWest(station, start),
+  )
+
+  if (northNotWestIndex >= 0) return northNotWestIndex
+
+  return chooseNearestStationIndex(
+    stations,
+    start,
+    (station) => station.position.lat > start.lat,
+  )
+}
+
+function chooseNearestStationIndex(
+  stations: ScoredStation[],
+  start: Coordinate,
+  matches: (station: Station) => boolean,
+) {
+  let bestIndex = -1
+  let bestMiles = Infinity
+
+  stations.forEach((station, index) => {
+    if (!matches(station.station)) return
+
+    const miles = haversineMiles(start, station.station.position)
+    if (miles < bestMiles) {
+      bestMiles = miles
+      bestIndex = index
+    }
+  })
+
+  return bestIndex
+}
+
+function isNorthNotWest(station: Station, start: Coordinate) {
+  return station.position.lat > start.lat && station.position.lon >= start.lon
 }
 
 /** Display polyline: the start, every stop in visiting order, then back to start. */

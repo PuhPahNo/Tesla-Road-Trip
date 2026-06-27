@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 /* =====================================================================
-   THEME TOKENS — captured from the Claude Design ("Tesla" + "Dashboard")
+   THEME TOKENS — captured from the Claude Design light + dark variants
    Dark ("dash") is the default (:root). The no-flash script in index.html
    and the ThemeProvider toggle [data-theme] on <html>.
    ===================================================================== */
