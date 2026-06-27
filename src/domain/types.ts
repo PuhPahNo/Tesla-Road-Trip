@@ -69,6 +69,7 @@ export interface RouteStationVisit {
   driveHours: number
   stopMinutes: number
   rangeWarning: boolean
+  connectorStop?: boolean
 }
 
 export type AdvisorySeverity = 'info' | 'medium' | 'high'

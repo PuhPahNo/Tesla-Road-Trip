@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { defaultPlannerConfig } from './config'
-import { optimizeRoutes } from './optimizer'
+import { optimizeRoutes, refineRouteWithRoadLegs } from './optimizer'
 import type { Station } from './types'
 
 function makeStation(index: number, lat: number, lon: number, state = 'TN'): Station {
@@ -57,15 +57,15 @@ function buildStationGrid() {
 }
 
 describe('route optimizer', () => {
-  it('generates five route candidates with day-level plans', () => {
+  it('generates many route candidates with day-level plans', () => {
     const result = optimizeRoutes(buildStationGrid(), {
       ...defaultPlannerConfig,
       targetStations: 25,
       tripWeeks: 9,
     })
 
-    expect(result.routes).toHaveLength(5)
-    expect(result.routes[0].uniqueStations).toBe(25)
+    expect(result.routes.length).toBeGreaterThanOrEqual(15)
+    expect(result.routes[0].uniqueStations).toBeGreaterThanOrEqual(25)
     expect(result.routes[0].days.length).toBeGreaterThan(1)
     expect(result.routes[0].averageDriveHoursPerDay).toBeGreaterThan(0)
     expect(result.routes[0].routeLine[0]).toEqual(defaultPlannerConfig.start)
@@ -122,6 +122,58 @@ describe('route optimizer', () => {
         route.visits.some((visit) => visit.rangeWarning),
       ),
     ).toBe(true)
+  })
+
+  it('inserts transfer connector stops into long repositioning legs', () => {
+    const result = optimizeRoutes(buildStationGrid(), {
+      ...defaultPlannerConfig,
+      targetStations: 25,
+      practicalRangeMiles: 180,
+    })
+
+    expect(
+      result.routes.some((route) =>
+        route.visits.some((visit) => visit.connectorStop),
+      ),
+    ).toBe(true)
+    expect(
+      result.routes.some((route) =>
+        route.advisories.some((advisory) =>
+          advisory.message.includes('transfer connector'),
+        ),
+      ),
+    ).toBe(true)
+  })
+
+  it('carries range forward across clustered stops before requiring another full charge', () => {
+    const orderedStations = [
+      makeStation(1000, 36.0, -84.8),
+      makeStation(1001, 36.1, -84.7),
+      makeStation(1002, 36.2, -84.6),
+    ]
+    const route = refineRouteWithRoadLegs(
+      orderedStations,
+      {
+        ...defaultPlannerConfig,
+        practicalRangeMiles: 220,
+        closeStationStopMinutes: 2,
+        distanceChargeStopMinutes: 18,
+      },
+      {
+        id: 'test-route',
+        name: 'Test Route',
+        strategy: 'Test stateful charging',
+        color: '#d72638',
+      },
+      [180, 10, 10, 100],
+      [3, 0.2, 0.2, 1.7],
+    )
+
+    expect(route.visits.map((visit) => visit.stopMinutes)).toEqual([
+      2,
+      2,
+      18,
+    ])
   })
 
   it('creates explained long days when the extra site return is high enough', () => {

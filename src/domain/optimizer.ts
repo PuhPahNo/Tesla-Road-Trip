@@ -30,6 +30,7 @@ interface RouteVariant {
   corridorMiles: number
   anchors: Coordinate[]
   forcedWaypoints: RouteWaypoint[]
+  stationFilter?: (station: Station) => boolean
 }
 
 interface ScoredStation {
@@ -38,6 +39,11 @@ interface ScoredStation {
   order: number
   segmentIndex: number
   segmentProgress: number
+  connectorStop?: boolean
+}
+
+interface ChargingState {
+  rangeRemainingMiles: number
 }
 
 const CITY = {
@@ -79,6 +85,43 @@ const CITY = {
   charlotte: { lat: 35.2271, lon: -80.8431 },
   nashville: { lat: 36.1627, lon: -86.7816 },
   memphis: { lat: 35.1495, lon: -90.049 },
+  birmingham: { lat: 33.5186, lon: -86.8104 },
+  savannah: { lat: 32.0809, lon: -81.0912 },
+  orlando: { lat: 28.5383, lon: -81.3792 },
+  raleigh: { lat: 35.7796, lon: -78.6382 },
+  richmond: { lat: 37.5407, lon: -77.436 },
+  norfolk: { lat: 36.8508, lon: -76.2859 },
+  hartford: { lat: 41.7658, lon: -72.6734 },
+  portlandMaine: { lat: 43.6591, lon: -70.2568 },
+  louisville: { lat: 38.2527, lon: -85.7585 },
+  cincinnati: { lat: 39.1031, lon: -84.512 },
+  columbus: { lat: 39.9612, lon: -82.9988 },
+  indianapolis: { lat: 39.7684, lon: -86.1581 },
+  milwaukee: { lat: 43.0389, lon: -87.9065 },
+  madison: { lat: 43.0731, lon: -89.4012 },
+  desMoines: { lat: 41.5868, lon: -93.625 },
+  omaha: { lat: 41.2565, lon: -95.9345 },
+  littleRock: { lat: 34.7465, lon: -92.2896 },
+  tulsa: { lat: 36.154, lon: -95.9928 },
+  oklahomaCity: { lat: 35.4676, lon: -97.5164 },
+  wichita: { lat: 37.6872, lon: -97.3301 },
+  austin: { lat: 30.2672, lon: -97.7431 },
+  amarillo: { lat: 35.222, lon: -101.8313 },
+  albuquerque: { lat: 35.0844, lon: -106.6504 },
+  santaFe: { lat: 35.687, lon: -105.9378 },
+  flagstaff: { lat: 35.1983, lon: -111.6513 },
+  lasVegas: { lat: 36.1699, lon: -115.1398 },
+  reno: { lat: 39.5296, lon: -119.8138 },
+  spokane: { lat: 47.6588, lon: -117.426 },
+  billings: { lat: 45.7833, lon: -108.5007 },
+  rapidCity: { lat: 44.0805, lon: -103.231 },
+  fargo: { lat: 46.8772, lon: -96.7898 },
+}
+
+function stateFilter(...states: string[]) {
+  const wanted = new Set(states)
+  return (station: Station) =>
+    station.address.country === 'USA' && wanted.has(station.address.state)
 }
 
 function buildVariants(
@@ -226,6 +269,463 @@ function buildVariants(
       ],
       forcedWaypoints: requiredWaypoints,
     },
+    {
+      id: 'california-density-sweep',
+      name: 'California Density Sweep',
+      strategy:
+        'A deadhead-heavy concept that reaches California, sweeps the California station universe, then returns through western connector stops.',
+      color: '#ef4444',
+      corridorMiles: 170,
+      anchors: [
+        start,
+        CITY.nashville,
+        CITY.memphis,
+        CITY.oklahomaCity,
+        CITY.amarillo,
+        CITY.albuquerque,
+        CITY.flagstaff,
+        CITY.lasVegas,
+        CITY.losAngeles,
+        CITY.sanDiego,
+        CITY.sanFrancisco,
+        CITY.sacramento,
+        CITY.reno,
+        CITY.saltLakeCity,
+        CITY.denver,
+        CITY.kansasCity,
+        CITY.stLouis,
+        start,
+      ],
+      forcedWaypoints: requiredWaypoints,
+      stationFilter: stateFilter('CA'),
+    },
+    {
+      id: 'texas-triangle-gulf',
+      name: 'Texas Triangle and Gulf',
+      strategy:
+        'A dense Texas-first loop through Dallas, Austin, San Antonio, Houston, Louisiana, the Gulf Coast, and the Southeast return.',
+      color: '#ea580c',
+      corridorMiles: 130,
+      anchors: [
+        start,
+        CITY.memphis,
+        CITY.littleRock,
+        CITY.dallas,
+        CITY.austin,
+        CITY.sanAntonio,
+        CITY.houston,
+        CITY.newOrleans,
+        CITY.mobile,
+        CITY.pensacola,
+        CITY.birmingham,
+        start,
+      ],
+      forcedWaypoints: requiredWaypoints,
+      stationFilter: stateFilter('TX', 'LA', 'MS', 'AL', 'AR', 'OK'),
+    },
+    {
+      id: 'florida-southeast-density',
+      name: 'Florida and Southeast Density',
+      strategy:
+        'A compact station-density play across Georgia, Florida, the Carolinas, Alabama, and the Tennessee home corridor.',
+      color: '#16a34a',
+      corridorMiles: 120,
+      anchors: [
+        start,
+        CITY.atlanta,
+        CITY.savannah,
+        CITY.jacksonville,
+        CITY.orlando,
+        CITY.miami,
+        CITY.tampa,
+        CITY.tallahassee,
+        CITY.pensacola,
+        CITY.birmingham,
+        CITY.charlotte,
+        start,
+      ],
+      forcedWaypoints: requiredWaypoints,
+      stationFilter: stateFilter('TN', 'GA', 'FL', 'SC', 'NC', 'AL'),
+    },
+    {
+      id: 'i95-eastern-seaboard',
+      name: 'I-95 Eastern Seaboard',
+      strategy:
+        'A coast-focused route from Florida through the Carolinas, Virginia, DC, Philadelphia, New York, Boston, and Maine.',
+      color: '#0891b2',
+      corridorMiles: 115,
+      anchors: [
+        start,
+        CITY.atlanta,
+        CITY.jacksonville,
+        CITY.savannah,
+        CITY.raleigh,
+        CITY.richmond,
+        CITY.washingtonDc,
+        CITY.philadelphia,
+        CITY.newYork,
+        CITY.hartford,
+        CITY.boston,
+        CITY.portlandMaine,
+        CITY.pittsburgh,
+        CITY.charlotte,
+        start,
+      ],
+      forcedWaypoints: requiredWaypoints,
+      stationFilter: stateFilter(
+        'FL',
+        'GA',
+        'SC',
+        'NC',
+        'VA',
+        'MD',
+        'DE',
+        'NJ',
+        'NY',
+        'CT',
+        'RI',
+        'MA',
+        'NH',
+        'ME',
+      ),
+    },
+    {
+      id: 'northeast-megalopolis',
+      name: 'Northeast Megalopolis',
+      strategy:
+        'A high-density Northeastern concentration around DC, Philadelphia, New Jersey, New York, Connecticut, Boston, and New England.',
+      color: '#0f766e',
+      corridorMiles: 110,
+      anchors: [
+        start,
+        CITY.charlotte,
+        CITY.raleigh,
+        CITY.richmond,
+        CITY.washingtonDc,
+        CITY.philadelphia,
+        CITY.newYork,
+        CITY.hartford,
+        CITY.boston,
+        CITY.portlandMaine,
+        CITY.buffalo,
+        CITY.pittsburgh,
+        start,
+      ],
+      forcedWaypoints: requiredWaypoints,
+      stationFilter: stateFilter(
+        'DC',
+        'MD',
+        'DE',
+        'PA',
+        'NJ',
+        'NY',
+        'CT',
+        'RI',
+        'MA',
+        'NH',
+        'ME',
+        'VT',
+      ),
+    },
+    {
+      id: 'great-lakes-compact',
+      name: 'Great Lakes Compact',
+      strategy:
+        'A denser Midwest loop through Chicago, Wisconsin, Minnesota edges, Michigan, Indiana, Ohio, and Pennsylvania.',
+      color: '#4d7c0f',
+      corridorMiles: 120,
+      anchors: [
+        start,
+        CITY.louisville,
+        CITY.indianapolis,
+        CITY.chicago,
+        CITY.milwaukee,
+        CITY.madison,
+        CITY.minneapolis,
+        CITY.detroit,
+        CITY.cleveland,
+        CITY.columbus,
+        CITY.cincinnati,
+        start,
+      ],
+      forcedWaypoints: requiredWaypoints,
+      stationFilter: stateFilter('IL', 'WI', 'MN', 'MI', 'IN', 'OH', 'PA', 'KY'),
+    },
+    {
+      id: 'rockies-front-range',
+      name: 'Rockies and Front Range',
+      strategy:
+        'A mountain/interior concept through Kansas, Colorado, Utah, Idaho, Wyoming/Montana edges, and New Mexico.',
+      color: '#7c2d12',
+      corridorMiles: 155,
+      anchors: [
+        start,
+        CITY.stLouis,
+        CITY.kansasCity,
+        CITY.wichita,
+        CITY.denver,
+        CITY.saltLakeCity,
+        CITY.boise,
+        CITY.billings,
+        CITY.rapidCity,
+        CITY.denver,
+        CITY.santaFe,
+        CITY.albuquerque,
+        CITY.oklahomaCity,
+        start,
+      ],
+      forcedWaypoints: requiredWaypoints,
+      stationFilter: stateFilter('CO', 'UT', 'ID', 'WY', 'MT', 'NM', 'KS', 'NE'),
+    },
+    {
+      id: 'pacific-northwest-cascade',
+      name: 'Pacific Northwest Cascade',
+      strategy:
+        'A long transfer to the Northwest with a Cascade/I-5 focus through Oregon, Washington, Idaho, and Northern California connectors.',
+      color: '#2563eb',
+      corridorMiles: 150,
+      anchors: [
+        start,
+        CITY.stLouis,
+        CITY.kansasCity,
+        CITY.denver,
+        CITY.saltLakeCity,
+        CITY.boise,
+        CITY.portland,
+        CITY.seattle,
+        CITY.spokane,
+        CITY.boise,
+        CITY.reno,
+        CITY.sacramento,
+        CITY.saltLakeCity,
+        CITY.denver,
+        start,
+      ],
+      forcedWaypoints: requiredWaypoints,
+      stationFilter: stateFilter('OR', 'WA', 'ID', 'NV', 'CA'),
+    },
+    {
+      id: 'southwest-desert-loop',
+      name: 'Southwest Desert Loop',
+      strategy:
+        'A desert-focused route through Texas transfer corridors, New Mexico, Arizona, Nevada, Utah, and Southern California.',
+      color: '#c2410c',
+      corridorMiles: 140,
+      anchors: [
+        start,
+        CITY.memphis,
+        CITY.dallas,
+        CITY.elPaso,
+        CITY.albuquerque,
+        CITY.phoenix,
+        CITY.sanDiego,
+        CITY.losAngeles,
+        CITY.lasVegas,
+        CITY.flagstaff,
+        CITY.saltLakeCity,
+        CITY.denver,
+        CITY.kansasCity,
+        start,
+      ],
+      forcedWaypoints: requiredWaypoints,
+      stationFilter: stateFilter('AZ', 'NV', 'NM', 'UT', 'CA', 'TX'),
+    },
+    {
+      id: 'i40-route-66-crosscountry',
+      name: 'I-40 Route 66 Cross-Country',
+      strategy:
+        'An I-40 / Route 66 style run from Tennessee through Oklahoma, New Mexico, Arizona, Las Vegas, Southern California, and a central return.',
+      color: '#db2777',
+      corridorMiles: 125,
+      anchors: [
+        start,
+        CITY.nashville,
+        CITY.memphis,
+        CITY.littleRock,
+        CITY.oklahomaCity,
+        CITY.amarillo,
+        CITY.albuquerque,
+        CITY.flagstaff,
+        CITY.lasVegas,
+        CITY.losAngeles,
+        CITY.sanDiego,
+        CITY.phoenix,
+        CITY.elPaso,
+        CITY.dallas,
+        CITY.stLouis,
+        start,
+      ],
+      forcedWaypoints: requiredWaypoints,
+    },
+    {
+      id: 'lower48-perimeter',
+      name: 'Lower-48 Perimeter',
+      strategy:
+        'A perimeter-style concept: Atlantic coast, Gulf Coast, California/Pacific Coast, Northwest, northern tier, and Great Lakes return.',
+      color: '#9333ea',
+      corridorMiles: 150,
+      anchors: [
+        start,
+        CITY.atlanta,
+        CITY.jacksonville,
+        CITY.miami,
+        CITY.tampa,
+        CITY.newOrleans,
+        CITY.houston,
+        CITY.sanAntonio,
+        CITY.elPaso,
+        CITY.sanDiego,
+        CITY.losAngeles,
+        CITY.sanFrancisco,
+        CITY.portland,
+        CITY.seattle,
+        CITY.spokane,
+        CITY.billings,
+        CITY.minneapolis,
+        CITY.chicago,
+        CITY.detroit,
+        CITY.buffalo,
+        CITY.boston,
+        CITY.newYork,
+        CITY.washingtonDc,
+        CITY.charlotte,
+        start,
+      ],
+      forcedWaypoints: requiredWaypoints,
+    },
+    {
+      id: 'heartland-low-mileage',
+      name: 'Heartland Low-Mileage Loop',
+      strategy:
+        'A lower-mileage, closer-to-home density strategy across Tennessee, Kentucky, Ohio, Indiana, Illinois, Missouri, Arkansas, Alabama, Georgia, and the Carolinas.',
+      color: '#65a30d',
+      corridorMiles: 125,
+      anchors: [
+        start,
+        CITY.nashville,
+        CITY.louisville,
+        CITY.cincinnati,
+        CITY.columbus,
+        CITY.indianapolis,
+        CITY.chicago,
+        CITY.stLouis,
+        CITY.littleRock,
+        CITY.memphis,
+        CITY.birmingham,
+        CITY.atlanta,
+        CITY.charlotte,
+        start,
+      ],
+      forcedWaypoints: requiredWaypoints,
+      stationFilter: stateFilter(
+        'TN',
+        'KY',
+        'OH',
+        'IN',
+        'IL',
+        'MO',
+        'AR',
+        'AL',
+        'GA',
+        'NC',
+        'SC',
+      ),
+    },
+    {
+      id: 'north-border-sweep',
+      name: 'Northern Border Sweep',
+      strategy:
+        'A northern-tier concept through Chicago, Minnesota, the Dakotas/Montana connectors, Great Lakes, New York, and New England.',
+      color: '#1d4ed8',
+      corridorMiles: 150,
+      anchors: [
+        start,
+        CITY.louisville,
+        CITY.chicago,
+        CITY.madison,
+        CITY.minneapolis,
+        CITY.fargo,
+        CITY.billings,
+        CITY.rapidCity,
+        CITY.minneapolis,
+        CITY.milwaukee,
+        CITY.detroit,
+        CITY.buffalo,
+        CITY.boston,
+        CITY.portlandMaine,
+        CITY.newYork,
+        CITY.pittsburgh,
+        start,
+      ],
+      forcedWaypoints: requiredWaypoints,
+      stationFilter: stateFilter(
+        'MN',
+        'WI',
+        'MI',
+        'ND',
+        'SD',
+        'MT',
+        'NY',
+        'VT',
+        'NH',
+        'ME',
+        'MA',
+      ),
+    },
+    {
+      id: 'southern-appalachia-carolinas',
+      name: 'Southern Appalachia and Carolinas',
+      strategy:
+        'A closer regional loop that emphasizes Tennessee, Kentucky, Virginia, the Carolinas, Georgia, and Alabama.',
+      color: '#15803d',
+      corridorMiles: 115,
+      anchors: [
+        start,
+        CITY.nashville,
+        CITY.louisville,
+        CITY.cincinnati,
+        CITY.pittsburgh,
+        CITY.richmond,
+        CITY.norfolk,
+        CITY.raleigh,
+        CITY.charlotte,
+        CITY.savannah,
+        CITY.atlanta,
+        CITY.birmingham,
+        start,
+      ],
+      forcedWaypoints: requiredWaypoints,
+      stationFilter: stateFilter('TN', 'KY', 'VA', 'WV', 'NC', 'SC', 'GA', 'AL'),
+    },
+    {
+      id: 'four-corners-vegas',
+      name: 'Four Corners and Vegas',
+      strategy:
+        'A western interior strategy through New Mexico, Arizona, Utah, Colorado, Las Vegas, and Southern California density.',
+      color: '#a16207',
+      corridorMiles: 140,
+      anchors: [
+        start,
+        CITY.memphis,
+        CITY.oklahomaCity,
+        CITY.amarillo,
+        CITY.albuquerque,
+        CITY.santaFe,
+        CITY.denver,
+        CITY.saltLakeCity,
+        CITY.lasVegas,
+        CITY.phoenix,
+        CITY.sanDiego,
+        CITY.losAngeles,
+        CITY.flagstaff,
+        CITY.albuquerque,
+        CITY.dallas,
+        CITY.stLouis,
+        start,
+      ],
+      forcedWaypoints: requiredWaypoints,
+      stationFilter: stateFilter('NM', 'AZ', 'UT', 'CO', 'NV', 'CA'),
+    },
   ].map((variant) => ({
     ...variant,
     anchors: insertRequiredWaypoints(variant.anchors, requiredWaypoints),
@@ -272,11 +772,39 @@ function chooseStationsForVariant(
     corridorMiles += 75
   }
 
-  let selected = scored
-    .filter((station) => station.distanceMiles <= corridorMiles)
-    .sort((a, b) => a.distanceMiles - b.distanceMiles)
-    .slice(0, target)
-    .sort((a, b) => a.order - b.order || a.distanceMiles - b.distanceMiles)
+  let selected: ScoredStation[]
+
+  if (variant.stationFilter) {
+    const primary = scored
+      .filter((station) => variant.stationFilter?.(station.station))
+      .sort((a, b) => a.distanceMiles - b.distanceMiles)
+      .slice(0, target)
+
+    if (primary.length >= target) {
+      selected = primary
+    } else {
+      const primaryIds = new Set(primary.map((station) => station.station.id))
+      const filler = scored
+        .filter(
+          (station) =>
+            !primaryIds.has(station.station.id) &&
+            station.distanceMiles <= corridorMiles,
+        )
+        .sort((a, b) => a.distanceMiles - b.distanceMiles)
+        .slice(0, target - primary.length)
+
+      selected = [...primary, ...filler]
+    }
+  } else {
+    selected = scored
+      .filter((station) => station.distanceMiles <= corridorMiles)
+      .sort((a, b) => a.distanceMiles - b.distanceMiles)
+      .slice(0, target)
+  }
+
+  selected = selected.sort(
+    (a, b) => a.order - b.order || a.distanceMiles - b.distanceMiles,
+  )
 
   const forcedStationIds = new Set<string>()
   const waypointWarnings: string[] = []
@@ -392,11 +920,30 @@ function scoreStations(anchors: Coordinate[], stations: Station[]) {
   }))
 }
 
-function stopMinutesForLeg(legMiles: number, config: PlannerConfig) {
-  if (legMiles <= config.closeStationRadiusMiles) {
-    return config.closeStationStopMinutes
+function stopMinutesForVisit(
+  legMiles: number,
+  nextLegMiles: number,
+  chargingState: ChargingState,
+  config: PlannerConfig,
+) {
+  const chargeBudgetMiles = Math.max(0, legMiles - config.closeStationRadiusMiles)
+  const nextChargeBudgetMiles = Math.max(
+    0,
+    nextLegMiles - config.closeStationRadiusMiles,
+  )
+  chargingState.rangeRemainingMiles -= chargeBudgetMiles
+
+  const needsDistanceCharge =
+    chargingState.rangeRemainingMiles < nextChargeBudgetMiles ||
+    legMiles > config.practicalRangeMiles ||
+    nextLegMiles > config.practicalRangeMiles
+
+  if (needsDistanceCharge) {
+    chargingState.rangeRemainingMiles = config.practicalRangeMiles
+    return config.distanceChargeStopMinutes
   }
-  return config.distanceChargeStopMinutes
+
+  return config.closeStationStopMinutes
 }
 
 function emptyDay(day: number): DayPlan {
@@ -427,6 +974,9 @@ function buildDayPlans(
 ) {
   const days: DayPlan[] = []
   const visits: RouteStationVisit[] = []
+  const chargingState: ChargingState = {
+    rangeRemainingMiles: config.practicalRangeMiles,
+  }
   let day = emptyDay(1)
   let previous = {
     position: config.start,
@@ -468,7 +1018,6 @@ function buildDayPlans(
 
     const activeLegMiles = legMiles
     const activeDriveHours = driveHours
-    const activeStopMinutes = stopMinutesForLeg(activeLegMiles, config)
 
     if (
       day.visits.length > 0 &&
@@ -478,6 +1027,22 @@ function buildDayPlans(
       day = emptyDay(day.day + 1)
     }
 
+    const nextPosition =
+      selectedStations[index + 1]?.station.position ?? config.start
+    const nextLegMiles =
+      precomputedLegMiles?.[index + 1] ??
+      roadLegMiles(
+        scoredStation.station.position,
+        nextPosition,
+        config.roadDistanceFactor,
+      )
+    const activeStopMinutes = stopMinutesForVisit(
+      activeLegMiles,
+      nextLegMiles,
+      chargingState,
+      config,
+    )
+
     const visit: RouteStationVisit = {
       sequence: index + 1,
       day: day.day,
@@ -486,6 +1051,7 @@ function buildDayPlans(
       driveHours: round(activeDriveHours, 2),
       stopMinutes: activeStopMinutes,
       rangeWarning: activeLegMiles > config.practicalRangeMiles,
+      connectorStop: scoredStation.connectorStop,
     }
 
     day.miles += activeLegMiles
@@ -529,10 +1095,12 @@ function buildDayPlans(
   const totalDriveHours = days.reduce((sum, item) => sum + item.driveHours, 0)
   const totalStopHours =
     days.reduce((sum, item) => sum + item.stopMinutes, 0) / 60
+  const uniqueStationCount = new Set(visits.map((visit) => visit.station.id)).size
   const availableDays = Math.round(config.tripWeeks * 7)
   const warnings: string[] = []
   const advisories: PlannerAdvisory[] = []
   const overRangeCount = visits.filter((visit) => visit.rangeWarning).length
+  const connectorStops = visits.filter((visit) => visit.connectorStop).length
   const longDays = days.filter((item) => item.longDayOptimized).length
 
   if (days.length > availableDays) {
@@ -555,12 +1123,18 @@ function buildDayPlans(
       message: `${longDays} long day${longDays === 1 ? '' : 's'} intentionally exceed the normal cap because the added unique-site density cleared your long-day threshold.`,
     })
   }
-  if (visits.length < config.targetStations) {
+  if (connectorStops > 0) {
+    advisories.push({
+      severity: 'info',
+      message: `${connectorStops} transfer connector stop${connectorStops === 1 ? '' : 's'} inserted to break long repositioning legs into Supercharger-sized hops.`,
+    })
+  }
+  if (uniqueStationCount < config.targetStations) {
     warnings.push(
-      `Only ${visits.length} matching sites were available for ${routeName} under the current station filters.`,
+      `Only ${uniqueStationCount} matching sites were available for ${routeName} under the current station filters.`,
     )
   }
-  if (visits.length / Math.max(1, days.length) > 18) {
+  if (uniqueStationCount / Math.max(1, days.length) > 18) {
     warnings.push(
       'This plan requires an extremely high daily station pace. Verify short-session assumptions in Tesla Passport before relying on it.',
     )
@@ -573,6 +1147,7 @@ function buildDayPlans(
       totalMiles: round(totalMiles),
       totalDriveHours: round(totalDriveHours, 1),
       totalStopHours: round(totalStopHours, 1),
+      uniqueStationCount,
       warnings,
       advisories,
       longDays,
@@ -669,6 +1244,188 @@ function evaluateLongDayOpportunity(
  *  With a sensible visiting order this is a realistic per-leg estimate. */
 function roadLegMiles(from: Coordinate, to: Coordinate, roadDistanceFactor: number) {
   return haversineMiles(from, to) * roadDistanceFactor
+}
+
+const MAX_CONNECTOR_STOPS_PER_LEG = 40
+
+function insertConnectorStops(
+  orderedStations: ScoredStation[],
+  candidateStations: Station[],
+  config: PlannerConfig,
+) {
+  if (orderedStations.length === 0) return orderedStations
+
+  const usedStationIds = new Set<string>()
+  const expanded: ScoredStation[] = []
+  let previous = config.start
+
+  orderedStations.forEach((station) => {
+    if (usedStationIds.has(station.station.id)) return
+
+    const connectors = findConnectorStopsBetween(
+      previous,
+      station.station.position,
+      candidateStations,
+      usedStationIds,
+      config,
+      expanded.length === 0 && !isNorthNotWest(station.station, config.start),
+    )
+    expanded.push(...connectors, station)
+    usedStationIds.add(station.station.id)
+    previous = station.station.position
+  })
+
+  const returnConnectors = findConnectorStopsBetween(
+    previous,
+    config.start,
+    candidateStations,
+    usedStationIds,
+    config,
+    false,
+  )
+  expanded.push(...returnConnectors)
+
+  return expanded
+}
+
+function findConnectorStopsBetween(
+  from: Coordinate,
+  to: Coordinate,
+  candidateStations: Station[],
+  usedStationIds: Set<string>,
+  config: PlannerConfig,
+  requireNorthFirst: boolean,
+) {
+  const connectors: ScoredStation[] = []
+  let cursor = from
+  let firstStopPolicy: 'northNotWest' | 'north' | undefined = requireNorthFirst
+    ? 'northNotWest'
+    : undefined
+
+  while (
+    roadLegMiles(cursor, to, config.roadDistanceFactor) >
+      config.practicalRangeMiles &&
+    connectors.length < MAX_CONNECTOR_STOPS_PER_LEG
+  ) {
+    let next = chooseConnectorStation(
+      cursor,
+      to,
+      candidateStations,
+      usedStationIds,
+      config,
+      firstStopPolicy,
+    )
+
+    if (!next && firstStopPolicy === 'northNotWest') {
+      next = chooseConnectorStation(
+        cursor,
+        to,
+        candidateStations,
+        usedStationIds,
+        config,
+        'north',
+      )
+    }
+
+    if (!next && firstStopPolicy) {
+      next = chooseConnectorStation(
+        cursor,
+        to,
+        candidateStations,
+        usedStationIds,
+        config,
+      )
+    }
+
+    if (!next) {
+      next = chooseConnectorStation(
+        cursor,
+        to,
+        candidateStations,
+        usedStationIds,
+        config,
+        undefined,
+        true,
+      )
+    }
+
+    if (!next) break
+
+    usedStationIds.add(next.id)
+    connectors.push(asConnectorScoredStation(next, cursor, to))
+    cursor = next.position
+    firstStopPolicy = undefined
+  }
+
+  return connectors
+}
+
+function chooseConnectorStation(
+  from: Coordinate,
+  to: Coordinate,
+  candidateStations: Station[],
+  usedStationIds: Set<string>,
+  config: PlannerConfig,
+  firstStopPolicy?: 'northNotWest' | 'north',
+  allowRevisit = false,
+) {
+  const currentRemaining = roadLegMiles(from, to, config.roadDistanceFactor)
+  const minProgressMiles = Math.min(30, currentRemaining * 0.03)
+  const corridorLimitMiles = Math.max(
+    90,
+    Math.min(220, currentRemaining * 0.3),
+  )
+  const targetLegMiles = config.practicalRangeMiles * 0.72
+  let bestStation: Station | undefined
+  let bestScore = Infinity
+
+  candidateStations.forEach((station) => {
+    if (!allowRevisit && usedStationIds.has(station.id)) return
+    if (firstStopPolicy === 'northNotWest' && !isNorthNotWest(station, config.start)) {
+      return
+    }
+    if (firstStopPolicy === 'north' && station.position.lat <= config.start.lat) {
+      return
+    }
+
+    const legMiles = roadLegMiles(from, station.position, config.roadDistanceFactor)
+    if (legMiles <= 1 || legMiles > config.practicalRangeMiles) return
+
+    const remainingMiles = roadLegMiles(
+      station.position,
+      to,
+      config.roadDistanceFactor,
+    )
+    if (remainingMiles >= currentRemaining - minProgressMiles) return
+
+    const segmentScore = scoreAgainstPolyline(station.position, [from, to])
+    if (segmentScore.segmentProgress <= 0.01) return
+    if (segmentScore.distanceMiles > corridorLimitMiles) return
+
+    const score =
+      remainingMiles +
+      segmentScore.distanceMiles * 2 +
+      Math.abs(legMiles - targetLegMiles) * 0.15
+
+    if (score < bestScore) {
+      bestScore = score
+      bestStation = station
+    }
+  })
+
+  return bestStation
+}
+
+function asConnectorScoredStation(
+  station: Station,
+  from: Coordinate,
+  to: Coordinate,
+): ScoredStation {
+  return {
+    station,
+    ...scoreAgainstPolyline(station.position, [from, to]),
+    connectorStop: true,
+  }
 }
 
 /**
@@ -928,6 +1685,7 @@ function finalizeDay(day: DayPlan, config: PlannerConfig): DayPlan {
               day.visits.length,
           )
         : 0,
+    uniqueStations: new Set(day.visits.map((visit) => visit.station.id)).size,
     warnings,
     advisories,
     longDayOptimized,
@@ -963,7 +1721,8 @@ export function refineRouteWithRoadLegs(
   }))
   const plans = buildDayPlans(scored, meta.name, config, legMiles, driveHours)
   const totalDays = Math.max(1, plans.days.length)
-  const uniqueStations = plans.visits.length
+  const uniqueStations = plans.totals.uniqueStationCount
+  const chargeStops = plans.visits.length
   const totalVisitLegMiles = plans.visits.reduce((sum, v) => sum + v.legMiles, 0)
 
   return {
@@ -980,7 +1739,7 @@ export function refineRouteWithRoadLegs(
     averageDriveHoursPerDay: round(plans.totals.totalDriveHours / totalDays, 2),
     averageStopHoursPerDay: round(plans.totals.totalStopHours / totalDays, 2),
     averageDistanceBetweenSuperchargers:
-      uniqueStations > 0 ? round(totalVisitLegMiles / uniqueStations) : 0,
+      chargeStops > 0 ? round(totalVisitLegMiles / chargeStops) : 0,
     stationsPerDay: round(uniqueStations / totalDays, 1),
     days: plans.days,
     visits: plans.visits,
@@ -1012,13 +1771,15 @@ export function optimizeRoutes(
       config.targetStations,
       variant.forcedWaypoints,
     )
-    const orderedStations = optimizeStationOrder(
-      stationChoice.selected,
-      config.start,
+    const orderedStations = insertConnectorStops(
+      optimizeStationOrder(stationChoice.selected, config.start),
+      stations,
+      config,
     )
     const plans = buildDayPlans(orderedStations, variant.name, config)
     const totalDays = plans.days.length
-    const uniqueStations = plans.visits.length
+    const uniqueStations = plans.totals.uniqueStationCount
+    const chargeStops = plans.visits.length
     const totalVisitLegMiles = plans.visits.reduce(
       (sum, visit) => sum + visit.legMiles,
       0,
@@ -1041,7 +1802,7 @@ export function optimizeRoutes(
       ),
       averageStopHoursPerDay: round(plans.totals.totalStopHours / totalDays, 2),
       averageDistanceBetweenSuperchargers:
-        uniqueStations > 0 ? round(totalVisitLegMiles / uniqueStations) : 0,
+        chargeStops > 0 ? round(totalVisitLegMiles / chargeStops) : 0,
       stationsPerDay: round(uniqueStations / totalDays, 1),
       days: plans.days,
       visits: plans.visits,

@@ -31,9 +31,11 @@ npm run certify:ui
 - Fetches live Supercharger site data from Supercharge.info.
 - Filters to open continental U.S. sites by default.
 - Adds Canada and Mexico through configuration toggles.
-- Generates five route candidates from the Chattanooga, TN 37405 area.
+- Generates a broad set of named route candidates from the Chattanooga, TN 37405 area.
 - Shows a no-key Leaflet map using CARTO Voyager tiles over OpenStreetMap data.
 - Calculates route totals and day-level stats.
+- Carries range forward through clustered stops so nearby sites do not force repeated full-charge stops.
+- Inserts transfer connector Superchargers when a route strategy has a long repositioning leg.
 - Flags hard feasibility risks separately from medium auxiliary-charging advisories.
 - Optional long-day optimization can use 8-9 hour days when the added unique-site return clears your configured threshold, then explains why the day is worth it.
 

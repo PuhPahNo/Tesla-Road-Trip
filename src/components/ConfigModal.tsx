@@ -121,8 +121,8 @@ const DAILY_LIMITS: SliderSpec[] = [
 const STOP_MODEL: SliderSpec[] = [
   {
     key: 'closeStationRadiusMiles',
-    label: 'Close-site radius',
-    hint: 'Close-site radius',
+    label: 'Cluster radius',
+    hint: 'Cluster hop allowance',
     min: 0.5,
     max: 25,
     step: 0.5,

@@ -268,6 +268,11 @@ function VisitCard({ visit }: { visit: RouteStationVisit }) {
         </div>
       </div>
       <div className="flex flex-none items-center gap-2">
+        {visit.connectorStop ? (
+          <Pill tone="info" className="px-2 py-0.5 text-[10.5px]">
+            transfer
+          </Pill>
+        ) : null}
         {visit.rangeWarning ? (
           <Pill tone="warn" className="px-2 py-0.5 text-[10.5px]">
             range

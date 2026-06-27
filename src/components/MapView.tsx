@@ -67,6 +67,7 @@ export const MapView = memo(function MapView({
   const faintLine = isDark ? '#3a4150' : '#475569'
   const faintFill = isDark ? '#4b5563' : '#94a3b8'
   const coverage = isDark ? '#0bd5d0' : '#0f7d6b'
+  const connector = isDark ? '#facc15' : '#d97706'
 
   const coverageByCode = useMemo(
     () => new Map(stateStats.map((state) => [state.state, state])),
@@ -188,10 +189,10 @@ export const MapView = memo(function MapView({
             <CircleMarker
               key={`${route.id}-${visit.sequence}-${visit.station.id}`}
               center={[visit.station.position.lat, visit.station.position.lon]}
-              radius={visit.sequence % 10 === 0 ? 5 : 4}
+              radius={visit.connectorStop ? 3.5 : visit.sequence % 10 === 0 ? 5 : 4}
               pathOptions={{
                 color: node,
-                fillColor: route.color,
+                fillColor: visit.connectorStop ? connector : route.color,
                 fillOpacity: 0.95,
                 opacity: 0.95,
                 weight: 1.5,
@@ -204,6 +205,12 @@ export const MapView = memo(function MapView({
                 <br />
                 Day {visit.day} · {Math.round(visit.legMiles)} mi leg ·{' '}
                 {visit.stopMinutes} min stop
+                {visit.connectorStop ? (
+                  <>
+                    <br />
+                    Transfer connector
+                  </>
+                ) : null}
                 <br />
                 {visit.station.address.city}, {visit.station.address.state}
               </Popup>
@@ -397,6 +404,10 @@ function MapChrome({ caption }: { caption?: string }) {
         <span className="flex items-center gap-[7px]">
           <span className="h-2 w-2 flex-none rounded-full border-[1.5px] border-node bg-route" />
           Supercharger
+        </span>
+        <span className="flex items-center gap-[7px]">
+          <span className="h-2 w-2 flex-none rounded-full border-[1.5px] border-node bg-[#d97706]" />
+          Transfer
         </span>
       </div>
 

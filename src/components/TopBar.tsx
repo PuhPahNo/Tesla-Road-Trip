@@ -57,6 +57,7 @@ export function TopBar({
       <button
         type="button"
         onClick={onOpenRoutePicker}
+        aria-label="Choose route"
         className="hidden h-[34px] min-w-0 max-w-[260px] items-center gap-[9px] rounded-[9px] border border-edge bg-panel2 px-[13px] text-[13px] text-ink transition hover:brightness-95 cursor-pointer md:flex"
       >
         <span className="h-[7px] w-[7px] flex-none rounded-full bg-accent" />

@@ -53,7 +53,7 @@ A single Tesla Model Y owner planning an 8-10 week road trip from the Chattanoog
 - Normal-day maximum drive hours.
 - Average moving speed.
 - Practical range miles.
-- Close-site radius in miles.
+- Close-site / cluster radius in miles.
 - Close-site stop minutes.
 - Distance-charge stop minutes.
 - Long-day optimization toggle.
@@ -69,15 +69,16 @@ A single Tesla Model Y owner planning an 8-10 week road trip from the Chattanoog
 - Optimize runs from the modal and from the main toolbar.
 
 ### 3. Route Optimization
-**Objective:** Generate five plausible route candidates for a round trip from Chattanooga.
+**Objective:** Generate many plausible route candidates for a round trip from Chattanooga.
 
 **Requirements**
-- Generate five route strategies:
+- Generate a broad set of route strategies:
   - Balanced national loop
   - Northeast density loop
   - Sunbelt and West loop
   - Great Lakes and Mid-Atlantic loop
   - West Coast reach loop
+  - Regional density, cross-country corridor, perimeter, and deadhead-heavy concepts
 - Each route starts and ends at the Chattanooga 37405 default coordinate.
 - Use the station universe selected by config.
 - Select a target number of unique sites by ranking stations near each strategic corridor.
@@ -86,10 +87,11 @@ A single Tesla Model Y owner planning an 8-10 week road trip from the Chattanoog
 - Split routes into day plans using daily drive limits.
 - When enabled, allow selected long days up to the long-day cap if the projected unique-site gain clears the configured sites-per-extra-hour threshold.
 - Explain each accepted long day in the day table.
-- Calculate stop minutes using close-site radius and longer-distance charge assumptions.
+- Calculate stop minutes using a carried range budget: close-site hops consume little range budget, short stops handle clustered sites, and longer distance-charge stops reset the usable range assumption before the next leg needs it.
+- Insert transfer connector Superchargers into long repositioning legs before day planning so deadhead-heavy strategies are marked as realistic Supercharger hops instead of one impossible leg.
 
 **Acceptance Criteria**
-- Returns five route candidates for typical targets.
+- Returns many route candidates for typical targets.
 - Each route includes total miles, total days, unique sites, average miles/day, average drive hours/day, average stop time/day, and feasibility warnings.
 - Each day includes miles, drive time, stop time, unique sites, and station sequence.
 - Plans warn when target exceeds trip duration or daily driving assumptions.
@@ -103,7 +105,7 @@ A single Tesla Model Y owner planning an 8-10 week road trip from the Chattanoog
 - Show selected route road polyline and selected station markers.
 - Optionally show all station dots.
 - Show the Chattanooga start/end marker.
-- Let the user switch between five routes.
+- Let the user switch between the generated routes.
 - Fit the map to the selected route.
 
 **Acceptance Criteria**
