@@ -106,6 +106,47 @@ export function polylineLengthMiles(anchors: Coordinate[]) {
   }, 0)
 }
 
+export function simplifyPolyline(
+  points: Coordinate[],
+  toleranceMiles: number,
+): Coordinate[] {
+  if (points.length <= 2 || toleranceMiles <= 0) return points
+
+  const keep = new Set<number>([0, points.length - 1])
+  simplifyPolylineRange(points, 0, points.length - 1, toleranceMiles, keep)
+
+  return points.filter((_point, index) => keep.has(index))
+}
+
+function simplifyPolylineRange(
+  points: Coordinate[],
+  startIndex: number,
+  endIndex: number,
+  toleranceMiles: number,
+  keep: Set<number>,
+) {
+  if (endIndex <= startIndex + 1) return
+
+  let farthestIndex = -1
+  let farthestDistance = 0
+  const start = points[startIndex]
+  const end = points[endIndex]
+
+  for (let index = startIndex + 1; index < endIndex; index += 1) {
+    const distance = distanceToSegmentMiles(points[index], start, end).distance
+    if (distance > farthestDistance) {
+      farthestDistance = distance
+      farthestIndex = index
+    }
+  }
+
+  if (farthestIndex === -1 || farthestDistance <= toleranceMiles) return
+
+  keep.add(farthestIndex)
+  simplifyPolylineRange(points, startIndex, farthestIndex, toleranceMiles, keep)
+  simplifyPolylineRange(points, farthestIndex, endIndex, toleranceMiles, keep)
+}
+
 export function anchorOrders(anchors: Coordinate[]) {
   let cumulative = 0
   return anchors.map((anchor, index) => {

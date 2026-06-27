@@ -12,7 +12,8 @@ import {
 import type { Feature, FeatureCollection, Geometry } from 'geojson'
 import type { Layer, Path, PathOptions } from 'leaflet'
 import type { StateRouteStats } from '../domain/routeStats'
-import type { Coordinate, RoutePlan, Station } from '../domain/types'
+import type { Coordinate, RoutePlan, RouteStationVisit, Station } from '../domain/types'
+import { haversineMiles, simplifyPolyline } from '../domain/geo'
 import { STATE_NAME_TO_CODE } from '../domain/usStates'
 import usStatesRaw from '../assets/us-states.json'
 import { useTheme } from '../theme/theme'
@@ -34,8 +35,12 @@ interface MapViewProps {
 
 const US_STATES = usStatesRaw as unknown as FeatureCollection<Geometry, { name: string }>
 
-const MAX_ROUTE_MARKERS = 220
+const MAX_ROUTE_MARKERS = 360
 const MAX_POLYLINE_POINTS = 3500
+const ROAD_OVERVIEW_TOLERANCE_MILES = 6
+const ROAD_POLYLINE_SMOOTH_FACTOR = 3.5
+const TURN_MARKER_MIN_LEG_MILES = 12
+const TURN_MARKER_MIN_ANGLE_DEGREES = 105
 
 const TILE_URL = {
   tesla: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
@@ -67,7 +72,13 @@ export const MapView = memo(function MapView({
     () => new Map(stateStats.map((state) => [state.state, state])),
     [stateStats],
   )
-  const rawRouteLine = roadLine ?? route?.routeLine
+  const rawRouteLine = useMemo(
+    () =>
+      roadLine
+        ? simplifyPolyline(roadLine, ROAD_OVERVIEW_TOLERANCE_MILES)
+        : route?.routeLine,
+    [roadLine, route?.routeLine],
+  )
   const routePositions = useMemo(
     () =>
       downsampleLine(rawRouteLine ?? [], MAX_POLYLINE_POINTS).map(
@@ -145,6 +156,7 @@ export const MapView = memo(function MapView({
           {isDark && (
             <Polyline
               positions={routePositions}
+              smoothFactor={roadLine ? ROAD_POLYLINE_SMOOTH_FACTOR : 1}
               pathOptions={{
                 color: route.color,
                 opacity: 0.25,
@@ -156,6 +168,7 @@ export const MapView = memo(function MapView({
           )}
           <Polyline
             positions={routePositions}
+            smoothFactor={roadLine ? ROAD_POLYLINE_SMOOTH_FACTOR : 1}
             pathOptions={{
               color: '#ffffff',
               opacity: roadLine ? 0.9 : 0.72,
@@ -164,6 +177,7 @@ export const MapView = memo(function MapView({
           />
           <Polyline
             positions={routePositions}
+            smoothFactor={roadLine ? ROAD_POLYLINE_SMOOTH_FACTOR : 1}
             pathOptions={{
               color: route.color,
               opacity: roadLine ? 0.92 : 0.78,
@@ -419,11 +433,7 @@ function downsampleLine(points: Coordinate[], maxPoints: number) {
   })
 }
 
-function selectRouteMarkers<
-  T extends {
-    sequence: number
-  },
->(visits: T[], maxMarkers: number) {
+function selectRouteMarkers(visits: RouteStationVisit[], maxMarkers: number) {
   if (visits.length <= maxMarkers) return visits
 
   const stride = Math.ceil(visits.length / maxMarkers)
@@ -431,7 +441,67 @@ function selectRouteMarkers<
     (visit, index) =>
       index === 0 ||
       index === visits.length - 1 ||
+      isDayBoundaryVisit(visits, index) ||
+      isSharpTurnVisit(visits, index) ||
       visit.sequence % 10 === 0 ||
       index % stride === 0,
   )
+}
+
+function isDayBoundaryVisit(visits: RouteStationVisit[], index: number) {
+  const previous = visits[index - 1]
+  const current = visits[index]
+  const next = visits[index + 1]
+
+  return current.day !== previous?.day || current.day !== next?.day
+}
+
+function isSharpTurnVisit(visits: RouteStationVisit[], index: number) {
+  const previous = visits[index - 1]
+  const current = visits[index]
+  const next = visits[index + 1]
+  if (!previous || !next) return false
+
+  const inboundMiles = haversineMiles(
+    previous.station.position,
+    current.station.position,
+  )
+  const outboundMiles = haversineMiles(
+    current.station.position,
+    next.station.position,
+  )
+  if (
+    inboundMiles < TURN_MARKER_MIN_LEG_MILES ||
+    outboundMiles < TURN_MARKER_MIN_LEG_MILES
+  ) {
+    return false
+  }
+
+  return (
+    angleDifferenceDegrees(
+      bearingDegrees(previous.station.position, current.station.position),
+      bearingDegrees(current.station.position, next.station.position),
+    ) >= TURN_MARKER_MIN_ANGLE_DEGREES
+  )
+}
+
+function bearingDegrees(from: Coordinate, to: Coordinate) {
+  const fromLat = toRadians(from.lat)
+  const toLat = toRadians(to.lat)
+  const deltaLon = toRadians(to.lon - from.lon)
+  const y = Math.sin(deltaLon) * Math.cos(toLat)
+  const x =
+    Math.cos(fromLat) * Math.sin(toLat) -
+    Math.sin(fromLat) * Math.cos(toLat) * Math.cos(deltaLon)
+
+  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360
+}
+
+function angleDifferenceDegrees(a: number, b: number) {
+  const difference = Math.abs(a - b) % 360
+  return difference > 180 ? 360 - difference : difference
+}
+
+function toRadians(value: number) {
+  return (value * Math.PI) / 180
 }
