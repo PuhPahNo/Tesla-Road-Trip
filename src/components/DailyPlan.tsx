@@ -1,4 +1,10 @@
-import type { CSSProperties } from 'react'
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+} from 'react'
 import type { DayPlan, RoutePlan } from '../domain/types'
 import { Button, Chip, Eyebrow, Pill, cx } from '../ui/primitives'
 import { AlertIcon, ChevronDownIcon, InfoIcon } from '../ui/icons'
@@ -8,21 +14,36 @@ const GRID_COLS = '46px 56px 82px 86px 64px 64px minmax(0,1fr)'
 const GRID_STYLE: CSSProperties = { gridTemplateColumns: GRID_COLS }
 /* Keep the grid usable on narrow phones: min width = sum of fixed cols + gaps + a usable targets cell. */
 const GRID_MIN_WIDTH = 600
+const DRAWER_DEFAULT_HEIGHT = 288
+const DRAWER_MIN_HEIGHT = 188
+const DRAWER_MAX_HEIGHT = 680
 
 export interface DayTableProps {
   route?: RoutePlan
   onOpenDay: (dayIndex: number) => void
+  onHoverDay?: (dayIndex: number | undefined) => void
   roadStatus?: 'idle' | 'loading' | 'ready' | 'error' | 'estimate'
+}
+
+function clampDrawerHeight(next: number) {
+  const viewportMax =
+    typeof window === 'undefined'
+      ? DRAWER_MAX_HEIGHT
+      : Math.round(window.innerHeight * 0.68)
+  const max = Math.min(DRAWER_MAX_HEIGHT, Math.max(DRAWER_MIN_HEIGHT, viewportMax))
+  return Math.min(max, Math.max(DRAWER_MIN_HEIGHT, next))
 }
 
 function DayRow({
   day,
   index,
   onOpenDay,
+  onHoverDay,
 }: {
   day: DayPlan
   index: number
   onOpenDay: (dayIndex: number) => void
+  onHoverDay?: (dayIndex: number | undefined) => void
 }) {
   const cities = day.visits
     .map((visit) => visit.station.address.city)
@@ -36,6 +57,10 @@ function DayRow({
     <button
       type="button"
       onClick={() => onOpenDay(index)}
+      onMouseEnter={() => onHoverDay?.(index)}
+      onMouseLeave={() => onHoverDay?.(undefined)}
+      onFocus={() => onHoverDay?.(index)}
+      onBlur={() => onHoverDay?.(undefined)}
       aria-label={`Open day ${day.day} detail`}
       style={GRID_STYLE}
       className={cx(
@@ -75,7 +100,7 @@ function DayRow({
   )
 }
 
-export function DayTable({ route, onOpenDay, roadStatus }: DayTableProps) {
+export function DayTable({ route, onOpenDay, onHoverDay, roadStatus }: DayTableProps) {
   if (!route) {
     return (
       <div className="flex flex-1 items-center justify-center px-6 py-10 text-center text-[13px] text-dim">
@@ -137,7 +162,13 @@ export function DayTable({ route, onOpenDay, roadStatus }: DayTableProps) {
           </div>
           {/* Rows */}
           {route.days.map((day, index) => (
-            <DayRow key={day.day} day={day} index={index} onOpenDay={onOpenDay} />
+            <DayRow
+              key={day.day}
+              day={day}
+              index={index}
+              onOpenDay={onOpenDay}
+              onHoverDay={onHoverDay}
+            />
           ))}
         </div>
       </div>
@@ -153,17 +184,66 @@ export interface DailyPlanDrawerProps extends DayTableProps {
 export function DailyPlanDrawer({
   route,
   onOpenDay,
+  onHoverDay,
   open,
   onToggleOpen,
   roadStatus,
 }: DailyPlanDrawerProps) {
+  const [height, setHeight] = useState(DRAWER_DEFAULT_HEIGHT)
+  const dragRef = useRef<{ startY: number; startHeight: number } | undefined>(undefined)
+
+  useEffect(() => {
+    const handleMove = (event: PointerEvent) => {
+      const drag = dragRef.current
+      if (!drag) return
+      setHeight(clampDrawerHeight(drag.startHeight - (event.clientY - drag.startY)))
+    }
+    const handleEnd = () => {
+      if (!dragRef.current) return
+      dragRef.current = undefined
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+    const handleResize = () => setHeight((current) => clampDrawerHeight(current))
+
+    window.addEventListener('pointermove', handleMove)
+    window.addEventListener('pointerup', handleEnd)
+    window.addEventListener('pointercancel', handleEnd)
+    window.addEventListener('resize', handleResize)
+    return () => {
+      window.removeEventListener('pointermove', handleMove)
+      window.removeEventListener('pointerup', handleEnd)
+      window.removeEventListener('pointercancel', handleEnd)
+      window.removeEventListener('resize', handleResize)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+  }, [])
+
+  const startResize = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    if (!open) return
+    event.preventDefault()
+    dragRef.current = { startY: event.clientY, startHeight: height }
+    document.body.style.cursor = 'row-resize'
+    document.body.style.userSelect = 'none'
+  }
+
   return (
     <div
-      className={cx(
-        'flex flex-none flex-col border-t border-edge bg-panel',
-        open && 'h-[288px]',
-      )}
+      style={open ? { height } : undefined}
+      className="flex flex-none flex-col border-t border-edge bg-panel"
     >
+      {open ? (
+        <button
+          type="button"
+          aria-label="Resize daily plan"
+          onPointerDown={startResize}
+          className="group flex h-3 flex-none cursor-row-resize items-center justify-center border-b border-edge bg-panel transition hover:bg-panel2"
+        >
+          <span className="h-1 w-14 rounded-full bg-edge2 transition group-hover:bg-accent" />
+        </button>
+      ) : null}
+
       {/* Header */}
       <div className="flex flex-none items-center gap-3.5 border-b border-edge px-[18px] py-[13px]">
         <div className="min-w-0">
@@ -188,7 +268,14 @@ export function DailyPlanDrawer({
         </Button>
       </div>
 
-      {open && <DayTable route={route} onOpenDay={onOpenDay} roadStatus={roadStatus} />}
+      {open && (
+        <DayTable
+          route={route}
+          onOpenDay={onOpenDay}
+          onHoverDay={onHoverDay}
+          roadStatus={roadStatus}
+        />
+      )}
     </div>
   )
 }

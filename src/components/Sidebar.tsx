@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import type { RoutePlan, StationUniverseStats } from '../domain/types'
 import type { StateRouteStats } from '../domain/routeStats'
 import type { StationsResponse } from '../api/client'
@@ -6,6 +6,7 @@ import {
   Collapsible,
   Eyebrow,
   ProgressBar,
+  SegmentedControl,
   StatTile,
   cx,
   toneClasses,
@@ -36,6 +37,7 @@ export interface SidebarProps {
   onHoverState?: (state: string | undefined) => void
   highlightedState?: string
   onRefresh: () => void
+  copilot?: ReactNode
   className?: string
 }
 
@@ -228,7 +230,12 @@ export function FeasibilitySection({
 /* ------------------------------------------------------------------ */
 /* Coverage — stations by state                                        */
 /* ------------------------------------------------------------------ */
-const MAX_COVERAGE_ROWS = 12
+type CoverageSort = 'sites' | 'coverage'
+
+const COVERAGE_SORT_OPTIONS: Array<{ value: CoverageSort; label: string }> = [
+  { value: 'sites', label: 'Sites' },
+  { value: 'coverage', label: 'Percent' },
+]
 
 export function CoverageSection({
   stats,
@@ -244,9 +251,20 @@ export function CoverageSection({
   /** Render the list without the collapsible chrome (e.g. inside a dedicated tab). */
   bare?: boolean
 }) {
-  const maxPct = stats.reduce((max, stat) => Math.max(max, stat.coveragePct), 0)
-  const rows = stats.slice(0, MAX_COVERAGE_ROWS)
-  const overflow = Math.max(0, stats.length - MAX_COVERAGE_ROWS)
+  const [sortBy, setSortBy] = useState<CoverageSort>('sites')
+  const rows = useMemo(
+    () =>
+      [...stats].sort((a, b) => {
+        if (sortBy === 'coverage') {
+          return b.coveragePct - a.coveragePct || b.routeStations - a.routeStations
+        }
+        return b.routeStations - a.routeStations || b.coveragePct - a.coveragePct
+      }),
+    [stats, sortBy],
+  )
+  const maxRouteStations = rows.reduce((max, stat) => Math.max(max, stat.routeStations), 0)
+  const maxCoveragePct = rows.reduce((max, stat) => Math.max(max, stat.coveragePct), 0)
+  const maxValue = sortBy === 'sites' ? maxRouteStations : maxCoveragePct
 
   const list = (
     <div className="flex flex-col gap-1.5">
@@ -254,7 +272,8 @@ export function CoverageSection({
         <div className="text-[12px] text-faint">No states on this route yet.</div>
       ) : (
         rows.map((stat) => {
-          const barPct = maxPct > 0 ? (stat.coveragePct / maxPct) * 100 : 0
+          const value = sortBy === 'sites' ? stat.routeStations : stat.coveragePct
+          const barPct = maxValue > 0 ? (value / maxValue) * 100 : 0
           const active = highlightedState === stat.state
           return (
             <button
@@ -288,21 +307,36 @@ export function CoverageSection({
           )
         })
       )}
-      {overflow > 0 ? (
-        <div className="px-2 font-mono text-[11px] text-faint">
-          +{overflow} more {overflow === 1 ? 'state' : 'states'}
-        </div>
-      ) : null}
     </div>
+  )
+
+  const sortControl = (
+    <SegmentedControl<CoverageSort>
+      options={COVERAGE_SORT_OPTIONS}
+      value={sortBy}
+      onChange={setSortBy}
+      size="sm"
+      tone="accent2"
+      ariaLabel="Sort state coverage"
+    />
   )
 
   if (bare) {
     return (
       <div className="flex flex-col gap-2">
-        <div className="flex items-baseline justify-between px-1">
-          <Eyebrow>Stations by state</Eyebrow>
+        <div className="flex items-center justify-between gap-2 px-1">
+          <div>
+            <Eyebrow>Stations by state</Eyebrow>
+            <span className="font-mono text-[11px] text-dim">
+              {stats.length} {stats.length === 1 ? 'state' : 'states'}
+            </span>
+          </div>
+          {sortControl}
+        </div>
+        <div className="flex items-center justify-between px-2 font-mono text-[10px] uppercase tracking-[0.08em] text-faint">
+          <span>State</span>
           <span className="font-mono text-[11px] text-dim">
-            {stats.length} {stats.length === 1 ? 'state' : 'states'}
+            Sort: {sortBy === 'sites' ? 'unique sites' : 'coverage %'}
           </span>
         </div>
         {list}
@@ -317,8 +351,197 @@ export function CoverageSection({
       title="Stations by state"
       meta={`${stats.length} ${stats.length === 1 ? 'state' : 'states'}`}
     >
-      <div className="px-3.5 pb-3.5 pt-1">{list}</div>
+      <div className="flex flex-col gap-2 px-3.5 pb-3.5 pt-1">
+        <div className="flex justify-end">{sortControl}</div>
+        {list}
+      </div>
     </Collapsible>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* Trip stats — route composition and state leaders                    */
+/* ------------------------------------------------------------------ */
+function formatHours(value: number) {
+  return value >= 10 ? Math.round(value).toLocaleString() : value.toFixed(1)
+}
+
+function TripStatCard({
+  label,
+  value,
+  unit,
+  tone = 'neutral',
+}: {
+  label: string
+  value: ReactNode
+  unit?: string
+  tone?: Tone
+}) {
+  return (
+    <div className={cx('rounded-xl border px-3.5 py-3', toneClasses(tone))}>
+      <div className="mb-2 text-[10.5px] uppercase tracking-[0.06em] opacity-75">
+        {label}
+      </div>
+      <div className="font-mono text-[20px] font-semibold leading-none">
+        {value}
+        {unit ? <span className="ml-1 text-[11px] font-normal opacity-70">{unit}</span> : null}
+      </div>
+    </div>
+  )
+}
+
+function ShareBar({
+  label,
+  value,
+  total,
+  tone = 'accent',
+}: {
+  label: string
+  value: number
+  total: number
+  tone?: 'accent' | 'accent2'
+}) {
+  const pct = total > 0 ? Math.max(0, Math.min(100, (value / total) * 100)) : 0
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-[12px] font-medium text-ink">{label}</span>
+        <span className="font-mono text-[11.5px] text-dim">
+          {formatHours(value)}h · {Math.round(pct)}%
+        </span>
+      </div>
+      <ProgressBar pct={pct} tone={tone} className="h-2" />
+    </div>
+  )
+}
+
+function TopStateBars({ stats }: { stats: StateRouteStats[] }) {
+  const leaders = [...stats]
+    .filter((stat) => stat.routeStations > 0)
+    .sort((a, b) => b.routeStations - a.routeStations)
+    .slice(0, 6)
+  const maxSites = leaders.reduce((max, stat) => Math.max(max, stat.routeStations), 0)
+
+  if (leaders.length === 0) {
+    return <div className="text-[12px] text-faint">No state coverage yet.</div>
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      {leaders.map((stat) => (
+        <div key={`${stat.country}-${stat.state}`} className="grid grid-cols-[34px_1fr_42px] items-center gap-2">
+          <span className="font-mono text-[11.5px] font-semibold text-ink">{stat.state}</span>
+          <ProgressBar
+            pct={maxSites > 0 ? (stat.routeStations / maxSites) * 100 : 0}
+            tone="accent2"
+            className="h-2"
+          />
+          <span className="text-right font-mono text-[11.5px] text-dim">
+            {stat.routeStations}
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+export function TripStatsSection({
+  route,
+  routeStateStats,
+}: {
+  route?: RoutePlan
+  routeStateStats: StateRouteStats[]
+}) {
+  if (!route) {
+    return (
+      <div className="flex flex-col gap-2">
+        <Eyebrow>Trip stats</Eyebrow>
+        <div className="text-[12.5px] text-faint">
+          Generate a route to see trip composition, pace, and state leaders.
+        </div>
+      </div>
+    )
+  }
+
+  const totalActiveHours = route.totalDriveHours + route.totalStopHours
+  const visitedStates = routeStateStats.filter((stat) => stat.routeStations > 0).length
+  const issueCount =
+    route.warnings.length +
+    route.advisories.length +
+    route.days.reduce(
+      (sum, day) => sum + day.warnings.length + day.advisories.length,
+      0,
+    )
+  const longDayPct = route.totalDays > 0 ? (route.longDays / route.totalDays) * 100 : 0
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div>
+        <Eyebrow>Trip stats</Eyebrow>
+        <div className="mt-1 text-[15px] font-semibold text-ink">{route.name}</div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <TripStatCard label="Drive" value={formatHours(route.totalDriveHours)} unit="h" />
+        <TripStatCard label="Charge" value={formatHours(route.totalStopHours)} unit="h" />
+        <TripStatCard label="Pace" value={route.stationsPerDay} unit="sites/day" tone="info" />
+        <TripStatCard
+          label="Issues"
+          value={issueCount}
+          tone={issueCount > 0 ? 'warn' : 'good'}
+        />
+      </div>
+
+      <section className="flex flex-col gap-3 rounded-xl border border-edge bg-panel2 p-3.5">
+        <div className="flex items-baseline justify-between gap-2">
+          <div>
+            <div className="text-[13px] font-semibold text-ink">Time split</div>
+            <div className="font-mono text-[10.5px] text-faint">
+              {formatHours(totalActiveHours)} active hours
+            </div>
+          </div>
+          <span className="font-mono text-[11.5px] text-dim">
+            {route.totalMiles.toLocaleString()} mi
+          </span>
+        </div>
+        <ShareBar label="Driving" value={route.totalDriveHours} total={totalActiveHours} />
+        <ShareBar
+          label="Charging"
+          value={route.totalStopHours}
+          total={totalActiveHours}
+          tone="accent2"
+        />
+      </section>
+
+      <section className="flex flex-col gap-3 rounded-xl border border-edge bg-panel2 p-3.5">
+        <div className="flex items-baseline justify-between gap-2">
+          <div>
+            <div className="text-[13px] font-semibold text-ink">Route shape</div>
+            <div className="font-mono text-[10.5px] text-faint">
+              {visitedStates} states with planned visits
+            </div>
+          </div>
+          <span className="font-mono text-[11.5px] text-dim">
+            {route.averageDistanceBetweenSuperchargers} mi avg gap
+          </span>
+        </div>
+        <ProgressBar pct={longDayPct} tone={route.longDays > 0 ? 'accent2' : 'accent'} className="h-2" />
+        <div className="flex items-center justify-between font-mono text-[11px] text-faint">
+          <span>{route.longDays} long-day boosts</span>
+          <span>{Math.round(longDayPct)}% of days</span>
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-3 rounded-xl border border-edge bg-panel2 p-3.5">
+        <div>
+          <div className="text-[13px] font-semibold text-ink">State leaders</div>
+          <div className="font-mono text-[10.5px] text-faint">
+            Top states by unique planned sites
+          </div>
+        </div>
+        <TopStateBars stats={routeStateStats} />
+      </section>
+    </div>
   )
 }
 
@@ -459,13 +682,15 @@ export function GuardrailsSection({
 }
 
 /* ------------------------------------------------------------------ */
-/* Sidebar — Overview / Coverage / Status tabs                         */
+/* Sidebar — Overview / Coverage / Stats / Copilot / Status tabs       */
 /* ------------------------------------------------------------------ */
-type SidebarTab = 'overview' | 'coverage' | 'status'
+type SidebarTab = 'overview' | 'coverage' | 'stats' | 'copilot' | 'status'
 
 const SIDEBAR_TABS: { key: SidebarTab; label: string }[] = [
   { key: 'overview', label: 'Overview' },
   { key: 'coverage', label: 'Coverage' },
+  { key: 'stats', label: 'Stats' },
+  { key: 'copilot', label: 'Copilot' },
   { key: 'status', label: 'Status' },
 ]
 
@@ -481,6 +706,7 @@ export function Sidebar({
   onHoverState,
   highlightedState,
   onRefresh,
+  copilot,
   className,
 }: SidebarProps) {
   const [tab, setTab] = useState<SidebarTab>('overview')
@@ -498,7 +724,7 @@ export function Sidebar({
               aria-selected={active}
               onClick={() => setTab(t.key)}
               className={cx(
-                'relative flex-1 px-2 py-2.5 text-[12.5px] font-semibold transition cursor-pointer',
+                'relative flex-1 cursor-pointer px-1 py-2.5 text-[11.5px] font-semibold transition',
                 active ? 'text-ink' : 'text-faint hover:text-dim',
               )}
             >
@@ -511,7 +737,12 @@ export function Sidebar({
         })}
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
+      <div
+        className={cx(
+          'min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4',
+          tab === 'copilot' ? 'hidden' : 'flex',
+        )}
+      >
         {tab === 'overview' && (
           <>
             <div className="flex flex-col gap-2">
@@ -538,6 +769,10 @@ export function Sidebar({
           />
         )}
 
+        {tab === 'stats' && (
+          <TripStatsSection route={route} routeStateStats={routeStateStats} />
+        )}
+
         {tab === 'status' && (
           <>
             <SourceSection
@@ -550,6 +785,14 @@ export function Sidebar({
               roadStatus={roadStatus}
             />
           </>
+        )}
+      </div>
+
+      <div className={cx('min-h-0 flex-1', tab === 'copilot' ? 'flex' : 'hidden')}>
+        {copilot ?? (
+          <div className="flex flex-1 items-center justify-center px-6 text-center text-[12.5px] text-faint">
+            Route Copilot is unavailable.
+          </div>
         )}
       </div>
     </div>

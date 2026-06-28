@@ -30,6 +30,7 @@ interface MapViewProps {
   onSelectState?: (state: string) => void
   onHoverState?: (state: string | undefined) => void
   highlightedState?: string
+  highlightedDayIndex?: number
   caption?: string
 }
 
@@ -57,6 +58,7 @@ export const MapView = memo(function MapView({
   onSelectState,
   onHoverState,
   highlightedState,
+  highlightedDayIndex,
   caption,
 }: MapViewProps) {
   const { theme, isDark } = useTheme()
@@ -140,6 +142,12 @@ export const MapView = memo(function MapView({
       {route && (
         <>
           <RouteLine route={route} roadLine={roadLine} isDark={isDark} />
+          <DayHighlightLine
+            route={route}
+            start={start}
+            dayIndex={highlightedDayIndex}
+            isDark={isDark}
+          />
           {routeVisits.map((visit) => (
             <CircleMarker
               key={`${route.id}-${visit.sequence}-${visit.station.id}`}
@@ -355,6 +363,81 @@ function RouteLine({
           weight: hasRoadLine ? 4 : 3,
         }}
       />
+    </>
+  )
+}
+
+function DayHighlightLine({
+  route,
+  start,
+  dayIndex,
+  isDark,
+}: {
+  route: RoutePlan
+  start: Coordinate
+  dayIndex?: number
+  isDark: boolean
+}) {
+  const zoom = useMapZoom()
+  const positions = useMemo(() => {
+    if (dayIndex == null) return []
+    const day = route.days[dayIndex]
+    if (!day || day.visits.length === 0) return []
+    const previousDay = route.days[dayIndex - 1]
+    const previousStop = previousDay?.visits.at(-1)?.station.position ?? start
+    return [previousStop, ...day.visits.map((visit) => visit.station.position)].map(
+      (point) => [point.lat, point.lon] as [number, number],
+    )
+  }, [dayIndex, route.days, start])
+
+  if (positions.length < 2) return null
+
+  const label = route.days[dayIndex ?? -1]?.day
+  const smoothFactor = roadSmoothFactorForZoom(zoom)
+
+  return (
+    <>
+      {isDark ? (
+        <Polyline
+          positions={positions}
+          smoothFactor={smoothFactor}
+          pathOptions={{
+            color: route.color,
+            opacity: 0.28,
+            weight: 18,
+            lineCap: 'round',
+            lineJoin: 'round',
+          }}
+        />
+      ) : null}
+      <Polyline
+        positions={positions}
+        smoothFactor={smoothFactor}
+        pathOptions={{
+          color: '#ffffff',
+          opacity: 0.98,
+          weight: 12,
+          lineCap: 'round',
+          lineJoin: 'round',
+        }}
+      />
+      <Polyline
+        positions={positions}
+        smoothFactor={smoothFactor}
+        pathOptions={{
+          color: route.color,
+          opacity: 1,
+          weight: 6,
+          lineCap: 'round',
+          lineJoin: 'round',
+        }}
+      >
+        {label ? (
+          <Tooltip sticky direction="top">
+            Day {label}
+          </Tooltip>
+        ) : null}
+      </Polyline>
     </>
   )
 }

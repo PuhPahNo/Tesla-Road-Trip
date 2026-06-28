@@ -9,7 +9,6 @@ import {
   BoltIcon,
   ChevronDownIcon,
   MoonIcon,
-  OptimizeIcon,
   SlidersIcon,
   SunIcon,
 } from '../ui/icons'
@@ -18,8 +17,6 @@ export interface TopBarProps {
   selectedRouteName: string
   onOpenRoutePicker: () => void
   onOpenConfig: () => void
-  onOptimize: () => void
-  isOptimizing: boolean
 }
 
 const THEME_OPTIONS: { value: ThemeName; label: string }[] = [
@@ -31,8 +28,6 @@ export function TopBar({
   selectedRouteName,
   onOpenRoutePicker,
   onOpenConfig,
-  onOptimize,
-  isOptimizing,
 }: TopBarProps) {
   const { theme, isDark, setTheme, toggleTheme } = useTheme()
 
@@ -100,26 +95,6 @@ export function TopBar({
         </Button>
       </div>
 
-      {/* Optimize — icon-only on mobile, labelled at md */}
-      <IconButton
-        label={isOptimizing ? 'Optimizing route' : 'Optimize route'}
-        size={44}
-        disabled={isOptimizing}
-        className="flex-none border-transparent bg-accent text-on-accent shadow-[0_1px_2px_rgba(0,0,0,0.18)] hover:brightness-95 md:hidden"
-        onClick={onOptimize}
-      >
-        <OptimizeIcon size={15} className={isOptimizing ? 'anim-spin' : undefined} />
-      </IconButton>
-      <div className="hidden md:flex">
-        <Button
-          variant="primary"
-          disabled={isOptimizing}
-          onClick={onOptimize}
-        >
-          <OptimizeIcon size={15} className={isOptimizing ? 'anim-spin' : undefined} />
-          {isOptimizing ? 'Optimizing...' : 'Optimize'}
-        </Button>
-      </div>
     </header>
   )
 }

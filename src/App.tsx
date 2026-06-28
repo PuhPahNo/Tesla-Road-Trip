@@ -30,16 +30,24 @@ import {
   HeroStats,
   Sidebar,
   SourceSection,
+  TripStatsSection,
   type RoadStatusVM,
 } from './components/Sidebar'
 import { DailyPlanDrawer, DayTable } from './components/DailyPlan'
 import { DayDetailModal } from './components/DayDetailModal'
 import { StateDetailModal } from './components/StateDetailModal'
 import { ConfigModal } from './components/ConfigModal'
-import { RouteCopilot, type CopilotMode } from './components/RouteCopilot'
+import { RouteCopilotPanel } from './components/RouteCopilot'
 import { RoutePicker } from './components/RoutePicker'
 import { Overlay, OverlayHeader, OptimizeOverlay, Toast } from './ui/Overlay'
-import { AlertIcon, CalendarIcon, CompassIcon, LayersIcon, MapPinIcon } from './ui/icons'
+import {
+  AlertIcon,
+  CalendarIcon,
+  CompassIcon,
+  LayersIcon,
+  MapPinIcon,
+  SparkleIcon,
+} from './ui/icons'
 import { cx } from './ui/primitives'
 
 const EMPTY_STATIONS: Station[] = []
@@ -58,7 +66,7 @@ type RoadRouteState =
   | { status: 'ready'; routeId: string; line: Coordinate[]; warning?: string }
   | { status: 'error'; routeId: string; message: string }
 
-type MobileSheet = 'routes' | 'days' | 'states' | null
+type MobileSheet = 'routes' | 'days' | 'states' | 'copilot' | null
 
 function App() {
   const isMobile = useIsMobile()
@@ -85,8 +93,7 @@ function App() {
   const [routePickerOpen, setRoutePickerOpen] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(true)
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>()
-  const [copilotOpen, setCopilotOpen] = useState(false)
-  const [copilotMode, setCopilotMode] = useState<CopilotMode>('dock')
+  const [hoveredDayIndex, setHoveredDayIndex] = useState<number>()
   const [mobileSheet, setMobileSheet] = useState<MobileSheet>(null)
   const [hoveredState, setHoveredState] = useState<string>()
   const [toast, setToast] = useState<string | null>(null)
@@ -292,11 +299,16 @@ function App() {
   }, [selectedRoute, roadRouteState, roadRoutingEnabled])
 
   const feasibility = result?.universe.allSitesFeasibility
+  const allSitesTarget =
+    feasibility != null &&
+    config.targetStations >= Math.floor(feasibility.totalStations * 0.95)
+  const visibleFeasibility = allSitesTarget ? feasibility : undefined
   const mapCaption = `${(result?.universe.filteredStations ?? stationStatus?.filteredStations ?? visibleStations.length).toLocaleString()} SITES`
 
   const handleSelectRoute = (id: string) => {
     setSelectedRouteId(id)
     setSelectedStateCode(undefined)
+    setHoveredDayIndex(undefined)
   }
   const handleSelectState = (state: string) => {
     setSelectedStateCode(state)
@@ -304,6 +316,7 @@ function App() {
   }
   const handleOpenDay = (dayIndex: number) => {
     setSelectedDayIndex(dayIndex)
+    setHoveredDayIndex(undefined)
     setMobileSheet(null)
   }
 
@@ -312,13 +325,20 @@ function App() {
     stationStatus,
     isLoadingStations,
     routeStateStats,
-    feasibility,
+    feasibility: visibleFeasibility,
     roadStatus,
     passportDeadline: TESLA_CONTEST_RULES.passportDeadline,
     onSelectState: handleSelectState,
     onHoverState: setHoveredState,
     highlightedState: hoveredState,
     onRefresh: loadStations,
+    copilot: (
+      <RouteCopilotPanel
+        config={config}
+        selectedRouteId={selectedRoute?.id}
+        onApply={applyAgentResponse}
+      />
+    ),
   }
 
   return (
@@ -327,8 +347,6 @@ function App() {
         selectedRouteName={selectedRoute?.name ?? 'No route yet'}
         onOpenRoutePicker={() => setRoutePickerOpen(true)}
         onOpenConfig={() => setConfigOpen(true)}
-        onOptimize={runOptimize}
-        isOptimizing={isOptimizing}
       />
 
       {error && (
@@ -347,19 +365,6 @@ function App() {
 
       {/* MAIN */}
       <div className="relative flex min-h-0 flex-1">
-        {/* Copilot (in-flow dock on desktop + floating launcher/panel/bar/sheet) */}
-        <RouteCopilot
-          config={config}
-          selectedRouteId={selectedRoute?.id}
-          onApply={applyAgentResponse}
-          open={copilotOpen}
-          mode={copilotMode}
-          isMobile={isMobile}
-          onOpen={() => setCopilotOpen(true)}
-          onClose={() => setCopilotOpen(false)}
-          onSetMode={setCopilotMode}
-        />
-
         {/* Map */}
         <div className="relative min-w-0 flex-1">
           <MapView
@@ -372,6 +377,7 @@ function App() {
             onSelectState={handleSelectState}
             onHoverState={setHoveredState}
             highlightedState={hoveredState}
+            highlightedDayIndex={hoveredDayIndex}
             caption={mapCaption}
           />
         </div>
@@ -392,6 +398,7 @@ function App() {
           open={drawerOpen}
           onToggleOpen={() => setDrawerOpen((o) => !o)}
           onOpenDay={handleOpenDay}
+          onHoverDay={setHoveredDayIndex}
         />
       )}
 
@@ -420,6 +427,7 @@ function App() {
             />
             <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
               <HeroStats route={displayRoute} />
+              <TripStatsSection route={displayRoute} routeStateStats={routeStateStats} />
               <MobileRouteList
                 routes={result?.routes ?? []}
                 selectedRouteId={selectedRoute?.id}
@@ -427,7 +435,7 @@ function App() {
                   handleSelectRoute(id)
                 }}
               />
-              <FeasibilitySection bare feasibility={feasibility} />
+              <FeasibilitySection bare feasibility={visibleFeasibility} />
               <SourceSection
                 bare
                 stationStatus={stationStatus}
@@ -457,6 +465,7 @@ function App() {
                 route={displayRoute}
                 roadStatus={roadStatus.status}
                 onOpenDay={handleOpenDay}
+                onHoverDay={setHoveredDayIndex}
               />
             </div>
           </Overlay>
@@ -478,6 +487,29 @@ function App() {
                 onSelectState={handleSelectState}
               />
             </div>
+          </Overlay>
+
+          <Overlay
+            open={mobileSheet === 'copilot'}
+            onClose={() => setMobileSheet(null)}
+            size="detail"
+          >
+            <OverlayHeader
+              badge={
+                <span className="mt-1 flex h-9 w-9 flex-none items-center justify-center rounded-[11px] border border-edge bg-panel2 text-accent2">
+                  <SparkleIcon size={15} />
+                </span>
+              }
+              kicker="Assistant"
+              title="Route Copilot"
+              onClose={() => setMobileSheet(null)}
+            />
+            <RouteCopilotPanel
+              config={config}
+              selectedRouteId={selectedRoute?.id}
+              onApply={applyAgentResponse}
+              showHeader={false}
+            />
           </Overlay>
         </>
       )}
@@ -523,6 +555,7 @@ const TABS: Array<{ key: Exclude<MobileSheet, null>; label: string; icon: typeof
   { key: 'routes', label: 'Routes', icon: LayersIcon },
   { key: 'days', label: 'Days', icon: CalendarIcon },
   { key: 'states', label: 'States', icon: MapPinIcon },
+  { key: 'copilot', label: 'Copilot', icon: SparkleIcon },
 ]
 
 function MobileTabBar({
@@ -533,7 +566,7 @@ function MobileTabBar({
   onSelect: (tab: MobileSheet) => void
 }) {
   return (
-    <nav className="pb-safe z-30 grid flex-none grid-cols-4 border-t border-edge bg-panel">
+    <nav className="pb-safe z-30 grid flex-none grid-cols-5 border-t border-edge bg-panel">
       <button
         type="button"
         onClick={() => onSelect(null)}
