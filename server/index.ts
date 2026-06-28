@@ -48,8 +48,8 @@ const ROAD_PROVIDER: 'ors' | 'osrm' | 'none' = ORS_API_KEY
 // ORS health: the UI should treat road routing as "on" only when the key actually
 // works. A present-but-invalid or quota-exhausted ORS key must flip the site back
 // to estimate mode (which brings back the manual Average-speed control), so we
-// validate the key with a cheap cached probe and also mark it unhealthy whenever a
-// real routing call is rejected.
+// validate the key with a cheap cached probe. Full-route failures are handled as
+// route-specific fallbacks unless ORS explicitly rejects the credentials.
 const ORS_HEALTH_TTL_MS = 1000 * 60 * 5
 // Two close, reliably-routable points (downtown SF -> Oakland) used only to probe
 // whether the ORS key authenticates and still has quota.
@@ -61,6 +61,11 @@ let orsHealth = { ok: true, checkedAt: 0, reason: '' }
 
 function markOrsHealth(ok: boolean, reason = ''): void {
   orsHealth = { ok, checkedAt: Date.now(), reason }
+}
+
+function disablesOrsHealth(error: unknown): boolean {
+  const status = error instanceof OrsError ? error.status : undefined
+  return status === 401 || status === 403
 }
 
 /** One cheap ORS request to confirm the key authenticates and has quota. */
@@ -408,18 +413,19 @@ async function fetchOrsRoute(coordinates: LatLon[]): Promise<RoadResult> {
     markOrsHealth(true)
     return { roadLine, legMiles, legDriveHours, warnings: [], requestCount }
   } catch (error) {
-    // ORS failed — most often an expired key (401/403) or an exhausted free-tier
-    // quota (429). Don't 502 the whole route: return straight-line geometry with
-    // NO per-leg data so the caller fills every leg with the haversine estimate,
-    // and flag the key unhealthy so /api/health flips the UI back to estimate mode.
+    // A full route can fail for route/chunk/transient reasons even while the key
+    // is valid. Don't 502 the whole route and don't globally disable ORS unless
+    // credentials are rejected; return a route-specific fallback instead.
     const status = error instanceof OrsError ? error.status : undefined
-    markOrsHealth(false, error instanceof Error ? error.message : 'ORS request failed')
+    if (disablesOrsHealth(error)) {
+      markOrsHealth(false, error instanceof Error ? error.message : 'ORS request failed')
+    }
     const note =
       status === 429
-        ? 'OpenRouteService quota is exhausted — showing straight-line estimates for this route.'
+        ? 'OpenRouteService rate or quota limit prevented this route refinement — showing straight-line fallback for this route.'
         : status === 401 || status === 403
           ? 'OpenRouteService rejected the API key — showing straight-line estimates for this route.'
-          : 'OpenRouteService was unavailable — showing straight-line estimates for this route.'
+          : 'OpenRouteService could not refine this route — showing straight-line fallback for this route.'
     return {
       roadLine: coordinates,
       legMiles: [],

@@ -22,7 +22,7 @@ export interface DayTableProps {
   route?: RoutePlan
   onOpenDay: (dayIndex: number) => void
   onHoverDay?: (dayIndex: number | undefined) => void
-  roadStatus?: 'idle' | 'loading' | 'ready' | 'error' | 'estimate'
+  roadStatus?: 'idle' | 'loading' | 'ready' | 'error' | 'estimate' | 'fallback'
 }
 
 function clampDrawerHeight(next: number) {
@@ -118,7 +118,7 @@ export function DayTable({ route, onOpenDay, onHoverDay, roadStatus }: DayTableP
         ? 'Road miles loaded'
         : roadStatus === 'estimate'
           ? 'Estimate mode'
-          : roadStatus === 'error'
+          : roadStatus === 'error' || roadStatus === 'fallback'
             ? 'Road fallback'
             : undefined
 

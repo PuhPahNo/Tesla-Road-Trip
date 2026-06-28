@@ -18,7 +18,7 @@ import { AlertIcon, InfoIcon, RefreshIcon } from '../ui/icons'
 /* Types                                                               */
 /* ------------------------------------------------------------------ */
 export type RoadStatusVM = {
-  status: 'idle' | 'loading' | 'ready' | 'error' | 'estimate'
+  status: 'idle' | 'loading' | 'ready' | 'error' | 'estimate' | 'fallback'
   routeName?: string
   message?: string
 }
@@ -622,6 +622,11 @@ function roadStatusNote(roadStatus: RoadStatusVM): { tone: Tone; text: string } 
       return {
         tone: 'warn',
         text: `Road geometry fallback: ${roadStatus.message ?? 'using straight-line legs.'}`,
+      }
+    case 'fallback':
+      return {
+        tone: 'warn',
+        text: roadStatus.message ?? `Road geometry fallback for ${name}.`,
       }
     case 'estimate':
       return {

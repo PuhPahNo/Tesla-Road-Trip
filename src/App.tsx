@@ -64,6 +64,7 @@ type RoadRouteState =
   | { status: 'idle'; routeId?: string }
   | { status: 'loading'; routeId: string }
   | { status: 'ready'; routeId: string; line: Coordinate[]; warning?: string }
+  | { status: 'fallback'; routeId: string; message: string }
   | { status: 'error'; routeId: string; message: string }
 
 type MobileSheet = 'routes' | 'days' | 'states' | 'copilot' | null
@@ -228,21 +229,27 @@ function App() {
     )
       .then((response) => {
         if (cancelled) return
-        setRoadRoutes((current) => ({ ...current, [selectedRoute.id]: response.roadLine }))
         setRefinedRoutes((current) => ({ ...current, [selectedRoute.id]: response.route }))
+        if (response.degraded) {
+          const message =
+            response.warnings[0] ??
+            'Road routing could not refine this route — using straight-line fallback.'
+          setRoadRouteState({
+            status: 'fallback',
+            routeId: selectedRoute.id,
+            message,
+          })
+          showToast(message)
+          return
+        }
+
+        setRoadRoutes((current) => ({ ...current, [selectedRoute.id]: response.roadLine }))
         setRoadRouteState({
           status: 'ready',
           routeId: selectedRoute.id,
           line: response.roadLine,
           warning: response.warnings[0],
         })
-        // The ORS key was rejected/exhausted: these legs are straight-line
-        // estimates. Drop back to estimate mode so the manual Average-speed
-        // control returns and the status reads "estimate".
-        if (response.degraded) {
-          setRoadRoutingEnabled(false)
-          showToast(response.warnings[0] ?? 'Road routing unavailable — using estimates')
-        }
       })
       .catch((requestError) => {
         if (cancelled) return
@@ -293,6 +300,8 @@ function App() {
     if (roadRouteState.routeId !== selectedRoute.id) return { status: 'idle', routeName }
     if (roadRouteState.status === 'error')
       return { status: 'error', routeName, message: roadRouteState.message }
+    if (roadRouteState.status === 'fallback')
+      return { status: 'fallback', routeName, message: roadRouteState.message }
     if (roadRouteState.status === 'loading') return { status: 'loading', routeName }
     if (roadRouteState.status === 'ready') return { status: 'ready', routeName }
     return { status: 'idle', routeName }
