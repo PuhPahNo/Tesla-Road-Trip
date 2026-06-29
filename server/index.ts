@@ -290,11 +290,10 @@ app.post('/api/refine-route', async (request, response) => {
     })
     const orderedStations = stations as unknown as Station[]
 
-    const returnToStart = sanitized.plannerMode !== 'longest_trip'
     const coordinates = [
       sanitized.start,
       ...orderedStations.map((station) => station.position),
-      ...(returnToStart ? [sanitized.start] : []),
+      sanitized.start,
     ]
     const road = await fetchRoadProvider(coordinates)
 

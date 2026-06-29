@@ -1,6 +1,7 @@
 import { defaultPlannerConfig, sanitizePlannerConfig } from './config'
 import {
   haversineMiles,
+  polylineLengthMiles,
   round,
   scoreAgainstPolyline,
 } from './geo'
@@ -760,7 +761,10 @@ function buildMostUniqueSiteVariants(
     },
   ].map((variant) => ({
     ...variant,
-    anchors: insertRequiredWaypoints(variant.anchors, requiredWaypoints),
+    anchors: insertRequiredWaypoints(
+      closeAnchorsToStart(variant.anchors, start),
+      requiredWaypoints,
+    ),
   }))
 
   if (customRouteWaypoints.length > 0) {
@@ -784,6 +788,57 @@ function buildMostUniqueSiteVariants(
   }
 
   return variants
+}
+
+function coldWeatherScore(point: Coordinate) {
+  let score = point.lat
+
+  if (point.lat >= 39) score += 16
+  if (point.lat >= 44) score += 8
+  if (point.lat >= 35 && point.lon <= -100) score += 6
+  if (point.lat >= 38 && point.lon <= -90 && point.lon >= -105) score += 4
+
+  return score
+}
+
+function weatherFirstClosedAnchors(anchors: Coordinate[], start: Coordinate) {
+  const body = anchors.filter(
+    (anchor, index) =>
+      index > 0 && !(anchor.lat === start.lat && anchor.lon === start.lon),
+  )
+
+  if (body.length === 0) return [start]
+
+  const sequences = [body, body.slice().reverse()]
+  let best = body
+  let bestScore = Number.NEGATIVE_INFINITY
+
+  sequences.forEach((sequence) => {
+    for (let index = 0; index < sequence.length; index += 1) {
+      const rotated = [...sequence.slice(index), ...sequence.slice(0, index)]
+      const earlyWeatherScore = rotated
+        .slice(0, Math.min(4, rotated.length))
+        .reduce(
+          (sum, anchor, anchorIndex) =>
+            sum + coldWeatherScore(anchor) / (anchorIndex + 1),
+          0,
+        )
+      const first = rotated[0]
+      const last = rotated.at(-1)!
+      const firstNorthBonus = first.lat > start.lat ? 400 : -400
+      const returnPenalty = haversineMiles(last, start) * 0.45
+      const openingPenalty = haversineMiles(start, first) * 0.04
+      const score =
+        earlyWeatherScore + firstNorthBonus - returnPenalty - openingPenalty
+
+      if (score > bestScore) {
+        bestScore = score
+        best = rotated
+      }
+    }
+  })
+
+  return closeAnchorsToStart([start, ...best], start)
 }
 
 function buildLongestTripVariants(
@@ -1308,7 +1363,10 @@ function buildLongestTripVariants(
     },
   ].map((variant) => ({
     ...variant,
-    anchors: insertRequiredWaypoints(variant.anchors, requiredWaypoints),
+    anchors: insertRequiredWaypoints(
+      weatherFirstClosedAnchors(variant.anchors, start),
+      requiredWaypoints,
+    ),
   }))
 
   if (customRouteWaypoints.length > 0) {
@@ -1319,12 +1377,13 @@ function buildLongestTripVariants(
     variants.push({
       id: 'custom-longest-trip',
       name: 'Custom Longest Trip',
-      strategy: `A custom streak corridor through ${customRouteWaypoints.map((waypoint) => waypoint.label).join(' -> ')}.`,
+      strategy: `A custom streak corridor through ${customRouteWaypoints.map((waypoint) => waypoint.label).join(' -> ')} before returning to the start.`,
       color: '#7c3aed',
       corridorMiles: 150,
       anchors: [
         start,
         ...customRouteWaypoints.map((waypoint) => waypoint.position),
+        start,
       ],
       forcedWaypoints: customForcedWaypoints,
     })
@@ -1338,6 +1397,7 @@ function chooseStationsForVariant(
   stations: Station[],
   targetStations: number,
   requiredWaypoints: RouteWaypoint[],
+  options: { spreadAlongCorridor?: boolean } = {},
 ) {
   const target = Math.min(targetStations, stations.length)
   let corridorMiles = variant.corridorMiles
@@ -1374,6 +1434,13 @@ function chooseStationsForVariant(
 
       selected = [...primary, ...filler]
     }
+  } else if (options.spreadAlongCorridor) {
+    selected = selectStationsAcrossCorridor(
+      scored.filter((station) => station.distanceMiles <= corridorMiles),
+      target,
+      variant.anchors,
+      variant.anchors[0],
+    )
   } else {
     selected = scored
       .filter((station) => station.distanceMiles <= corridorMiles)
@@ -1429,6 +1496,94 @@ function chooseStationsForVariant(
     ),
     waypointWarnings,
   }
+}
+
+function selectStationsAcrossCorridor(
+  candidates: ScoredStation[],
+  target: number,
+  anchors: Coordinate[],
+  start: Coordinate,
+) {
+  if (target <= 0) return []
+  if (candidates.length <= target) {
+    return candidates.sort(
+      (a, b) => a.order - b.order || a.distanceMiles - b.distanceMiles,
+    )
+  }
+
+  const routeLength = polylineLengthMiles(anchors)
+  const selected: ScoredStation[] = []
+  const selectedIds = new Set<string>()
+  const northFirst = nearestMatchingScoredStation(candidates, start, (station) =>
+    isNorthNotWest(station, start),
+  )
+
+  if (northFirst) {
+    selectedIds.add(northFirst.station.id)
+    selected.push({ ...northFirst, order: -1 })
+  }
+
+  const distributedTarget = target - selected.length
+  const reservedNorthFirst = selected.length > 0
+
+  for (let index = 0; index < distributedTarget; index += 1) {
+    const desiredOrder =
+      reservedNorthFirst
+        ? (routeLength * (index + 1)) / distributedTarget
+        : distributedTarget === 1
+        ? routeLength
+        : (routeLength * index) / (distributedTarget - 1)
+    const desiredPoint = coordinateAtPolylineOrder(anchors, desiredOrder)
+    let best: ScoredStation | undefined
+    let bestScore = Infinity
+
+    candidates.forEach((candidate) => {
+      if (selectedIds.has(candidate.station.id)) return
+
+      const score =
+        haversineMiles(candidate.station.position, desiredPoint) +
+        candidate.distanceMiles * 0.05
+      if (score < bestScore) {
+        bestScore = score
+        best = candidate
+      }
+    })
+
+    if (!best) break
+    selectedIds.add(best.station.id)
+    selected.push({ ...best, order: desiredOrder })
+  }
+
+  return selected.sort(
+    (a, b) => a.order - b.order || a.distanceMiles - b.distanceMiles,
+  )
+}
+
+function coordinateAtPolylineOrder(anchors: Coordinate[], targetOrder: number) {
+  if (anchors.length === 0) return { lat: 0, lon: 0 }
+  if (anchors.length === 1) return anchors[0]
+
+  let cumulative = 0
+  for (let index = 0; index < anchors.length - 1; index += 1) {
+    const start = anchors[index]
+    const end = anchors[index + 1]
+    const segmentLength = haversineMiles(start, end)
+
+    if (targetOrder <= cumulative + segmentLength || index === anchors.length - 2) {
+      const progress =
+        segmentLength > 0
+          ? Math.max(0, Math.min(1, (targetOrder - cumulative) / segmentLength))
+          : 0
+      return {
+        lat: start.lat + (end.lat - start.lat) * progress,
+        lon: start.lon + (end.lon - start.lon) * progress,
+      }
+    }
+
+    cumulative += segmentLength
+  }
+
+  return anchors.at(-1)!
 }
 
 function ensureNorthFirstCandidate(
@@ -2323,6 +2478,20 @@ function orderLongestTripStations(
   return ordered
 }
 
+function takeUniqueStations(stations: ScoredStation[], target: number) {
+  const used = new Set<string>()
+  const selected: ScoredStation[] = []
+
+  for (const station of stations) {
+    if (used.has(station.station.id)) continue
+    used.add(station.station.id)
+    selected.push(station)
+    if (selected.length >= target) break
+  }
+
+  return selected
+}
+
 function isNorthNotWest(station: Station, start: Coordinate) {
   return station.position.lat > start.lat && station.position.lon >= start.lon
 }
@@ -2335,6 +2504,13 @@ function buildDisplayRouteLine(
 ): Coordinate[] {
   const points = [start, ...orderedStations.map((s) => s.station.position)]
   return returnToStart ? [...points, start] : points
+}
+
+function closeAnchorsToStart(anchors: Coordinate[], start: Coordinate) {
+  const last = anchors.at(-1)
+  if (last && last.lat === start.lat && last.lon === start.lon) return anchors
+
+  return [...anchors, start]
 }
 
 function insertRequiredWaypoints(
@@ -2511,11 +2687,7 @@ export function refineRouteWithRoadLegs(
     warnings: plans.totals.warnings,
     advisories: plans.totals.advisories,
     longDays: plans.totals.longDays,
-    routeLine: buildDisplayRouteLine(
-      scored,
-      config.start,
-      config.plannerMode !== 'longest_trip',
-    ),
+    routeLine: buildDisplayRouteLine(scored, config.start),
   }
 }
 
@@ -2550,19 +2722,23 @@ export function optimizeRoutes(
       stations,
       routeTarget,
       variant.forcedWaypoints,
+      { spreadAlongCorridor: config.plannerMode === 'longest_trip' },
     )
     const stationOrder =
       config.plannerMode === 'longest_trip'
         ? orderLongestTripStations(stationChoice.selected, config.start)
         : optimizeStationOrder(stationChoice.selected, config.start)
-    const expandedStations = insertConnectorStops(
-      stationOrder,
-      stations,
-      config,
-    )
+    const expandedStations =
+      config.plannerMode === 'longest_trip'
+        ? stationOrder
+        : insertConnectorStops(
+            stationOrder,
+            stations,
+            config,
+          )
     const orderedStations =
       config.plannerMode === 'longest_trip'
-        ? expandedStations.slice(0, routeTarget)
+        ? takeUniqueStations(expandedStations, routeTarget)
         : expandedStations
     const plans = buildRouteDayPlans(orderedStations, variant.name, config)
     const totalDays = plans.days.length
@@ -2598,11 +2774,7 @@ export function optimizeRoutes(
       warnings: [...stationChoice.waypointWarnings, ...plans.totals.warnings],
       advisories: plans.totals.advisories,
       longDays: plans.totals.longDays,
-      routeLine: buildDisplayRouteLine(
-        orderedStations,
-        config.start,
-        config.plannerMode !== 'longest_trip',
-      ),
+      routeLine: buildDisplayRouteLine(orderedStations, config.start),
     }
   })
 

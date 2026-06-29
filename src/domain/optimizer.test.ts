@@ -90,7 +90,7 @@ describe('route optimizer', () => {
     expect(route.totalDays).toBe(12)
     expect(route.days.every((day) => day.visits.length === 1)).toBe(true)
     expect(route.routeLine[0]).toEqual(defaultPlannerConfig.start)
-    expect(route.routeLine.at(-1)).not.toEqual(defaultPlannerConfig.start)
+    expect(route.routeLine.at(-1)).toEqual(defaultPlannerConfig.start)
     result.routes.forEach((candidate) => {
       expect(candidate.visits[0]?.station.position.lat).toBeGreaterThan(
         defaultPlannerConfig.start.lat,
@@ -98,6 +98,8 @@ describe('route optimizer', () => {
       expect(candidate.routeLine[1]?.lat).toBeGreaterThan(
         defaultPlannerConfig.start.lat,
       )
+      expect(candidate.routeLine.at(-1)).toEqual(defaultPlannerConfig.start)
+      expect(candidate.totalDays).toBe(12)
     })
     expect(
       route.advisories.some((item) =>
