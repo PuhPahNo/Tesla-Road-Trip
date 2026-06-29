@@ -155,7 +155,9 @@ function App() {
       const response = await optimizeRoutes(sanitizePlannerConfig(config))
       applyOptimizationResult(response)
       showToast(
-        `Route optimized · ${response.routes[0]?.uniqueStations.toLocaleString() ?? 0} unique sites`,
+        config.plannerMode === 'longest_trip'
+          ? `Longest Trip planned · ${response.routes[0]?.totalDays.toLocaleString() ?? 0} streak days`
+          : `Route optimized · ${response.routes[0]?.uniqueStations.toLocaleString() ?? 0} unique sites`,
       )
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Optimization failed.')
@@ -310,6 +312,7 @@ function App() {
   const feasibility = result?.universe.allSitesFeasibility
   const allSitesTarget =
     feasibility != null &&
+    config.plannerMode === 'most_unique_sites' &&
     config.targetStations >= Math.floor(feasibility.totalStations * 0.95)
   const visibleFeasibility = allSitesTarget ? feasibility : undefined
   const mapCaption = `${(result?.universe.filteredStations ?? stationStatus?.filteredStations ?? visibleStations.length).toLocaleString()} SITES`
@@ -631,6 +634,7 @@ function MobileRouteList({
       </div>
       {routes.map((route) => {
         const isActive = route.id === selectedRouteId
+        const isLongestTrip = route.plannerMode === 'longest_trip'
         return (
           <button
             key={route.id}
@@ -650,7 +654,9 @@ function MobileRouteList({
                 {route.name}
               </span>
               <span className="block font-mono text-[11.5px] text-faint">
-                {route.uniqueStations.toLocaleString()} sites · {route.totalDays} days ·{' '}
+                {route.uniqueStations.toLocaleString()}{' '}
+                {isLongestTrip ? 'streak stops' : 'sites'} · {route.totalDays}{' '}
+                {isLongestTrip ? 'streak days' : 'days'} ·{' '}
                 {route.totalMiles.toLocaleString()} mi
               </span>
             </span>

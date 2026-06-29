@@ -46,6 +46,7 @@ export function RoutePicker({
             const selected = route.id === selectedRouteId
             const hasWarnings = route.warnings.length > 0
             const hasAdvisories = route.advisories.length > 0
+            const isLongestTrip = route.plannerMode === 'longest_trip'
             return (
               <button
                 key={route.id}
@@ -71,8 +72,10 @@ export function RoutePicker({
                     {route.name}
                   </span>
                   <span className="truncate font-mono text-[11.5px] text-faint">
-                    {route.uniqueStations.toLocaleString()} sites · {route.totalDays}{' '}
-                    days · {route.totalMiles.toLocaleString()} mi
+                    {route.uniqueStations.toLocaleString()}{' '}
+                    {isLongestTrip ? 'streak stops' : 'sites'} · {route.totalDays}{' '}
+                    {isLongestTrip ? 'streak days' : 'days'} ·{' '}
+                    {route.totalMiles.toLocaleString()} mi
                   </span>
                 </span>
 

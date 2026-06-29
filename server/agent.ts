@@ -75,6 +75,7 @@ const routeDetailArgsSchema = z.object({
 })
 
 const NUMERIC_SETTING_LIMITS = {
+  longestTripDays: { min: 1, max: 365, integer: true },
   targetStations: { min: 25, max: 5000, integer: true },
   tripWeeks: { min: 1, max: 52 },
   dailyDriveTargetHours: { min: 1, max: 14 },
@@ -507,6 +508,11 @@ const plannerAgentTools = [
       type: 'object',
       properties: {
         targetStations: { type: 'number' },
+        longestTripDays: { type: 'number' },
+        plannerMode: {
+          type: 'string',
+          enum: ['longest_trip', 'most_unique_sites'],
+        },
         tripWeeks: { type: 'number' },
         dailyDriveTargetHours: { type: 'number' },
         dailyDriveMaxHours: { type: 'number' },
@@ -600,6 +606,8 @@ const plannerAgentTools = [
 
 function summarizeConfig(config: PlannerConfig) {
   return {
+    plannerMode: config.plannerMode,
+    longestTripDays: config.longestTripDays,
     targetStations: config.targetStations,
     tripWeeks: config.tripWeeks,
     dailyDriveTargetHours: config.dailyDriveTargetHours,
@@ -615,6 +623,7 @@ function summarizeConfig(config: PlannerConfig) {
 function summarizeRoute(route: RoutePlan) {
   return {
     id: route.id,
+    plannerMode: route.plannerMode,
     name: route.name,
     strategy: route.strategy,
     uniqueStations: route.uniqueStations,
@@ -648,6 +657,16 @@ function parsePlannerSettingsArgs(args: Record<string, unknown>) {
   const ignoredFields: string[] = []
 
   Object.entries(args).forEach(([key, value]) => {
+    if (key === 'plannerMode') {
+      if (value === 'longest_trip' || value === 'most_unique_sites') {
+        settings.plannerMode = value
+        return
+      }
+
+      ignoredFields.push(key)
+      return
+    }
+
     if (key in NUMERIC_SETTING_LIMITS) {
       const limit =
         NUMERIC_SETTING_LIMITS[key as keyof typeof NUMERIC_SETTING_LIMITS]

@@ -111,6 +111,7 @@ export function DayTable({ route, onOpenDay, onHoverDay, roadStatus }: DayTableP
 
   const longDays = route.days.filter((day) => day.longDayOptimized).length
   const auxLegs = route.visits.filter((visit) => visit.rangeWarning).length
+  const isLongestTrip = route.plannerMode === 'longest_trip'
   const routeStatus =
     roadStatus === 'loading'
       ? 'Refining road miles...'
@@ -126,7 +127,11 @@ export function DayTable({ route, onOpenDay, onHoverDay, roadStatus }: DayTableP
     <div className="flex min-h-0 flex-1 flex-col">
       {/* Pills row */}
       <div className="flex flex-wrap items-center gap-2 border-b border-edge px-[18px] py-2.5">
-        <Pill tone="neutral">{route.stationsPerDay} sites/day</Pill>
+        <Pill tone="neutral">
+          {isLongestTrip
+            ? `${route.totalDays} streak ${route.totalDays === 1 ? 'day' : 'days'}`
+            : `${route.stationsPerDay} sites/day`}
+        </Pill>
         {routeStatus ? (
           <Pill tone={roadStatus === 'ready' ? 'good' : roadStatus === 'error' ? 'warn' : 'info'}>
             {routeStatus}

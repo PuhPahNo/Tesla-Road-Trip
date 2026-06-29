@@ -118,13 +118,45 @@ const CITY = {
   fargo: { lat: 46.8772, lon: -96.7898 },
 }
 
+const PLACE = {
+  acadia: { lat: 44.3386, lon: -68.2733 },
+  asheville: { lat: 35.5951, lon: -82.5515 },
+  badlands: { lat: 43.8554, lon: -102.3397 },
+  bigBend: { lat: 29.1275, lon: -103.2425 },
+  bigSur: { lat: 36.2704, lon: -121.8081 },
+  bryceCanyon: { lat: 37.593, lon: -112.1871 },
+  cahokia: { lat: 38.6544, lon: -90.0618 },
+  capitolReef: { lat: 38.367, lon: -111.2615 },
+  charleston: { lat: 32.7765, lon: -79.9311 },
+  durango: { lat: 37.2753, lon: -107.8801 },
+  gettysburg: { lat: 39.8309, lon: -77.2311 },
+  grandCanyon: { lat: 36.1069, lon: -112.1129 },
+  lakeTahoe: { lat: 39.0968, lon: -120.0324 },
+  mammothCave: { lat: 37.1862, lon: -86.1005 },
+  mesaVerde: { lat: 37.2309, lon: -108.4618 },
+  montgomery: { lat: 32.3668, lon: -86.3 },
+  moab: { lat: 38.5733, lon: -109.5498 },
+  monumentValley: { lat: 36.998, lon: -110.0985 },
+  natchez: { lat: 31.5604, lon: -91.4032 },
+  olympic: { lat: 47.8021, lon: -123.6044 },
+  redwood: { lat: 41.2132, lon: -124.0046 },
+  rockyMountain: { lat: 40.3428, lon: -105.6836 },
+  selma: { lat: 32.4074, lon: -87.0211 },
+  shenandoah: { lat: 38.2928, lon: -78.6796 },
+  sedona: { lat: 34.8697, lon: -111.7609 },
+  whiteSands: { lat: 32.7797, lon: -106.1717 },
+  yellowstone: { lat: 44.428, lon: -110.5885 },
+  yosemite: { lat: 37.8651, lon: -119.5383 },
+  zion: { lat: 37.2982, lon: -113.0263 },
+}
+
 function stateFilter(...states: string[]) {
   const wanted = new Set(states)
   return (station: Station) =>
     station.address.country === 'USA' && wanted.has(station.address.state)
 }
 
-function buildVariants(
+function buildMostUniqueSiteVariants(
   start: Coordinate,
   requiredWaypoints: RouteWaypoint[],
   customRouteWaypoints: RouteWaypoint[],
@@ -754,6 +786,553 @@ function buildVariants(
   return variants
 }
 
+function buildLongestTripVariants(
+  start: Coordinate,
+  requiredWaypoints: RouteWaypoint[],
+  customRouteWaypoints: RouteWaypoint[],
+): RouteVariant[] {
+  const variants: RouteVariant[] = [
+    {
+      id: 'longest-great-american-icons',
+      name: 'Great American Icons',
+      strategy:
+        'A scenic streak plan through major cities, western landmarks, northern icons, the Great Lakes, and the East Coast return corridor.',
+      color: '#d72638',
+      corridorMiles: 155,
+      anchors: [
+        start,
+        CITY.nashville,
+        CITY.stLouis,
+        CITY.kansasCity,
+        CITY.denver,
+        CITY.santaFe,
+        PLACE.grandCanyon,
+        CITY.lasVegas,
+        CITY.losAngeles,
+        CITY.sanFrancisco,
+        CITY.portland,
+        CITY.seattle,
+        PLACE.yellowstone,
+        CITY.rapidCity,
+        CITY.chicago,
+        CITY.washingtonDc,
+        CITY.charlotte,
+      ],
+      forcedWaypoints: requiredWaypoints,
+    },
+    {
+      id: 'longest-national-parks-west',
+      name: 'National Parks and Western Icons',
+      strategy:
+        'A parks-forward plan across the Front Range, red-rock Utah, Grand Canyon, Yosemite/Tahoe, the Pacific Northwest, Yellowstone, and the upper Midwest.',
+      color: '#16a34a',
+      corridorMiles: 165,
+      anchors: [
+        start,
+        CITY.stLouis,
+        CITY.denver,
+        PLACE.rockyMountain,
+        PLACE.moab,
+        PLACE.zion,
+        PLACE.grandCanyon,
+        CITY.lasVegas,
+        PLACE.yosemite,
+        PLACE.lakeTahoe,
+        CITY.portland,
+        CITY.seattle,
+        PLACE.yellowstone,
+        PLACE.badlands,
+        CITY.minneapolis,
+        CITY.chicago,
+      ],
+      forcedWaypoints: requiredWaypoints,
+    },
+    {
+      id: 'longest-coastal-cities',
+      name: 'Coastal Cities Run',
+      strategy:
+        'A city-and-coast plan from the Atlantic Southeast through Florida, the Gulf, Texas, Southern California, the Bay Area, and the Pacific Northwest.',
+      color: '#0891b2',
+      corridorMiles: 150,
+      anchors: [
+        start,
+        CITY.atlanta,
+        CITY.savannah,
+        CITY.jacksonville,
+        CITY.miami,
+        CITY.tampa,
+        CITY.newOrleans,
+        CITY.houston,
+        CITY.sanAntonio,
+        CITY.sanDiego,
+        CITY.losAngeles,
+        PLACE.bigSur,
+        CITY.sanFrancisco,
+        CITY.portland,
+        CITY.seattle,
+      ],
+      forcedWaypoints: requiredWaypoints,
+    },
+    {
+      id: 'longest-music-cities',
+      name: 'Music Cities and Great Lakes',
+      strategy:
+        'A culture-heavy route through Nashville, Memphis, New Orleans, Austin, Dallas, Santa Fe, Denver, Kansas City, St. Louis, Chicago, Detroit, and Cleveland.',
+      color: '#db2777',
+      corridorMiles: 140,
+      anchors: [
+        start,
+        CITY.nashville,
+        CITY.memphis,
+        CITY.newOrleans,
+        CITY.austin,
+        CITY.dallas,
+        CITY.santaFe,
+        CITY.denver,
+        CITY.kansasCity,
+        CITY.stLouis,
+        CITY.chicago,
+        CITY.detroit,
+        CITY.cleveland,
+        CITY.pittsburgh,
+      ],
+      forcedWaypoints: requiredWaypoints,
+    },
+    {
+      id: 'longest-route-66-icons',
+      name: 'Route 66 and Desert Icons',
+      strategy:
+        'An I-40 / Route 66 style streak through Memphis, Oklahoma City, Amarillo, New Mexico, Flagstaff, Grand Canyon, Vegas, Los Angeles, Phoenix, and Texas.',
+      color: '#f46036',
+      corridorMiles: 145,
+      anchors: [
+        start,
+        CITY.nashville,
+        CITY.memphis,
+        CITY.littleRock,
+        CITY.oklahomaCity,
+        CITY.amarillo,
+        CITY.albuquerque,
+        CITY.santaFe,
+        CITY.flagstaff,
+        PLACE.grandCanyon,
+        CITY.lasVegas,
+        CITY.losAngeles,
+        CITY.sanDiego,
+        CITY.phoenix,
+        CITY.dallas,
+        CITY.stLouis,
+      ],
+      forcedWaypoints: requiredWaypoints,
+    },
+    {
+      id: 'longest-east-coast-history',
+      name: 'East Coast History Trail',
+      strategy:
+        'A historic-city route through Savannah, Charleston, Raleigh, Richmond, DC, Philadelphia, New York, Boston, Acadia/Maine, Niagara/Buffalo, Pittsburgh, and Charlotte.',
+      color: '#0f766e',
+      corridorMiles: 125,
+      anchors: [
+        start,
+        CITY.atlanta,
+        CITY.savannah,
+        PLACE.charleston,
+        CITY.raleigh,
+        CITY.richmond,
+        CITY.washingtonDc,
+        CITY.philadelphia,
+        CITY.newYork,
+        CITY.boston,
+        PLACE.acadia,
+        CITY.buffalo,
+        CITY.pittsburgh,
+        CITY.charlotte,
+      ],
+      forcedWaypoints: requiredWaypoints,
+    },
+    {
+      id: 'longest-great-lakes-new-england',
+      name: 'Great Lakes to New England',
+      strategy:
+        'A northern city streak through Louisville, Chicago, Wisconsin, Minneapolis, Michigan, Ohio, Buffalo, Boston, Maine, New York, and Pennsylvania.',
+      color: '#2563eb',
+      corridorMiles: 135,
+      anchors: [
+        start,
+        CITY.louisville,
+        CITY.indianapolis,
+        CITY.chicago,
+        CITY.milwaukee,
+        CITY.madison,
+        CITY.minneapolis,
+        CITY.detroit,
+        CITY.cleveland,
+        CITY.buffalo,
+        CITY.boston,
+        CITY.portlandMaine,
+        CITY.newYork,
+        CITY.pittsburgh,
+      ],
+      forcedWaypoints: requiredWaypoints,
+    },
+    {
+      id: 'longest-rockies-red-rocks',
+      name: 'Rockies and Red Rocks',
+      strategy:
+        'A mountain-and-desert route through Kansas City, Denver, Rocky Mountain, Moab, Monument Valley, Grand Canyon, Sedona, Santa Fe, Albuquerque, and Oklahoma City.',
+      color: '#7c2d12',
+      corridorMiles: 160,
+      anchors: [
+        start,
+        CITY.stLouis,
+        CITY.kansasCity,
+        CITY.denver,
+        PLACE.rockyMountain,
+        PLACE.moab,
+        PLACE.monumentValley,
+        PLACE.grandCanyon,
+        PLACE.sedona,
+        CITY.santaFe,
+        CITY.albuquerque,
+        CITY.oklahomaCity,
+        CITY.memphis,
+      ],
+      forcedWaypoints: requiredWaypoints,
+    },
+    {
+      id: 'longest-texas-southwest',
+      name: 'Texas and Southwest Landmarks',
+      strategy:
+        'A Texas-first streak through Dallas, Austin, San Antonio, Big Bend/El Paso, White Sands, Santa Fe, Phoenix, Las Vegas, Los Angeles, Denver, and St. Louis.',
+      color: '#ea580c',
+      corridorMiles: 155,
+      anchors: [
+        start,
+        CITY.memphis,
+        CITY.littleRock,
+        CITY.dallas,
+        CITY.austin,
+        CITY.sanAntonio,
+        PLACE.bigBend,
+        CITY.elPaso,
+        PLACE.whiteSands,
+        CITY.santaFe,
+        CITY.phoenix,
+        CITY.lasVegas,
+        CITY.losAngeles,
+        CITY.denver,
+        CITY.stLouis,
+      ],
+      forcedWaypoints: requiredWaypoints,
+    },
+    {
+      id: 'longest-pacific-coast-rockies',
+      name: 'Pacific Coast and Rockies',
+      strategy:
+        'A westward push to Southern California, Big Sur, San Francisco, Redwoods, Portland, Seattle, Spokane, Boise, Salt Lake City, and Denver.',
+      color: '#5b5fc7',
+      corridorMiles: 160,
+      anchors: [
+        start,
+        CITY.dallas,
+        CITY.elPaso,
+        CITY.phoenix,
+        CITY.sanDiego,
+        CITY.losAngeles,
+        PLACE.bigSur,
+        CITY.sanFrancisco,
+        PLACE.redwood,
+        CITY.portland,
+        CITY.seattle,
+        CITY.spokane,
+        CITY.boise,
+        CITY.saltLakeCity,
+        CITY.denver,
+      ],
+      forcedWaypoints: requiredWaypoints,
+    },
+    {
+      id: 'longest-southeast-beaches',
+      name: 'Southeast Beaches and Cities',
+      strategy:
+        'A closer-to-home streak through Atlanta, Savannah, Jacksonville, Orlando, Miami, Tampa, Pensacola, New Orleans, Birmingham, Charlotte, Raleigh, and Norfolk.',
+      color: '#65a30d',
+      corridorMiles: 125,
+      anchors: [
+        start,
+        CITY.atlanta,
+        CITY.savannah,
+        CITY.jacksonville,
+        CITY.orlando,
+        CITY.miami,
+        CITY.tampa,
+        CITY.pensacola,
+        CITY.newOrleans,
+        CITY.birmingham,
+        CITY.charlotte,
+        CITY.raleigh,
+        CITY.norfolk,
+      ],
+      forcedWaypoints: requiredWaypoints,
+    },
+    {
+      id: 'longest-northern-tier',
+      name: 'Northern Tier Adventure',
+      strategy:
+        'A long northern sweep through Chicago, Minnesota, Fargo, Badlands, Billings, Yellowstone, Boise, Seattle, Spokane, Rapid City, Michigan, Buffalo, and Boston.',
+      color: '#1d4ed8',
+      corridorMiles: 165,
+      anchors: [
+        start,
+        CITY.louisville,
+        CITY.chicago,
+        CITY.madison,
+        CITY.minneapolis,
+        CITY.fargo,
+        PLACE.badlands,
+        CITY.billings,
+        PLACE.yellowstone,
+        CITY.boise,
+        CITY.seattle,
+        CITY.spokane,
+        CITY.rapidCity,
+        CITY.detroit,
+        CITY.buffalo,
+        CITY.boston,
+      ],
+      forcedWaypoints: requiredWaypoints,
+    },
+    {
+      id: 'longest-four-corners-loop',
+      name: 'Four Corners Scenic Route',
+      strategy:
+        'A Four Corners plan through Oklahoma, Amarillo, Albuquerque, Santa Fe, Durango, Monument Valley, Grand Canyon, Phoenix, Vegas, Zion, Moab, Denver, and Kansas City.',
+      color: '#a16207',
+      corridorMiles: 155,
+      anchors: [
+        start,
+        CITY.memphis,
+        CITY.oklahomaCity,
+        CITY.amarillo,
+        CITY.albuquerque,
+        CITY.santaFe,
+        PLACE.durango,
+        PLACE.monumentValley,
+        PLACE.grandCanyon,
+        CITY.phoenix,
+        CITY.lasVegas,
+        PLACE.zion,
+        PLACE.moab,
+        CITY.denver,
+        CITY.kansasCity,
+      ],
+      forcedWaypoints: requiredWaypoints,
+    },
+    {
+      id: 'longest-california-dream',
+      name: 'California Dream Streak',
+      strategy:
+        'A western streak to California with Flagstaff, Los Angeles, San Diego, Big Sur, San Francisco, Yosemite, Sacramento, Tahoe/Reno, Salt Lake City, and Denver.',
+      color: '#ef4444',
+      corridorMiles: 160,
+      anchors: [
+        start,
+        CITY.memphis,
+        CITY.oklahomaCity,
+        CITY.amarillo,
+        CITY.albuquerque,
+        CITY.flagstaff,
+        CITY.losAngeles,
+        CITY.sanDiego,
+        PLACE.bigSur,
+        CITY.sanFrancisco,
+        PLACE.yosemite,
+        CITY.sacramento,
+        PLACE.lakeTahoe,
+        CITY.reno,
+        CITY.saltLakeCity,
+        CITY.denver,
+      ],
+      forcedWaypoints: requiredWaypoints,
+    },
+    {
+      id: 'longest-appalachian-blue-ridge',
+      name: 'Appalachian and Blue Ridge',
+      strategy:
+        'A regional scenic streak through Nashville, Louisville, Cincinnati, Pittsburgh, Shenandoah, Richmond, Raleigh, Asheville, Charlotte, Atlanta, Savannah, and Birmingham.',
+      color: '#15803d',
+      corridorMiles: 120,
+      anchors: [
+        start,
+        CITY.nashville,
+        CITY.louisville,
+        CITY.cincinnati,
+        CITY.pittsburgh,
+        PLACE.shenandoah,
+        CITY.richmond,
+        CITY.raleigh,
+        PLACE.asheville,
+        CITY.charlotte,
+        CITY.atlanta,
+        CITY.savannah,
+        CITY.birmingham,
+      ],
+      forcedWaypoints: requiredWaypoints,
+    },
+    {
+      id: 'longest-civil-rights-southern-culture',
+      name: 'Civil Rights and Southern Culture',
+      strategy:
+        'A history-and-culture streak through Nashville, Birmingham, Montgomery, Selma, Atlanta, Memphis, Little Rock, New Orleans, Savannah, Charleston, Raleigh, and DC.',
+      color: '#b45309',
+      corridorMiles: 130,
+      anchors: [
+        start,
+        CITY.nashville,
+        CITY.birmingham,
+        PLACE.montgomery,
+        PLACE.selma,
+        CITY.atlanta,
+        CITY.memphis,
+        CITY.littleRock,
+        CITY.newOrleans,
+        CITY.savannah,
+        PLACE.charleston,
+        CITY.raleigh,
+        CITY.washingtonDc,
+      ],
+      forcedWaypoints: requiredWaypoints,
+    },
+    {
+      id: 'longest-great-river-road',
+      name: 'Great River Road Streak',
+      strategy:
+        'A Mississippi River-inspired streak from the upper Midwest down through St. Louis, Cahokia, Memphis, Natchez, New Orleans, the Gulf, and the Southeast return.',
+      color: '#0369a1',
+      corridorMiles: 140,
+      anchors: [
+        start,
+        CITY.nashville,
+        CITY.stLouis,
+        PLACE.cahokia,
+        CITY.madison,
+        CITY.minneapolis,
+        CITY.desMoines,
+        CITY.stLouis,
+        CITY.memphis,
+        PLACE.natchez,
+        CITY.newOrleans,
+        CITY.mobile,
+        CITY.birmingham,
+        CITY.atlanta,
+      ],
+      forcedWaypoints: requiredWaypoints,
+    },
+    {
+      id: 'longest-world-heritage-highlights',
+      name: 'World Heritage Highlights',
+      strategy:
+        'A UNESCO-inspired route through Mammoth Cave, Cahokia, Mesa Verde, Grand Canyon, Yosemite, Redwoods, Olympic, Yellowstone, and historic East Coast connectors.',
+      color: '#7e22ce',
+      corridorMiles: 175,
+      anchors: [
+        start,
+        CITY.louisville,
+        PLACE.mammothCave,
+        CITY.stLouis,
+        PLACE.cahokia,
+        CITY.kansasCity,
+        CITY.denver,
+        PLACE.mesaVerde,
+        PLACE.grandCanyon,
+        CITY.lasVegas,
+        PLACE.yosemite,
+        PLACE.redwood,
+        PLACE.olympic,
+        PLACE.yellowstone,
+        CITY.chicago,
+        CITY.philadelphia,
+      ],
+      forcedWaypoints: requiredWaypoints,
+    },
+    {
+      id: 'longest-utah-public-lands',
+      name: 'Utah Public Lands and Canyons',
+      strategy:
+        'A public-lands streak through Denver, Mesa Verde, Moab, Canyonlands/Arches country, Capitol Reef, Bryce Canyon, Zion, Grand Canyon, Monument Valley, Sedona, Santa Fe, and Kansas City.',
+      color: '#c2410c',
+      corridorMiles: 160,
+      anchors: [
+        start,
+        CITY.stLouis,
+        CITY.kansasCity,
+        CITY.denver,
+        PLACE.mesaVerde,
+        PLACE.moab,
+        PLACE.capitolReef,
+        PLACE.bryceCanyon,
+        PLACE.zion,
+        PLACE.grandCanyon,
+        PLACE.monumentValley,
+        PLACE.sedona,
+        CITY.santaFe,
+        CITY.albuquerque,
+        CITY.oklahomaCity,
+      ],
+      forcedWaypoints: requiredWaypoints,
+    },
+    {
+      id: 'longest-revolution-presidents',
+      name: 'Revolution and Presidents Trail',
+      strategy:
+        'A landmark-heavy eastern route through Louisville, Pittsburgh, Gettysburg, DC, Philadelphia, New York, Boston, Maine, Buffalo, Cleveland, Cincinnati, Asheville, and Atlanta.',
+      color: '#be123c',
+      corridorMiles: 130,
+      anchors: [
+        start,
+        CITY.louisville,
+        CITY.pittsburgh,
+        PLACE.gettysburg,
+        CITY.washingtonDc,
+        CITY.philadelphia,
+        CITY.newYork,
+        CITY.boston,
+        CITY.portlandMaine,
+        CITY.buffalo,
+        CITY.cleveland,
+        CITY.cincinnati,
+        PLACE.asheville,
+        CITY.atlanta,
+      ],
+      forcedWaypoints: requiredWaypoints,
+    },
+  ].map((variant) => ({
+    ...variant,
+    anchors: insertRequiredWaypoints(variant.anchors, requiredWaypoints),
+  }))
+
+  if (customRouteWaypoints.length > 0) {
+    const customForcedWaypoints = dedupeWaypoints([
+      ...requiredWaypoints,
+      ...customRouteWaypoints,
+    ])
+    variants.push({
+      id: 'custom-longest-trip',
+      name: 'Custom Longest Trip',
+      strategy: `A custom streak corridor through ${customRouteWaypoints.map((waypoint) => waypoint.label).join(' -> ')}.`,
+      color: '#7c3aed',
+      corridorMiles: 150,
+      anchors: [
+        start,
+        ...customRouteWaypoints.map((waypoint) => waypoint.position),
+      ],
+      forcedWaypoints: customForcedWaypoints,
+    })
+  }
+
+  return variants
+}
+
 function chooseStationsForVariant(
   variant: RouteVariant,
   stations: Station[],
@@ -1153,6 +1732,172 @@ function buildDayPlans(
       longDays,
     },
   }
+}
+
+function buildLongestTripDayPlans(
+  selectedStations: ScoredStation[],
+  routeName: string,
+  config: PlannerConfig,
+  /** Real per-leg miles (e.g. from ORS): index i = arrival leg for station i. */
+  precomputedLegMiles?: number[],
+  /** Real per-leg drive hours. */
+  precomputedDriveHours?: number[],
+) {
+  const days: DayPlan[] = []
+  const visits: RouteStationVisit[] = []
+  const chargingState: ChargingState = {
+    rangeRemainingMiles: config.practicalRangeMiles,
+  }
+  let previous = {
+    position: config.start,
+    order: 0,
+    distanceMiles: 0,
+  }
+  let previousStopMinutes = 0
+
+  for (let index = 0; index < selectedStations.length; index += 1) {
+    const scoredStation = selectedStations[index]
+    const legMiles =
+      precomputedLegMiles?.[index] ??
+      roadLegMiles(
+        previous.position,
+        scoredStation.station.position,
+        config.roadDistanceFactor,
+      )
+    const driveHours = precomputedDriveHours?.[index] ?? legMiles / config.averageMph
+    const nextPosition = selectedStations[index + 1]?.station.position
+    const nextLegMiles = nextPosition
+      ? precomputedLegMiles?.[index + 1] ??
+        roadLegMiles(
+          scoredStation.station.position,
+          nextPosition,
+          config.roadDistanceFactor,
+        )
+      : 0
+    const activeStopMinutes = stopMinutesForVisit(
+      legMiles,
+      nextLegMiles,
+      chargingState,
+      config,
+    )
+
+    const day = emptyDay(index + 1)
+    const visit: RouteStationVisit = {
+      sequence: index + 1,
+      day: day.day,
+      station: scoredStation.station,
+      legMiles: round(legMiles),
+      driveHours: round(driveHours, 2),
+      stopMinutes: activeStopMinutes,
+      rangeWarning: legMiles > config.practicalRangeMiles,
+      connectorStop: scoredStation.connectorStop,
+    }
+    const startToStartHours = previousStopMinutes / 60 + driveHours
+
+    day.miles += legMiles
+    day.driveHours += driveHours
+    day.stopMinutes += activeStopMinutes
+    day.uniqueStations += 1
+    day.visits.push(visit)
+
+    if (index > 0 && startToStartHours > 24) {
+      day.warnings.push(
+        `${round(startToStartHours, 1)} hours from the previous charge start exceeds the 24-hour streak window.`,
+      )
+    } else if (index > 0 && startToStartHours > 21) {
+      day.advisories.push({
+        severity: 'medium',
+        message: `${round(startToStartHours, 1)} hours from the previous charge start leaves little buffer for the 24-hour streak window.`,
+      })
+    }
+
+    visits.push(visit)
+    days.push(finalizeDay(day, config))
+    previous = {
+      position: scoredStation.station.position,
+      order: scoredStation.order,
+      distanceMiles: scoredStation.distanceMiles,
+    }
+    previousStopMinutes = activeStopMinutes
+  }
+
+  const totalMiles = days.reduce((sum, item) => sum + item.miles, 0)
+  const totalDriveHours = days.reduce((sum, item) => sum + item.driveHours, 0)
+  const totalStopHours =
+    days.reduce((sum, item) => sum + item.stopMinutes, 0) / 60
+  const uniqueStationCount = new Set(visits.map((visit) => visit.station.id)).size
+  const warnings: string[] = []
+  const advisories: PlannerAdvisory[] = [
+    {
+      severity: 'info',
+      message:
+        `${routeName} targets one new unique Supercharger per streak day. Repeat Superchargers should be treated as backup charging only.`,
+    },
+  ]
+  const overRangeCount = visits.filter((visit) => visit.rangeWarning).length
+  const connectorStops = visits.filter((visit) => visit.connectorStop).length
+  const longDays = days.filter((item) => item.longDayOptimized).length
+
+  if (uniqueStationCount < config.longestTripDays) {
+    warnings.push(
+      `Only ${uniqueStationCount} unique streak stops were available for the configured ${config.longestTripDays}-day Longest Trip target.`,
+    )
+  }
+  if (overRangeCount > 0) {
+    advisories.push({
+      severity: 'medium',
+      message: `${overRangeCount} streak leg${overRangeCount === 1 ? '' : 's'} exceed the configured Supercharger-to-Supercharger range. Add a closer unique Supercharger or auxiliary charging buffer before relying on this streak.`,
+    })
+  }
+  if (days.some((item) => exceedsAllowedDayCap(item, config))) {
+    warnings.push('At least one streak day exceeds the configured hard drive cap.')
+  }
+  if (connectorStops > 0) {
+    advisories.push({
+      severity: 'info',
+      message: `${connectorStops} transfer connector stop${connectorStops === 1 ? '' : 's'} inserted; each unique connector can count as a streak stop if charged within the 24-hour window.`,
+    })
+  }
+
+  return {
+    days,
+    visits,
+    totals: {
+      totalMiles: round(totalMiles),
+      totalDriveHours: round(totalDriveHours, 1),
+      totalStopHours: round(totalStopHours, 1),
+      uniqueStationCount,
+      warnings,
+      advisories,
+      longDays,
+    },
+  }
+}
+
+function buildRouteDayPlans(
+  selectedStations: ScoredStation[],
+  routeName: string,
+  config: PlannerConfig,
+  precomputedLegMiles?: number[],
+  precomputedDriveHours?: number[],
+) {
+  if (config.plannerMode === 'longest_trip') {
+    return buildLongestTripDayPlans(
+      selectedStations,
+      routeName,
+      config,
+      precomputedLegMiles,
+      precomputedDriveHours,
+    )
+  }
+
+  return buildDayPlans(
+    selectedStations,
+    routeName,
+    config,
+    precomputedLegMiles,
+    precomputedDriveHours,
+  )
 }
 
 function getCurrentDayCap(day: DayPlan, config: PlannerConfig) {
@@ -1561,6 +2306,23 @@ function chooseNearestStationIndex(
   return bestIndex
 }
 
+function orderLongestTripStations(
+  selected: ScoredStation[],
+  start: Coordinate,
+): ScoredStation[] {
+  const ordered = selected
+    .slice()
+    .sort((a, b) => a.order - b.order || a.distanceMiles - b.distanceMiles)
+  const northFirstIndex = chooseNorthFirstStationIndex(ordered, start)
+
+  if (northFirstIndex > 0) {
+    const first = ordered.splice(northFirstIndex, 1)[0]
+    ordered.unshift(first)
+  }
+
+  return ordered
+}
+
 function isNorthNotWest(station: Station, start: Coordinate) {
   return station.position.lat > start.lat && station.position.lon >= start.lon
 }
@@ -1569,8 +2331,10 @@ function isNorthNotWest(station: Station, start: Coordinate) {
 function buildDisplayRouteLine(
   orderedStations: ScoredStation[],
   start: Coordinate,
+  returnToStart = true,
 ): Coordinate[] {
-  return [start, ...orderedStations.map((s) => s.station.position), start]
+  const points = [start, ...orderedStations.map((s) => s.station.position)]
+  return returnToStart ? [...points, start] : points
 }
 
 function insertRequiredWaypoints(
@@ -1719,7 +2483,7 @@ export function refineRouteWithRoadLegs(
     segmentIndex: 0,
     segmentProgress: 0,
   }))
-  const plans = buildDayPlans(scored, meta.name, config, legMiles, driveHours)
+  const plans = buildRouteDayPlans(scored, meta.name, config, legMiles, driveHours)
   const totalDays = Math.max(1, plans.days.length)
   const uniqueStations = plans.totals.uniqueStationCount
   const chargeStops = plans.visits.length
@@ -1727,6 +2491,7 @@ export function refineRouteWithRoadLegs(
 
   return {
     id: meta.id,
+    plannerMode: config.plannerMode,
     name: meta.name,
     strategy: meta.strategy,
     color: meta.color,
@@ -1746,7 +2511,11 @@ export function refineRouteWithRoadLegs(
     warnings: plans.totals.warnings,
     advisories: plans.totals.advisories,
     longDays: plans.totals.longDays,
-    routeLine: buildDisplayRouteLine(scored, config.start),
+    routeLine: buildDisplayRouteLine(
+      scored,
+      config.start,
+      config.plannerMode !== 'longest_trip',
+    ),
   }
 }
 
@@ -1758,25 +2527,44 @@ export function optimizeRoutes(
   const config = sanitizePlannerConfig(partialConfig)
   const openStations = filterOpenStations(allStations)
   const stations = filterStationsForConfig(allStations, config)
-  const variants = buildVariants(
-    config.start,
-    config.requiredWaypoints,
-    config.customRouteWaypoints,
-  )
+  const variants =
+    config.plannerMode === 'longest_trip'
+      ? buildLongestTripVariants(
+          config.start,
+          config.requiredWaypoints,
+          config.customRouteWaypoints,
+        )
+      : buildMostUniqueSiteVariants(
+          config.start,
+          config.requiredWaypoints,
+          config.customRouteWaypoints,
+        )
+  const routeTarget =
+    config.plannerMode === 'longest_trip'
+      ? config.longestTripDays
+      : config.targetStations
 
   const routes: RoutePlan[] = variants.map((variant) => {
     const stationChoice = chooseStationsForVariant(
       variant,
       stations,
-      config.targetStations,
+      routeTarget,
       variant.forcedWaypoints,
     )
-    const orderedStations = insertConnectorStops(
-      optimizeStationOrder(stationChoice.selected, config.start),
+    const stationOrder =
+      config.plannerMode === 'longest_trip'
+        ? orderLongestTripStations(stationChoice.selected, config.start)
+        : optimizeStationOrder(stationChoice.selected, config.start)
+    const expandedStations = insertConnectorStops(
+      stationOrder,
       stations,
       config,
     )
-    const plans = buildDayPlans(orderedStations, variant.name, config)
+    const orderedStations =
+      config.plannerMode === 'longest_trip'
+        ? expandedStations.slice(0, routeTarget)
+        : expandedStations
+    const plans = buildRouteDayPlans(orderedStations, variant.name, config)
     const totalDays = plans.days.length
     const uniqueStations = plans.totals.uniqueStationCount
     const chargeStops = plans.visits.length
@@ -1787,6 +2575,7 @@ export function optimizeRoutes(
 
     return {
       id: variant.id,
+      plannerMode: config.plannerMode,
       name: variant.name,
       strategy: variant.strategy,
       color: variant.color,
@@ -1809,7 +2598,11 @@ export function optimizeRoutes(
       warnings: [...stationChoice.waypointWarnings, ...plans.totals.warnings],
       advisories: plans.totals.advisories,
       longDays: plans.totals.longDays,
-      routeLine: buildDisplayRouteLine(orderedStations, config.start),
+      routeLine: buildDisplayRouteLine(
+        orderedStations,
+        config.start,
+        config.plannerMode !== 'longest_trip',
+      ),
     }
   })
 

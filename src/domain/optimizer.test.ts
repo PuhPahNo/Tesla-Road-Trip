@@ -56,10 +56,15 @@ function buildStationGrid() {
   return stations
 }
 
+const mostUniqueConfig = {
+  ...defaultPlannerConfig,
+  plannerMode: 'most_unique_sites' as const,
+}
+
 describe('route optimizer', () => {
   it('generates many route candidates with day-level plans', () => {
     const result = optimizeRoutes(buildStationGrid(), {
-      ...defaultPlannerConfig,
+      ...mostUniqueConfig,
       targetStations: 25,
       tripWeeks: 9,
     })
@@ -69,6 +74,36 @@ describe('route optimizer', () => {
     expect(result.routes[0].days.length).toBeGreaterThan(1)
     expect(result.routes[0].averageDriveHoursPerDay).toBeGreaterThan(0)
     expect(result.routes[0].routeLine[0]).toEqual(defaultPlannerConfig.start)
+  })
+
+  it('defaults to longest trip mode with one unique streak stop per day', () => {
+    const result = optimizeRoutes(buildStationGrid(), {
+      ...defaultPlannerConfig,
+      longestTripDays: 12,
+    })
+    const route = result.routes[0]
+
+    expect(result.config.plannerMode).toBe('longest_trip')
+    expect(result.routes.length).toBeGreaterThanOrEqual(20)
+    expect(route.plannerMode).toBe('longest_trip')
+    expect(route.uniqueStations).toBe(12)
+    expect(route.totalDays).toBe(12)
+    expect(route.days.every((day) => day.visits.length === 1)).toBe(true)
+    expect(route.routeLine[0]).toEqual(defaultPlannerConfig.start)
+    expect(route.routeLine.at(-1)).not.toEqual(defaultPlannerConfig.start)
+    result.routes.forEach((candidate) => {
+      expect(candidate.visits[0]?.station.position.lat).toBeGreaterThan(
+        defaultPlannerConfig.start.lat,
+      )
+      expect(candidate.routeLine[1]?.lat).toBeGreaterThan(
+        defaultPlannerConfig.start.lat,
+      )
+    })
+    expect(
+      route.advisories.some((item) =>
+        item.message.includes('unique Supercharger per streak day'),
+      ),
+    ).toBe(true)
   })
 
   it('starts every loop with a northbound first stop that is not west when available', () => {
@@ -87,7 +122,7 @@ describe('route optimizer', () => {
       ...buildStationGrid(),
     ]
     const result = optimizeRoutes(stations, {
-      ...defaultPlannerConfig,
+      ...mostUniqueConfig,
       targetStations: 25,
       tripWeeks: 9,
     })
@@ -107,7 +142,7 @@ describe('route optimizer', () => {
 
   it('reports medium auxiliary-charging advisories when practical range is too low', () => {
     const result = optimizeRoutes(buildStationGrid(), {
-      ...defaultPlannerConfig,
+      ...mostUniqueConfig,
       targetStations: 25,
       practicalRangeMiles: 80,
     })
@@ -126,7 +161,7 @@ describe('route optimizer', () => {
 
   it('inserts transfer connector stops into long repositioning legs', () => {
     const result = optimizeRoutes(buildStationGrid(), {
-      ...defaultPlannerConfig,
+      ...mostUniqueConfig,
       targetStations: 25,
       practicalRangeMiles: 180,
     })
@@ -154,7 +189,7 @@ describe('route optimizer', () => {
     const route = refineRouteWithRoadLegs(
       orderedStations,
       {
-        ...defaultPlannerConfig,
+        ...mostUniqueConfig,
         practicalRangeMiles: 220,
         closeStationStopMinutes: 2,
         distanceChargeStopMinutes: 18,
@@ -178,14 +213,14 @@ describe('route optimizer', () => {
 
   it('creates explained long days when the extra site return is high enough', () => {
     const withoutLongDays = optimizeRoutes(buildStationGrid(), {
-      ...defaultPlannerConfig,
+      ...mostUniqueConfig,
       targetStations: 45,
       dailyDriveTargetHours: 3,
       dailyDriveMaxHours: 3.5,
       longDayOptimization: false,
     })
     const withLongDays = optimizeRoutes(buildStationGrid(), {
-      ...defaultPlannerConfig,
+      ...mostUniqueConfig,
       targetStations: 45,
       dailyDriveTargetHours: 3,
       dailyDriveMaxHours: 3.5,
@@ -207,7 +242,7 @@ describe('route optimizer', () => {
 
   it('does not draw a direct Florida-to-Texas shortcut across the Gulf', () => {
     const result = optimizeRoutes(buildStationGrid(), {
-      ...defaultPlannerConfig,
+      ...mostUniqueConfig,
       targetStations: 25,
       tripWeeks: 9,
     })

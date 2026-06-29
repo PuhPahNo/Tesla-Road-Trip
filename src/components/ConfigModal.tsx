@@ -1,7 +1,7 @@
 import { useId, type ReactNode } from 'react'
-import type { PlannerConfig } from '../domain/types'
+import type { PlannerConfig, PlannerMode } from '../domain/types'
 import { Overlay, OverlayHeader } from '../ui/Overlay'
-import { Button, cx } from '../ui/primitives'
+import { Button, SegmentedControl, cx } from '../ui/primitives'
 
 export interface ConfigModalProps {
   config: PlannerConfig
@@ -41,7 +41,42 @@ interface ToggleSpec {
   hint: string
 }
 
-const TRIP_TARGETS: SliderSpec[] = [
+const PLANNER_MODE_OPTIONS: Array<{ value: PlannerMode; label: string }> = [
+  { value: 'longest_trip', label: 'Longest Trip' },
+  { value: 'most_unique_sites', label: 'Most Unique Sites' },
+]
+
+const LONGEST_TRIP_TARGETS: SliderSpec[] = [
+  {
+    key: 'longestTripDays',
+    label: 'Streak days',
+    hint: 'Unique Supercharger days',
+    min: 1,
+    max: 365,
+    step: 1,
+    unit: 'days',
+  },
+  {
+    key: 'practicalRangeMiles',
+    label: 'Practical range',
+    hint: 'Practical range',
+    min: 80,
+    max: 350,
+    step: 5,
+    unit: 'mi',
+  },
+  {
+    key: 'averageMph',
+    label: 'Average speed',
+    hint: 'Average moving speed',
+    min: 25,
+    max: 85,
+    step: 1,
+    unit: 'mph',
+  },
+]
+
+const UNIQUE_SITE_TARGETS: SliderSpec[] = [
   {
     key: 'targetStations',
     label: 'Target stations',
@@ -333,6 +368,12 @@ export function ConfigModal({
     onChange({ ...config, [key]: value })
   const setBool = (key: ToggleKey, value: boolean) =>
     onChange({ ...config, [key]: value })
+  const setMode = (plannerMode: PlannerMode) =>
+    onChange({ ...config, plannerMode })
+  const tripTargetSpecs =
+    config.plannerMode === 'longest_trip'
+      ? LONGEST_TRIP_TARGETS
+      : UNIQUE_SITE_TARGETS
 
   const renderSliders = (specs: SliderSpec[]) =>
     specs.map((spec) => (
@@ -354,6 +395,28 @@ export function ConfigModal({
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto pb-2">
+        {/* Objective */}
+        <SectionHeading>Trip objective</SectionHeading>
+        <div className="border-b border-edge px-5 py-3.5 md:px-6">
+          <div className="mb-2.5 flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <div className="truncate text-[13.5px] font-semibold text-ink">
+                Planner mode
+              </div>
+              <div className="mt-0.5 truncate text-[11.5px] text-faint">
+                Contest objective
+              </div>
+            </div>
+          </div>
+          <SegmentedControl<PlannerMode>
+            options={PLANNER_MODE_OPTIONS}
+            value={config.plannerMode}
+            onChange={setMode}
+            tone="accent"
+            ariaLabel="Planner mode"
+          />
+        </div>
+
         {/* Vehicle */}
         <SectionHeading>Vehicle</SectionHeading>
         <div className="flex items-center justify-between gap-4 border-b border-edge px-5 py-3.5 md:px-6">
@@ -370,7 +433,7 @@ export function ConfigModal({
 
         {/* Trip targets */}
         <SectionHeading>Trip targets</SectionHeading>
-        {TRIP_TARGETS.map((spec) =>
+        {tripTargetSpecs.map((spec) =>
           spec.key === 'averageMph' && roadRoutingEnabled ? (
             <InfoRow
               key={spec.key}

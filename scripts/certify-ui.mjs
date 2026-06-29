@@ -79,7 +79,7 @@ try {
       }
     }
 
-    setRangeByLabel('Target stations', 700)
+    setRangeByLabel('Streak days', 60)
     setSwitchByLabel('Long-day optimization', true)
 
     const button = Array.from(document.querySelectorAll('button')).find((item) =>
@@ -112,6 +112,8 @@ try {
         bodyText.includes('aux charge') ||
         bodyText.includes('auxiliary') ||
         bodyText.includes('transfer connector') ||
+        bodyText.includes('unique Supercharger per streak day') ||
+        bodyText.includes('24-hour streak') ||
         bodyText.includes('At least one day exceeds'),
       selectedRoute: bodyText.includes('Daily plan'),
       feasibility: bodyText.includes('All-sites reality check'),
@@ -203,7 +205,7 @@ try {
   )
 
   const failures = []
-  if (checks.routeOptions < 15) failures.push('expected many route options')
+  if (checks.routeOptions < 20) failures.push('expected at least 20 route options')
   if (checks.dayRows < 1) failures.push('expected day-level rows')
   if (!checks.advisoryMention) failures.push('expected advisory messaging')
   if (checks.loadedTiles < 1) failures.push('expected loaded map tiles')

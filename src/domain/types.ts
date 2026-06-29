@@ -31,7 +31,11 @@ export interface Station {
   osmNodeId?: string
 }
 
+export type PlannerMode = 'longest_trip' | 'most_unique_sites'
+
 export interface PlannerConfig {
+  plannerMode: PlannerMode
+  longestTripDays: number
   targetStations: number
   tripWeeks: number
   dailyDriveTargetHours: number
@@ -95,6 +99,7 @@ export interface DayPlan {
 
 export interface RoutePlan {
   id: string
+  plannerMode: PlannerMode
   name: string
   strategy: string
   color: string

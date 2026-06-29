@@ -290,17 +290,17 @@ app.post('/api/refine-route', async (request, response) => {
     })
     const orderedStations = stations as unknown as Station[]
 
-    // start -> every stop -> back to start
+    const returnToStart = sanitized.plannerMode !== 'longest_trip'
     const coordinates = [
       sanitized.start,
       ...orderedStations.map((station) => station.position),
-      sanitized.start,
+      ...(returnToStart ? [sanitized.start] : []),
     ]
     const road = await fetchRoadProvider(coordinates)
 
-    // One value per leg (orderedStations.length + 1). If the engine came up short
+    // One value per leg. If the engine came up short
     // (a failed segment), pad miles with straight-line and let drive time fall back.
-    const expectedLegs = orderedStations.length + 1
+    const expectedLegs = Math.max(0, coordinates.length - 1)
     const legMiles = Array.from({ length: expectedLegs }, (_, i) =>
       road.legMiles[i] ?? haversineMiles(coordinates[i], coordinates[i + 1]),
     )

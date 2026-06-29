@@ -106,10 +106,11 @@ function BareCard({
 /* ------------------------------------------------------------------ */
 export function HeroStats({ route }: { route?: RoutePlan }) {
   const dash = '-'
+  const isLongestTrip = route?.plannerMode === 'longest_trip'
   return (
     <div className="grid grid-cols-2 gap-[9px]">
       <StatTile
-        label="Unique sites"
+        label={isLongestTrip ? 'Streak stops' : 'Unique sites'}
         value={route ? route.uniqueStations.toLocaleString() : dash}
       />
       <StatTile
@@ -117,7 +118,7 @@ export function HeroStats({ route }: { route?: RoutePlan }) {
         value={route ? route.totalMiles.toLocaleString() : dash}
         unit={route ? 'mi' : undefined}
       />
-      <StatTile label="Days" value={route ? route.totalDays : dash} />
+      <StatTile label={isLongestTrip ? 'Streak days' : 'Days'} value={route ? route.totalDays : dash} />
       <StatTile
         label="Avg drive/day"
         value={route ? route.averageDriveHoursPerDay : dash}
@@ -464,6 +465,7 @@ export function TripStatsSection({
   }
 
   const totalActiveHours = route.totalDriveHours + route.totalStopHours
+  const isLongestTrip = route.plannerMode === 'longest_trip'
   const visitedStates = routeStateStats.filter((stat) => stat.routeStations > 0).length
   const issueCount =
     route.warnings.length +
@@ -484,7 +486,12 @@ export function TripStatsSection({
       <div className="grid grid-cols-2 gap-2">
         <TripStatCard label="Drive" value={formatHours(route.totalDriveHours)} unit="h" />
         <TripStatCard label="Charge" value={formatHours(route.totalStopHours)} unit="h" />
-        <TripStatCard label="Pace" value={route.stationsPerDay} unit="sites/day" tone="info" />
+        <TripStatCard
+          label="Pace"
+          value={route.stationsPerDay}
+          unit={isLongestTrip ? 'stops/day' : 'sites/day'}
+          tone="info"
+        />
         <TripStatCard
           label="Issues"
           value={issueCount}
