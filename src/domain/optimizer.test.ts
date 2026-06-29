@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { defaultPlannerConfig } from './config'
+import { haversineMiles } from './geo'
 import { optimizeRoutes, refineRouteWithRoadLegs } from './optimizer'
 import type { Station } from './types'
 
@@ -106,6 +107,44 @@ describe('route optimizer', () => {
         item.message.includes('unique Supercharger per streak day'),
       ),
     ).toBe(true)
+  })
+
+  it('reserves configured Longest Trip target stay days', () => {
+    const bayArea = { lat: 37.8, lon: -122.4 }
+    const result = optimizeRoutes(buildStationGrid(), {
+      ...defaultPlannerConfig,
+      longestTripDays: 12,
+      longestTripTargets: [
+        {
+          id: 'state-ca',
+          type: 'state',
+          label: 'California',
+          state: 'CA',
+          position: { lat: 37.1841, lon: -119.4696 },
+          stayDays: 3,
+        },
+        {
+          id: 'landmark-bay-area-test',
+          type: 'landmark',
+          label: 'Bay Area',
+          position: bayArea,
+          radiusMiles: 100,
+          stayDays: 2,
+        },
+      ],
+    })
+    const route = result.routes[0]
+    const californiaVisits = route.visits.filter(
+      (visit) => visit.station.address.state === 'CA',
+    )
+    const bayAreaVisits = route.visits.filter(
+      (visit) => haversineMiles(visit.station.position, bayArea) <= 100,
+    )
+
+    expect(route.totalDays).toBe(12)
+    expect(route.uniqueStations).toBe(12)
+    expect(californiaVisits.length).toBeGreaterThanOrEqual(3)
+    expect(bayAreaVisits.length).toBeGreaterThanOrEqual(2)
   })
 
   it('starts every loop with a northbound first stop that is not west when available', () => {

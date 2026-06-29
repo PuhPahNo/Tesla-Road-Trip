@@ -1,5 +1,15 @@
-import { useId, type ReactNode } from 'react'
-import type { PlannerConfig, PlannerMode } from '../domain/types'
+import { useEffect, useId, useMemo, useState, type ReactNode } from 'react'
+import type {
+  LongestTripVisitTarget,
+  PlannerConfig,
+  PlannerMode,
+} from '../domain/types'
+import {
+  LONGEST_TRIP_DESTINATIONS,
+  LONGEST_TRIP_STATE_TARGETS,
+  type LongestTripDestination,
+  type LongestTripStateTarget,
+} from '../domain/visitTargets'
 import { Overlay, OverlayHeader } from '../ui/Overlay'
 import { Button, SegmentedControl, cx } from '../ui/primitives'
 
@@ -353,6 +363,289 @@ function InfoRow({
   )
 }
 
+function destinationTarget(
+  destination: LongestTripDestination,
+): LongestTripVisitTarget {
+  return {
+    id: destination.id,
+    type: destination.type,
+    label: destination.label,
+    state: destination.state,
+    position: destination.position,
+    radiusMiles: destination.radiusMiles,
+    stayDays: 1,
+  }
+}
+
+function stateTarget(target: LongestTripStateTarget): LongestTripVisitTarget {
+  return {
+    id: target.id,
+    type: 'state',
+    label: target.label,
+    state: target.state,
+    position: target.position,
+    stayDays: 1,
+  }
+}
+
+function LongestTripTargetsSection({
+  config,
+  onChange,
+}: {
+  config: PlannerConfig
+  onChange: (config: PlannerConfig) => void
+}) {
+  const selectedIds = useMemo(
+    () => new Set(config.longestTripTargets.map((target) => target.id)),
+    [config.longestTripTargets],
+  )
+  const availableStates = useMemo(
+    () =>
+      LONGEST_TRIP_STATE_TARGETS.filter(
+        (target) => !selectedIds.has(target.id),
+      ),
+    [selectedIds],
+  )
+  const availableDestinations = useMemo(
+    () =>
+      LONGEST_TRIP_DESTINATIONS.filter(
+        (target) => !selectedIds.has(target.id),
+      ),
+    [selectedIds],
+  )
+  const [selectedStateId, setSelectedStateId] = useState(
+    availableStates[0]?.id ?? '',
+  )
+  const [selectedDestinationId, setSelectedDestinationId] = useState(
+    availableDestinations[0]?.id ?? '',
+  )
+  useEffect(() => {
+    if (availableStates.some((target) => target.id === selectedStateId)) return
+    setSelectedStateId(availableStates[0]?.id ?? '')
+  }, [availableStates, selectedStateId])
+  useEffect(() => {
+    if (
+      availableDestinations.some(
+        (target) => target.id === selectedDestinationId,
+      )
+    ) {
+      return
+    }
+    setSelectedDestinationId(availableDestinations[0]?.id ?? '')
+  }, [availableDestinations, selectedDestinationId])
+  const targetDays = config.longestTripTargets.reduce(
+    (sum, target) => sum + target.stayDays,
+    0,
+  )
+  const exceedsTarget = targetDays > config.longestTripDays
+
+  const setTargets = (longestTripTargets: LongestTripVisitTarget[]) =>
+    onChange({ ...config, longestTripTargets })
+
+  const addTarget = (target: LongestTripVisitTarget) => {
+    if (selectedIds.has(target.id)) return
+    setTargets([...config.longestTripTargets, target])
+  }
+
+  const updateStayDays = (id: string, stayDays: number) => {
+    setTargets(
+      config.longestTripTargets.map((target) =>
+        target.id === id
+          ? {
+              ...target,
+              stayDays: Math.max(1, Math.min(21, Math.round(stayDays))),
+            }
+          : target,
+      ),
+    )
+  }
+
+  const removeTarget = (id: string) => {
+    setTargets(config.longestTripTargets.filter((target) => target.id !== id))
+  }
+
+  const addSelectedState = () => {
+    const target =
+      LONGEST_TRIP_STATE_TARGETS.find((item) => item.id === selectedStateId) ??
+      availableStates[0]
+    if (!target) return
+
+    addTarget(stateTarget(target))
+    const nextAvailable = availableStates.find((item) => item.id !== target.id)
+    setSelectedStateId(nextAvailable?.id ?? '')
+  }
+
+  const addSelectedDestination = () => {
+    const target =
+      LONGEST_TRIP_DESTINATIONS.find(
+        (item) => item.id === selectedDestinationId,
+      ) ?? availableDestinations[0]
+    if (!target) return
+
+    addTarget(destinationTarget(target))
+    const nextAvailable = availableDestinations.find(
+      (item) => item.id !== target.id,
+    )
+    setSelectedDestinationId(nextAvailable?.id ?? '')
+  }
+
+  return (
+    <>
+      <SectionHeading>Must-visit targets</SectionHeading>
+      <div className="border-b border-edge px-5 py-4 md:px-6">
+        <div className="grid gap-3 md:grid-cols-2">
+          <TargetSelect
+            label="State"
+            value={selectedStateId}
+            options={availableStates.map((target) => ({
+              value: target.id,
+              label: target.label,
+            }))}
+            onChange={setSelectedStateId}
+            onAdd={addSelectedState}
+            disabled={availableStates.length === 0}
+          />
+          <TargetSelect
+            label="City or landmark"
+            value={selectedDestinationId}
+            options={availableDestinations.map((target) => ({
+              value: target.id,
+              label: target.label,
+            }))}
+            onChange={setSelectedDestinationId}
+            onAdd={addSelectedDestination}
+            disabled={availableDestinations.length === 0}
+          />
+        </div>
+        <div
+          className={cx(
+            'mt-3 rounded-lg border px-3 py-2 text-[12px]',
+            exceedsTarget
+              ? 'border-warn-bd bg-warn-bg text-warn'
+              : 'border-edge bg-panel2 text-faint',
+          )}
+        >
+          {targetDays.toLocaleString()} of {config.longestTripDays.toLocaleString()}{' '}
+          streak days reserved for selected targets.
+        </div>
+      </div>
+
+      {config.longestTripTargets.length > 0 ? (
+        <div className="border-b border-edge">
+          {config.longestTripTargets.map((target) => (
+            <TargetStayRow
+              key={target.id}
+              target={target}
+              onStayDaysChange={(stayDays) => updateStayDays(target.id, stayDays)}
+              onRemove={() => removeTarget(target.id)}
+            />
+          ))}
+        </div>
+      ) : null}
+    </>
+  )
+}
+
+function TargetSelect({
+  label,
+  value,
+  options,
+  disabled,
+  onChange,
+  onAdd,
+}: {
+  label: string
+  value: string
+  options: Array<{ value: string; label: string }>
+  disabled: boolean
+  onChange: (value: string) => void
+  onAdd: () => void
+}) {
+  const selectId = useId()
+  return (
+    <div className="min-w-0">
+      <label
+        htmlFor={selectId}
+        className="mb-1.5 block text-[12px] font-semibold text-dim"
+      >
+        {label}
+      </label>
+      <div className="flex min-w-0 gap-2">
+        <select
+          id={selectId}
+          value={value}
+          disabled={disabled}
+          onChange={(event) => onChange(event.target.value)}
+          className="min-h-11 min-w-0 flex-1 rounded-lg border border-edge bg-panel2 px-3 text-[13px] text-ink disabled:opacity-60"
+        >
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <Button
+          variant="secondary"
+          size="lg"
+          className="min-h-11 flex-none"
+          onClick={onAdd}
+          disabled={disabled}
+        >
+          Add
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function TargetStayRow({
+  target,
+  onStayDaysChange,
+  onRemove,
+}: {
+  target: LongestTripVisitTarget
+  onStayDaysChange: (stayDays: number) => void
+  onRemove: () => void
+}) {
+  const inputId = useId()
+  const targetType =
+    target.type === 'state'
+      ? target.state ?? 'State'
+      : target.type === 'city'
+        ? 'City'
+        : 'Landmark'
+
+  return (
+    <div className="flex min-h-14 items-center gap-3 border-t border-edge px-5 py-3 md:px-6">
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-[13.5px] font-semibold text-ink">
+          {target.label}
+        </div>
+        <div className="mt-0.5 font-mono text-[10.5px] uppercase tracking-[0.08em] text-faint">
+          {targetType}
+        </div>
+      </div>
+      <label htmlFor={inputId} className="sr-only">
+        Days in {target.label}
+      </label>
+      <input
+        id={inputId}
+        type="number"
+        min={1}
+        max={21}
+        step={1}
+        value={target.stayDays}
+        onChange={(event) => onStayDaysChange(Number(event.target.value))}
+        className="h-10 w-20 rounded-lg border border-edge bg-panel2 px-2 text-center font-mono text-[13px] text-ink"
+      />
+      <span className="flex-none text-[12px] text-faint">days</span>
+      <Button variant="ghost" size="sm" onClick={onRemove}>
+        Remove
+      </Button>
+    </div>
+  )
+}
+
 export function ConfigModal({
   config,
   open,
@@ -450,6 +743,10 @@ export function ConfigModal({
             />
           ),
         )}
+
+        {config.plannerMode === 'longest_trip' ? (
+          <LongestTripTargetsSection config={config} onChange={onChange} />
+        ) : null}
 
         {/* Daily limits */}
         <SectionHeading>Daily limits</SectionHeading>

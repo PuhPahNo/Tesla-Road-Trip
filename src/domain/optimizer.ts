@@ -14,6 +14,7 @@ import {
 import type {
   Coordinate,
   DayPlan,
+  LongestTripVisitTarget,
   OptimizeResponse,
   PlannerAdvisory,
   PlannerConfig,
@@ -841,10 +842,38 @@ function weatherFirstClosedAnchors(anchors: Coordinate[], start: Coordinate) {
   return closeAnchorsToStart([start, ...best], start)
 }
 
+function visitTargetAnchor(target: LongestTripVisitTarget) {
+  return target.position
+}
+
+function mergeVisitTargetAnchors(
+  anchors: Coordinate[],
+  targets: LongestTripVisitTarget[],
+) {
+  if (targets.length === 0) return anchors
+
+  const extraAnchors = targets
+    .map(visitTargetAnchor)
+    .filter((anchor): anchor is Coordinate => Boolean(anchor))
+
+  if (extraAnchors.length === 0) return anchors
+
+  const [start, ...body] = anchors
+  const withoutClosingStart = body.filter(
+    (anchor, index) =>
+      index < body.length - 1 ||
+      anchor.lat !== start.lat ||
+      anchor.lon !== start.lon,
+  )
+
+  return [start, ...withoutClosingStart, ...extraAnchors]
+}
+
 function buildLongestTripVariants(
   start: Coordinate,
   requiredWaypoints: RouteWaypoint[],
   customRouteWaypoints: RouteWaypoint[],
+  longestTripTargets: LongestTripVisitTarget[],
 ): RouteVariant[] {
   const variants: RouteVariant[] = [
     {
@@ -1364,7 +1393,10 @@ function buildLongestTripVariants(
   ].map((variant) => ({
     ...variant,
     anchors: insertRequiredWaypoints(
-      weatherFirstClosedAnchors(variant.anchors, start),
+      weatherFirstClosedAnchors(
+        mergeVisitTargetAnchors(variant.anchors, longestTripTargets),
+        start,
+      ),
       requiredWaypoints,
     ),
   }))
@@ -1383,6 +1415,9 @@ function buildLongestTripVariants(
       anchors: [
         start,
         ...customRouteWaypoints.map((waypoint) => waypoint.position),
+        ...longestTripTargets
+          .map(visitTargetAnchor)
+          .filter((anchor): anchor is Coordinate => Boolean(anchor)),
         start,
       ],
       forcedWaypoints: customForcedWaypoints,
@@ -1397,7 +1432,10 @@ function chooseStationsForVariant(
   stations: Station[],
   targetStations: number,
   requiredWaypoints: RouteWaypoint[],
-  options: { spreadAlongCorridor?: boolean } = {},
+  options: {
+    spreadAlongCorridor?: boolean
+    visitTargets?: LongestTripVisitTarget[]
+  } = {},
 ) {
   const target = Math.min(targetStations, stations.length)
   let corridorMiles = variant.corridorMiles
@@ -1472,6 +1510,18 @@ function chooseStationsForVariant(
     }
   })
 
+  if (options.visitTargets && options.visitTargets.length > 0) {
+    const visitTargetResult = ensureVisitTargetStations(
+      selected,
+      scored,
+      options.visitTargets,
+      target,
+      forcedStationIds,
+    )
+    selected = visitTargetResult.selected
+    waypointWarnings.push(...visitTargetResult.warnings)
+  }
+
   if (selected.length > target) {
     const forced = selected.filter((station) =>
       forcedStationIds.has(station.station.id),
@@ -1479,7 +1529,7 @@ function chooseStationsForVariant(
     const regular = selected.filter(
       (station) => !forcedStationIds.has(station.station.id),
     )
-    selected = [...forced, ...regular].slice(0, Math.max(target, forced.length))
+    selected = trimWithForcedStations(forced, regular, target)
   }
 
   selected = ensureNorthFirstCandidate(
@@ -1495,7 +1545,156 @@ function chooseStationsForVariant(
       (a, b) => a.order - b.order || a.distanceMiles - b.distanceMiles,
     ),
     waypointWarnings,
+    protectedStationIds: forcedStationIds,
   }
+}
+
+function ensureVisitTargetStations(
+  selected: ScoredStation[],
+  scored: ScoredStation[],
+  targets: LongestTripVisitTarget[],
+  targetStationCount: number,
+  forcedStationIds: Set<string>,
+) {
+  let next = selected.slice()
+  const warnings: string[] = []
+  const selectedIds = new Set(next.map((station) => station.station.id))
+  const requestedDays = targets.reduce(
+    (sum, target) => sum + Math.max(1, target.stayDays),
+    0,
+  )
+
+  if (requestedDays > targetStationCount) {
+    warnings.push(
+      `Configured visit targets request ${requestedDays} streak days inside a ${targetStationCount}-day Longest Trip. Some requested stay days may be skipped.`,
+    )
+  }
+
+  targets.forEach((target) => {
+    const requested = Math.min(
+      Math.max(1, target.stayDays),
+      Math.max(0, targetStationCount - forcedStationIds.size),
+    )
+    if (requested <= 0) return
+
+    const candidates = visitTargetCandidates(target, scored)
+    let added = 0
+
+    candidates.forEach((candidate) => {
+      if (added >= requested) return
+      if (forcedStationIds.has(candidate.station.id)) return
+
+      forcedStationIds.add(candidate.station.id)
+      added += 1
+
+      if (!selectedIds.has(candidate.station.id)) {
+        selectedIds.add(candidate.station.id)
+        next.push(candidate)
+      }
+    })
+
+    if (added < requested) {
+      warnings.push(
+        `${target.label} requested ${requested} streak day${requested === 1 ? '' : 's'}, but only ${added} unique matching Supercharger stop${added === 1 ? '' : 's'} were available.`,
+      )
+    }
+  })
+
+  if (next.length > targetStationCount) {
+    const forced = next.filter((station) =>
+      forcedStationIds.has(station.station.id),
+    )
+    const regular = next.filter(
+      (station) => !forcedStationIds.has(station.station.id),
+    )
+
+    next = trimWithForcedStations(forced, regular, targetStationCount)
+  }
+
+  return { selected: next, warnings }
+}
+
+function trimWithForcedStations(
+  forced: ScoredStation[],
+  regular: ScoredStation[],
+  targetCount: number,
+) {
+  const keepRegular = Math.max(0, targetCount - forced.length)
+  return [
+    ...forced,
+    ...selectEvenlyOrderedStations(regular, keepRegular),
+  ].slice(0, targetCount)
+}
+
+function selectEvenlyOrderedStations(stations: ScoredStation[], targetCount: number) {
+  if (targetCount <= 0) return []
+
+  const ordered = stations
+    .slice()
+    .sort((a, b) => a.order - b.order || a.distanceMiles - b.distanceMiles)
+
+  if (ordered.length <= targetCount) return ordered
+  if (targetCount === 1) return [ordered.at(-1)!]
+
+  const selected: ScoredStation[] = []
+  const usedIndexes = new Set<number>()
+
+  for (let index = 0; index < targetCount; index += 1) {
+    let candidateIndex = Math.round((index * (ordered.length - 1)) / (targetCount - 1))
+
+    while (usedIndexes.has(candidateIndex) && candidateIndex < ordered.length - 1) {
+      candidateIndex += 1
+    }
+    while (usedIndexes.has(candidateIndex) && candidateIndex > 0) {
+      candidateIndex -= 1
+    }
+
+    if (usedIndexes.has(candidateIndex)) continue
+    usedIndexes.add(candidateIndex)
+    selected.push(ordered[candidateIndex])
+  }
+
+  return selected
+}
+
+function visitTargetCandidates(
+  target: LongestTripVisitTarget,
+  scored: ScoredStation[],
+) {
+  if (target.type === 'state' && target.state) {
+    return scored
+      .filter((station) => station.station.address.state === target.state)
+      .sort((a, b) => {
+        if (target.position) {
+          const distanceA = haversineMiles(a.station.position, target.position)
+          const distanceB = haversineMiles(b.station.position, target.position)
+          return distanceA - distanceB || a.order - b.order
+        }
+
+        return a.order - b.order || a.distanceMiles - b.distanceMiles
+      })
+  }
+
+  if (!target.position) return []
+
+  const radius = target.radiusMiles ?? 60
+  const withDistance = scored
+    .map((station) => ({
+      station,
+      targetDistanceMiles: haversineMiles(station.station.position, target.position!),
+    }))
+    .sort(
+      (a, b) =>
+        a.targetDistanceMiles - b.targetDistanceMiles ||
+        a.station.distanceMiles - b.station.distanceMiles,
+    )
+
+  const nearby = withDistance.filter(
+    (item) => item.targetDistanceMiles <= radius,
+  )
+  return (nearby.length > 0 ? nearby : withDistance.slice(0, 12)).map(
+    (item) => item.station,
+  )
 }
 
 function selectStationsAcrossCorridor(
@@ -1992,6 +2191,14 @@ function buildLongestTripDayPlans(
   const overRangeCount = visits.filter((visit) => visit.rangeWarning).length
   const connectorStops = visits.filter((visit) => visit.connectorStop).length
   const longDays = days.filter((item) => item.longDayOptimized).length
+  const streakWindowMisses = days.filter((day) =>
+    day.warnings.some((warning) => warning.includes('24-hour streak window')),
+  ).length
+  const streakWindowTightDays = days.filter((day) =>
+    day.advisories.some((advisory) =>
+      advisory.message.includes('24-hour streak window'),
+    ),
+  ).length
 
   if (uniqueStationCount < config.longestTripDays) {
     warnings.push(
@@ -2006,6 +2213,17 @@ function buildLongestTripDayPlans(
   }
   if (days.some((item) => exceedsAllowedDayCap(item, config))) {
     warnings.push('At least one streak day exceeds the configured hard drive cap.')
+  }
+  if (streakWindowMisses > 0) {
+    warnings.push(
+      `${streakWindowMisses} streak transition${streakWindowMisses === 1 ? '' : 's'} exceed the 24-hour window using current road-drive timing.`,
+    )
+  }
+  if (streakWindowTightDays > 0) {
+    advisories.push({
+      severity: 'medium',
+      message: `${streakWindowTightDays} streak transition${streakWindowTightDays === 1 ? '' : 's'} leave less than 3 hours of buffer before the 24-hour window closes.`,
+    })
   }
   if (connectorStops > 0) {
     advisories.push({
@@ -2056,7 +2274,7 @@ function buildRouteDayPlans(
 }
 
 function getCurrentDayCap(day: DayPlan, config: PlannerConfig) {
-  if (config.longDayOptimization && day.longDayOptimized) {
+  if (allowsLongDayCap(day, config)) {
     return config.longDayMaxHours
   }
 
@@ -2064,11 +2282,18 @@ function getCurrentDayCap(day: DayPlan, config: PlannerConfig) {
 }
 
 function exceedsAllowedDayCap(day: DayPlan, config: PlannerConfig) {
-  if (config.longDayOptimization && day.longDayOptimized) {
+  if (allowsLongDayCap(day, config)) {
     return day.driveHours > config.longDayMaxHours
   }
 
   return day.driveHours > config.dailyDriveMaxHours
+}
+
+function allowsLongDayCap(day: DayPlan, config: PlannerConfig) {
+  return (
+    day.longDayOptimized &&
+    (config.longDayOptimization || config.plannerMode === 'longest_trip')
+  )
 }
 
 function evaluateLongDayOpportunity(
@@ -2478,18 +2703,232 @@ function orderLongestTripStations(
   return ordered
 }
 
-function takeUniqueStations(stations: ScoredStation[], target: number) {
-  const used = new Set<string>()
-  const selected: ScoredStation[] = []
+function takeRouteSequenceStations(
+  stations: ScoredStation[],
+  target: number,
+  protectedStationIds: Set<string>,
+) {
+  if (target <= 0) return []
 
-  for (const station of stations) {
-    if (used.has(station.station.id)) continue
-    used.add(station.station.id)
-    selected.push(station)
-    if (selected.length >= target) break
+  const seen = new Set<string>()
+  const unique = stations.filter((station) => {
+    if (seen.has(station.station.id)) return false
+    seen.add(station.station.id)
+    return true
+  })
+
+  if (unique.length <= target) return unique
+
+  const mandatoryIndexes = new Set<number>([0, unique.length - 1])
+  unique.forEach((station, index) => {
+    if (protectedStationIds.has(station.station.id)) {
+      mandatoryIndexes.add(index)
+    }
+  })
+
+  const mandatory = [...mandatoryIndexes]
+    .sort((a, b) => a - b)
+    .map((index) => ({ station: unique[index], index }))
+
+  if (mandatory.length >= target) {
+    return mandatory.slice(0, target).map((item) => item.station)
+  }
+
+  const regular = unique
+    .map((station, index) => ({ station, index }))
+    .filter((item) => !mandatoryIndexes.has(item.index))
+  const regularSlots = target - mandatory.length
+  const selectedRegular = selectEvenlyIndexedStations(regular, regularSlots)
+
+  return [...mandatory, ...selectedRegular]
+    .sort((a, b) => a.index - b.index)
+    .map((item) => item.station)
+}
+
+function selectEvenlyIndexedStations(
+  stations: Array<{ station: ScoredStation; index: number }>,
+  targetCount: number,
+) {
+  if (targetCount <= 0) return []
+  if (stations.length <= targetCount) return stations
+  if (targetCount === 1) return [stations.at(-1)!]
+
+  const selected: Array<{ station: ScoredStation; index: number }> = []
+  const usedIndexes = new Set<number>()
+
+  for (let index = 0; index < targetCount; index += 1) {
+    let candidateIndex = Math.round((index * (stations.length - 1)) / (targetCount - 1))
+
+    while (usedIndexes.has(candidateIndex) && candidateIndex < stations.length - 1) {
+      candidateIndex += 1
+    }
+    while (usedIndexes.has(candidateIndex) && candidateIndex > 0) {
+      candidateIndex -= 1
+    }
+
+    if (usedIndexes.has(candidateIndex)) continue
+    usedIndexes.add(candidateIndex)
+    selected.push(stations[candidateIndex])
   }
 
   return selected
+}
+
+function repairLongestTripLegSpacing(
+  orderedStations: ScoredStation[],
+  candidateStations: Station[],
+  config: PlannerConfig,
+  target: number,
+  protectedStationIds: Set<string>,
+) {
+  let next = orderedStations.slice()
+  const maxLegMiles = Math.min(
+    config.practicalRangeMiles * 1.05,
+    config.dailyDriveMaxHours * config.averageMph * 0.75,
+  )
+
+  for (let pass = 0; pass < target * 2; pass += 1) {
+    const worst = findWorstArrivalLeg(next, config)
+    if (!worst || worst.miles <= maxLegMiles) break
+
+    const usedStationIds = new Set(next.map((station) => station.station.id))
+    const connector =
+      chooseConnectorStation(
+        worst.from,
+        worst.to.station.position,
+        candidateStations,
+        usedStationIds,
+        config,
+      ) ??
+      chooseBridgeConnectorStation(
+      worst.from,
+      worst.to.station.position,
+      candidateStations,
+      usedStationIds,
+      config,
+      )
+
+    if (!connector) break
+
+    const connectorStation = asConnectorScoredStation(
+      connector,
+      worst.from,
+      worst.to.station.position,
+    )
+    next.splice(worst.toIndex, 0, connectorStation)
+
+    if (next.length > target) {
+      const removableIndex = chooseRedundantStationIndex(
+        next,
+        config,
+        protectedStationIds,
+      )
+      if (removableIndex < 0) {
+        next = takeRouteSequenceStations(next, target, protectedStationIds)
+      } else {
+        next.splice(removableIndex, 1)
+      }
+    }
+  }
+
+  return next
+}
+
+function chooseBridgeConnectorStation(
+  from: Coordinate,
+  to: Coordinate,
+  candidateStations: Station[],
+  usedStationIds: Set<string>,
+  config: PlannerConfig,
+) {
+  const currentRemaining = roadLegMiles(from, to, config.roadDistanceFactor)
+  const maxLegMiles = config.practicalRangeMiles * 1.15
+  let bestStation: Station | undefined
+  let bestScore = Infinity
+
+  candidateStations.forEach((station) => {
+    if (usedStationIds.has(station.id)) return
+
+    const legMiles = roadLegMiles(from, station.position, config.roadDistanceFactor)
+    if (legMiles <= 1 || legMiles > maxLegMiles) return
+
+    const remainingMiles = roadLegMiles(
+      station.position,
+      to,
+      config.roadDistanceFactor,
+    )
+    if (remainingMiles >= currentRemaining - 25) return
+
+    const detourMiles = Math.max(0, legMiles + remainingMiles - currentRemaining)
+    const score = remainingMiles + detourMiles * 0.45 + legMiles * 0.1
+
+    if (score < bestScore) {
+      bestScore = score
+      bestStation = station
+    }
+  })
+
+  return bestStation
+}
+
+function findWorstArrivalLeg(
+  stations: ScoredStation[],
+  config: PlannerConfig,
+) {
+  let previous = config.start
+  let worst:
+    | { from: Coordinate; to: ScoredStation; toIndex: number; miles: number }
+    | undefined
+
+  stations.forEach((station, index) => {
+    const miles = roadLegMiles(
+      previous,
+      station.station.position,
+      config.roadDistanceFactor,
+    )
+    if (!worst || miles > worst.miles) {
+      worst = {
+        from: previous,
+        to: station,
+        toIndex: index,
+        miles,
+      }
+    }
+    previous = station.station.position
+  })
+
+  return worst
+}
+
+function chooseRedundantStationIndex(
+  stations: ScoredStation[],
+  config: PlannerConfig,
+  protectedStationIds: Set<string>,
+) {
+  let bestIndex = -1
+  let bestPenalty = Infinity
+
+  for (let index = 1; index < stations.length - 1; index += 1) {
+    const station = stations[index]
+    if (station.connectorStop) continue
+    if (protectedStationIds.has(station.station.id)) continue
+
+    const previous = stations[index - 1].station.position
+    const current = station.station.position
+    const next = stations[index + 1].station.position
+    const withStation =
+      roadLegMiles(previous, current, config.roadDistanceFactor) +
+      roadLegMiles(current, next, config.roadDistanceFactor)
+    const withoutStation = roadLegMiles(previous, next, config.roadDistanceFactor)
+    const penalty = Math.max(0, withoutStation - withStation)
+
+    if (penalty < bestPenalty) {
+      bestPenalty = penalty
+      bestIndex = index
+    }
+  }
+
+  return bestIndex
 }
 
 function isNorthNotWest(station: Station, start: Coordinate) {
@@ -2573,8 +3012,10 @@ function finalizeDay(day: DayPlan, config: PlannerConfig): DayPlan {
     day.longDayOptimized &&
     day.driveHours > config.dailyDriveMaxHours &&
     day.driveHours <= config.longDayMaxHours
+  const allowsTransferLongDay =
+    config.plannerMode === 'longest_trip' || config.longDayOptimization
   const transferLongDay =
-    config.longDayOptimization &&
+    allowsTransferLongDay &&
     !day.longDayOptimized &&
     day.visits.length <= 1 &&
     day.driveHours > config.dailyDriveMaxHours &&
@@ -2705,6 +3146,7 @@ export function optimizeRoutes(
           config.start,
           config.requiredWaypoints,
           config.customRouteWaypoints,
+          config.longestTripTargets,
         )
       : buildMostUniqueSiteVariants(
           config.start,
@@ -2722,23 +3164,36 @@ export function optimizeRoutes(
       stations,
       routeTarget,
       variant.forcedWaypoints,
-      { spreadAlongCorridor: config.plannerMode === 'longest_trip' },
+      {
+        spreadAlongCorridor: config.plannerMode === 'longest_trip',
+        visitTargets:
+          config.plannerMode === 'longest_trip'
+            ? config.longestTripTargets
+            : undefined,
+      },
     )
     const stationOrder =
       config.plannerMode === 'longest_trip'
         ? orderLongestTripStations(stationChoice.selected, config.start)
         : optimizeStationOrder(stationChoice.selected, config.start)
-    const expandedStations =
-      config.plannerMode === 'longest_trip'
-        ? stationOrder
-        : insertConnectorStops(
-            stationOrder,
-            stations,
-            config,
-          )
+    const expandedStations = insertConnectorStops(
+      stationOrder,
+      stations,
+      config,
+    )
     const orderedStations =
       config.plannerMode === 'longest_trip'
-        ? takeUniqueStations(expandedStations, routeTarget)
+        ? repairLongestTripLegSpacing(
+            takeRouteSequenceStations(
+              expandedStations,
+              routeTarget,
+              stationChoice.protectedStationIds,
+            ),
+            stations,
+            config,
+            routeTarget,
+            stationChoice.protectedStationIds,
+          )
         : expandedStations
     const plans = buildRouteDayPlans(orderedStations, variant.name, config)
     const totalDays = plans.days.length

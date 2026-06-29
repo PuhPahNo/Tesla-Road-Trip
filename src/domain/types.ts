@@ -32,6 +32,7 @@ export interface Station {
 }
 
 export type PlannerMode = 'longest_trip' | 'most_unique_sites'
+export type LongestTripVisitTargetType = 'state' | 'city' | 'landmark'
 
 export interface PlannerConfig {
   plannerMode: PlannerMode
@@ -54,6 +55,7 @@ export interface PlannerConfig {
   roadDistanceFactor: number
   requiredWaypoints: RouteWaypoint[]
   customRouteWaypoints: RouteWaypoint[]
+  longestTripTargets: LongestTripVisitTarget[]
   start: Coordinate
 }
 
@@ -63,6 +65,16 @@ export interface RouteWaypoint {
   position: Coordinate
   radiusMiles: number
   reason?: string
+}
+
+export interface LongestTripVisitTarget {
+  id: string
+  type: LongestTripVisitTargetType
+  label: string
+  stayDays: number
+  state?: string
+  position?: Coordinate
+  radiusMiles?: number
 }
 
 export interface RouteStationVisit {

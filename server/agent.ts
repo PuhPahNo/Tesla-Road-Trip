@@ -617,6 +617,7 @@ function summarizeConfig(config: PlannerConfig) {
     includeMexico: config.includeMexico,
     requiredWaypoints: config.requiredWaypoints,
     customRouteWaypoints: config.customRouteWaypoints,
+    longestTripTargets: config.longestTripTargets,
   }
 }
 
