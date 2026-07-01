@@ -53,7 +53,7 @@ export function RoutePicker({
                 type="button"
                 onClick={() => choose(route.id)}
                 aria-pressed={selected}
-                aria-label={`Select route ${route.name}`}
+                aria-label={`Select route ${route.name}, rating ${route.rating.score} out of 100`}
                 className={cx(
                   'grid w-full grid-cols-[8px_1fr_auto] items-stretch gap-3 rounded-xl border p-3 text-left transition cursor-pointer',
                   selected
@@ -75,11 +75,19 @@ export function RoutePicker({
                     {route.uniqueStations.toLocaleString()}{' '}
                     {isLongestTrip ? 'streak stops' : 'sites'} · {route.totalDays}{' '}
                     {isLongestTrip ? 'streak days' : 'days'} ·{' '}
-                    {route.totalMiles.toLocaleString()} mi
+                    {route.totalMiles.toLocaleString()} mi · rating {route.rating.score}/100
                   </span>
                 </span>
 
-                <span className="flex items-center justify-end pl-1">
+                <span className="flex items-center justify-end gap-2 pl-1">
+                  <span className="flex flex-col items-end leading-none">
+                    <span className="font-mono text-[16px] font-semibold text-accent2">
+                      {route.rating.score}
+                    </span>
+                    <span className="font-mono text-[9.5px] uppercase tracking-[0.06em] text-faint">
+                      /100
+                    </span>
+                  </span>
                   {hasWarnings ? (
                     <AlertIcon
                       size={16}

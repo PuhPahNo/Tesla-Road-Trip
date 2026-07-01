@@ -11,6 +11,11 @@ import {
   filterOpenStations,
   filterStationsForConfig,
 } from './stations'
+import {
+  buildRouteRating,
+  buildSegmentRating,
+  emptySegmentRating,
+} from './ratings'
 import type {
   Coordinate,
   DayPlan,
@@ -1891,6 +1896,7 @@ function emptyDay(day: number): DayPlan {
     warnings: [],
     advisories: [],
     longDayOptimized: false,
+    rating: emptySegmentRating(),
   }
 }
 
@@ -3075,6 +3081,7 @@ function finalizeDay(day: DayPlan, config: PlannerConfig): DayPlan {
       ...visit,
       day: day.day,
     })),
+    rating: buildSegmentRating(day.visits, 'day', day.miles > 0 || day.driveHours > 0),
   }
 }
 
@@ -3129,6 +3136,7 @@ export function refineRouteWithRoadLegs(
     advisories: plans.totals.advisories,
     longDays: plans.totals.longDays,
     routeLine: buildDisplayRouteLine(scored, config.start),
+    rating: buildRouteRating(plans.days),
   }
 }
 
@@ -3230,6 +3238,7 @@ export function optimizeRoutes(
       advisories: plans.totals.advisories,
       longDays: plans.totals.longDays,
       routeLine: buildDisplayRouteLine(orderedStations, config.start),
+      rating: buildRouteRating(plans.days),
     }
   })
 

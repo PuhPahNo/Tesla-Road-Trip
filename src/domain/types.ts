@@ -88,6 +88,27 @@ export interface RouteStationVisit {
   connectorStop?: boolean
 }
 
+export type PlaceRatingType = 'city' | 'landmark'
+
+export interface PlaceRating {
+  id: string
+  type: PlaceRatingType
+  label: string
+  rating: number
+  sceneryScore: number
+  visits: number
+  summary: string
+}
+
+export interface SegmentRating {
+  score: number
+  sceneryScore: number
+  cityScore: number
+  landmarkScore: number
+  places: PlaceRating[]
+  summary: string
+}
+
 export type AdvisorySeverity = 'info' | 'medium' | 'high'
 
 export interface PlannerAdvisory {
@@ -107,6 +128,7 @@ export interface DayPlan {
   advisories: PlannerAdvisory[]
   longDayOptimized: boolean
   longDayReason?: string
+  rating: SegmentRating
 }
 
 export interface RoutePlan {
@@ -131,6 +153,7 @@ export interface RoutePlan {
   advisories: PlannerAdvisory[]
   longDays: number
   routeLine: Coordinate[]
+  rating: SegmentRating
 }
 
 export interface StationUniverseStats {

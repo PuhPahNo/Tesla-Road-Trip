@@ -24,6 +24,26 @@ function makeStation(index: number, lat: number, lon: number, state = 'TN'): Sta
   }
 }
 
+function makeNamedStation(
+  index: number,
+  name: string,
+  city: string,
+  state: string,
+  lat: number,
+  lon: number,
+): Station {
+  const station = makeStation(index, lat, lon, state)
+  return {
+    ...station,
+    name,
+    address: {
+      ...station.address,
+      city,
+      state,
+    },
+  }
+}
+
 function buildStationGrid() {
   const stations: Station[] = []
   const anchors = [
@@ -75,6 +95,8 @@ describe('route optimizer', () => {
     expect(result.routes[0].days.length).toBeGreaterThan(1)
     expect(result.routes[0].averageDriveHoursPerDay).toBeGreaterThan(0)
     expect(result.routes[0].routeLine[0]).toEqual(defaultPlannerConfig.start)
+    expect(result.routes[0].rating.score).toBeGreaterThan(0)
+    expect(result.routes[0].days.every((day) => day.rating.score > 0)).toBe(true)
   })
 
   it('defaults to longest trip mode with one unique streak stop per day', () => {
@@ -145,6 +167,67 @@ describe('route optimizer', () => {
     expect(route.uniqueStations).toBe(12)
     expect(californiaVisits.length).toBeGreaterThanOrEqual(3)
     expect(bayAreaVisits.length).toBeGreaterThanOrEqual(2)
+  })
+
+  it('rates visited cities, landmarks, day segments, and the full trip', () => {
+    const result = optimizeRoutes(
+      [
+        ...buildStationGrid(),
+        makeNamedStation(
+          700,
+          'Tusayan Grand Canyon Supercharger',
+          'Tusayan',
+          'AZ',
+          35.973,
+          -112.126,
+        ),
+        makeNamedStation(
+          701,
+          'San Francisco Supercharger',
+          'San Francisco',
+          'CA',
+          37.7749,
+          -122.4194,
+        ),
+      ],
+      {
+        ...defaultPlannerConfig,
+        longestTripDays: 10,
+        longestTripTargets: [
+          {
+            id: 'landmark-grand-canyon',
+            type: 'landmark',
+            label: 'Grand Canyon',
+            position: { lat: 36.0544, lon: -112.1401 },
+            radiusMiles: 95,
+            stayDays: 1,
+          },
+          {
+            id: 'city-san-francisco',
+            type: 'city',
+            label: 'San Francisco Bay Area',
+            position: { lat: 37.7749, lon: -122.4194 },
+            radiusMiles: 55,
+            stayDays: 1,
+          },
+        ],
+      },
+    )
+    const route = result.routes[0]
+
+    expect(route.rating.score).toBeGreaterThan(60)
+    expect(route.rating.sceneryScore).toBeGreaterThan(60)
+    expect(route.days.every((day) => day.rating.score > 0)).toBe(true)
+    expect(
+      route.rating.places.some(
+        (place) => place.type === 'landmark' && place.label.includes('Grand Canyon'),
+      ),
+    ).toBe(true)
+    expect(
+      route.rating.places.some(
+        (place) => place.type === 'city' && place.label.includes('San Francisco'),
+      ),
+    ).toBe(true)
   })
 
   it('starts every loop with a northbound first stop that is not west when available', () => {
@@ -250,6 +333,8 @@ describe('route optimizer', () => {
       2,
       18,
     ])
+    expect(route.rating.score).toBeGreaterThan(0)
+    expect(route.days.every((day) => day.rating.score > 0)).toBe(true)
   })
 
   it('creates explained long days when the extra site return is high enough', () => {

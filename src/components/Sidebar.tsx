@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react'
-import type { RoutePlan, StationUniverseStats } from '../domain/types'
+import type { PlaceRating, RoutePlan, StationUniverseStats } from '../domain/types'
 import type { StateRouteStats } from '../domain/routeStats'
 import type { StationsResponse } from '../api/client'
 import {
@@ -109,6 +109,16 @@ export function HeroStats({ route }: { route?: RoutePlan }) {
   const isLongestTrip = route?.plannerMode === 'longest_trip'
   return (
     <div className="grid grid-cols-2 gap-[9px]">
+      <StatTile
+        label="Trip rating"
+        value={route ? route.rating.score : dash}
+        unit={route ? '/100' : undefined}
+      />
+      <StatTile
+        label="Scenery"
+        value={route ? route.rating.sceneryScore : dash}
+        unit={route ? '/100' : undefined}
+      />
       <StatTile
         label={isLongestTrip ? 'Streak stops' : 'Unique sites'}
         value={route ? route.uniqueStations.toLocaleString() : dash}
@@ -446,6 +456,35 @@ function TopStateBars({ stats }: { stats: StateRouteStats[] }) {
   )
 }
 
+function TopPlaceRatings({ places }: { places: PlaceRating[] }) {
+  const leaders = places.slice(0, 8)
+
+  if (leaders.length === 0) {
+    return <div className="text-[12px] text-faint">No rated places on this route yet.</div>
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      {leaders.map((place) => (
+        <div key={place.id} className="flex flex-col gap-1.5">
+          <div className="grid grid-cols-[minmax(0,1fr)_44px] items-baseline gap-2">
+            <span className="min-w-0 truncate text-[12px] font-medium text-ink">
+              {place.label}
+              <span className="ml-1.5 font-mono text-[10.5px] uppercase text-faint">
+                {place.type}
+              </span>
+            </span>
+            <span className="text-right font-mono text-[12px] font-semibold text-accent2">
+              {place.rating}
+            </span>
+          </div>
+          <ProgressBar pct={place.rating} tone={place.type === 'landmark' ? 'accent2' : 'accent'} className="h-1.5" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export function TripStatsSection({
   route,
   routeStateStats,
@@ -486,6 +525,18 @@ export function TripStatsSection({
       <div className="grid grid-cols-2 gap-2">
         <TripStatCard label="Drive" value={formatHours(route.totalDriveHours)} unit="h" />
         <TripStatCard label="Charge" value={formatHours(route.totalStopHours)} unit="h" />
+        <TripStatCard
+          label="Rating"
+          value={route.rating.score}
+          unit="/100"
+          tone="good"
+        />
+        <TripStatCard
+          label="Scenery"
+          value={route.rating.sceneryScore}
+          unit="/100"
+          tone="info"
+        />
         <TripStatCard
           label="Pace"
           value={route.stationsPerDay}
@@ -537,6 +588,16 @@ export function TripStatsSection({
           <span>{route.longDays} long-day boosts</span>
           <span>{Math.round(longDayPct)}% of days</span>
         </div>
+      </section>
+
+      <section className="flex flex-col gap-3 rounded-xl border border-edge bg-panel2 p-3.5">
+        <div>
+          <div className="text-[13px] font-semibold text-ink">Top place ratings</div>
+          <div className="font-mono text-[10.5px] text-faint">
+            {route.rating.summary}
+          </div>
+        </div>
+        <TopPlaceRatings places={route.rating.places} />
       </section>
 
       <section className="flex flex-col gap-3 rounded-xl border border-edge bg-panel2 p-3.5">

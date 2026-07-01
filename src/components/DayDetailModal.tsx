@@ -1,6 +1,11 @@
 import { useState, type ReactNode } from 'react'
-import type { DayPlan, PlannerAdvisory, RoutePlan, RouteStationVisit } from '../domain/types'
-import { dayHighlights } from '../domain/highlights'
+import type {
+  DayPlan,
+  PlaceRating,
+  PlannerAdvisory,
+  RoutePlan,
+  RouteStationVisit,
+} from '../domain/types'
 import { Overlay, OverlayHeader } from '../ui/Overlay'
 import { Chip, Pill, StatTile, cx } from '../ui/primitives'
 import { AlertIcon, InfoIcon } from '../ui/icons'
@@ -13,6 +18,7 @@ export interface DayDetailModalProps {
 
 const VISIT_CAP = 40
 const TARGET_CAP = 14
+const RATING_CAP = 18
 
 function fmtMinutes(m: number): string {
   const total = Math.max(0, Math.round(m))
@@ -58,8 +64,6 @@ function DayDetailContent({
   const firstCity = cities[0] ?? '—'
   const lastCity = cities[cities.length - 1] ?? '—'
 
-  const highlights = dayHighlights(day)
-
   const driveMin = Math.round(day.driveHours * 60)
   const totalMin = driveMin + day.stopMinutes
   const drivePct = totalMin > 0 ? (driveMin / totalMin) * 100 : 0
@@ -68,6 +72,8 @@ function DayDetailContent({
   const targetCities = dedupeAdjacent(cities)
   const targetsShown = targetCities.slice(0, TARGET_CAP)
   const targetsOverflow = targetCities.length - targetsShown.length
+  const placesShown = day.rating.places.slice(0, RATING_CAP)
+  const placesOverflow = day.rating.places.length - placesShown.length
 
   const hasNotes = day.warnings.length > 0 || day.advisories.length > 0
 
@@ -98,7 +104,9 @@ function DayDetailContent({
 
       <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 py-5 md:px-6">
         {/* Stat grid */}
-        <div className="grid grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
+          <StatTile label="Day rating" value={day.rating.score} unit="/100" />
+          <StatTile label="Scenery" value={day.rating.sceneryScore} unit="/100" />
           <StatTile label="Miles traveled" value={day.miles.toLocaleString()} unit="mi" />
           <StatTile label="Drive time" value={day.driveHours.toFixed(1)} unit="h" />
           <StatTile label="Charge stops" value={day.visits.length} />
@@ -133,23 +141,17 @@ function DayDetailContent({
           </div>
         </div>
 
-        {/* Landmarks */}
-        {highlights.length > 0 ? (
+        {/* Place ratings */}
+        {placesShown.length > 0 ? (
           <div>
-            <SectionLabel>Landmarks seen</SectionLabel>
+            <SectionLabel>Place ratings</SectionLabel>
             <div className="flex flex-wrap gap-[7px]">
-              {highlights.map((highlight) => (
-                <span
-                  key={highlight.id}
-                  className="inline-flex items-center gap-[7px] rounded-[9px] border border-edge bg-panel2 px-3 py-1.5 text-[12.5px] text-ink"
-                  title={highlight.summary}
-                >
-                  <span className="text-accent2" aria-hidden>
-                    ◆
-                  </span>
-                  {highlight.label}
-                </span>
+              {placesShown.map((place) => (
+                <PlaceRatingPill key={place.id} place={place} />
               ))}
+              {placesOverflow > 0 ? (
+                <Chip label={`+${placesOverflow}`} className="text-dim" />
+              ) : null}
             </div>
           </div>
         ) : null}
@@ -220,6 +222,21 @@ function DayDetailContent({
         ) : null}
       </div>
     </>
+  )
+}
+
+function PlaceRatingPill({ place }: { place: PlaceRating }) {
+  return (
+    <span
+      className="inline-flex max-w-full items-center gap-[7px] rounded-[9px] border border-edge bg-panel2 px-3 py-1.5 text-[12.5px] text-ink"
+      title={`${place.summary} Scenery ${place.sceneryScore}/100.`}
+    >
+      <span className="font-mono text-[9.5px] uppercase tracking-[0.05em] text-faint">
+        {place.type}
+      </span>
+      <span className="min-w-0 truncate">{place.label}</span>
+      <span className="font-mono font-semibold text-accent2">{place.rating}</span>
+    </span>
   )
 }
 

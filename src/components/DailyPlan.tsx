@@ -9,11 +9,11 @@ import type { DayPlan, RoutePlan } from '../domain/types'
 import { Button, Chip, Eyebrow, Pill, cx } from '../ui/primitives'
 import { AlertIcon, ChevronDownIcon, InfoIcon } from '../ui/icons'
 
-/* Shared 7-column grid template (Day, Sites, Miles, Avg gap, Drive, Stops, Targets). */
-const GRID_COLS = '46px 56px 82px 86px 64px 64px minmax(0,1fr)'
+/* Shared grid template (Day, Rating, Sites, Miles, Avg gap, Drive, Stops, Targets). */
+const GRID_COLS = '46px 64px 56px 82px 86px 64px 64px minmax(0,1fr)'
 const GRID_STYLE: CSSProperties = { gridTemplateColumns: GRID_COLS }
 /* Keep the grid usable on narrow phones: min width = sum of fixed cols + gaps + a usable targets cell. */
-const GRID_MIN_WIDTH = 600
+const GRID_MIN_WIDTH = 680
 const DRAWER_DEFAULT_HEIGHT = 288
 const DRAWER_MIN_HEIGHT = 188
 const DRAWER_MAX_HEIGHT = 680
@@ -61,7 +61,7 @@ function DayRow({
       onMouseLeave={() => onHoverDay?.(undefined)}
       onFocus={() => onHoverDay?.(index)}
       onBlur={() => onHoverDay?.(undefined)}
-      aria-label={`Open day ${day.day} detail`}
+      aria-label={`Open day ${day.day} detail, rating ${day.rating.score} out of 100`}
       style={GRID_STYLE}
       className={cx(
         'grid w-full min-h-11 items-center gap-2 border-b border-edge px-[18px] py-[11px] text-left transition hover:bg-panel2',
@@ -69,6 +69,9 @@ function DayRow({
       )}
     >
       <div className="font-mono text-[13px] font-semibold text-ink">{day.day}</div>
+      <div className="font-mono text-[13px] font-semibold text-accent2">
+        {day.rating.score}
+      </div>
       <div className="font-mono text-[13px] text-ink">{day.uniqueStations}</div>
       <div className="font-mono text-[13px] text-dim">{day.miles.toLocaleString()}</div>
       <div className="font-mono text-[13px] text-dim">
@@ -132,6 +135,7 @@ export function DayTable({ route, onOpenDay, onHoverDay, roadStatus }: DayTableP
             ? `${route.totalDays} streak ${route.totalDays === 1 ? 'day' : 'days'}`
             : `${route.stationsPerDay} sites/day`}
         </Pill>
+        <Pill tone="good">Trip {route.rating.score}/100</Pill>
         {routeStatus ? (
           <Pill tone={roadStatus === 'ready' ? 'good' : roadStatus === 'error' ? 'warn' : 'info'}>
             {routeStatus}
@@ -158,6 +162,7 @@ export function DayTable({ route, onOpenDay, onHoverDay, roadStatus }: DayTableP
             className="grid items-center gap-2 border-b border-edge px-[18px] py-[9px] font-mono text-[9.5px] uppercase tracking-[0.08em] text-faint"
           >
             <div>Day</div>
+            <div>Rating</div>
             <div>Sites</div>
             <div>Miles</div>
             <div>Avg gap</div>
