@@ -12,7 +12,13 @@ import {
 import type { Feature, FeatureCollection, Geometry } from 'geojson'
 import type { Layer, Path, PathOptions } from 'leaflet'
 import type { StateRouteStats } from '../domain/routeStats'
-import type { Coordinate, RoutePlan, RouteStationVisit, Station } from '../domain/types'
+import type {
+  Coordinate,
+  DayPlan,
+  RoutePlan,
+  RouteStationVisit,
+  Station,
+} from '../domain/types'
 import { haversineMiles, simplifyPolyline } from '../domain/geo'
 import { STATE_NAME_TO_CODE } from '../domain/usStates'
 import usStatesRaw from '../assets/us-states.json'
@@ -46,6 +52,7 @@ const ROAD_OVERVIEW_TOLERANCE_MILES = 6
 const ROAD_POLYLINE_SMOOTH_FACTOR = 3.5
 const TURN_MARKER_MIN_LEG_MILES = 12
 const TURN_MARKER_MIN_ANGLE_DEGREES = 105
+const DAY_BOUNDARY_MATCH_TOLERANCE_MILES = 5
 
 const TILE_URL = {
   tesla: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
@@ -155,6 +162,7 @@ export const MapView = memo(function MapView({
             route={route}
             start={start}
             dayIndex={highlightedDayIndex}
+            roadLine={roadLine}
             isDark={isDark}
           />
           {routeVisits.map((visit) => (
@@ -381,29 +389,54 @@ function DayHighlightLine({
   route,
   start,
   dayIndex,
+  roadLine,
   isDark,
 }: {
   route: RoutePlan
   start: Coordinate
   dayIndex?: number
+  roadLine?: Coordinate[]
   isDark: boolean
 }) {
   const zoom = useMapZoom()
+
+  // Map each day boundary (start, then every day's last stop) onto an index in
+  // the road geometry so a day's highlight traces the same drawn road line.
+  const dayBoundaryIndices = useMemo(
+    () =>
+      roadLine?.length ? matchDayBoundaryIndices(roadLine, route.days, start) : undefined,
+    [roadLine, route.days, start],
+  )
+
+  const roadPositions = useMemo(() => {
+    if (dayIndex == null || !roadLine?.length || !dayBoundaryIndices) return undefined
+    const from = dayBoundaryIndices[dayIndex]
+    const to = dayBoundaryIndices[dayIndex + 1]
+    if (from == null || to == null || to <= from) return undefined
+    return downsampleLine(
+      simplifyPolyline(roadLine.slice(from, to + 1), roadToleranceMilesForZoom(zoom)),
+      maxPolylinePointsForZoom(zoom),
+    ).map((point) => [point.lat, point.lon] as [number, number])
+  }, [dayIndex, roadLine, dayBoundaryIndices, zoom])
+
   const positions = useMemo(() => {
     if (dayIndex == null) return []
     const day = route.days[dayIndex]
     if (!day || day.visits.length === 0) return []
+    if (roadPositions) return roadPositions
+
+    // No road geometry: straight legs between stops, matching the estimate line.
     const previousDay = route.days[dayIndex - 1]
     const previousStop = previousDay?.visits.at(-1)?.station.position ?? start
-    return [previousStop, ...day.visits.map((visit) => visit.station.position)].map(
-      (point) => [point.lat, point.lon] as [number, number],
-    )
-  }, [dayIndex, route.days, start])
+    const stops = [previousStop, ...day.visits.map((visit) => visit.station.position)]
+    if (dayIndex === route.days.length - 1) stops.push(start)
+    return stops.map((point) => [point.lat, point.lon] as [number, number])
+  }, [dayIndex, route.days, start, roadPositions])
 
   if (positions.length < 2) return null
 
   const label = route.days[dayIndex ?? -1]?.day
-  const smoothFactor = roadSmoothFactorForZoom(zoom)
+  const smoothFactor = roadPositions ? roadSmoothFactorForZoom(zoom) : 1
 
   return (
     <>
@@ -450,6 +483,46 @@ function DayHighlightLine({
       </Polyline>
     </>
   )
+}
+
+/**
+ * Map trip-day boundaries (start, then each day's last stop) onto indices of
+ * the road polyline. Scans monotonically so loops that revisit an area match
+ * the pass in visiting order. Returns undefined when any stop sits farther
+ * than the tolerance from the line — the geometry doesn't describe this route.
+ */
+function matchDayBoundaryIndices(
+  roadLine: Coordinate[],
+  days: DayPlan[],
+  start: Coordinate,
+): number[] | undefined {
+  const boundaries: Coordinate[] = [start]
+  for (const day of days) {
+    boundaries.push(
+      day.visits.at(-1)?.station.position ?? boundaries[boundaries.length - 1],
+    )
+  }
+
+  const indices: number[] = []
+  let searchFrom = 0
+  for (const boundary of boundaries) {
+    let bestIndex = searchFrom
+    let bestMiles = Infinity
+    for (let index = searchFrom; index < roadLine.length; index += 1) {
+      const miles = haversineMiles(roadLine[index], boundary)
+      if (miles < bestMiles) {
+        bestMiles = miles
+        bestIndex = index
+      }
+    }
+    if (bestMiles > DAY_BOUNDARY_MATCH_TOLERANCE_MILES) return undefined
+    indices.push(bestIndex)
+    searchFrom = bestIndex
+  }
+
+  // The trip loops home: the last day's leg runs to the end of the road line.
+  indices[indices.length - 1] = roadLine.length - 1
+  return indices
 }
 
 function useMapZoom() {
