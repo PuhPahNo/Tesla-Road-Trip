@@ -22,7 +22,13 @@ export function useMediaQuery(query: string): boolean {
   return matches
 }
 
-/** Tailwind `md` breakpoint (768px). True when at/below mobile width. */
+/**
+ * True for phone-shaped viewports: at/below the Tailwind `md` breakpoint
+ * (768px), or a touch device in landscape too short for the desktop
+ * rail + panel chrome (e.g. a phone rotated sideways).
+ */
 export function useIsMobile(): boolean {
-  return useMediaQuery('(max-width: 767px)')
+  return useMediaQuery(
+    '(max-width: 767px), (pointer: coarse) and (max-height: 480px)',
+  )
 }

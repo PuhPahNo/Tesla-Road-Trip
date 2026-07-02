@@ -165,37 +165,12 @@ export const MapView = memo(function MapView({
             roadLine={roadLine}
             isDark={isDark}
           />
-          {routeVisits.map((visit) => (
-            <CircleMarker
-              key={`${route.id}-${visit.sequence}-${visit.station.id}`}
-              center={[visit.station.position.lat, visit.station.position.lon]}
-              radius={visit.connectorStop ? 3.5 : visit.sequence % 10 === 0 ? 5 : 4}
-              pathOptions={{
-                color: node,
-                fillColor: visit.connectorStop ? connector : route.color,
-                fillOpacity: 0.95,
-                opacity: 0.95,
-                weight: 1.5,
-              }}
-            >
-              <Popup>
-                <strong>
-                  {visit.sequence}. {visit.station.name}
-                </strong>
-                <br />
-                Day {visit.day} · {Math.round(visit.legMiles)} mi leg ·{' '}
-                {visit.stopMinutes} min stop
-                {visit.connectorStop ? (
-                  <>
-                    <br />
-                    Transfer connector
-                  </>
-                ) : null}
-                <br />
-                {visit.station.address.city}, {visit.station.address.state}
-              </Popup>
-            </CircleMarker>
-          ))}
+          <RouteStopMarkers
+            route={route}
+            visits={routeVisits}
+            nodeColor={node}
+            connectorColor={connector}
+          />
         </>
       )}
     </MapContainer>
@@ -308,6 +283,71 @@ function StateChoropleth({
       }}
     />
   )
+}
+
+/**
+ * Stop markers sized by zoom — at continent-level fit (small screens
+ * especially) full-size beads would bury the route line, so they shrink
+ * to dots and grow back as the user zooms in.
+ */
+function RouteStopMarkers({
+  route,
+  visits,
+  nodeColor,
+  connectorColor,
+}: {
+  route: RoutePlan
+  visits: RouteStationVisit[]
+  nodeColor: string
+  connectorColor: string
+}) {
+  const zoom = useMapZoom()
+  const scale = markerScaleForZoom(zoom)
+
+  return (
+    <>
+      {visits.map((visit) => (
+        <CircleMarker
+          key={`${route.id}-${visit.sequence}-${visit.station.id}`}
+          center={[visit.station.position.lat, visit.station.position.lon]}
+          radius={
+            (visit.connectorStop ? 3.5 : visit.sequence % 10 === 0 ? 5 : 4) * scale
+          }
+          pathOptions={{
+            color: nodeColor,
+            fillColor: visit.connectorStop ? connectorColor : route.color,
+            fillOpacity: 0.95,
+            opacity: 0.95,
+            weight: Math.max(0.75, 1.5 * scale),
+          }}
+        >
+          <Popup>
+            <strong>
+              {visit.sequence}. {visit.station.name}
+            </strong>
+            <br />
+            Day {visit.day} · {Math.round(visit.legMiles)} mi leg ·{' '}
+            {visit.stopMinutes} min stop
+            {visit.connectorStop ? (
+              <>
+                <br />
+                Transfer connector
+              </>
+            ) : null}
+            <br />
+            {visit.station.address.city}, {visit.station.address.state}
+          </Popup>
+        </CircleMarker>
+      ))}
+    </>
+  )
+}
+
+function markerScaleForZoom(zoom: number) {
+  if (zoom >= 7) return 1
+  if (zoom >= 6) return 0.85
+  if (zoom >= 5) return 0.7
+  return 0.5
 }
 
 function RouteLine({

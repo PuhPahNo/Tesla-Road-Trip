@@ -40,11 +40,13 @@ export function BrandIsland({
   onOpenRoutePicker: () => void
 }) {
   return (
-    <div className="glass fixed left-4 top-4 z-40 flex h-12 items-center gap-2.5 rounded-[13px] py-0 pl-3 pr-1.5">
+    // Below sm the island yields to the actions island (~148px + gap) so the
+    // two never overlap; the route chip shrinks and truncates instead.
+    <div className="glass fixed left-4 top-4 z-40 flex h-12 max-w-[calc(100vw-172px)] items-center gap-2.5 rounded-[13px] py-0 pl-3 pr-1.5 sm:max-w-none">
       <div className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-[9px] bg-accent text-on-accent">
         <BoltIcon size={15} />
       </div>
-      <div className="hidden pr-1 leading-[1.05] sm:block">
+      <div className="hidden flex-none pr-1 leading-[1.05] sm:block">
         <div className="whitespace-nowrap font-mono text-[8.5px] uppercase tracking-[0.14em] text-faint">
           2026 · Americas
         </div>
@@ -56,13 +58,13 @@ export function BrandIsland({
         type="button"
         onClick={onOpenRoutePicker}
         aria-label="Choose route"
-        className="flex h-[34px] max-w-[46vw] cursor-pointer items-center gap-2 rounded-[9px] border border-glass-bd bg-chip px-[11px] text-ink transition hover:brightness-110 sm:max-w-[210px]"
+        className="flex h-[34px] min-w-0 cursor-pointer items-center gap-2 rounded-[9px] border border-glass-bd bg-chip px-[11px] text-ink transition hover:brightness-110 sm:max-w-[210px]"
       >
         <span
           className="h-2 w-2 flex-none rounded-full"
           style={{ background: routeColor ?? 'var(--accent)' }}
         />
-        <span className="truncate text-[12.5px] font-medium">{routeName}</span>
+        <span className="min-w-0 truncate text-[12.5px] font-medium">{routeName}</span>
         <ChevronDownIcon size={11} className="flex-none opacity-50" />
       </button>
     </div>

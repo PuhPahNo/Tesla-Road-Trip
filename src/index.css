@@ -310,3 +310,13 @@ body.modal-open {
 .inset-safe-b {
   bottom: env(safe-area-inset-bottom);
 }
+
+/* Mobile (matches useIsMobile): lift the map attribution clear of the
+   tab bar + focus bar so it stays readable instead of sitting behind
+   the bottom chrome. */
+@media (max-width: 767px), (pointer: coarse) and (max-height: 480px) {
+  .leaflet-control-attribution {
+    margin-bottom: calc(env(safe-area-inset-bottom) + 148px) !important;
+    margin-right: 6px !important;
+  }
+}
