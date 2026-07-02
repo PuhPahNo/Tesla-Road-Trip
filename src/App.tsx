@@ -21,34 +21,40 @@ import type {
   Station,
 } from './domain/types'
 import { useIsMobile } from './hooks/useMediaQuery'
-import { TopBar } from './components/TopBar'
-import { MapView } from './components/MapView'
+import {
+  ActionsIsland,
+  BrandIsland,
+  IconRail,
+  MobileTabBar,
+  type MobileTab,
+  type PanelKey,
+} from './components/Chrome'
 import {
   CoverageSection,
-  FeasibilitySection,
-  GuardrailsSection,
-  HeroStats,
-  Sidebar,
-  SourceSection,
-  TripStatsSection,
+  DaysSection,
+  GlassPanel,
+  OverviewSection,
+  StatsSection,
+  StatusSection,
   type RoadStatusVM,
-} from './components/Sidebar'
-import { DailyPlanDrawer, DayTable } from './components/DailyPlan'
+} from './components/GlassPanel'
+import { FocusBar } from './components/FocusBar'
+import { CalendarModal } from './components/CalendarModal'
+import { MapView, type FitPadding } from './components/MapView'
+import { RoutePicker } from './components/RoutePicker'
 import { DayDetailModal } from './components/DayDetailModal'
 import { StateDetailModal } from './components/StateDetailModal'
 import { ConfigModal } from './components/ConfigModal'
 import { RouteCopilotPanel } from './components/RouteCopilot'
-import { RoutePicker } from './components/RoutePicker'
-import { Overlay, OverlayHeader, OptimizeOverlay, Toast } from './ui/Overlay'
 import {
-  AlertIcon,
-  CalendarIcon,
-  CompassIcon,
-  LayersIcon,
-  MapPinIcon,
-  SparkleIcon,
-} from './ui/icons'
-import { cx } from './ui/primitives'
+  Overlay,
+  OverlayHeader,
+  OptimizeOverlay,
+  SplashScreen,
+  Toast,
+} from './ui/Overlay'
+import { AlertIcon } from './ui/icons'
+import { Eyebrow } from './ui/primitives'
 
 const EMPTY_STATIONS: Station[] = []
 
@@ -60,14 +66,14 @@ const OPTIMIZE_STEPS = [
   'Finalizing the day plan…',
 ]
 
+const PLAY_INTERVAL_MS = 1400
+
 type RoadRouteState =
   | { status: 'idle'; routeId?: string }
   | { status: 'loading'; routeId: string }
   | { status: 'ready'; routeId: string; line: Coordinate[]; warning?: string }
   | { status: 'fallback'; routeId: string; message: string }
   | { status: 'error'; routeId: string; message: string }
-
-type MobileSheet = 'routes' | 'days' | 'states' | 'copilot' | null
 
 function App() {
   const isMobile = useIsMobile()
@@ -89,14 +95,18 @@ function App() {
   const [roadRouteState, setRoadRouteState] = useState<RoadRouteState>({ status: 'idle' })
   const [selectedStateCode, setSelectedStateCode] = useState<string>()
 
-  // ---- UI state ----
+  // ---- UI state (cockpit) ----
+  const [panel, setPanel] = useState<PanelKey | null>('overview')
+  const [mobileTab, setMobileTab] = useState<MobileTab>(null)
+  const [copilotOpen, setCopilotOpen] = useState(false)
+  const [calendarOpen, setCalendarOpen] = useState(false)
   const [configOpen, setConfigOpen] = useState(false)
   const [routePickerOpen, setRoutePickerOpen] = useState(false)
-  const [drawerOpen, setDrawerOpen] = useState(true)
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>()
   const [hoveredDayIndex, setHoveredDayIndex] = useState<number>()
-  const [mobileSheet, setMobileSheet] = useState<MobileSheet>(null)
   const [hoveredState, setHoveredState] = useState<string>()
+  const [curDay, setCurDay] = useState(0)
+  const [playing, setPlaying] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
   const [optimizeStep, setOptimizeStep] = useState(OPTIMIZE_STEPS[0])
   const toastTimer = useRef<number>(0)
@@ -144,6 +154,9 @@ function App() {
     setRoadRoutes({})
     setRefinedRoutes({})
     setRoadRouteState({ status: 'idle' })
+    setCurDay(0)
+    setPlaying(false)
+    setHoveredDayIndex(undefined)
   }
 
   const runOptimize = async () => {
@@ -195,6 +208,19 @@ function App() {
     }, 360)
     return () => window.clearInterval(id)
   }, [isOptimizing])
+
+  // ⌘K toggles the copilot, Escape closes it (overlays handle their own).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setCopilotOpen((open) => !open)
+      }
+      if (e.key === 'Escape') setCopilotOpen(false)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [])
 
   // road geometry for the selected route (OSRM), cached per route.
   useEffect(() => {
@@ -315,59 +341,138 @@ function App() {
     config.plannerMode === 'most_unique_sites' &&
     config.targetStations >= Math.floor(feasibility.totalStations * 0.95)
   const visibleFeasibility = allSitesTarget ? feasibility : undefined
-  const mapCaption = `${(result?.universe.filteredStations ?? stationStatus?.filteredStations ?? visibleStations.length).toLocaleString()} SITES`
 
+  // splash until the first optimize resolves (or fails visibly).
+  const ready = Boolean(result) || Boolean(error)
+
+  // Focus mode: the current day stays highlighted on the map unless the
+  // user is hovering another day in the panel.
+  const focusVisible = Boolean(displayRoute) && (!isMobile || mobileTab === null)
+  const highlightedDayIndex =
+    hoveredDayIndex ?? (focusVisible && displayRoute ? Math.min(curDay, displayRoute.days.length - 1) : undefined)
+
+  const fitPadding = useMemo<FitPadding>(
+    () =>
+      isMobile
+        ? { topLeft: [16, 88], bottomRight: [16, 170] }
+        : { topLeft: [panel ? 440 : 96, 104], bottomRight: [96, 124] },
+    [isMobile, panel],
+  )
+
+  // day auto-play tour.
+  useEffect(() => {
+    if (!playing || !displayRoute) return
+    const id = window.setInterval(() => {
+      setCurDay((current) => (current + 1) % displayRoute.days.length)
+    }, PLAY_INTERVAL_MS)
+    return () => window.clearInterval(id)
+  }, [playing, displayRoute])
+
+  // ---- handlers ----
   const handleSelectRoute = (id: string) => {
     setSelectedRouteId(id)
     setSelectedStateCode(undefined)
     setHoveredDayIndex(undefined)
+    setCurDay(0)
+    setPlaying(false)
   }
   const handleSelectState = (state: string) => {
     setSelectedStateCode(state)
-    setMobileSheet(null)
+    setMobileTab(null)
   }
   const handleOpenDay = (dayIndex: number) => {
     setSelectedDayIndex(dayIndex)
+    setCurDay(dayIndex)
     setHoveredDayIndex(undefined)
-    setMobileSheet(null)
+    setCalendarOpen(false)
+    setMobileTab(null)
+  }
+  const handleSetDay = (dayIndex: number) => {
+    if (!displayRoute) return
+    setCurDay(Math.max(0, Math.min(displayRoute.days.length - 1, dayIndex)))
+  }
+  const handleTogglePanel = (key: PanelKey) => {
+    setPanel((current) => (current === key ? null : key))
   }
 
-  const sidebarData = {
-    route: displayRoute,
-    stationStatus,
-    isLoadingStations,
-    routeStateStats,
-    feasibility: visibleFeasibility,
-    roadStatus,
-    passportDeadline: TESLA_CONTEST_RULES.passportDeadline,
-    onSelectState: handleSelectState,
-    onHoverState: setHoveredState,
-    highlightedState: hoveredState,
-    onRefresh: loadStations,
-    copilot: (
-      <RouteCopilotPanel
-        config={config}
-        selectedRouteId={selectedRoute?.id}
-        onApply={applyAgentResponse}
-      />
-    ),
+  const panelContent = (key: PanelKey) => {
+    switch (key) {
+      case 'overview':
+        return <OverviewSection route={displayRoute} feasibility={visibleFeasibility} />
+      case 'days':
+        return (
+          <DaysSection
+            route={displayRoute}
+            hoveredDayIndex={hoveredDayIndex}
+            onOpenDay={handleOpenDay}
+            onHoverDay={setHoveredDayIndex}
+          />
+        )
+      case 'coverage':
+        return (
+          <CoverageSection
+            stats={routeStateStats}
+            onSelectState={handleSelectState}
+            onHoverState={setHoveredState}
+            highlightedState={hoveredState}
+          />
+        )
+      case 'stats':
+        return <StatsSection route={displayRoute} routeStateStats={routeStateStats} />
+      case 'status':
+        return (
+          <StatusSection
+            stationStatus={stationStatus}
+            isLoadingStations={isLoadingStations}
+            onRefresh={loadStations}
+            passportDeadline={TESLA_CONTEST_RULES.passportDeadline}
+            roadStatus={roadStatus}
+          />
+        )
+    }
   }
 
   return (
-    <div className="flex h-[100dvh] w-full flex-col overflow-hidden bg-app text-ink">
-      <TopBar
-        selectedRouteName={selectedRoute?.name ?? 'No route yet'}
+    <div className="fixed inset-0 overflow-hidden bg-app text-ink">
+      {/* Fullscreen map behind the floating chrome */}
+      <div className="absolute inset-0 z-0">
+        <MapView
+          stations={visibleStations}
+          route={displayRoute}
+          start={config.start}
+          showAllStations={config.showAllStations}
+          roadLine={activeRoadLine}
+          stateStats={allStateStats}
+          onSelectState={handleSelectState}
+          onHoverState={setHoveredState}
+          highlightedState={hoveredState}
+          highlightedDayIndex={highlightedDayIndex}
+          fitPadding={fitPadding}
+        />
+      </div>
+
+      {/* Floating top chrome */}
+      <BrandIsland
+        routeName={selectedRoute?.name ?? 'No route yet'}
+        routeColor={selectedRoute?.color}
         onOpenRoutePicker={() => setRoutePickerOpen(true)}
+      />
+      <ActionsIsland
+        onOpenCopilot={() => setCopilotOpen((open) => !open)}
+        onRefresh={() => void loadStations()}
+        isRefreshing={isLoadingStations}
         onOpenConfig={() => setConfigOpen(true)}
+        showAsk={!isMobile}
       />
 
+      {/* Error banner */}
       {error && (
-        <div className="flex items-center gap-2 border-b border-warn-bd bg-warn-bg px-4 py-2 text-[13px] text-warn">
-          <AlertIcon size={15} />
+        <div className="glass fixed left-1/2 top-[76px] z-50 flex max-w-[min(560px,calc(100vw-32px))] -translate-x-1/2 items-center gap-2 rounded-[11px] px-3.5 py-2.5 text-[12.5px] text-warn">
+          <AlertIcon size={14} className="flex-none" />
           <span className="min-w-0 flex-1 truncate">{error}</span>
           <button
             type="button"
-            className="font-mono text-[11px] uppercase tracking-wide opacity-70 hover:opacity-100"
+            className="cursor-pointer font-mono text-[10.5px] uppercase tracking-wide opacity-70 hover:opacity-100"
             onClick={() => setError(undefined)}
           >
             Dismiss
@@ -375,107 +480,95 @@ function App() {
         </div>
       )}
 
-      {/* MAIN */}
-      <div className="relative flex min-h-0 flex-1">
-        {/* Map */}
-        <div className="relative min-w-0 flex-1">
-          <MapView
-            stations={visibleStations}
-            route={displayRoute}
-            start={config.start}
-            showAllStations={config.showAllStations}
-            roadLine={activeRoadLine}
-            stateStats={allStateStats}
-            onSelectState={handleSelectState}
-            onHoverState={setHoveredState}
-            highlightedState={hoveredState}
-            highlightedDayIndex={hoveredDayIndex}
-            caption={mapCaption}
-          />
-        </div>
-
-        {/* Desktop sidebar */}
-        {!isMobile && (
-          <aside className="flex w-80 flex-none flex-col border-l border-edge bg-panel">
-            <Sidebar {...sidebarData} className="flex-1" />
-          </aside>
-        )}
-      </div>
-
-      {/* Desktop daily-plan drawer */}
+      {/* Desktop: icon rail + adaptive glass panel */}
       {!isMobile && (
-        <DailyPlanDrawer
+        <>
+          <IconRail activePanel={panel} onSelect={handleTogglePanel} />
+          {panel && (
+            <GlassPanel panel={panel} route={displayRoute} onClose={() => setPanel(null)}>
+              {panelContent(panel)}
+            </GlassPanel>
+          )}
+          {copilotOpen && (
+            <RouteCopilotPanel
+              config={config}
+              selectedRouteId={selectedRoute?.id}
+              onApply={applyAgentResponse}
+              onClose={() => setCopilotOpen(false)}
+            />
+          )}
+        </>
+      )}
+
+      {/* Focus day navigator */}
+      {focusVisible && displayRoute && (
+        <FocusBar
           route={displayRoute}
-          roadStatus={roadStatus.status}
-          open={drawerOpen}
-          onToggleOpen={() => setDrawerOpen((o) => !o)}
+          curDay={curDay}
+          playing={playing}
+          isMobile={isMobile}
+          onSetDay={handleSetDay}
+          onPrev={() => handleSetDay(curDay - 1)}
+          onNext={() => handleSetDay(curDay + 1)}
+          onTogglePlay={() => setPlaying((p) => !p)}
           onOpenDay={handleOpenDay}
-          onHoverDay={setHoveredDayIndex}
+          onOpenCalendar={() => setCalendarOpen(true)}
         />
       )}
 
-      {/* Mobile bottom tab bar */}
-      {isMobile && (
-        <MobileTabBar
-          active={mobileSheet}
-          onSelect={(tab) =>
-            setMobileSheet((current) => (tab === null || current === tab ? null : tab))
-          }
-        />
-      )}
-
-      {/* Mobile sheets */}
+      {/* Mobile: glass tab bar + sheets */}
       {isMobile && (
         <>
+          <MobileTabBar
+            active={mobileTab}
+            onSelect={(tab) =>
+              setMobileTab((current) => (tab === null || current === tab ? null : tab))
+            }
+          />
+
           <Overlay
-            open={mobileSheet === 'routes'}
-            onClose={() => setMobileSheet(null)}
+            open={mobileTab === 'trip'}
+            onClose={() => setMobileTab(null)}
             size="detail"
           >
             <OverlayHeader
               kicker="Trip dashboard"
-              title="Routes & stats"
-              onClose={() => setMobileSheet(null)}
+              title="Overview & stats"
+              onClose={() => setMobileTab(null)}
             />
-            <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
-              <HeroStats route={displayRoute} />
-              <TripStatsSection route={displayRoute} routeStateStats={routeStateStats} />
-              <MobileRouteList
-                routes={result?.routes ?? []}
-                selectedRouteId={selectedRoute?.id}
-                onSelect={(id) => {
-                  handleSelectRoute(id)
-                }}
-              />
-              <FeasibilitySection bare feasibility={visibleFeasibility} />
-              <SourceSection
-                bare
-                stationStatus={stationStatus}
-                isLoadingStations={isLoadingStations}
-                onRefresh={loadStations}
-              />
-              <GuardrailsSection
-                bare
-                passportDeadline={TESLA_CONTEST_RULES.passportDeadline}
-                roadStatus={roadStatus}
-              />
+            <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-4">
+              <OverviewSection route={displayRoute} feasibility={visibleFeasibility} />
+              <div className="flex flex-col gap-3">
+                <Eyebrow>Trip stats</Eyebrow>
+                <StatsSection route={displayRoute} routeStateStats={routeStateStats} />
+              </div>
+              <div className="flex flex-col gap-3">
+                <Eyebrow>Status & rules</Eyebrow>
+                <StatusSection
+                  stationStatus={stationStatus}
+                  isLoadingStations={isLoadingStations}
+                  onRefresh={loadStations}
+                  passportDeadline={TESLA_CONTEST_RULES.passportDeadline}
+                  roadStatus={roadStatus}
+                />
+              </div>
             </div>
           </Overlay>
 
           <Overlay
-            open={mobileSheet === 'days'}
-            onClose={() => setMobileSheet(null)}
-            size="wide"
+            open={mobileTab === 'days'}
+            onClose={() => setMobileTab(null)}
+            size="detail"
           >
             <OverlayHeader
               kicker="Daily plan"
-              title={selectedRoute?.name ?? 'Daily plan'}
-              onClose={() => setMobileSheet(null)}
+              title={displayRoute?.name ?? 'Daily plan'}
+              onClose={() => setMobileTab(null)}
             />
-            <div className="min-h-0 flex-1 overflow-y-auto">
-              <DayTable
+            <div className="min-h-0 flex-1 overflow-y-auto p-4">
+              <DaysSection
                 route={displayRoute}
-                roadStatus={roadStatus.status}
+                hoveredDayIndex={hoveredDayIndex}
                 onOpenDay={handleOpenDay}
                 onHoverDay={setHoveredDayIndex}
               />
@@ -483,18 +576,17 @@ function App() {
           </Overlay>
 
           <Overlay
-            open={mobileSheet === 'states'}
-            onClose={() => setMobileSheet(null)}
+            open={mobileTab === 'coverage'}
+            onClose={() => setMobileTab(null)}
             size="detail"
           >
             <OverlayHeader
               kicker="Route coverage"
               title="Stations by state"
-              onClose={() => setMobileSheet(null)}
+              onClose={() => setMobileTab(null)}
             />
             <div className="min-h-0 flex-1 overflow-y-auto p-4">
               <CoverageSection
-                bare
                 stats={routeStateStats}
                 onSelectState={handleSelectState}
               />
@@ -502,37 +594,34 @@ function App() {
           </Overlay>
 
           <Overlay
-            open={mobileSheet === 'copilot'}
-            onClose={() => setMobileSheet(null)}
+            open={mobileTab === 'copilot'}
+            onClose={() => setMobileTab(null)}
             size="detail"
           >
-            <OverlayHeader
-              badge={
-                <span className="mt-1 flex h-9 w-9 flex-none items-center justify-center rounded-[11px] border border-edge bg-panel2 text-accent2">
-                  <SparkleIcon size={15} />
-                </span>
-              }
-              kicker="Assistant"
-              title="Route Copilot"
-              onClose={() => setMobileSheet(null)}
-            />
             <RouteCopilotPanel
               config={config}
               selectedRouteId={selectedRoute?.id}
               onApply={applyAgentResponse}
-              showHeader={false}
+              mode="sheet"
+              onClose={() => setMobileTab(null)}
             />
           </Overlay>
         </>
       )}
 
-      {/* Modals (responsive via Overlay) */}
+      {/* Modals */}
       <RoutePicker
         routes={result?.routes ?? []}
         selectedRouteId={selectedRoute?.id}
         open={routePickerOpen}
         onClose={() => setRoutePickerOpen(false)}
         onSelect={handleSelectRoute}
+      />
+      <CalendarModal
+        route={displayRoute}
+        open={calendarOpen}
+        onClose={() => setCalendarOpen(false)}
+        onOpenDay={handleOpenDay}
       />
       <DayDetailModal
         day={activeDay}
@@ -554,115 +643,9 @@ function App() {
       />
 
       {/* Overlays */}
-      {isOptimizing && <OptimizeOverlay step={optimizeStep} />}
+      {!ready && <SplashScreen />}
+      {isOptimizing && ready && <OptimizeOverlay step={optimizeStep} />}
       <Toast message={toast} />
-    </div>
-  )
-}
-
-/* ------------------------------------------------------------------ */
-/* Mobile bottom tab bar                                               */
-/* ------------------------------------------------------------------ */
-const TABS: Array<{ key: Exclude<MobileSheet, null>; label: string; icon: typeof CompassIcon }> = [
-  { key: 'routes', label: 'Routes', icon: LayersIcon },
-  { key: 'days', label: 'Days', icon: CalendarIcon },
-  { key: 'states', label: 'States', icon: MapPinIcon },
-  { key: 'copilot', label: 'Copilot', icon: SparkleIcon },
-]
-
-function MobileTabBar({
-  active,
-  onSelect,
-}: {
-  active: MobileSheet
-  onSelect: (tab: MobileSheet) => void
-}) {
-  return (
-    <nav className="pb-safe z-30 grid flex-none grid-cols-5 border-t border-edge bg-panel">
-      <button
-        type="button"
-        onClick={() => onSelect(null)}
-        aria-pressed={active === null}
-        className={cx(
-          'flex min-h-11 flex-col items-center justify-center gap-0.5 py-2 transition',
-          active === null ? 'text-accent' : 'text-faint hover:text-ink',
-        )}
-      >
-        <CompassIcon size={20} />
-        <span className="text-[10px] font-medium">Map</span>
-      </button>
-      {TABS.map((tab) => {
-        const isActive = active === tab.key
-        const Icon = tab.icon
-        return (
-          <button
-            key={tab.key}
-            type="button"
-            onClick={() => onSelect(tab.key)}
-            aria-pressed={isActive}
-            className={cx(
-              'flex min-h-11 flex-col items-center justify-center gap-0.5 py-2 transition',
-              isActive ? 'text-accent' : 'text-faint hover:text-ink',
-            )}
-          >
-            <Icon size={20} />
-            <span className="text-[10px] font-medium">{tab.label}</span>
-          </button>
-        )
-      })}
-    </nav>
-  )
-}
-
-/* ------------------------------------------------------------------ */
-/* Compact route list used inside the mobile Routes sheet              */
-/* ------------------------------------------------------------------ */
-function MobileRouteList({
-  routes,
-  selectedRouteId,
-  onSelect,
-}: {
-  routes: OptimizeResponse['routes']
-  selectedRouteId?: string
-  onSelect: (id: string) => void
-}) {
-  if (!routes.length) return null
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-faint">
-        Route candidates
-      </div>
-      {routes.map((route) => {
-        const isActive = route.id === selectedRouteId
-        const isLongestTrip = route.plannerMode === 'longest_trip'
-        return (
-          <button
-            key={route.id}
-            type="button"
-            onClick={() => onSelect(route.id)}
-            className={cx(
-              'grid min-h-11 grid-cols-[8px_1fr] items-center gap-3 rounded-xl border p-3 text-left transition',
-              isActive ? 'border-accent shadow-card' : 'border-edge',
-            )}
-          >
-            <span
-              className="h-full min-h-9 w-2 rounded"
-              style={{ background: route.color }}
-            />
-            <span className="min-w-0">
-              <span className="block truncate text-[14px] font-semibold text-ink">
-                {route.name}
-              </span>
-              <span className="block font-mono text-[11.5px] text-faint">
-                {route.uniqueStations.toLocaleString()}{' '}
-                {isLongestTrip ? 'streak stops' : 'sites'} · {route.totalDays}{' '}
-                {isLongestTrip ? 'streak days' : 'days'} ·{' '}
-                {route.totalMiles.toLocaleString()} mi
-              </span>
-            </span>
-          </button>
-        )
-      })}
     </div>
   )
 }

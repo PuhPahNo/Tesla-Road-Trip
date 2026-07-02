@@ -17,8 +17,12 @@ import { haversineMiles, simplifyPolyline } from '../domain/geo'
 import { STATE_NAME_TO_CODE } from '../domain/usStates'
 import usStatesRaw from '../assets/us-states.json'
 import { useTheme } from '../theme/theme'
-import { IconButton } from '../ui/primitives'
-import { MinusIcon, PlusIcon } from '../ui/icons'
+
+/** fitBounds padding so the route clears the floating cockpit chrome. */
+export interface FitPadding {
+  topLeft: [number, number]
+  bottomRight: [number, number]
+}
 
 interface MapViewProps {
   stations: Station[]
@@ -31,7 +35,7 @@ interface MapViewProps {
   onHoverState?: (state: string | undefined) => void
   highlightedState?: string
   highlightedDayIndex?: number
-  caption?: string
+  fitPadding: FitPadding
 }
 
 const US_STATES = usStatesRaw as unknown as FeatureCollection<Geometry, { name: string }>
@@ -59,7 +63,7 @@ export const MapView = memo(function MapView({
   onHoverState,
   highlightedState,
   highlightedDayIndex,
-  caption,
+  fitPadding,
 }: MapViewProps) {
   const { theme, isDark } = useTheme()
   // preferCanvas means Leaflet vector strokes/fills are painted to <canvas>,
@@ -141,7 +145,12 @@ export const MapView = memo(function MapView({
 
       {route && (
         <>
-          <RouteLine route={route} roadLine={roadLine} isDark={isDark} />
+          <RouteLine
+            route={route}
+            roadLine={roadLine}
+            isDark={isDark}
+            fitPadding={fitPadding}
+          />
           <DayHighlightLine
             route={route}
             start={start}
@@ -181,8 +190,6 @@ export const MapView = memo(function MapView({
           ))}
         </>
       )}
-
-      <MapChrome caption={caption} />
     </MapContainer>
   )
 })
@@ -299,10 +306,12 @@ function RouteLine({
   route,
   roadLine,
   isDark,
+  fitPadding,
 }: {
   route: RoutePlan
   roadLine?: Coordinate[]
   isDark: boolean
+  fitPadding: FitPadding
 }) {
   const zoom = useMapZoom()
   const hasRoadLine = Boolean(roadLine?.length)
@@ -331,6 +340,7 @@ function RouteLine({
       <FitRoute
         positions={fitPositions}
         routeKey={`${route.id}-${hasRoadLine ? 'road' : 'estimate'}`}
+        fitPadding={fitPadding}
       />
       {isDark && (
         <Polyline
@@ -500,87 +510,75 @@ function ResizeHandler() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Custom zoom control (top-left)                                      */
+/* Custom zoom control — glass island, bottom-right (desktop only)     */
 /* ------------------------------------------------------------------ */
 function ZoomControl() {
   const map = useMap()
   return (
-    <div className="absolute left-4 top-4 z-[800] flex flex-col overflow-hidden rounded-[9px] border border-edge bg-panel shadow-card">
-      <IconButton
-        label="Zoom in"
-        size={44}
-        className="rounded-none border-0 border-b border-edge bg-panel"
+    <div className="glass absolute bottom-4 right-4 z-[800] hidden flex-col overflow-hidden rounded-[11px] md:flex">
+      <button
+        type="button"
+        aria-label="Zoom in"
         onClick={() => map.zoomIn()}
+        className="flex h-[38px] w-[38px] cursor-pointer items-center justify-center border-0 border-b border-glass-bd bg-transparent text-[19px] leading-none text-ink"
       >
-        <PlusIcon size={18} />
-      </IconButton>
-      <IconButton
-        label="Zoom out"
-        size={44}
-        className="rounded-none border-0 bg-panel"
+        +
+      </button>
+      <button
+        type="button"
+        aria-label="Zoom out"
         onClick={() => map.zoomOut()}
+        className="flex h-[38px] w-[38px] cursor-pointer items-center justify-center border-0 bg-transparent text-[19px] leading-none text-ink"
       >
-        <MinusIcon size={18} />
-      </IconButton>
+        −
+      </button>
     </div>
-  )
-}
-
-/* ------------------------------------------------------------------ */
-/* Legend (bottom-left) + caption (bottom-right)                       */
-/* ------------------------------------------------------------------ */
-function MapChrome({ caption }: { caption?: string }) {
-  return (
-    <>
-      <div className="absolute bottom-4 left-4 z-[800] hidden max-w-[calc(100%-2rem)] flex-wrap items-center gap-x-4 gap-y-1.5 rounded-[9px] border border-edge bg-panel px-3 py-2 text-[11.5px] text-dim shadow-card md:flex">
-        <span className="flex items-center gap-[7px]">
-          <span className="h-[3px] w-[18px] flex-none rounded-[2px] bg-route" />
-          Route
-        </span>
-        <span className="flex items-center gap-[7px]">
-          <span
-            className="h-[10px] w-[18px] flex-none rounded-[3px]"
-            style={{
-              background:
-                'linear-gradient(90deg, color-mix(in srgb, var(--accent-2) 16%, transparent), var(--accent-2))',
-            }}
-          />
-          State coverage
-        </span>
-        <span className="flex items-center gap-[7px]">
-          <span className="h-2 w-2 flex-none rounded-full border-[1.5px] border-node bg-route" />
-          Supercharger
-        </span>
-        <span className="flex items-center gap-[7px]">
-          <span className="h-2 w-2 flex-none rounded-full border-[1.5px] border-node bg-[#d97706]" />
-          Transfer
-        </span>
-      </div>
-
-      {caption ? (
-        <div className="pointer-events-none absolute bottom-4 right-4 z-[800] hidden font-mono text-[10px] uppercase tracking-[0.04em] text-faint md:block">
-          {caption}
-        </div>
-      ) : null}
-    </>
   )
 }
 
 function FitRoute({
   positions,
   routeKey,
+  fitPadding,
 }: {
   positions: [number, number][]
   routeKey: string
+  fitPadding: FitPadding
 }) {
   const map = useMap()
 
   useEffect(() => {
     if (positions.length < 2) return
-    map.fitBounds(positions, {
-      padding: [28, 28],
-      maxZoom: 7,
-    })
+
+    const fit = () =>
+      map.fitBounds(positions, {
+        paddingTopLeft: fitPadding.topLeft,
+        paddingBottomRight: fitPadding.bottomRight,
+        maxZoom: 7,
+      })
+
+    map.invalidateSize({ animate: false })
+    const size = map.getSize()
+    if (size.x > 0 && size.y > 0) {
+      fit()
+      return
+    }
+
+    // Container has no layout yet (e.g. hidden or 0-sized viewport) —
+    // fitting now would clamp to maxZoom. Fit once it gains real size.
+    const onResize = () => {
+      const next = map.getSize()
+      if (next.x > 0 && next.y > 0) {
+        map.off('resize', onResize)
+        fit()
+      }
+    }
+    map.on('resize', onResize)
+    return () => {
+      map.off('resize', onResize)
+    }
+    // Refit only when the route changes, not on every padding tweak.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, positions, routeKey])
 
   return null

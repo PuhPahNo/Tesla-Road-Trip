@@ -1,8 +1,7 @@
 import { useId } from 'react'
 import type { RoutePlan } from '../domain/types'
 import { Overlay, OverlayHeader } from '../ui/Overlay'
-import { cx } from '../ui/primitives'
-import { AlertIcon, InfoIcon } from '../ui/icons'
+import { CheckIcon } from '../ui/icons'
 
 export interface RoutePickerProps {
   routes: RoutePlan[]
@@ -20,6 +19,7 @@ export function RoutePicker({
   onSelect,
 }: RoutePickerProps) {
   const titleId = useId()
+  const isLongestTrip = routes[0]?.plannerMode === 'longest_trip'
 
   const choose = (id: string) => {
     onSelect(id)
@@ -27,15 +27,15 @@ export function RoutePicker({
   }
 
   return (
-    <Overlay open={open} onClose={onClose} size="detail" labelledBy={titleId}>
+    <Overlay open={open} onClose={onClose} size="picker" variant="top" labelledBy={titleId}>
       <OverlayHeader
         titleId={titleId}
-        kicker="Route candidates"
+        kicker={`Route candidates · ${isLongestTrip ? 'Longest Trip' : 'Most Unique Sites'}`}
         title="Choose a route"
         onClose={onClose}
       />
 
-      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-4 md:p-5">
+      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-3">
         {routes.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-edge bg-panel2 px-5 py-10 text-center">
             <div className="text-[14px] font-semibold text-ink">No routes yet</div>
@@ -44,9 +44,6 @@ export function RoutePicker({
         ) : (
           routes.map((route) => {
             const selected = route.id === selectedRouteId
-            const hasWarnings = route.warnings.length > 0
-            const hasAdvisories = route.advisories.length > 0
-            const isLongestTrip = route.plannerMode === 'longest_trip'
             return (
               <button
                 key={route.id}
@@ -54,50 +51,36 @@ export function RoutePicker({
                 onClick={() => choose(route.id)}
                 aria-pressed={selected}
                 aria-label={`Select route ${route.name}, rating ${route.rating.score} out of 100`}
-                className={cx(
-                  'grid w-full grid-cols-[8px_1fr_auto] items-stretch gap-3 rounded-xl border p-3 text-left transition cursor-pointer',
-                  selected
-                    ? 'border-accent shadow-card'
-                    : 'border-edge hover:border-edge2',
-                )}
+                className="flex w-full cursor-pointer items-stretch gap-[13px] rounded-xl p-[13px] text-left transition"
+                style={{
+                  border: `1px solid ${selected ? 'var(--accent)' : 'var(--border)'}`,
+                  background: selected
+                    ? 'color-mix(in srgb, var(--accent) 8%, var(--panel-2))'
+                    : 'var(--panel-2)',
+                }}
               >
                 <span
                   aria-hidden
-                  className="min-h-11 w-2 self-stretch rounded"
+                  className="w-2.5 flex-none self-stretch rounded-[5px]"
                   style={{ background: route.color }}
                 />
-
-                <span className="flex min-w-0 flex-col justify-center gap-0.5">
-                  <span className="truncate text-[14px] font-semibold text-ink">
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[14px] font-semibold text-ink">
                     {route.name}
                   </span>
-                  <span className="truncate font-mono text-[11.5px] text-faint">
+                  <span className="mt-0.5 block text-[12px] text-dim">{route.strategy}</span>
+                  <span className="mt-[5px] block font-mono text-[11px] text-faint">
                     {route.uniqueStations.toLocaleString()}{' '}
-                    {isLongestTrip ? 'streak stops' : 'sites'} · {route.totalDays}{' '}
-                    {isLongestTrip ? 'streak days' : 'days'} ·{' '}
-                    {route.totalMiles.toLocaleString()} mi · rating {route.rating.score}/100
+                    {route.plannerMode === 'longest_trip' ? 'stops' : 'sites'} ·{' '}
+                    {route.totalDays} days · {route.totalMiles.toLocaleString()} mi ·{' '}
+                    {route.averageDriveHoursPerDay}h/day · ★ {route.rating.score}
                   </span>
                 </span>
-
-                <span className="flex items-center justify-end gap-2 pl-1">
-                  <span className="flex flex-col items-end leading-none">
-                    <span className="font-mono text-[16px] font-semibold text-accent2">
-                      {route.rating.score}
-                    </span>
-                    <span className="font-mono text-[9.5px] uppercase tracking-[0.06em] text-faint">
-                      /100
-                    </span>
+                {selected ? (
+                  <span className="flex flex-none items-center text-accent" aria-hidden>
+                    <CheckIcon size={18} />
                   </span>
-                  {hasWarnings ? (
-                    <AlertIcon
-                      size={16}
-                      className="flex-none text-warn"
-                      aria-hidden
-                    />
-                  ) : hasAdvisories ? (
-                    <InfoIcon size={16} className="flex-none text-info" aria-hidden />
-                  ) : null}
-                </span>
+                ) : null}
               </button>
             )
           })

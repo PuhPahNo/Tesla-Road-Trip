@@ -1,14 +1,7 @@
-import { useState, type ReactNode } from 'react'
-import type {
-  DayPlan,
-  PlaceRating,
-  PlannerAdvisory,
-  RoutePlan,
-  RouteStationVisit,
-} from '../domain/types'
+import { useState } from 'react'
+import type { DayPlan, RoutePlan, RouteStationVisit } from '../domain/types'
 import { Overlay, OverlayHeader } from '../ui/Overlay'
-import { Chip, Pill, StatTile, cx } from '../ui/primitives'
-import { AlertIcon, InfoIcon } from '../ui/icons'
+import { cx } from '../ui/primitives'
 
 export interface DayDetailModalProps {
   day?: DayPlan
@@ -16,31 +9,25 @@ export interface DayDetailModalProps {
   onClose: () => void
 }
 
-const VISIT_CAP = 40
-const TARGET_CAP = 14
-const RATING_CAP = 18
-
-function fmtMinutes(m: number): string {
-  const total = Math.max(0, Math.round(m))
-  const h = Math.floor(total / 60)
-  const min = total % 60
-  if (h <= 0) return `${min}m`
-  if (min === 0) return `${h}h`
-  return `${h}h ${min}m`
-}
+const VISIT_CAP = 60
 
 export function DayDetailModal({ day, route, onClose }: DayDetailModalProps) {
-  const [showAllVisits, setShowAllVisits] = useState(false)
+  const [showAll, setShowAll] = useState(false)
 
   return (
-    <Overlay open={Boolean(day)} onClose={onClose} size="detail" labelledBy="day-detail-title">
+    <Overlay
+      open={Boolean(day)}
+      onClose={onClose}
+      size="detail"
+      labelledBy="day-detail-title"
+    >
       {day ? (
         <DayDetailContent
           day={day}
           route={route}
           onClose={onClose}
-          showAllVisits={showAllVisits}
-          setShowAllVisits={setShowAllVisits}
+          showAll={showAll}
+          setShowAll={setShowAll}
         />
       ) : null}
     </Overlay>
@@ -51,268 +38,125 @@ function DayDetailContent({
   day,
   route,
   onClose,
-  showAllVisits,
-  setShowAllVisits,
+  showAll,
+  setShowAll,
 }: {
   day: DayPlan
   route?: RoutePlan
   onClose: () => void
-  showAllVisits: boolean
-  setShowAllVisits: (v: boolean) => void
+  showAll: boolean
+  setShowAll: (v: boolean) => void
 }) {
-  const cities = day.visits.map((visit) => visit.station.address.city)
-  const firstCity = cities[0] ?? '—'
-  const lastCity = cities[cities.length - 1] ?? '—'
-
-  const driveMin = Math.round(day.driveHours * 60)
-  const totalMin = driveMin + day.stopMinutes
-  const drivePct = totalMin > 0 ? (driveMin / totalMin) * 100 : 0
-  const chargePct = totalMin > 0 ? (day.stopMinutes / totalMin) * 100 : 0
-
-  const targetCities = dedupeAdjacent(cities)
-  const targetsShown = targetCities.slice(0, TARGET_CAP)
-  const targetsOverflow = targetCities.length - targetsShown.length
-  const placesShown = day.rating.places.slice(0, RATING_CAP)
-  const placesOverflow = day.rating.places.length - placesShown.length
-
-  const hasNotes = day.warnings.length > 0 || day.advisories.length > 0
+  const cities = [...new Set(day.visits.map((visit) => visit.station.address.city))]
+  const title = cities.slice(0, 3).join(' → ') || 'Open road'
 
   const visitsShown =
-    showAllVisits || day.visits.length <= VISIT_CAP
-      ? day.visits
-      : day.visits.slice(0, VISIT_CAP)
-  const hiddenVisitCount = day.visits.length - visitsShown.length
+    showAll || day.visits.length <= VISIT_CAP ? day.visits : day.visits.slice(0, VISIT_CAP)
+  const hiddenCount = day.visits.length - visitsShown.length
+  const notes = [
+    ...day.warnings.map((message) => ({ tone: 'warn' as const, message })),
+    ...day.advisories.map((advisory) => ({
+      tone: advisory.severity === 'high' ? ('warn' as const) : ('info' as const),
+      message: advisory.message,
+    })),
+  ]
+  const places = day.rating.places.slice(0, 10)
 
   return (
     <>
       <OverlayHeader
-        badge={
-          <div className="flex h-[46px] w-[46px] flex-none items-center justify-center rounded-xl bg-accent font-mono text-[16px] font-semibold text-on-accent">
-            {day.day}
-          </div>
-        }
-        kicker={`Day ${day.day} · ${route?.name ?? 'Route'}`}
-        title={
-          <span className="block truncate">
-            {firstCity} <span className="text-faint"> → </span> {lastCity}
-          </span>
-        }
-        subtitle={`${day.uniqueStations} Superchargers · ${day.miles.toLocaleString()} mi`}
         titleId="day-detail-title"
+        kicker={`Day ${day.day} · rating ${day.rating.score}/100 · ${route?.name ?? 'Route'}`}
+        title={title}
+        meta={`${day.miles.toLocaleString()} mi · ${day.driveHours.toFixed(1)}h drive · ${Math.round(day.stopMinutes)}m charging · ${day.uniqueStations} sites`}
         onClose={onClose}
       />
 
-      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 py-5 md:px-6">
-        {/* Stat grid */}
-        <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
-          <StatTile label="Day rating" value={day.rating.score} unit="/100" />
-          <StatTile label="Scenery" value={day.rating.sceneryScore} unit="/100" />
-          <StatTile label="Miles traveled" value={day.miles.toLocaleString()} unit="mi" />
-          <StatTile label="Drive time" value={day.driveHours.toFixed(1)} unit="h" />
-          <StatTile label="Charge stops" value={day.visits.length} />
-          <StatTile label="Charge time" value={fmtMinutes(day.stopMinutes)} />
-          <StatTile label="Unique stations" value={day.uniqueStations} />
-          <StatTile
-            label="Avg gap"
-            value={day.averageDistanceBetweenSuperchargers.toFixed(1)}
-            unit="mi"
-          />
-        </div>
-
-        {/* Time split */}
-        <div>
-          <div className="mb-2 flex items-center justify-between font-mono text-[10.5px] uppercase tracking-[0.05em] text-faint">
-            <span>Time split</span>
-            <span>{fmtMinutes(totalMin)}</span>
-          </div>
-          <div className="flex h-[13px] overflow-hidden rounded border border-edge">
-            <div className="h-full bg-accent" style={{ width: `${drivePct}%` }} aria-hidden />
-            <div className="h-full bg-accent2" style={{ width: `${chargePct}%` }} aria-hidden />
-          </div>
-          <div className="mt-2.5 flex flex-wrap gap-x-[18px] gap-y-1.5 text-[12px] text-dim">
-            <span className="flex items-center gap-[7px]">
-              <span className="h-[9px] w-[9px] flex-none rounded-[3px] bg-accent" aria-hidden />
-              Driving <span className="font-mono">{fmtMinutes(driveMin)}</span>
-            </span>
-            <span className="flex items-center gap-[7px]">
-              <span className="h-[9px] w-[9px] flex-none rounded-[3px] bg-accent2" aria-hidden />
-              Charging <span className="font-mono">{fmtMinutes(day.stopMinutes)}</span>
-            </span>
-          </div>
-        </div>
-
-        {/* Place ratings */}
-        {placesShown.length > 0 ? (
-          <div>
-            <SectionLabel>Place ratings</SectionLabel>
-            <div className="flex flex-wrap gap-[7px]">
-              {placesShown.map((place) => (
-                <PlaceRatingPill key={place.id} place={place} />
-              ))}
-              {placesOverflow > 0 ? (
-                <Chip label={`+${placesOverflow}`} className="text-dim" />
-              ) : null}
-            </div>
-          </div>
-        ) : null}
-
-        {/* Route targets */}
-        {targetsShown.length > 0 ? (
-          <div>
-            <SectionLabel>Route targets</SectionLabel>
-            <div className="flex flex-wrap gap-[7px]">
-              {targetsShown.map((city, i) => (
-                <Chip key={`${city}-${i}`} index={i + 1} label={city} />
-              ))}
-              {targetsOverflow > 0 ? (
-                <Chip label={`+${targetsOverflow}`} className="text-dim" />
-              ) : null}
-            </div>
-          </div>
-        ) : null}
-
-        {/* Planning notes */}
-        {hasNotes ? (
-          <div>
-            <SectionLabel>Planning notes</SectionLabel>
-            <div className="flex flex-col gap-2">
-              {day.warnings.map((warning, i) => (
-                <NoteCard key={`warn-${i}`} tone="warn" icon={<AlertIcon size={14} />}>
-                  {warning}
-                </NoteCard>
-              ))}
-              {day.advisories.map((advisory, i) => (
-                <NoteCard
-                  key={`adv-${i}`}
-                  tone={advisoryTone(advisory)}
-                  icon={
-                    advisory.severity === 'high' ? (
-                      <AlertIcon size={14} />
-                    ) : (
-                      <InfoIcon size={14} />
-                    )
-                  }
-                >
-                  {advisory.message}
-                </NoteCard>
-              ))}
-            </div>
-          </div>
-        ) : null}
-
-        {/* Supercharger sequence */}
-        {day.visits.length > 0 ? (
-          <div>
-            <SectionLabel>Supercharger sequence</SectionLabel>
-            <div className="flex flex-col gap-2">
-              {visitsShown.map((visit) => (
-                <VisitCard key={`${visit.sequence}-${visit.station.id}`} visit={visit} />
-              ))}
-            </div>
-            {hiddenVisitCount > 0 ? (
-              <button
-                type="button"
-                onClick={() => setShowAllVisits(true)}
-                className="mt-2 flex min-h-11 w-full items-center justify-center rounded-xl border border-edge bg-panel2 px-3 text-[13px] font-medium text-ink transition hover:brightness-95"
+      <div className="min-h-0 flex-1 overflow-y-auto py-2">
+        {notes.length > 0 && (
+          <div className="flex flex-col gap-2 px-[18px] py-2">
+            {notes.map((note, i) => (
+              <div
+                key={i}
+                className={cx(
+                  'rounded-[10px] px-3 py-2 text-[11.5px] leading-[1.45]',
+                  note.tone === 'warn' ? 'text-warn' : 'text-info',
+                )}
+                style={{
+                  background: `color-mix(in srgb, ${
+                    note.tone === 'warn' ? 'var(--warn-tx)' : 'var(--info-tx)'
+                  } 12%, transparent)`,
+                }}
               >
-                Show all {day.visits.length}
-              </button>
-            ) : null}
+                {note.message}
+              </div>
+            ))}
           </div>
-        ) : null}
+        )}
+
+        {places.length > 0 && (
+          <div className="flex flex-wrap gap-[7px] px-[18px] py-2">
+            {places.map((place) => (
+              <span
+                key={place.id}
+                title={`${place.summary} Scenery ${place.sceneryScore}/100.`}
+                className="inline-flex max-w-full items-center gap-[7px] rounded-[9px] border border-edge bg-chip px-2.5 py-1 text-[11.5px] text-ink"
+              >
+                <span className="font-mono text-[9px] uppercase tracking-[0.05em] text-faint">
+                  {place.type}
+                </span>
+                <span className="min-w-0 truncate">{place.label}</span>
+                <span className="font-mono font-semibold text-accent2">{place.rating}</span>
+              </span>
+            ))}
+          </div>
+        )}
+
+        {visitsShown.map((visit) => (
+          <VisitRow key={`${visit.sequence}-${visit.station.id}`} visit={visit} route={route} />
+        ))}
+        {hiddenCount > 0 && (
+          <div className="px-[18px] py-3">
+            <button
+              type="button"
+              onClick={() => setShowAll(true)}
+              className="flex min-h-11 w-full cursor-pointer items-center justify-center rounded-xl border border-edge bg-panel2 px-3 text-[13px] font-medium text-ink transition hover:brightness-95"
+            >
+              Show all {day.visits.length} stops
+            </button>
+          </div>
+        )}
       </div>
     </>
   )
 }
 
-function PlaceRatingPill({ place }: { place: PlaceRating }) {
+function VisitRow({ visit, route }: { visit: RouteStationVisit; route?: RoutePlan }) {
+  const dotColor = visit.connectorStop ? 'var(--amber)' : route?.color ?? 'var(--accent)'
   return (
-    <span
-      className="inline-flex max-w-full items-center gap-[7px] rounded-[9px] border border-edge bg-panel2 px-3 py-1.5 text-[12.5px] text-ink"
-      title={`${place.summary} Scenery ${place.sceneryScore}/100.`}
-    >
-      <span className="font-mono text-[9.5px] uppercase tracking-[0.05em] text-faint">
-        {place.type}
-      </span>
-      <span className="min-w-0 truncate">{place.label}</span>
-      <span className="font-mono font-semibold text-accent2">{place.rating}</span>
-    </span>
-  )
-}
-
-function SectionLabel({ children }: { children: ReactNode }) {
-  return (
-    <div className="mb-2.5 font-mono text-[10.5px] uppercase tracking-[0.05em] text-faint">
-      {children}
-    </div>
-  )
-}
-
-function NoteCard({
-  tone,
-  icon,
-  children,
-}: {
-  tone: 'warn' | 'info'
-  icon: ReactNode
-  children: ReactNode
-}) {
-  const toneClass =
-    tone === 'warn'
-      ? 'bg-warn-bg border-warn-bd text-warn'
-      : 'bg-info-bg border-info-bd text-info'
-  return (
-    <div className={cx('flex items-start gap-2.5 rounded-xl border px-3.5 py-3', toneClass)}>
-      <span className="mt-px flex-none" aria-hidden>
-        {icon}
-      </span>
-      <span className="min-w-0 text-[12.5px] leading-snug text-ink">{children}</span>
-    </div>
-  )
-}
-
-function VisitCard({ visit }: { visit: RouteStationVisit }) {
-  const { station } = visit
-  return (
-    <div className="flex items-center gap-3 rounded-xl border border-edge bg-panel2 px-3 py-2.5">
-      <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-chip font-mono text-[11px] font-semibold text-ink">
-        {visit.sequence}
-      </span>
+    <div className="flex gap-3 border-b border-edge px-[18px] py-[11px] last:border-b-0">
+      <div className="flex flex-none flex-col items-center pt-0.5" aria-hidden>
+        <span
+          className="h-[9px] w-[9px] rounded-full border-2 border-panel"
+          style={{ background: dotColor }}
+        />
+        <span className="mt-0.5 w-[2px] flex-1 bg-edge" />
+      </div>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-[13px] font-medium text-ink">{station.name}</div>
-        <div className="truncate font-mono text-[11px] text-faint">
-          {station.address.city}, {station.address.state}
+        <div className="text-[13px] font-semibold text-ink">
+          {visit.sequence}. {visit.station.name}
         </div>
-      </div>
-      <div className="flex flex-none items-center gap-2">
-        {visit.connectorStop ? (
-          <Pill tone="info" className="px-2 py-0.5 text-[10.5px]">
-            transfer
-          </Pill>
-        ) : null}
-        {visit.rangeWarning ? (
-          <Pill tone="warn" className="px-2 py-0.5 text-[10.5px]">
-            range
-          </Pill>
-        ) : null}
-        <div className="flex flex-col items-end gap-px font-mono text-[10.5px] leading-tight text-dim">
-          <span>{Math.round(visit.legMiles)} mi</span>
-          <span>{visit.driveHours.toFixed(1)}h</span>
-          <span>{Math.round(visit.stopMinutes)}m</span>
+        <div className="mt-[3px] font-mono text-[10.5px] text-faint">
+          Day {visit.day} · {Math.round(visit.legMiles)} mi leg · {Math.round(visit.stopMinutes)}{' '}
+          min · {visit.station.address.city}, {visit.station.address.state}
+          {visit.connectorStop ? ' · transfer connector' : ''}
         </div>
+        {visit.rangeWarning && (
+          <div className="mt-[5px] text-[11px] text-warn">
+            ⚠ Leg exceeds practical range — aux charge suggested
+          </div>
+        )}
       </div>
     </div>
   )
-}
-
-function advisoryTone(advisory: PlannerAdvisory): 'warn' | 'info' {
-  return advisory.severity === 'high' ? 'warn' : 'info'
-}
-
-function dedupeAdjacent(values: string[]): string[] {
-  const out: string[] = []
-  for (const value of values) {
-    if (out[out.length - 1] !== value) out.push(value)
-  }
-  return out
 }

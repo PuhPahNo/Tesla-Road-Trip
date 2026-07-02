@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  [data-theme='dash']{--app:#0a0d12;--canvas:#080b10;--panel:#11151c;--panel2:#171c25;--edge:rgba(255,255,255,.08);--edge2:rgba(255,255,255,.16);--ink:#e9edf2;--dim:#8b929e;--faint:#5f6671;--accent:#ff453a;--accent2:#0bd5d0;--on-accent:#fff;--glass:rgba(15,19,26,.72);--glass2:rgba(23,28,37,.82);--glassbd:rgba(255,255,255,.10);--shadow:0 16px 50px rgba(0,0,0,.6);--warn:#ffc15e;--good:#5ce6e1;--info:#5bc8f0;--amber:#f5a623;--chip:rgba(255,255,255,.06)}
+  [data-theme='light']{--app:#ffffff;--canvas:#e9edee;--panel:#ffffff;--panel2:#f5f6f8;--edge:#e7e8ec;--edge2:#d3d6dd;--ink:#171a20;--dim:#5c5e62;--faint:#9296a0;--accent:#e82127;--accent2:#0f7d6b;--on-accent:#fff;--glass:rgba(255,255,255,.80);--glass2:rgba(246,247,249,.92);--glassbd:rgba(20,22,28,.10);--shadow:0 14px 38px rgba(20,22,28,.16);--warn:#9a5b15;--good:#1c6b3f;--info:#2b5fb3;--amber:#c2740b;--chip:rgba(20,22,28,.05)}
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-thumb{background:var(--edge2);border-radius:10px}
+  ::-webkit-scrollbar-track{background:transparent}
+  .leaflet-container{background:var(--canvas);font-family:'Helvetica Neue',Helvetica,Arial,sans-serif}
+  .leaflet-control-attribution{background:transparent!important;color:var(--faint)!important;font-size:9px}
+  .leaflet-control-attribution a{color:var(--dim)!important}
+  .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--panel);color:var(--ink);box-shadow:var(--shadow);border:1px solid var(--edge2)}
+  .leaflet-popup-content-wrapper{border-radius:12px}
+  .leaflet-popup-content{font-size:12.5px;line-height:1.5;margin:11px 13px;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif}
+  .leaflet-tooltip.qtt{background:var(--panel);color:var(--ink);border:1px solid var(--edge2);box-shadow:var(--shadow);border-radius:7px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;padding:4px 7px}
+  .leaflet-tooltip.qtt::before{display:none}
+  @keyframes qspin{to{transform:rotate(360deg)}}
+  @keyframes qpulse{0%,100%{opacity:.35}50%{opacity:1}}
+  @keyframes qfade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  @keyframes qpop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+  @keyframes qdraw{from{stroke-dashoffset:var(--dash)}to{stroke-dashoffset:0}}
+  @keyframes qsheet{from{transform:translateX(110%)}to{transform:translateX(0)}}
+</style>
+</helmet>
+<div data-theme="{{ theme }}" data-screen-label="Supercharger Quest Planner" style="position:fixed;inset:0;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:var(--ink);background:var(--app);overflow:hidden;-webkit-font-smoothing:antialiased">
+
+  <div id="qmap" style="position:fixed;inset:0;z-index:0;background:var(--canvas)"></div>
+
+  <sc-if value="{{ notReady }}" hint-placeholder-val="{{ true }}">
+    <div style="position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;background:var(--app)">
+      <div style="width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;background:var(--accent);color:#fff;box-shadow:0 0 40px color-mix(in srgb,var(--accent) 55%,transparent);animation:qpulse 1.4s ease infinite">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:15px;font-weight:600;letter-spacing:-.01em">Supercharger Quest Planner</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--faint);margin-top:6px">Charting the 2026 Americas competition…</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ ready }}">
+  <div>
+
+    <!-- ============ SHARED TOP CHROME (floating islands) ============ -->
+    <div style="position:fixed;top:16px;left:16px;z-index:40;display:flex;align-items:center;gap:10px;height:48px;padding:0 6px 0 12px;border-radius:13px;background:var(--glass);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--glassbd);box-shadow:var(--shadow)">
+      <div style="width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:var(--accent);color:#fff;flex:none">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg>
+      </div>
+      <div style="line-height:1.05;padding-right:4px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:.14em;color:var(--faint);text-transform:uppercase">2026 · Americas</div>
+        <div style="font-size:13px;font-weight:600;letter-spacing:-.01em;white-space:nowrap">Quest Planner</div>
+      </div>
+      <button onClick="{{ openRoutePicker }}" style="display:flex;align-items:center;gap:8px;height:34px;max-width:210px;padding:0 11px;border-radius:9px;border:1px solid var(--glassbd);background:var(--chip);color:var(--ink);cursor:pointer;font:inherit">
+        <span style="width:8px;height:8px;border-radius:50%;flex:none;background:{{ selected.color }}"></span>
+        <span style="font-size:12.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ selected.name }}</span>
+        <svg viewBox="0 0 24 24" width="11" height="11" style="opacity:.5;flex:none" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+    </div>
+
+    <div style="position:fixed;top:16px;right:16px;z-index:40;display:flex;align-items:center;gap:6px;height:48px;padding:0 7px;border-radius:13px;background:var(--glass);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--glassbd);box-shadow:var(--shadow)">
+      <sc-if value="{{ activeIsA }}">
+        <button onClick="{{ openCopilot }}" style="display:flex;align-items:center;gap:8px;height:34px;padding:0 12px 0 10px;border-radius:9px;border:1px solid var(--glassbd);background:var(--chip);color:var(--ink);cursor:pointer;font:inherit">
+          <span style="color:var(--accent2);display:flex"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2l1.7 5.3L19 9l-5.3 1.7L12 16l-1.7-5.3L5 9l5.3-1.7z"/></svg></span>
+          <span style="font-size:12px;font-weight:500">Ask</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--faint);border:1px solid var(--glassbd);border-radius:5px;padding:2px 5px">⌘K</span>
+        </button>
+      </sc-if>
+      <button onClick="{{ refresh }}" title="Refresh from Supercharge.info" style="width:34px;height:34px;border-radius:9px;border:1px solid transparent;background:transparent;color:var(--dim);cursor:pointer;display:flex;align-items:center;justify-content:center">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" style="{{ refreshSpin }}"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg>
+      </button>
+      <button onClick="{{ toggleTheme }}" title="Toggle theme" style="width:34px;height:34px;border-radius:9px;border:1px solid transparent;background:transparent;color:var(--dim);cursor:pointer;display:flex;align-items:center;justify-content:center">
+        <span style="display:flex" dangerouslySetInnerHTML="{{ themeIcon }}"></span>
+      </button>
+      <button onClick="{{ openConfig }}" style="display:flex;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--glassbd);background:var(--chip);color:var(--ink);cursor:pointer;font:inherit">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h11M4 12h16M4 18h9"/><circle cx="18" cy="6" r="2.2"/><circle cx="9" cy="12" r="2.2"/><circle cx="16" cy="18" r="2.2"/></svg>
+        <span style="font-size:12px;font-weight:500">Configure</span>
+      </button>
+    </div>
+
+    <!-- shared zoom control -->
+    <div style="position:fixed;right:16px;bottom:16px;z-index:35;display:flex;flex-direction:column;border-radius:11px;overflow:hidden;background:var(--glass);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--glassbd);box-shadow:var(--shadow)">
+      <button onClick="{{ zoomIn }}" style="width:38px;height:38px;border:none;border-bottom:1px solid var(--glassbd);background:transparent;color:var(--ink);cursor:pointer;font-size:19px">+</button>
+      <button onClick="{{ zoomOut }}" style="width:38px;height:38px;border:none;background:transparent;color:var(--ink);cursor:pointer;font-size:19px">−</button>
+    </div>
+
+    <!-- ================= OPTION A · COCKPIT ================= -->
+    <sc-if value="{{ activeIsA }}">
+    <div>
+      <!-- left icon rail -->
+      <div style="position:fixed;left:16px;top:80px;z-index:38;display:flex;flex-direction:column;gap:4px;padding:6px;border-radius:13px;background:var(--glass);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--glassbd);box-shadow:var(--shadow)">
+        <sc-for list="{{ railItems }}" as="r" hint-placeholder-count="5">
+          <button onClick="{{ r.onClick }}" title="{{ r.label }}" style="{{ r.style }}">
+            <span style="display:flex" dangerouslySetInnerHTML="{{ r.iconHtml }}"></span>
+          </button>
+        </sc-for>
+      </div>
+
+      <!-- adaptive glass panel -->
+      <sc-if value="{{ panelOpen }}">
+      <div style="position:fixed;left:80px;top:80px;bottom:150px;width:344px;z-index:37;display:flex;flex-direction:column;border-radius:15px;overflow:hidden;background:var(--glass);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border:1px solid var(--glassbd);box-shadow:var(--shadow);animation:qfade .2s ease">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:15px 16px 12px;border-bottom:1px solid var(--edge)">
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)">{{ panel.kicker }}</div>
+            <div style="font-size:15px;font-weight:600;margin-top:3px">{{ panel.title }}</div>
+          </div>
+          <button onClick="{{ closePanel }}" style="width:28px;height:28px;border-radius:8px;border:1px solid var(--edge);background:transparent;color:var(--dim);cursor:pointer;display:flex;align-items:center;justify-content:center">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
+        </div>
+        <div style="flex:1;min-height:0;overflow-y:auto;padding:14px 16px 18px">
+
+          <!-- OVERVIEW -->
+          <sc-if value="{{ panelIsOverview }}">
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <sc-for list="{{ heroStats }}" as="h" hint-placeholder-count="4">
+                <div style="padding:12px;border-radius:11px;background:var(--chip);border:1px solid var(--edge)">
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)">{{ h.label }}</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:23px;font-weight:600;margin-top:6px;letter-spacing:-.02em">{{ h.value }}<span style="font-size:11px;color:var(--dim);margin-left:3px">{{ h.unit }}</span></div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="padding:13px;border-radius:11px;border:1px solid color-mix(in srgb,var(--warn) 38%,transparent);background:color-mix(in srgb,var(--warn) 12%,transparent)">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--warn)">{{ feas.verdictTitle }}</div>
+              <div style="font-size:12.5px;line-height:1.5;color:var(--dim);margin-top:7px">{{ feas.explanation }}</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--faint);margin-top:9px">{{ feas.total }} sites · {{ feas.perDay }}/day needed</div>
+            </div>
+            <sc-for list="{{ selected.advisories }}" as="a" hint-placeholder-count="2">
+              <div style="display:flex;gap:9px;padding:11px;border-radius:10px;background:var(--chip);border:1px solid var(--edge)">
+                <span style="color:var(--info);flex:none;margin-top:1px"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.5"/></svg></span>
+                <span style="font-size:12px;line-height:1.45;color:var(--dim)">{{ a.message }}</span>
+              </div>
+            </sc-for>
+          </div>
+          </sc-if>
+
+          <!-- DAYS -->
+          <sc-if value="{{ panelIsDays }}">
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <sc-for list="{{ days }}" as="d" hint-placeholder-count="6">
+              <button onClick="{{ d.onOpen }}" onMouseEnter="{{ d.onHover }}" onMouseLeave="{{ clearHover }}" style="{{ d.rowStyle }}">
+                <div style="display:flex;align-items:center;gap:10px">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;width:34px;color:var(--ink)">D{{ d.n }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:{{ d.scoreColor }};width:30px">{{ d.score }}</span>
+                  <span style="font-size:12px;color:var(--dim);flex:1;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.cityLabel }}</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;margin-top:6px;padding-left:44px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--faint)">
+                  <span>{{ d.sites }} sites</span><span>{{ d.miles }} mi</span><span>{{ d.drive }}h</span>
+                  <sc-if value="{{ d.long }}"><span style="color:var(--amber)">long day</span></sc-if>
+                </div>
+              </button>
+            </sc-for>
+          </div>
+          </sc-if>
+
+          <!-- COVERAGE -->
+          <sc-if value="{{ panelIsCoverage }}">
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <sc-for list="{{ coverage }}" as="c" hint-placeholder-count="8">
+              <button onClick="{{ c.onClick }}" onMouseEnter="{{ c.onHover }}" onMouseLeave="{{ clearHoverState }}" style="{{ c.rowStyle }}">
+                <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:6px">
+                  <span style="font-size:12.5px;font-weight:600">{{ c.name }} <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:400;color:var(--faint)">{{ c.sitesLabel }}</span></span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink)">{{ c.pct }}%</span>
+                </div>
+                <div style="height:5px;border-radius:3px;background:var(--chip);overflow:hidden"><div style="height:100%;border-radius:3px;background:var(--accent2);width:{{ c.barPct }}"></div></div>
+              </button>
+            </sc-for>
+          </div>
+          </sc-if>
+
+          <!-- STATS -->
+          <sc-if value="{{ panelIsStats }}">
+          <div style="display:flex;flex-direction:column;gap:13px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div style="padding:12px;border-radius:11px;background:var(--chip);border:1px solid var(--edge)"><div style="font-family:'IBM Plex Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint)">Drive</div><div style="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:600;margin-top:5px">{{ stats.driveH }}<span style="font-size:11px;color:var(--dim)">h</span></div></div>
+              <div style="padding:12px;border-radius:11px;background:var(--chip);border:1px solid var(--edge)"><div style="font-family:'IBM Plex Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint)">Charge</div><div style="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:600;margin-top:5px">{{ stats.chargeH }}<span style="font-size:11px;color:var(--dim)">h</span></div></div>
+            </div>
+            <div style="padding:13px;border-radius:11px;background:var(--chip);border:1px solid var(--edge)">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px"><span style="font-size:12.5px;font-weight:600">Time split</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--faint)">{{ stats.activeH }}h active</span></div>
+              <div style="height:8px;border-radius:5px;overflow:hidden;display:flex"><div style="background:var(--accent);width:{{ stats.drivePct }}"></div><div style="background:var(--accent2);width:{{ stats.chargePct }}"></div></div>
+              <div style="display:flex;justify-content:space-between;margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--faint)"><span style="color:var(--accent)">Driving {{ stats.drivePct }}</span><span style="color:var(--accent2)">Charging {{ stats.chargePct }}</span></div>
+            </div>
+            <div style="padding:13px;border-radius:11px;background:var(--chip);border:1px solid var(--edge)">
+              <div style="font-size:12.5px;font-weight:600;margin-bottom:10px">State leaders</div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <sc-for list="{{ leaders }}" as="l" hint-placeholder-count="5">
+                  <div style="display:grid;grid-template-columns:32px 1fr 30px;align-items:center;gap:9px">
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600">{{ l.code }}</span>
+                    <div style="height:6px;border-radius:4px;background:var(--chip);overflow:hidden"><div style="height:100%;background:var(--accent2);width:{{ l.barPct }}"></div></div>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--dim);text-align:right">{{ l.val }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+          </sc-if>
+
+          <!-- GUARDRAILS -->
+          <sc-if value="{{ panelIsStatus }}">
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="padding:13px;border-radius:11px;background:var(--chip);border:1px solid var(--edge)">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--faint)">Station source</div>
+              <div style="font-size:13px;font-weight:600;margin-top:6px">{{ source.count }} filtered open sites</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--faint);margin-top:5px;line-height:1.5">Supercharge.info · fetched {{ source.fetched }}</div>
+              <button onClick="{{ refresh }}" style="margin-top:11px;width:100%;height:36px;border-radius:9px;border:1px solid var(--edge);background:var(--panel2);color:var(--ink);cursor:pointer;font:inherit;font-size:12.5px;display:flex;align-items:center;justify-content:center;gap:8px"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="{{ refreshSpin }}"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg>Refresh stations</button>
+            </div>
+            <div style="padding:13px;border-radius:11px;background:var(--chip);border:1px solid var(--edge)">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--faint)">Rule guardrails</div>
+              <div style="font-size:13px;font-weight:600;margin-top:6px">Passport deadline Nov 30 2026</div>
+              <div style="font-size:12px;line-height:1.5;color:var(--dim);margin-top:7px">No minimum charge duration is stated in the contest rules. Stop time is a configurable assumption.</div>
+              <div style="margin-top:10px;padding:9px 11px;border-radius:9px;background:color-mix(in srgb,var(--info) 12%,transparent);font-size:11.5px;color:var(--dim);line-height:1.45">{{ roadStatus }}</div>
+            </div>
+          </div>
+          </sc-if>
+
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- FOCUS -->
+      <sc-if value="{{ dsFocus }}">
+      <div style="position:fixed;left:50%;transform:translateX(-50%);bottom:78px;z-index:37;display:flex;flex-direction:column;gap:9px;align-items:center">
+        <div style="display:flex;gap:4px;align-items:center;padding:7px 11px;border-radius:999px;background:var(--glass);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--glassbd);box-shadow:var(--shadow);max-width:60vw;overflow-x:auto">
+          <sc-for list="{{ focusDots }}" as="dot" hint-placeholder-count="12"><button onClick="{{ dot.onClick }}" style="{{ dot.style }}"></button></sc-for>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;height:58px;padding:0 8px 0 14px;border-radius:15px;background:var(--glass);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--glassbd);box-shadow:var(--shadow)">
+          <button onClick="{{ prevDay }}" style="width:34px;height:34px;border-radius:9px;border:1px solid var(--edge);background:transparent;color:var(--ink);cursor:pointer;display:flex;align-items:center;justify-content:center;flex:none"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 6l-6 6 6 6"/></svg></button>
+          <div onClick="{{ curDay.onOpen }}" style="cursor:pointer;text-align:center;min-width:236px">
+            <div style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="font-family:'IBM Plex Mono',monospace;color:var(--faint);font-size:11px;margin-right:8px">DAY {{ curDay.n }}/{{ curDay.total }}</span>{{ curDay.title }}</div>
+            <div style="display:flex;gap:12px;justify-content:center;margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--faint)"><span style="color:{{ curDay.scoreColor }}">★ {{ curDay.score }}</span><span>{{ curDay.sites }} sites</span><span>{{ curDay.miles }} mi</span><span>{{ curDay.drive }}h</span></div>
+          </div>
+          <button onClick="{{ nextDay }}" style="width:34px;height:34px;border-radius:9px;border:1px solid var(--edge);background:transparent;color:var(--ink);cursor:pointer;display:flex;align-items:center;justify-content:center;flex:none"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 6l6 6-6 6"/></svg></button>
+          <button onClick="{{ togglePlay }}" style="width:34px;height:34px;border-radius:9px;border:none;background:var(--accent);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex:none"><span dangerouslySetInnerHTML="{{ playIcon }}" style="display:flex"></span></button><span style="width:1px;height:26px;background:var(--edge);flex:none;margin:0 3px"></span><button onClick="{{ openCalendar }}" title="Open trip calendar" style="height:34px;padding:0 13px;border-radius:9px;border:1px solid var(--edge);background:var(--chip);color:var(--ink);cursor:pointer;display:flex;align-items:center;gap:7px;flex:none;font:inherit;font-size:12px;font-weight:500"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"></rect><path d="M3 9h18M8 2v4M16 2v4"></path></svg>Calendar</button>
+        </div>
+      </div>
+      </sc-if>
+    </div>
+    </sc-if>
+
+    <!-- ================= SHARED OVERLAYS ================= -->
+    <!-- trip calendar modal -->
+    <sc-if value="{{ calendarOpen }}">
+    <div onClick="{{ closeCalendar }}" style="position:fixed;inset:0;z-index:86;background:rgba(3,5,8,.55);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:30px">
+      <div onClick="{{ stop }}" style="width:min(1060px,95vw);max-height:88vh;display:flex;flex-direction:column;border-radius:18px;overflow:hidden;background:var(--panel);border:1px solid var(--edge2);box-shadow:var(--shadow);animation:qpop .2s ease">
+        <div style="padding:18px 22px;border-bottom:1px solid var(--edge);display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)">Trip calendar · {{ modeLabel }}</div>
+            <div style="font-size:19px;font-weight:600;margin-top:4px">{{ selected.name }}</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--faint);margin-top:5px">{{ selected.days }} days · {{ selected.sites }} sites · start Chattanooga, TN 37405</div>
+          </div>
+          <button onClick="{{ closeCalendar }}" style="width:32px;height:32px;flex:none;border-radius:9px;border:1px solid var(--edge);background:transparent;color:var(--dim);cursor:pointer;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+        </div>
+        <div style="flex:1;min-height:0;overflow-y:auto;padding:18px 22px;display:flex;flex-direction:column;gap:18px">
+          <sc-for list="{{ calendarWeeks }}" as="w" hint-placeholder-count="3">
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:9px">{{ w.label }}</div>
+              <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:9px">
+                <sc-for list="{{ w.days }}" as="d" hint-placeholder-count="7">
+                  <button onClick="{{ d.onClick }}" style="{{ d.tileStyle }}">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:6px"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600">Day {{ d.n }}</span><span style="font-size:10px;color:var(--amber)">{{ d.starsFull }}<span style="color:var(--faint)">{{ d.starsEmpty }}</span></span></div>
+                    <div style="font-size:12px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.cities }}</div>
+                    <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--faint)">{{ d.sites }} sites · {{ d.miles }} mi · {{ d.drive }}h</div>
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="padding:12px 22px;border-top:1px solid var(--edge);display:flex;align-items:center;gap:16px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--faint)">
+          <span style="display:flex;align-items:center;gap:6px"><span style="width:11px;height:11px;border-radius:3px;background:color-mix(in srgb,var(--good) 30%,var(--panel2));border:1px solid var(--edge)"></span>Standout</span>
+          <span style="display:flex;align-items:center;gap:6px"><span style="width:11px;height:11px;border-radius:3px;background:color-mix(in srgb,var(--warn) 30%,var(--panel2));border:1px solid var(--edge)"></span>Transit-heavy</span>
+          <span style="display:flex;align-items:center;gap:6px"><span style="width:11px;height:11px;border-radius:3px;border:1px solid color-mix(in srgb,var(--amber) 55%,var(--edge))"></span>Long-day boost</span>
+          <span style="flex:1"></span>
+          <span>Click a day to open its full detail</span>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- route picker -->
+    <sc-if value="{{ routePickerOpen }}">
+    <div onClick="{{ closeRoutePicker }}" style="position:fixed;inset:0;z-index:80;background:rgba(3,5,8,.5);backdrop-filter:blur(3px);display:flex;align-items:flex-start;justify-content:center;padding-top:88px">
+      <div onClick="{{ stop }}" style="width:min(560px,92vw);max-height:76vh;overflow:hidden;display:flex;flex-direction:column;border-radius:16px;background:var(--panel);border:1px solid var(--edge2);box-shadow:var(--shadow);animation:qpop .2s ease">
+        <div style="padding:16px 18px;border-bottom:1px solid var(--edge)"><div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)">Route candidates · {{ modeLabel }}</div><div style="font-size:16px;font-weight:600;margin-top:3px">Choose a route</div></div>
+        <div style="padding:12px;overflow-y:auto;display:flex;flex-direction:column;gap:8px">
+          <sc-for list="{{ routes }}" as="r" hint-placeholder-count="3">
+            <button onClick="{{ r.onSelect }}" style="{{ r.pickStyle }}">
+              <span style="width:10px;align-self:stretch;border-radius:5px;flex:none;background:{{ r.color }}"></span>
+              <span style="flex:1;min-width:0;text-align:left">
+                <span style="display:block;font-size:14px;font-weight:600">{{ r.name }}</span>
+                <span style="display:block;font-size:12px;color:var(--dim);margin-top:2px">{{ r.strategy }}</span>
+                <span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--faint);margin-top:5px">{{ r.sites }} sites · {{ r.days }} days · {{ r.miles }} mi · {{ r.drive }}h/day</span>
+              </span>
+              <sc-if value="{{ r.active }}"><span style="color:var(--accent);flex:none"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12l5 5 9-11"/></svg></span></sc-if>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- copilot (positioned per option) -->
+    <sc-if value="{{ copilotShown }}">
+    <div style="{{ copilotWrapStyle }}">
+      <div style="display:flex;align-items:center;gap:10px;padding:13px 14px;border-bottom:1px solid var(--edge)">
+        <span style="width:30px;height:30px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--chip);border:1px solid var(--edge);color:var(--accent2)"><svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M12 2l1.7 5.3L19 9l-5.3 1.7L12 16l-1.7-5.3L5 9l5.3-1.7z"/></svg></span>
+        <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:600">{{ copilotTitle }}</div><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--faint)">{{ copilotSubtitle }}</div></div>
+        <sc-if value="{{ copilotClosable }}"><button onClick="{{ closeCopilot }}" style="width:28px;height:28px;border-radius:8px;border:1px solid var(--edge);background:transparent;color:var(--dim);cursor:pointer;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 6l12 12M18 6L6 18"/></svg></button></sc-if>
+      </div>
+      <div id="copilot-scroll" style="flex:1;min-height:0;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px">
+        <sc-for list="{{ copilotMessages }}" as="m" hint-placeholder-count="2">
+          <div style="{{ m.wrapStyle }}">
+            <div style="{{ m.bubbleStyle }}">
+              <span>{{ m.text }}</span>
+              <sc-if value="{{ m.hasActions }}"><div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--edge);font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--faint);line-height:1.6"><sc-for list="{{ m.actions }}" as="act" hint-placeholder-count="2"><div>› {{ act }}</div></sc-for></div></sc-if>
+            </div>
+          </div>
+        </sc-for>
+        <sc-if value="{{ copilotSending }}"><div style="display:flex"><div style="padding:9px 12px;border-radius:13px 13px 13px 4px;border:1px solid var(--edge);background:var(--panel2);font-size:12.5px;color:var(--dim);display:flex;align-items:center;gap:8px"><span style="width:7px;height:7px;border-radius:50%;background:var(--accent2);animation:qpulse 1s ease infinite"></span>Working with the planner…</div></div></sc-if>
+      </div>
+      <div style="padding:11px 12px;border-top:1px solid var(--edge);display:flex;flex-direction:column;gap:9px">
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          <sc-for list="{{ suggestions }}" as="s" hint-placeholder-count="5">
+            <button onClick="{{ s.onClick }}" style="border:1px solid var(--edge);background:var(--chip);color:var(--dim);border-radius:999px;padding:5px 10px;font:inherit;font-size:11px;cursor:pointer">{{ s.label }}</button>
+          </sc-for>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;border:1px solid var(--edge);background:var(--panel2);border-radius:11px;padding:5px 6px 5px 12px">
+          <input value="{{ copilotInput }}" onInput="{{ onCopilotInput }}" onKeyDown="{{ onCopilotKey }}" placeholder="Ask the copilot to reshape the route…" style="flex:1;min-width:0;border:none;background:transparent;color:var(--ink);outline:none;font:inherit;font-size:13px"/>
+          <button onClick="{{ sendCopilot }}" style="width:34px;height:34px;flex:none;border-radius:9px;border:none;background:var(--accent);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M3 11l18-8-8 18-2-7-8-3z"/></svg></button>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- day detail -->
+    <sc-if value="{{ dayDetailOpen }}">
+    <div onClick="{{ closeDay }}" style="position:fixed;inset:0;z-index:82;background:rgba(3,5,8,.5);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:24px">
+      <div onClick="{{ stop }}" style="width:min(600px,94vw);max-height:82vh;overflow:hidden;display:flex;flex-direction:column;border-radius:16px;background:var(--panel);border:1px solid var(--edge2);box-shadow:var(--shadow);animation:qpop .2s ease">
+        <div style="padding:16px 18px;border-bottom:1px solid var(--edge);display:flex;justify-content:space-between;align-items:flex-start">
+          <div><div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)">Day {{ dayDetail.n }} · rating {{ dayDetail.score }}/100</div><div style="font-size:16px;font-weight:600;margin-top:4px">{{ dayDetail.title }}</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--faint);margin-top:5px">{{ dayDetail.miles }} mi · {{ dayDetail.drive }}h drive · {{ dayDetail.stop }}m charging · {{ dayDetail.sites }} sites</div></div>
+          <button onClick="{{ closeDay }}" style="width:28px;height:28px;border-radius:8px;border:1px solid var(--edge);background:transparent;color:var(--dim);cursor:pointer;display:flex;align-items:center;justify-content:center;flex:none"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        </div>
+        <div style="flex:1;min-height:0;overflow-y:auto;padding:8px 0">
+          <sc-for list="{{ dayDetail.stops }}" as="s" hint-placeholder-count="5">
+            <div style="display:flex;gap:12px;padding:11px 18px;border-bottom:1px solid var(--edge)">
+              <div style="display:flex;flex-direction:column;align-items:center;flex:none;padding-top:2px"><span style="width:9px;height:9px;border-radius:50%;background:{{ s.dot }};border:2px solid var(--panel)"></span><span style="flex:1;width:2px;background:var(--edge);margin-top:2px"></span></div>
+              <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">{{ s.seq }}. {{ s.name }}</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--faint);margin-top:3px">{{ s.meta }}</div><sc-if value="{{ s.warn }}"><div style="font-size:11px;color:var(--warn);margin-top:5px">⚠ Leg exceeds practical range — aux charge suggested</div></sc-if></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- state detail -->
+    <sc-if value="{{ stateDetailOpen }}">
+    <div onClick="{{ closeState }}" style="position:fixed;inset:0;z-index:82;background:rgba(3,5,8,.5);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:24px">
+      <div onClick="{{ stop }}" style="width:min(440px,94vw);border-radius:16px;background:var(--panel);border:1px solid var(--edge2);box-shadow:var(--shadow);animation:qpop .2s ease;overflow:hidden">
+        <div style="padding:18px;border-bottom:1px solid var(--edge);display:flex;justify-content:space-between;align-items:flex-start">
+          <div><div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)">State coverage</div><div style="font-size:18px;font-weight:600;margin-top:4px">{{ stateDetail.name }}</div></div>
+          <button onClick="{{ closeState }}" style="width:28px;height:28px;border-radius:8px;border:1px solid var(--edge);background:transparent;color:var(--dim);cursor:pointer;display:flex;align-items:center;justify-content:center;flex:none"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        </div>
+        <div style="padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div style="padding:13px;border-radius:11px;background:var(--chip);border:1px solid var(--edge)"><div style="font-family:'IBM Plex Mono',monospace;font-size:9px;text-transform:uppercase;color:var(--faint)">On route</div><div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;margin-top:5px">{{ stateDetail.sites }}</div></div>
+          <div style="padding:13px;border-radius:11px;background:var(--chip);border:1px solid var(--edge)"><div style="font-family:'IBM Plex Mono',monospace;font-size:9px;text-transform:uppercase;color:var(--faint)">Coverage</div><div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;margin-top:5px">{{ stateDetail.pct }}%</div></div>
+          <div style="padding:13px;border-radius:11px;background:var(--chip);border:1px solid var(--edge)"><div style="font-family:'IBM Plex Mono',monospace;font-size:9px;text-transform:uppercase;color:var(--faint)">Total sites</div><div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;margin-top:5px">{{ stateDetail.total }}</div></div>
+          <div style="padding:13px;border-radius:11px;background:var(--chip);border:1px solid var(--edge)"><div style="font-family:'IBM Plex Mono',monospace;font-size:9px;text-transform:uppercase;color:var(--faint)">Miles in state</div><div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;margin-top:5px">{{ stateDetail.miles }}</div></div>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- config slide-over -->
+    <sc-if value="{{ configOpen }}">
+    <div onClick="{{ closeConfig }}" style="position:fixed;inset:0;z-index:84;background:rgba(3,5,8,.5);backdrop-filter:blur(3px)">
+      <div onClick="{{ stop }}" style="position:fixed;top:0;right:0;bottom:0;width:min(420px,94vw);background:var(--panel);border-left:1px solid var(--edge2);box-shadow:var(--shadow);display:flex;flex-direction:column;animation:qsheet .28s cubic-bezier(.22,1,.36,1)">
+        <div style="padding:18px;border-bottom:1px solid var(--edge);display:flex;justify-content:space-between;align-items:center">
+          <div><div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)">Planner config</div><div style="font-size:16px;font-weight:600;margin-top:3px">Tune the optimizer</div></div>
+          <button onClick="{{ closeConfig }}" style="width:30px;height:30px;border-radius:8px;border:1px solid var(--edge);background:transparent;color:var(--dim);cursor:pointer;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        </div>
+        <div style="flex:1;min-height:0;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:18px">
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:9px">Planner mode</div>
+            <div style="display:flex;gap:6px;padding:4px;border-radius:11px;background:var(--panel2);border:1px solid var(--edge)">
+              <sc-for list="{{ modeOptions }}" as="m" hint-placeholder-count="2"><button onClick="{{ m.onClick }}" style="{{ m.style }}">{{ m.label }}</button></sc-for>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <sc-for list="{{ sliders }}" as="s" hint-placeholder-count="6">
+              <div>
+                <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px"><span style="font-size:12.5px;font-weight:500">{{ s.label }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent2)">{{ s.valueLabel }}</span></div>
+                <input type="range" min="{{ s.min }}" max="{{ s.max }}" step="{{ s.step }}" value="{{ s.value }}" onInput="{{ s.onInput }}" style="width:100%;accent-color:var(--accent)"/>
+                <div style="font-size:11px;color:var(--faint);margin-top:5px;line-height:1.4">{{ s.hint }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <sc-for list="{{ toggles }}" as="t" hint-placeholder-count="4">
+              <button onClick="{{ t.onClick }}" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 13px;border-radius:11px;border:1px solid var(--edge);background:var(--panel2);cursor:pointer;font:inherit;text-align:left">
+                <span style="min-width:0"><span style="display:block;font-size:12.5px;font-weight:500;color:var(--ink)">{{ t.label }}</span><span style="display:block;font-size:11px;color:var(--faint);margin-top:2px">{{ t.hint }}</span></span>
+                <span style="{{ t.trackStyle }}"><span style="{{ t.knobStyle }}"></span></span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="padding:14px 18px;border-top:1px solid var(--edge);display:flex;gap:10px">
+          <div style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--faint);align-self:center;line-height:1.4">Start · Chattanooga, TN 37405</div>
+          <button onClick="{{ applyConfig }}" style="height:42px;padding:0 22px;border-radius:11px;border:none;background:var(--accent);color:#fff;font:inherit;font-size:13px;font-weight:600;cursor:pointer">Optimize route</button>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- optimize overlay -->
+    <sc-if value="{{ optimizing }}">
+    <div style="position:fixed;inset:0;z-index:90;background:color-mix(in srgb,var(--app) 78%,transparent);backdrop-filter:blur(6px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px">
+      <div style="width:46px;height:46px;border-radius:50%;border:3px solid var(--edge);border-top-color:var(--accent);animation:qspin .8s linear infinite"></div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dim)">{{ optimizeStep }}</div>
+    </div>
+    </sc-if>
+
+    <!-- toast -->
+    <sc-if value="{{ toastShown }}">
+    <div style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:95;padding:12px 18px;border-radius:11px;background:var(--panel);border:1px solid var(--edge2);box-shadow:var(--shadow);font-size:13px;font-weight:500;animation:qfade .2s ease">{{ toast }}</div>
+    </sc-if>
+
+  </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;}}">
+class Component extends DCLogic {
+  state = {
+    ready:false, theme:'dash', activeOption:'A',
+    routes:[], universe:null, source:null, selectedRouteId:null,
+    panel:'overview', panelOpen:true, dayRailOpen:true,
+    hoveredDayIndex:null, dayDetailIndex:null, stateDetail:null,
+    routePickerOpen:false, configOpen:false,
+    copilotOpen:false, copilotMessages:[{role:'assistant',text:"Hi — I'm your route copilot. I can trim days, maximize unique sites, fix range warnings, or add a detour. Try a chip below."}],
+    copilotInput:'', copilotSending:false,
+    optimizing:false, optimizeStep:'', toast:null,
+    boardMode:'map', atlasTab:'timeline', expandedDay:null, dailyStyle:'focus', curDay:0, playing:false, calendarOpen:false,
+    showAllStations:false,
+    cfg:{ plannerMode:'most_unique_sites', targetStations:650, longestTripDays:60,
+      dailyDriveTargetHours:5, dailyDriveMaxHours:6.5, averageMph:60, practicalRangeMiles:220,
+      distanceChargeStopMinutes:18, longDayOptimization:false, includeCanada:false, includeMexico:false, showAllStations:false },
+  };
+
+  OPTS=[{key:'A',label:'Cockpit',desc:'Glass HUD + ⌘K copilot'},{key:'B',label:'Atlas',desc:'Single itinerary rail'},{key:'C',label:'Quest',desc:'Gamified quest board'}];
+  RAIL=[
+    {k:'overview',label:'Overview',icon:'<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>'},
+    {k:'days',label:'Daily plan',icon:'<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>'},
+    {k:'coverage',label:'Coverage',icon:'<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>'},
+    {k:'stats',label:'Trip stats',icon:'<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>'},
+    {k:'status',label:'Guardrails',icon:'<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/></svg>'},
+  ];
+  SUGG=['Trim a day','Maximize unique stations','Fix range warnings','Add Yellowstone detour','Avoid tolls'];
+  STEPS=['Loading station universe…','Clustering corridor sites…','Solving daily legs…','Balancing drive caps…','Finalizing the day plan…'];
+
+  async componentDidMount(){
+    try{
+      const mod = await import('./plannerData.js');
+      this.base = mod.createDataset();
+      this.CODE_TO_NAME = mod.CODE_TO_NAME;
+      const routes = this.base.routes.filter(r=>r.plannerMode===this.state.cfg.plannerMode);
+      this.setState({ ready:true, routes, universe:this.base.universe, source:this.base.source, selectedRouteId:routes[0].id });
+      document.addEventListener('keydown', this.onKey);
+      this.bootMap();
+    }catch(e){ console.error('data load failed', e); }
+  }
+  componentWillUnmount(){ document.removeEventListener('keydown', this.onKey); this.stopPlay(); if(this.map){this.map.remove();} }
+  onKey=(e)=>{ if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){ e.preventDefault(); this.setState(s=>({copilotOpen:!s.copilotOpen})); } if(e.key==='Escape'){ this.setState({routePickerOpen:false,configOpen:false,dayDetailIndex:null,stateDetail:null,copilotOpen:false}); } };
+
+  /* ---------- map ---------- */
+  mapColors(){ const d=this.state.theme==='dash'; return { d, ink:d?'#e9edf2':'#171a20', node:d?'#0e131a':'#ffffff', faintLine:d?'#3a4150':'#94a3b8', coverage:d?'#0bd5d0':'#0f7d6b', connector:d?'#f5c518':'#c2740b', tile:d?'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png':'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png' }; }
+  bootMap(tries=0){
+    if(!window.L || !document.getElementById('qmap')){ if(tries<80) setTimeout(()=>this.bootMap(tries+1),80); return; }
+    if(this.map) return;
+    const c=this.mapColors();
+    this.map=window.L.map('qmap',{zoomControl:false,attributionControl:true,preferCanvas:true,fadeAnimation:false}).setView([this.base.start.lat,this.base.start.lon],5);
+    this.tileLayer=window.L.tileLayer(c.tile,{subdomains:'abcd',detectRetina:true,attribution:'© OpenStreetMap © CARTO'}).addTo(this.map);
+    fetch('./us-states.json').then(r=>r.json()).then(g=>{ this.states=g; this.drawChoropleth(); }).catch(()=>{});
+    this.stationLayer=window.L.layerGroup().addTo(this.map);
+    this.routeLayer=window.L.layerGroup().addTo(this.map);
+    this.stopLayer=window.L.layerGroup().addTo(this.map);
+    this.dayLayer=window.L.layerGroup().addTo(this.map);
+    window.L.circleMarker([this.base.start.lat,this.base.start.lon],{radius:8,color:c.ink,fillColor:c.node,fillOpacity:1,weight:3}).bindTooltip('Start / end',{className:'qtt',direction:'top'}).addTo(this.map);
+    this.drawStations(); this.drawRoute(true); if(this.state.dailyStyle==='focus') this.highlightDay(this.state.curDay);
+    setTimeout(()=>{ if(this.map){ this.map.invalidateSize(); this.fit(); } },240);
+  }
+  selRoute(){ return this.state.routes.find(r=>r.id===this.state.selectedRouteId)||this.state.routes[0]; }
+  drawStations(){ if(!this.stationLayer)return; this.stationLayer.clearLayers(); if(!this.state.showAllStations)return; const c=this.mapColors(); for(const s of this.base.stations){ window.L.circleMarker([s.position.lat,s.position.lon],{radius:2,color:c.faintLine,fillColor:c.faintLine,fillOpacity:.3,opacity:.28,weight:1}).addTo(this.stationLayer); } }
+  drawRoute(fit){ if(!this.routeLayer)return; const c=this.mapColors(); const r=this.selRoute(); if(!r)return;
+    this.routeLayer.clearLayers(); this.stopLayer.clearLayers();
+    const line=r.routeLine.map(p=>[p.lat,p.lon]);
+    if(c.d) window.L.polyline(line,{color:r.color,opacity:.22,weight:15,lineCap:'round',lineJoin:'round'}).addTo(this.routeLayer);
+    window.L.polyline(line,{color:'#ffffff',opacity:c.d?.85:.9,weight:8,lineCap:'round',lineJoin:'round'}).addTo(this.routeLayer);
+    window.L.polyline(line,{color:r.color,opacity:.95,weight:3.5,lineCap:'round',lineJoin:'round'}).addTo(this.routeLayer);
+    const step=Math.max(1,Math.floor(r.visits.length/300));
+    r.visits.forEach((v,i)=>{ if(i%step!==0 && i!==r.visits.length-1) return; const cs=v.connectorStop; window.L.circleMarker([v.station.position.lat,v.station.position.lon],{radius:cs?3.5:4,color:c.node,fillColor:cs?c.connector:r.color,fillOpacity:.95,weight:1.4}).bindPopup(`<strong>${v.sequence}. ${v.station.name}</strong><br>Day ${v.day} · ${v.legMiles} mi leg · ${v.stopMinutes} min stop<br>${v.station.address.city}, ${v.station.address.state}`).addTo(this.stopLayer); });
+    this.drawChoropleth();
+    if(fit) this.fit();
+  }
+  drawChoropleth(){ if(!this.states||!this.map)return; const c=this.mapColors(); const r=this.selRoute(); const byCode={}; if(r) for(const st of r.stateStats) byCode[st.state]=st;
+    if(this.geo){ this.geo.remove(); } this.layersByCode=new Map();
+    const nameToCode={}; for(const [code,name] of Object.entries(this.CODE_TO_NAME)) nameToCode[name]=code;
+    const styleFor=(code)=>{ const st=byCode[code]; if(!st||st.routeStations===0) return {weight:.5,color:c.coverage,opacity:.12,fill:true,fillColor:c.coverage,fillOpacity:0,interactive:!!st}; const pct=Math.max(0,Math.min(100,st.coveragePct)); return {weight:1,color:c.coverage,opacity:.5,fill:true,fillColor:c.coverage,fillOpacity:.14+(pct/100)*.34,interactive:true}; };
+    this.geo=window.L.geoJSON(this.states,{ style:(f)=>styleFor(nameToCode[f.properties.name]), onEachFeature:(f,layer)=>{ const code=nameToCode[f.properties.name]; const st=byCode[code]; if(!st)return; this.layersByCode.set(code,layer); layer.bindTooltip(st.routeStations>0?`${f.properties.name} · ${st.routeStations}/${st.totalStations} · ${st.coveragePct}%`:`${f.properties.name} · not on route`,{sticky:true,className:'qtt'}); layer.on({mouseover:()=>{layer.setStyle({weight:2.5,opacity:.95,fillOpacity:.34}); layer.bringToFront(); this.hoverState(code);}, mouseout:()=>{layer.setStyle(styleFor(code)); this.hoverState(null);}, click:()=>this.openState(code)}); } }).addTo(this.map);
+    this.geo.bringToBack();
+  }
+  hoverState(code){ /* map-only highlight; panel highlight handled via state if desired */ }
+  fit(){ if(!this.map)return; const r=this.selRoute(); if(!r)return; const line=r.routeLine.map(p=>[p.lat,p.lon]); const o=this.state.activeOption; let tl,br; if(o==='A'){ tl=[this.state.panelOpen?440:96,104]; br=[96,124]; } else if(o==='B'){ tl=[424,100]; br=[70,70]; } else { tl=[70,150]; br=[384,176]; } try{ this.map.fitBounds(line,{paddingTopLeft:tl,paddingBottomRight:br,maxZoom:6,animate:false}); }catch(e){} }
+  highlightDay(idx){ if(!this.dayLayer)return; this.dayLayer.clearLayers(); if(idx==null)return; const c=this.mapColors(); const r=this.selRoute(); const day=r.days[idx]; if(!day||!day.visits.length)return; const prev=idx>0?r.days[idx-1].visits.slice(-1)[0].station.position:this.base.start; const pts=[prev,...day.visits.map(v=>v.station.position)].map(p=>[p.lat,p.lon]); if(c.d)window.L.polyline(pts,{color:r.color,opacity:.3,weight:18,lineCap:'round'}).addTo(this.dayLayer); window.L.polyline(pts,{color:'#fff',opacity:.98,weight:11,lineCap:'round'}).addTo(this.dayLayer); window.L.polyline(pts,{color:r.color,opacity:1,weight:5.5,lineCap:'round'}).addTo(this.dayLayer); }
+
+  /* ---------- handlers ---------- */
+  showToast(t){ this.setState({toast:t}); clearTimeout(this._tt); this._tt=setTimeout(()=>this.setState({toast:null}),2600); }
+  setOption=(o)=>{ this.setState({activeOption:o}, ()=>{ setTimeout(()=>this.fit(),40); }); };
+  toggleTheme=()=>{ this.setState(s=>({theme:s.theme==='dash'?'light':'dash'}), ()=>{ if(this.tileLayer){ this.tileLayer.setUrl(this.mapColors().tile); } this.drawRoute(false); this.highlightDay(this.state.hoveredDayIndex); }); };
+  selectRoute=(id)=>{ this.stopPlay(); this.setState({selectedRouteId:id,routePickerOpen:false,hoveredDayIndex:null,curDay:0,playing:false}, ()=>this.drawRoute(true)); };
+  setPanel=(p)=>{ this.setState(s=>({panel:p, panelOpen: s.panelOpen && s.panel===p ? false : true}), ()=>setTimeout(()=>this.fit(),30)); };
+  closePanel=()=>{ this.setState({panelOpen:false}, ()=>setTimeout(()=>this.fit(),30)); };
+  toggleDayRail=()=>{ this.setState(s=>({dayRailOpen:!s.dayRailOpen}), ()=>setTimeout(()=>this.fit(),30)); };
+  hoverDay=(i)=>{ this.setState({hoveredDayIndex:i}); this.highlightDay(i); };
+  clearHoverDay=()=>{ this.setState({hoveredDayIndex:null}); this.highlightDay(null); };
+  openDay=(i)=>{ this.setState({dayDetailIndex:i}); };
+  closeDay=()=>{ this.setState({dayDetailIndex:null}); };
+  openState=(code)=>{ const r=this.selRoute(); const st=r.stateStats.find(s=>s.state===code); if(st) this.setState({stateDetail:st}); };
+  closeState=()=>{ this.setState({stateDetail:null}); };
+  openRoutePicker=()=>this.setState({routePickerOpen:true});
+  closeRoutePicker=()=>this.setState({routePickerOpen:false});
+  openConfig=()=>this.setState({configOpen:true});
+  closeConfig=()=>this.setState({configOpen:false});
+  openCopilot=()=>this.setState({copilotOpen:true});
+  closeCopilot=()=>this.setState({copilotOpen:false});
+  zoomIn=()=>{ if(this.map)this.map.zoomIn(); };
+  zoomOut=()=>{ if(this.map)this.map.zoomOut(); };
+  setAtlasTab=(t)=>this.setState({atlasTab:t});
+  setBoard=(m)=>this.setState({boardMode:m},()=>setTimeout(()=>this.fit(),40));
+  toggleExpandDay=(i)=>this.setState(s=>({expandedDay:s.expandedDay===i?null:i}));
+  stopPlay(){ if(this.playTimer){ clearInterval(this.playTimer); this.playTimer=null; } }
+  setDailyStyle=(k)=>{ this.stopPlay(); this.setState({dailyStyle:k,playing:false},()=>{ if(k==='focus'||k==='filmstrip') this.highlightDay(this.state.curDay); else this.highlightDay(null); setTimeout(()=>this.fit(),40); }); };
+  setCurDay=(i)=>{ const days=this.selRoute().days; const n=Math.max(0,Math.min(days.length-1,i)); this.setState({curDay:n}); this.highlightDay(n); };
+  nextDay=()=>this.setCurDay(this.state.curDay+1);
+  prevDay=()=>this.setCurDay(this.state.curDay-1);
+  togglePlay=()=>{ if(this.playTimer){ this.stopPlay(); this.setState({playing:false}); } else { this.setState({playing:true}); this.playTimer=setInterval(()=>{ const days=this.selRoute().days; this.setCurDay((this.state.curDay+1)%days.length); },1400); } };
+  openCalendar=()=>this.setState({calendarOpen:true});
+  closeCalendar=()=>this.setState({calendarOpen:false});
+  openDayFromCalendar=(i)=>{ this.setCurDay(i); this.setState({calendarOpen:false,dayDetailIndex:i}); };
+  refresh=()=>{ this.setState({refreshing:true}); const base=this.base.source.fetchedAt; setTimeout(()=>{ this.base.source={...this.base.source,fetchedAt:new Date().toISOString()}; this.setState({refreshing:false,source:this.base.source}); this.showToast('Stations refreshed from Supercharge.info'); },1100); };
+  setCfg=(k,v)=>{ this.setState(s=>({cfg:{...s.cfg,[k]:v}}), ()=>{ if(k==='showAllStations'){ this.setState({showAllStations:v}, ()=>this.drawStations()); } }); };
+  toggleCfg=(k)=>{ const v=!this.state.cfg[k]; this.setCfg(k,v); };
+  setMode=(m)=>{ this.setState(s=>({cfg:{...s.cfg,plannerMode:m}})); };
+  applyConfig=()=>{ this.setState({configOpen:false,optimizing:true,optimizeStep:this.STEPS[0]}); let i=0; this._opt=setInterval(()=>{ i=(i+1)%this.STEPS.length; this.setState({optimizeStep:this.STEPS[i]}); },320);
+    setTimeout(()=>{ clearInterval(this._opt); this.stopPlay(); const mode=this.state.cfg.plannerMode; const routes=this.base.routes.filter(r=>r.plannerMode===mode); this.setState({optimizing:false,routes,selectedRouteId:routes[0].id,hoveredDayIndex:null,curDay:0,playing:false}, ()=>this.drawRoute(true)); this.showToast(mode==='longest_trip'?`Longest Trip planned · ${routes[0].totalDays} streak days`:`Route optimized · ${routes[0].uniqueStations} unique sites`); },1500);
+  };
+
+  /* ---------- copilot engine ---------- */
+  onCopilotInput=(e)=>this.setState({copilotInput:e.target.value});
+  onCopilotKey=(e)=>{ if(e.key==='Enter'){ e.preventDefault(); this.sendCopilot(); } };
+  pickSuggestion=(t)=>this.send(t);
+  sendCopilot=()=>this.send(this.state.copilotInput);
+  send=(raw)=>{ const text=(raw||'').trim(); if(!text||this.state.copilotSending)return;
+    this.setState(s=>({copilotMessages:[...s.copilotMessages,{role:'user',text}],copilotInput:'',copilotSending:true}), this.scrollCopilot);
+    setTimeout(()=>{ const {reply,actions} = this.copilotRespond(text); this.setState(s=>({copilotMessages:[...s.copilotMessages,{role:'assistant',text:reply,actions}],copilotSending:false}), this.scrollCopilot); },760);
+  };
+  scrollCopilot=()=>{ const el=document.getElementById('copilot-scroll'); if(el) el.scrollTop=el.scrollHeight; };
+  recompute(r){ const visits=r.days.flatMap(d=>d.visits); r.visits=visits.map((v,i)=>({...v,sequence:i+1})); r.uniqueStations=visits.length; r.totalMiles=visits.reduce((a,v)=>a+v.legMiles,0); r.totalDriveHours=+r.days.reduce((a,d)=>a+d.driveHours,0).toFixed(1); r.totalStopHours=+(visits.reduce((a,v)=>a+v.stopMinutes,0)/60).toFixed(1); r.totalDays=r.days.length; r.longDays=r.days.filter(d=>d.longDayOptimized).length; r.stationsPerDay=Math.round(r.uniqueStations/Math.max(1,r.totalDays)); r.averageDriveHoursPerDay=+(r.totalDriveHours/Math.max(1,r.totalDays)).toFixed(1); return r; }
+  replaceSelected(mut){ this.setState(s=>({routes:s.routes.map(r=>{ if(r.id!==s.selectedRouteId) return r; const clone=JSON.parse(JSON.stringify(r)); mut(clone); return this.recompute(clone); })}), ()=>this.drawRoute(true)); }
+  copilotRespond(text){ const t=text.toLowerCase(); const r=this.selRoute();
+    if(/trim|shorten|fewer|remove a day|cut a day/.test(t)){ if(r.days.length>2){ this.replaceSelected(c=>{c.days.pop();c.days.forEach((d,i)=>d.day=i+1);}); const n=r.days.length-1; this.showToast(`Trimmed to ${n} days`); return {reply:`Done — dropped the last day. The plan is now ${n} days and re-balanced the drive caps.`,actions:['Removed day '+r.days.length,'Re-numbered remaining days','Recomputed totals + pace']}; } return {reply:"This route is already at its minimum length — I'd rather not trim below two days.",actions:null}; }
+    if(/unique|maximize|more site|most site/.test(t)){ const pool=this.state.routes; const best=pool.reduce((a,b)=>b.uniqueStations>a.uniqueStations?b:a,pool[0]); if(best.id!==r.id){ this.setState({selectedRouteId:best.id},()=>this.drawRoute(true)); this.showToast(`Switched to ${best.name} · ${best.uniqueStations} sites`); return {reply:`For maximum unique sites in this mode, ${best.name} wins with ${best.uniqueStations} sites across ${best.totalDays} days. Switched you over.`,actions:['Compared '+pool.length+' candidates','Selected '+best.name,'Refit map to new route']}; } this.replaceSelected(c=>{ c.days.forEach(d=>{ d.uniqueStations+=1; }); }); this.showToast('Densified stops'); return {reply:`${r.name} is already the densest candidate — I nudged in a few extra corridor sites where charging allows.`,actions:['Added infill sites','Kept drive caps intact']}; }
+    if(/range|aux|charge warning|fix warning|fix range/.test(t)){ const before=r.visits.filter(v=>v.rangeWarning).length; if(before===0) return {reply:'No range warnings on this route — every leg already sits inside your 220 mi practical range.',actions:null}; this.replaceSelected(c=>{ c.days.forEach(d=>{ d.visits.forEach(v=>{ if(v.rangeWarning){ v.rangeWarning=false; v.connectorStop=true; v.stopMinutes=Math.max(v.stopMinutes,24); } }); d.warnings=[]; }); }); this.showToast(`Cleared ${before} range warnings`); return {reply:`Cleared all ${before} range warnings by inserting transfer-connector charge stops on the long legs.`,actions:[before+' legs patched','Added aux charge time','Route feasibility now clean']}; }
+    if(/detour|add |yellowstone|grand canyon|vegas|visit/.test(t)){ const place=/yellowstone/.test(t)?'Yellowstone':/grand canyon/.test(t)?'Grand Canyon':/vegas/.test(t)?'Las Vegas':'the requested detour'; this.replaceSelected(c=>{ const d=c.days[Math.floor(c.days.length/2)]; d.advisories=[...(d.advisories||[]),{severity:'info',message:`Scenic detour added near ${place}.`}]; }); this.showToast(`Added ${place} detour`); return {reply:`Added a scenic detour toward ${place} mid-trip. It adds a little drive time but a high scenery score — flagged as an advisory on that day.`,actions:['Inserted detour waypoint','Recomputed the affected day','Scenery score ↑']}; }
+    if(/toll|avoid/.test(t)){ this.showToast('Preferring toll-free roads'); return {reply:'Set the router to prefer toll-free highways where the detour stays within your daily drive cap. Two legs shifted to parallel US routes.',actions:['Toll avoidance ON','2 legs re-routed','Drive time +0.4h']}; }
+    return {reply:"I can trim days, maximize unique sites, fix range warnings, add a scenic detour, or avoid tolls. Tell me the goal and I'll reshape the route and update the map.",actions:null}; }
+
+  /* ---------- view models ---------- */
+  fmt(n){ return (n==null?0:n).toLocaleString(); }
+  renderVals(){
+    const s=this.state;
+    const themeIcons={ dash:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/></svg>', light:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 13A9 9 0 1 1 11 3a7 7 0 0 0 10 10z"/></svg>' };
+    if(!s.ready) return { ready:false, notReady:true, theme:s.theme };
+    const r=this.selRoute();
+    const isLong=r.plannerMode==='longest_trip';
+    const modeLabel=isLong?'Longest Trip':'Most Unique Sites';
+
+    const optionTabs=this.OPTS.map(o=>{ const active=o.key===s.activeOption; return {key:o.key,label:o.label,desc:o.desc,onClick:()=>this.setOption(o.key),
+      style:`display:flex;align-items:center;gap:6px;height:38px;padding:0 15px;border-radius:9px;border:none;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;transition:.15s;${active?'background:var(--accent);color:#fff':'background:transparent;color:var(--dim)'}`}; });
+
+    const railItems=this.RAIL.map(it=>{ const active=s.panelOpen&&s.panel===it.k; return {label:it.label,iconHtml:{__html:it.icon},onClick:()=>this.setPanel(it.k),
+      style:`width:44px;height:44px;border-radius:10px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;${active?'background:var(--accent);color:#fff':'background:transparent;color:var(--dim)'}`}; });
+
+    const heroStats=[{label:isLong?'Streak stops':'Unique sites',value:this.fmt(r.uniqueStations),unit:''},{label:'Total miles',value:this.fmt(r.totalMiles),unit:'mi'},{label:isLong?'Streak days':'Days',value:r.totalDays,unit:''},{label:'Avg drive/day',value:r.averageDriveHoursPerDay,unit:'h'}];
+
+    const routes=s.routes.map(rt=>{ const active=rt.id===s.selectedRouteId; return {id:rt.id,name:rt.name,strategy:rt.strategy,color:rt.color,sites:this.fmt(rt.uniqueStations),days:rt.totalDays,miles:this.fmt(rt.totalMiles),drive:rt.averageDriveHoursPerDay,active,onSelect:()=>this.selectRoute(rt.id),
+      pickStyle:`display:flex;gap:13px;align-items:stretch;padding:13px;border-radius:12px;cursor:pointer;font:inherit;text-align:left;transition:.15s;border:1px solid ${active?'var(--accent)':'var(--edge)'};background:${active?'color-mix(in srgb,var(--accent) 8%,var(--panel2))':'var(--panel2)'}`}; });
+
+    const maxDrive=Math.max(1,...r.days.map(d=>d.driveHours)); const dsMode=s.dailyStyle;
+    const days=r.days.map((d,i)=>{ const active=s.hoveredDayIndex===i; const isCur=s.curDay===i; const cities=[...new Set(d.visits.map(v=>v.station.address.city))]; const score=d.rating.score; const sc=score>=80?'var(--good)':score>=62?'var(--accent2)':'var(--warn)'; const cityLabel=cities.slice(0,3).join(' · ')+(cities.length>3?` +${cities.length-3}`:'');
+      return {n:d.day,score,scoreColor:sc,sites:d.uniqueStations,miles:this.fmt(d.miles),drive:d.driveHours,long:d.longDayOptimized,cityLabel,isCur,onOpen:()=>this.openDay(i),onHover:()=>this.hoverDay(i),onSetCur:()=>this.setCurDay(i),barPct:Math.round(d.driveHours/maxDrive*100)+'%',
+        rowStyle:`display:flex;flex-direction:column;width:100%;padding:10px 11px;border-radius:11px;border:1px solid ${active?'var(--accent2)':'var(--edge)'};background:${active?'color-mix(in srgb,var(--accent2) 8%,transparent)':'var(--chip)'};cursor:pointer;font:inherit`,
+        chipStyle:`flex:none;width:132px;padding:10px 11px;border-radius:11px;border:1px solid ${active?'var(--accent2)':'var(--edge)'};background:${active?'color-mix(in srgb,var(--accent2) 10%,var(--panel2))':'var(--panel2)'};cursor:pointer;font:inherit`,
+        thumbStyle:`flex:none;width:80px;padding:8px 9px;border-radius:10px;border:1px solid ${isCur?'var(--accent)':'var(--edge)'};background:${isCur?'color-mix(in srgb,var(--accent) 12%,var(--panel2))':'var(--panel2)'};cursor:pointer;font:inherit;text-align:left`,
+        tileStyle:`display:flex;flex-direction:column;gap:3px;padding:7px 9px;border-radius:9px;border:1px solid ${active?'var(--accent2)':'var(--edge)'};background:color-mix(in srgb, ${sc} ${10+Math.round(score*0.2)}%, var(--panel2));cursor:pointer;font:inherit;text-align:left`,
+        barColStyle:`display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;flex:none;width:${r.days.length>22?'16px':r.days.length>14?'24px':'36px'};height:100%`,
+        barFillStyle:`width:100%;border-radius:5px 5px 0 0;background:${active?'var(--accent)':sc};height:${Math.max(6,Math.round(d.driveHours/maxDrive*100))}%`}; });
+    const cd=r.days[Math.min(s.curDay,r.days.length-1)]; const cdCities=[...new Set(cd.visits.map(v=>v.station.address.city))]; const cdScore=cd.rating.score;
+    const curDayVM={n:cd.day,total:r.days.length,title:cdCities.slice(0,3).join(' → ')||'Open road',sites:cd.uniqueStations,miles:this.fmt(cd.miles),drive:cd.driveHours,charge:Math.round(cd.stopMinutes),score:cdScore,scoreColor:cdScore>=80?'var(--good)':cdScore>=62?'var(--accent2)':'var(--warn)',hasPrev:s.curDay>0,hasNext:s.curDay<r.days.length-1,onOpen:()=>this.openDay(Math.min(s.curDay,r.days.length-1))};
+    const focusDots=r.days.map((d,i)=>({onClick:()=>this.setCurDay(i),style:`width:${s.curDay===i?'20px':'7px'};height:7px;border-radius:4px;border:none;padding:0;cursor:pointer;background:${s.curDay===i?'var(--accent)':'var(--edge2)'};transition:.15s`}));
+    const dailyStyles=[['rail','Rail'],['filmstrip','Strip'],['itinerary','List'],['profile','Profile'],['calendar','Cal'],['focus','Focus']].map(([k,label])=>({label,onClick:()=>this.setDailyStyle(k),style:`height:30px;padding:0 11px;border-radius:7px;border:none;cursor:pointer;font:inherit;font-size:11px;font-weight:600;transition:.15s;white-space:nowrap;${dsMode===k?'background:var(--accent);color:#fff':'background:transparent;color:var(--dim)'}`}));
+    const playIcon={__html:s.playing?'<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>':'<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>'};
+    const maxDriveLabel=Math.round(maxDrive*10)/10;
+    const calDays=r.days.map((d,i)=>{ const cities=[...new Set(d.visits.map(v=>v.station.address.city))]; const score=d.rating.score; const sc=score>=80?'var(--good)':score>=62?'var(--accent2)':'var(--warn)'; const stars=Math.max(1,Math.min(5,Math.round(score/20)));
+      return {n:d.day,cities:cities.slice(0,2).join(' → ')||'Open road',score,scoreColor:sc,sites:d.uniqueStations,miles:this.fmt(d.miles),drive:d.driveHours,starsFull:'★'.repeat(stars),starsEmpty:'☆'.repeat(5-stars),onClick:()=>this.openDayFromCalendar(i),
+        tileStyle:`display:flex;flex-direction:column;gap:6px;padding:12px 13px;border-radius:12px;border:1px solid ${d.longDayOptimized?'color-mix(in srgb,var(--amber) 50%,var(--edge))':'var(--edge)'};background:color-mix(in srgb, ${sc} ${8+Math.round(score*0.16)}%, var(--panel2));cursor:pointer;font:inherit;text-align:left;min-height:104px`}; });
+    const calendarWeeks=[]; for(let wi=0;wi<calDays.length;wi+=7){ calendarWeeks.push({label:'Week '+(Math.floor(wi/7)+1), days:calDays.slice(wi,wi+7)}); }
+
+    const maxCov=Math.max(1,...r.stateStats.map(x=>x.routeStations));
+    const coverage=r.stateStats.filter(x=>x.routeStations>0).map(x=>({code:x.state,name:x.stateName,sites:x.routeStations,total:x.totalStations,pct:x.coveragePct,sitesLabel:`${x.routeStations} of ${x.totalStations} · ${this.fmt(x.miles)} mi`,barPct:(x.coveragePct)+'%',onClick:()=>this.openState(x.state),onHover:()=>{},
+      rowStyle:`display:flex;flex-direction:column;width:100%;padding:9px 10px;border-radius:10px;border:1px solid var(--edge);background:var(--chip);cursor:pointer;font:inherit`}));
+    const leaders=r.stateStats.filter(x=>x.routeStations>0).slice(0,6).map(x=>({code:x.state,val:x.routeStations,barPct:Math.round(x.routeStations/maxCov*100)+'%'}));
+
+    const activeH=+(r.totalDriveHours+r.totalStopHours).toFixed(1); const dp=Math.round(r.totalDriveHours/activeH*100);
+    const stats={driveH:r.totalDriveHours,chargeH:r.totalStopHours,activeH,drivePct:dp+'%',chargePct:(100-dp)+'%'};
+
+    const feas=s.universe.allSitesFeasibility; const feasVM={verdictTitle:feas.verdict==='plausible'?'Plausible target':feas.verdict==='aggressive'?'Aggressive target':'Not plausible',explanation:feas.explanation,total:this.fmt(feas.totalStations),perDay:feas.requiredStationsPerDay};
+
+    const fetched=new Date(s.source.fetchedAt); const mins=Math.max(1,Math.round((Date.now()-fetched.getTime())/60000)); const sourceVM={count:this.fmt(s.universe.filteredStations),fetched:mins<60?`${mins} min ago`:fetched.toLocaleString()};
+
+    // copilot
+    const copilotShown = s.copilotOpen || s.activeOption==='C';
+    const copilotClosable = s.activeOption!=='C';
+    const copilotTitle = s.activeOption==='C'?'Co-Driver':'Route Copilot';
+    const copilotSubtitle = s.activeOption==='C'?'Your quest sidekick':'Reshape the plan in plain language';
+    const bubbleShown = s.activeOption==='B' && !s.copilotOpen;
+    let copilotWrapStyle;
+    if(s.activeOption==='A') copilotWrapStyle=`position:fixed;top:76px;right:16px;width:380px;height:min(560px,72vh);z-index:70;display:flex;flex-direction:column;border-radius:15px;background:var(--glass);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid var(--glassbd);box-shadow:var(--shadow);animation:qpop .2s ease`;
+    else if(s.activeOption==='B') copilotWrapStyle=`position:fixed;bottom:84px;right:16px;width:372px;height:min(500px,68vh);z-index:70;display:flex;flex-direction:column;border-radius:15px;background:var(--glass);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid var(--glassbd);box-shadow:var(--shadow);animation:qpop .2s ease`;
+    else copilotWrapStyle=`position:fixed;left:16px;bottom:16px;width:308px;height:min(346px,52vh);z-index:39;display:flex;flex-direction:column;border-radius:15px;background:var(--glass);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid var(--glassbd);box-shadow:var(--shadow)`;
+    const copilotMessages=s.copilotMessages.map(m=>{ const u=m.role==='user'; return {text:m.text,hasActions:!!(m.actions&&m.actions.length),actions:m.actions||[],
+      wrapStyle:`display:flex;${u?'justify-content:flex-end':'justify-content:flex-start'}`,
+      bubbleStyle:`max-width:86%;padding:9px 12px;font-size:13px;line-height:1.5;${u?'border-radius:14px 14px 4px 14px;background:var(--accent);color:#fff':'border-radius:14px 14px 14px 4px;border:1px solid var(--edge);background:var(--panel2);color:var(--ink)'}`}; });
+    const suggestions=this.SUGG.map(t=>({label:t,onClick:()=>this.pickSuggestion(t)}));
+
+    // day detail
+    let dayDetail=null; if(s.dayDetailIndex!=null){ const d=r.days[s.dayDetailIndex]; const cities=[...new Set(d.visits.map(v=>v.station.address.city))]; dayDetail={n:d.day,score:d.rating.score,title:cities.slice(0,3).join(' → '),miles:this.fmt(d.miles),drive:d.driveHours,stop:Math.round(d.stopMinutes),sites:d.uniqueStations,
+      stops:d.visits.map(v=>({seq:v.sequence,name:v.station.name,dot:v.connectorStop?(s.theme==='dash'?'#f5c518':'#c2740b'):r.color,meta:`Day ${v.day} · ${v.legMiles} mi leg · ${v.stopMinutes} min · ${v.station.address.city}, ${v.station.address.state}`,warn:v.rangeWarning})) }; }
+
+    // state detail
+    let stateDetail=null; if(s.stateDetail){ stateDetail={name:s.stateDetail.stateName,sites:s.stateDetail.routeStations,total:s.stateDetail.totalStations,pct:s.stateDetail.coveragePct,miles:this.fmt(s.stateDetail.miles)}; }
+
+    // config controls
+    const cfg=s.cfg; const modeOptions=[{k:'most_unique_sites',label:'Most Unique Sites'},{k:'longest_trip',label:'Longest Trip'}].map(m=>({label:m.label,onClick:()=>this.setMode(m.k),style:`flex:1;height:34px;border-radius:8px;border:none;cursor:pointer;font:inherit;font-size:11.5px;font-weight:600;transition:.15s;${cfg.plannerMode===m.k?'background:var(--accent);color:#fff':'background:transparent;color:var(--dim)'}`}));
+    const sliderDefs=[ isLong?{k:'longestTripDays',label:'Target streak days',min:14,max:90,step:1,unit:'',hint:'Consecutive charging days to chase.'}:{k:'targetStations',label:'Target unique sites',min:100,max:2000,step:10,unit:'',hint:'How many unique Superchargers to bag.'},
+      {k:'dailyDriveTargetHours',label:'Daily drive target',min:3,max:10,step:.5,unit:'h',hint:'Comfortable hours behind the wheel per day.'},
+      {k:'dailyDriveMaxHours',label:'Daily drive max',min:4,max:14,step:.5,unit:'h',hint:'Hard cap before a day is split.'},
+      {k:'averageMph',label:'Average speed',min:45,max:80,step:1,unit:'mph',hint:'Used to estimate leg drive time.'},
+      {k:'practicalRangeMiles',label:'Practical range',min:120,max:320,step:5,unit:'mi',hint:'Below this, legs avoid range warnings.'},
+      {k:'distanceChargeStopMinutes',label:'Charge stop time',min:5,max:45,step:1,unit:'min',hint:'Assumed minutes per distance-charge stop.'} ];
+    const sliders=sliderDefs.map(d=>({label:d.label,min:d.min,max:d.max,step:d.step,value:cfg[d.k],valueLabel:`${cfg[d.k]}${d.unit?' '+d.unit:''}`,hint:d.hint,onInput:(e)=>this.setCfg(d.k,+e.target.value)}));
+    const toggleDefs=[{k:'longDayOptimization',label:'Long-day optimization',hint:'Allow 8–9h days when they add enough sites.'},{k:'includeCanada',label:'Include Canada',hint:'Add Canadian Supercharger sites.'},{k:'includeMexico',label:'Include Mexico',hint:'Add Mexican Supercharger sites.'},{k:'showAllStations',label:'Show all sites on map',hint:'Plot the full filtered station universe.'}];
+    const toggles=toggleDefs.map(d=>{ const on=cfg[d.k]; return {label:d.label,hint:d.hint,onClick:()=>this.toggleCfg(d.k),
+      trackStyle:`width:40px;height:23px;border-radius:12px;flex:none;position:relative;transition:.15s;background:${on?'var(--accent)':'var(--edge2)'}`,
+      knobStyle:`position:absolute;top:2px;left:${on?'19px':'2px'};width:19px;height:19px;border-radius:50%;background:#fff;transition:.15s`}; });
+
+    // ---- ATLAS (B) ----
+    const atlasTab=s.atlasTab;
+    const atlasTabs=[['timeline','Timeline'],['coverage','Coverage'],['stats','Stats']].map(([k,label])=>({label,onClick:()=>this.setAtlasTab(k),style:`flex:1;height:32px;border-radius:8px;border:none;cursor:pointer;font:inherit;font-size:11.5px;font-weight:600;transition:.15s;${atlasTab===k?'background:var(--accent);color:#fff':'background:transparent;color:var(--dim)'}`}));
+    const atlasDays=r.days.map((d,i)=>{ const cities=[...new Set(d.visits.map(v=>v.station.address.city))]; const score=d.rating.score; const sc=score>=80?'var(--good)':score>=62?'var(--accent2)':'var(--warn)'; const expanded=s.expandedDay===i; const active=s.hoveredDayIndex===i;
+      return {n:d.day,score,scoreColor:sc,miles:this.fmt(d.miles),drive:d.driveHours,sites:d.uniqueStations,long:d.longDayOptimized,cityLabel:cities.slice(0,3).join(' → '),expanded,
+        dotStyle:`width:14px;height:14px;border-radius:50%;flex:none;margin-top:12px;border:3px solid var(--panel);background:${r.color};box-shadow:0 0 0 1px var(--edge2)`,
+        headStyle:`flex:1;min-width:0;padding:11px 13px;border-radius:12px;border:1px solid ${active?'var(--accent2)':'var(--edge)'};background:${active?'color-mix(in srgb,var(--accent2) 8%,var(--panel2))':'var(--panel2)'}`,
+        onHover:()=>this.hoverDay(i),onOpen:()=>this.openDay(i),onToggle:()=>this.toggleExpandDay(i),
+        stops:d.visits.map(v=>({name:v.station.name,meta:`${v.legMiles} mi · ${v.stopMinutes} min · ${v.station.address.state}`,warn:v.rangeWarning,dot:v.connectorStop?(s.theme==='dash'?'#f5c518':'#c2740b'):r.color}))}; });
+    const tripHealth=[{label:'issues',value:r.advisories.length,tone:r.advisories.length?'var(--warn)':'var(--good)'},{label:'long days',value:r.longDays,tone:'var(--amber)'},{label:'aux legs',value:r.visits.filter(v=>v.rangeWarning).length,tone:'var(--info)'}].map(x=>({label:x.label,value:x.value,style:`display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;border:1px solid var(--edge);background:var(--chip);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--dim)`,dotStyle:`width:7px;height:7px;border-radius:50%;background:${x.tone}`}));
+
+    // ---- QUEST (C) ----
+    const goalVal=isLong?90:250; const curVal=isLong?r.totalDays:r.uniqueStations; const qpct=Math.min(100,Math.round(curVal/goalVal*100)); const CIRC=326.7;
+    const quest={cur:this.fmt(curVal),goal:goalVal,pct:qpct+'%',unit:isLong?'streak days':'unique sites',circ:CIRC.toFixed(1),offset:(CIRC*(1-qpct/100)).toFixed(1),streak:r.totalDays,states:r.stateStats.filter(x=>x.routeStations>0).length,pace:r.stationsPerDay};
+    const SC2=81.7;
+    const conquest=r.stateStats.map(x=>{ const pct=x.coveragePct; const locked=x.routeStations===0; const status=locked?'Locked':pct>=100?'Cleared':'In progress'; const scol=locked?'var(--faint)':pct>=100?'var(--good)':'var(--accent2)';
+      return {code:x.state,name:x.stateName,pct,sites:x.routeStations,total:x.totalStations,status,statusColor:scol,locked,ringCirc:SC2.toFixed(1),ringOffset:(SC2*(1-Math.min(100,pct)/100)).toFixed(1),onClick:()=>this.openState(x.state),
+        rowStyle:`display:flex;align-items:center;gap:11px;padding:8px 10px;border-radius:11px;border:1px solid var(--edge);background:var(--chip);cursor:pointer;font:inherit;text-align:left;${locked?'opacity:.5':''}`}; });
+    const conquestCleared=conquest.filter(c=>!c.locked&&c.pct>=100).length; const conquestActive=conquest.filter(c=>!c.locked).length;
+    const stages=r.days.map((d,i)=>{ const cities=[...new Set(d.visits.map(v=>v.station.address.city))]; const stars=Math.max(1,Math.min(5,Math.round(d.rating.score/20))); const active=s.hoveredDayIndex===i;
+      return {n:d.day,cities:cities.slice(0,2).join(' · '),sites:d.uniqueStations,miles:this.fmt(d.miles),starsFull:'★'.repeat(stars),starsEmpty:'☆'.repeat(5-stars),onClick:()=>this.openDay(i),onHover:()=>this.hoverDay(i),
+        style:`flex:none;width:154px;padding:11px 12px;border-radius:12px;border:1px solid ${active?'var(--accent)':'var(--edge)'};background:${active?'color-mix(in srgb,var(--accent) 8%,var(--panel2))':'var(--panel2)'};cursor:pointer;font:inherit;text-align:left`}; });
+    const boardMode=s.boardMode; const boardTabs=[['map','Map'],['board','Board']].map(([k,label])=>({label,onClick:()=>this.setBoard(k),style:`flex:1;height:30px;padding:0 18px;border-radius:7px;border:none;cursor:pointer;font:inherit;font-size:11.5px;font-weight:600;${boardMode===k?'background:var(--accent);color:#fff':'background:transparent;color:var(--dim)'}`}));
+    const boardTiles=r.stateStats.slice().sort((a,b)=> a.state<b.state?-1:a.state>b.state?1:0).map(x=>{ const pct=x.coveragePct; const locked=x.routeStations===0; return {code:x.state,pctLabel:locked?'—':pct+'%',onClick:()=>this.openState(x.state),
+      style:`display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;height:56px;border-radius:10px;border:1px solid ${locked?'var(--edge)':'var(--accent2)'};background:${locked?'var(--chip)':'color-mix(in srgb,var(--accent2) '+(18+Math.round(pct*0.55))+'%,var(--panel2))'};cursor:pointer;font:inherit;${locked?'opacity:.5':''}`}; });
+
+    return {
+      ready:true, notReady:false, theme:s.theme, themeIcon:{__html:themeIcons[s.theme]},
+      activeIsA:s.activeOption==='A', activeIsB:s.activeOption==='B', activeIsC:s.activeOption==='C',
+      optionTabs, railItems, heroStats,
+      selected:{name:r.name,color:r.color,days:r.totalDays,sites:this.fmt(r.uniqueStations),advisories:r.advisories},
+      routes, days, coverage, leaders, stats, feas:feasVM, source:sourceVM, modeLabel,
+      panel:{kicker:{overview:'Trip overview',days:'Daily plan',coverage:'Route coverage',stats:'Trip stats',status:'Status & rules'}[s.panel],title:{overview:'At a glance',days:r.name,coverage:'Stations by state',stats:'Composition & pace',status:'Source & guardrails'}[s.panel]},
+      panelOpen:s.panelOpen, panelIsOverview:s.panel==='overview', panelIsDays:s.panel==='days', panelIsCoverage:s.panel==='coverage', panelIsStats:s.panel==='stats', panelIsStatus:s.panel==='status',
+      dayRailOpen:s.dayRailOpen, dayRailClosed:!s.dayRailOpen,
+      dailyStyles, dsRail:dsMode==='rail', dsFilmstrip:dsMode==='filmstrip', dsItinerary:dsMode==='itinerary', dsProfile:dsMode==='profile', dsCalendar:dsMode==='calendar', dsFocus:dsMode==='focus',
+      curDay:curDayVM, focusDots, playing:s.playing, playIcon, maxDriveLabel, prevDay:this.prevDay, nextDay:this.nextDay, togglePlay:this.togglePlay,
+      roadStatus:'Distances are estimated (straight-line × 1.18 road factor). Set a routing engine for exact road miles.',
+      refreshSpin: s.refreshing?'animation:qspin .8s linear infinite':'',
+      // overlays
+      routePickerOpen:s.routePickerOpen, configOpen:s.configOpen,
+      copilotShown, copilotWrapStyle, copilotMessages, copilotSending:s.copilotSending, copilotInput:s.copilotInput, suggestions,
+      dayDetailOpen:s.dayDetailIndex!=null, dayDetail, stateDetailOpen:!!s.stateDetail, stateDetail,
+      calendarOpen:s.calendarOpen, calendarWeeks, openCalendar:this.openCalendar, closeCalendar:this.closeCalendar,
+      modeOptions, sliders, toggles,
+      atlasTabs, atlasIsTimeline:atlasTab==='timeline', atlasIsCoverage:atlasTab==='coverage', atlasIsStats:atlasTab==='stats', atlasDays, tripHealth,
+      quest, conquest, conquestCleared, conquestActive, stages, boardTabs, boardIsMap:boardMode==='map', boardIsBoard:boardMode==='board', boardTiles,
+      copilotClosable, copilotTitle, copilotSubtitle, bubbleShown, openCopilot:this.openCopilot,
+      optimizing:s.optimizing, optimizeStep:s.optimizeStep, toastShown:!!s.toast, toast:s.toast,
+      // handlers
+      openRoutePicker:this.openRoutePicker, closeRoutePicker:this.closeRoutePicker, closePanel:this.closePanel,
+      openConfig:this.openConfig, closeConfig:this.closeConfig, applyConfig:this.applyConfig,
+      openCopilot:this.openCopilot, closeCopilot:this.closeCopilot, sendCopilot:this.sendCopilot, onCopilotInput:this.onCopilotInput, onCopilotKey:this.onCopilotKey,
+      toggleTheme:this.toggleTheme, refresh:this.refresh, zoomIn:this.zoomIn, zoomOut:this.zoomOut,
+      toggleDayRail:this.toggleDayRail, clearHover:this.clearHoverDay, clearHoverState:()=>{}, closeDay:this.closeDay, closeState:this.closeState,
+      stop:(e)=>{ if(e&&e.stopPropagation) e.stopPropagation(); },
+    };
+  }
+}
+</script>
+</body>
+</html>

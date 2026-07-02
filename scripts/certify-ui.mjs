@@ -20,32 +20,42 @@ try {
   const page = await browser.newPage()
   await page.setViewport({ width: 1440, height: 960, deviceScaleFactor: 1 })
   await page.goto(appUrl, { waitUntil: 'networkidle2', timeout: 60_000 })
+
+  // Cockpit chrome ready: brand island + Configure action.
   await page.waitForFunction(
     () =>
-      document.body.textContent?.includes('Supercharger Quest Planner') &&
+      document.body.textContent?.includes('Quest Planner') &&
       Array.from(document.querySelectorAll('button')).some((button) =>
-        button.textContent?.includes('Configure'),
+        button.getAttribute('aria-label') === 'Configure',
       ),
     { timeout: 30_000 },
   )
-  await page.evaluate(() => {
-    const button = Array.from(document.querySelectorAll('button')).find((item) =>
-      item.textContent?.includes('Configure'),
-    )
-    if (!(button instanceof HTMLButtonElement)) {
-      throw new Error('Configure button was not found.')
-    }
-    button.click()
-  })
+
+  // Wait for the first optimize to finish (splash + optimize spinner gone,
+  // focus day bar present).
+  await page.waitForFunction(
+    () => {
+      const text = document.body.textContent ?? ''
+      return (
+        !text.includes('Charting the 2026 Americas competition') &&
+        !document.querySelector('.animate-spin') &&
+        text.includes('DAY ')
+      )
+    },
+    { timeout: 90_000 },
+  )
+
+  // Open the config slide-over and adjust the plan.
+  await page.click('button[aria-label="Configure"]')
   await page.waitForFunction(
     () =>
       Array.from(document.querySelectorAll('[role="dialog"]')).some((dialog) =>
-        dialog.textContent?.includes('Configure optimization'),
+        dialog.textContent?.includes('Tune the optimizer'),
       ),
     { timeout: 30_000 },
   )
   await page.screenshot({
-    path: path.join(screenshotDir, 'config-modal.png'),
+    path: path.join(screenshotDir, 'config-slideover.png'),
     fullPage: false,
   })
 
@@ -79,26 +89,31 @@ try {
       }
     }
 
-    setRangeByLabel('Streak days', 60)
+    setRangeByLabel('Target streak days', 60)
     setSwitchByLabel('Long-day optimization', true)
 
     const button = Array.from(document.querySelectorAll('button')).find((item) =>
-      item.textContent?.includes('Apply & re-optimize'),
+      item.textContent?.includes('Optimize route'),
     )
     if (!(button instanceof HTMLButtonElement)) {
-      throw new Error('Apply & re-optimize button was not found.')
+      throw new Error('Optimize route button was not found.')
     }
     button.click()
   })
+
+  // Optimize finishes (spinner gone) and the focus bar returns.
   await page.waitForFunction(
-    () => {
-      const optimizing = document.body.textContent?.includes('Optimizing route…')
-      const hasDayRows = document.querySelectorAll(
-        'button[aria-label^="Open day "]',
-      ).length > 0
-      return !optimizing && hasDayRows
-    },
+    () =>
+      !document.querySelector('.animate-spin') &&
+      (document.body.textContent ?? '').includes('DAY '),
     { timeout: 90_000 },
+  )
+
+  // Open the Daily plan panel from the icon rail and count day rows.
+  await page.click('button[aria-label="Daily plan"]')
+  await page.waitForFunction(
+    () => document.querySelectorAll('button[aria-label^="Open day "]').length > 0,
+    { timeout: 30_000 },
   )
   await page.screenshot({
     path: path.join(screenshotDir, 'desktop-optimized.png'),
@@ -108,18 +123,48 @@ try {
     const bodyText = document.body.textContent ?? ''
     return {
       dayRows: document.querySelectorAll('button[aria-label^="Open day "]').length,
-      advisoryMention:
-        bodyText.includes('aux charge') ||
-        bodyText.includes('auxiliary') ||
-        bodyText.includes('transfer connector') ||
-        bodyText.includes('unique Supercharger per streak day') ||
-        bodyText.includes('24-hour streak') ||
-        bodyText.includes('At least one day exceeds'),
-      selectedRoute: bodyText.includes('Daily plan'),
-      feasibility: bodyText.includes('All-sites reality check'),
+      focusBar: bodyText.includes('DAY '),
+      calendarButton: Boolean(
+        document.querySelector('button[aria-label="Open trip calendar"]'),
+      ),
     }
   })
 
+  // Advisory messaging lives in the Overview panel.
+  await page.click('button[aria-label="Overview"]')
+  await page.waitForFunction(
+    () => document.body.textContent?.includes('At a glance'),
+    { timeout: 30_000 },
+  )
+  overviewChecks.advisoryMention = await page.evaluate(() => {
+    const bodyText = document.body.textContent ?? ''
+    return (
+      bodyText.includes('aux charge') ||
+      bodyText.includes('auxiliary') ||
+      bodyText.includes('transfer connector') ||
+      bodyText.includes('unique Supercharger per streak day') ||
+      bodyText.includes('24-hour streak') ||
+      bodyText.includes('At least one day exceeds')
+    )
+  })
+
+  // Trip calendar opens from the focus bar.
+  await page.click('button[aria-label="Open trip calendar"]')
+  await page.waitForFunction(
+    () => document.body.textContent?.includes('Trip calendar'),
+    { timeout: 30_000 },
+  )
+  await page.screenshot({
+    path: path.join(screenshotDir, 'trip-calendar.png'),
+    fullPage: false,
+  })
+  await page.keyboard.press('Escape')
+  await page.waitForFunction(
+    () => !document.body.textContent?.includes('Trip calendar ·'),
+    { timeout: 30_000 },
+  )
+
+  // Route picker.
   await page.click('button[aria-label="Choose route"]')
   await page.waitForFunction(
     () =>
@@ -141,34 +186,15 @@ try {
     { timeout: 30_000 },
   )
 
-  await page.evaluate(() => {
-    const statusTab = Array.from(document.querySelectorAll('[role="tab"]')).find(
-      (item) => item.textContent?.trim() === 'Status',
-    )
-    if (!(statusTab instanceof HTMLButtonElement)) {
-      throw new Error('Status tab was not found.')
-    }
-    statusTab.click()
-  })
-  await page.evaluate(() => {
-    const guardrails = Array.from(document.querySelectorAll('button')).find(
-      (item) =>
-        item.textContent?.includes('Rule guardrails') ||
-        item.textContent?.includes('Passport deadline'),
-    )
-    if (!(guardrails instanceof HTMLButtonElement)) {
-      throw new Error('Rule guardrails panel was not found.')
-    }
-    if (guardrails.getAttribute('aria-expanded') !== 'true') {
-      guardrails.click()
-    }
-  })
+  // Guardrails panel: source + road status messaging.
+  await page.click('button[aria-label="Guardrails"]')
   await page.waitForFunction(
     () =>
-      document.body.textContent?.includes('Road-accurate distances loaded') ||
-      document.body.textContent?.includes('Distances are estimated') ||
-      document.body.textContent?.includes('Road geometry fallback') ||
-      document.body.textContent?.includes('Mapping '),
+      document.body.textContent?.includes('Rule guardrails') &&
+      (document.body.textContent?.includes('Road-accurate distances loaded') ||
+        document.body.textContent?.includes('Distances are estimated') ||
+        document.body.textContent?.includes('Road geometry fallback') ||
+        document.body.textContent?.includes('Mapping ')),
     { timeout: 30_000 },
   )
 
@@ -203,15 +229,23 @@ try {
   checks.mobileHorizontalOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
   )
+  checks.mobileTabBar = await page.evaluate(() =>
+    Array.from(document.querySelectorAll('nav button')).some((button) =>
+      button.textContent?.includes('Copilot'),
+    ),
+  )
 
   const failures = []
   if (checks.routeOptions < 20) failures.push('expected at least 20 route options')
   if (checks.dayRows < 1) failures.push('expected day-level rows')
+  if (!checks.focusBar) failures.push('expected the focus day bar')
+  if (!checks.calendarButton) failures.push('expected the trip calendar button')
   if (!checks.advisoryMention) failures.push('expected advisory messaging')
   if (checks.loadedTiles < 1) failures.push('expected loaded map tiles')
-  if (checks.modalVisible) failures.push('configuration modal should be closed')
+  if (checks.modalVisible) failures.push('configuration slide-over should be closed')
   if (checks.desktopHorizontalOverflow) failures.push('desktop page has horizontal overflow')
   if (checks.mobileHorizontalOverflow) failures.push('mobile page has horizontal overflow')
+  if (!checks.mobileTabBar) failures.push('expected the mobile tab bar')
   if (!checks.roadReady) failures.push('road status messaging was not shown')
 
   console.log(JSON.stringify(checks, null, 2))

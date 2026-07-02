@@ -1,31 +1,31 @@
-import {
-  useEffect,
-  useRef,
-  type ReactNode,
-} from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 import { useIsMobile } from '../hooks/useMediaQuery'
 import { cx } from './primitives'
-import { CheckIcon, CloseIcon } from './icons'
+import { CloseIcon } from './icons'
 
-type OverlaySize = 'detail' | 'config' | 'wide'
+type OverlaySize = 'detail' | 'compact' | 'picker' | 'wide'
+type OverlayVariant = 'center' | 'top' | 'slideover'
 
 const MAX_W: Record<OverlaySize, string> = {
-  detail: 'md:max-w-[640px]',
-  config: 'md:max-w-[560px]',
-  wide: 'md:max-w-[880px]',
+  compact: 'md:max-w-[440px]',
+  picker: 'md:max-w-[560px]',
+  detail: 'md:max-w-[600px]',
+  wide: 'md:max-w-[1060px]',
 }
 
 /**
- * Responsive overlay. Desktop → centered modal card. Mobile → slide-up
- * bottom sheet with a drag handle. Portal-rendered, Escape to close,
- * backdrop click to close, body scroll locked while open.
+ * Responsive overlay. Desktop → centered/top modal card or right
+ * slide-over. Mobile → slide-up bottom sheet with a drag handle.
+ * Portal-rendered, Escape to close, backdrop click to close, body
+ * scroll locked while open.
  */
 export function Overlay({
   open,
   onClose,
   size = 'detail',
+  variant = 'center',
   children,
   labelledBy,
   className,
@@ -33,6 +33,7 @@ export function Overlay({
   open: boolean
   onClose: () => void
   size?: OverlaySize
+  variant?: OverlayVariant
   children: ReactNode
   labelledBy?: string
   className?: string
@@ -56,15 +57,23 @@ export function Overlay({
 
   if (!open) return null
 
+  const slideover = variant === 'slideover' && !isMobile
+
   return createPortal(
     <div
       className={cx(
         'fixed inset-0 z-[1000] flex',
-        isMobile ? 'items-end justify-center' : 'items-center justify-center p-6',
+        isMobile
+          ? 'items-end justify-center'
+          : slideover
+            ? 'justify-end'
+            : variant === 'top'
+              ? 'items-start justify-center px-6 pt-[88px] pb-6'
+              : 'items-center justify-center p-6',
       )}
     >
       <div
-        className="absolute inset-0 anim-fadeup bg-[var(--backdrop)] backdrop-blur-[3px]"
+        className="anim-fadeup absolute inset-0 bg-[var(--backdrop)] backdrop-blur-[3px]"
         onClick={onClose}
         aria-hidden
       />
@@ -76,10 +85,15 @@ export function Overlay({
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
         className={cx(
-          'relative flex max-h-full w-full flex-col overflow-hidden border border-edge2 bg-panel shadow-card outline-none',
+          'relative flex max-h-full flex-col overflow-hidden bg-panel outline-none',
           isMobile
-            ? 'anim-sheet max-h-[92vh] rounded-t-2xl'
-            : cx('anim-pop rounded-2xl', MAX_W[size]),
+            ? 'anim-sheet max-h-[92vh] w-full rounded-t-2xl border border-edge2 shadow-card'
+            : slideover
+              ? 'anim-slideover h-full w-[min(420px,94vw)] border-l border-edge2 shadow-card'
+              : cx(
+                  'anim-pop w-full rounded-2xl border border-edge2 shadow-card',
+                  MAX_W[size],
+                ),
           className,
         )}
       >
@@ -95,46 +109,45 @@ export function Overlay({
   )
 }
 
-/** Shared overlay header: kicker + title + optional subtitle + close. */
+/** Shared overlay header: mono kicker + title + optional meta + close. */
 export function OverlayHeader({
-  badge,
   kicker,
   title,
-  subtitle,
+  meta,
   titleId,
   onClose,
 }: {
-  badge?: ReactNode
   kicker?: ReactNode
   title: ReactNode
-  subtitle?: ReactNode
+  meta?: ReactNode
   titleId?: string
   onClose: () => void
 }) {
   return (
-    <div className="flex flex-none items-start gap-3.5 border-b border-edge px-5 py-4 md:px-6 md:py-5">
-      {badge}
+    <div className="flex flex-none items-start justify-between gap-4 border-b border-edge px-[18px] py-4">
       <div className="min-w-0 flex-1">
         {kicker ? (
-          <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-faint">
+          <div className="font-mono text-[9px] uppercase tracking-[0.12em] text-faint">
             {kicker}
           </div>
         ) : null}
         <div
           id={titleId}
-          className="mt-0.5 text-[19px] font-semibold leading-tight tracking-[-0.01em] text-ink md:text-[21px]"
+          className="mt-1 text-[16px] font-semibold leading-tight tracking-[-0.01em] text-ink"
         >
           {title}
         </div>
-        {subtitle ? <div className="mt-0.5 text-[13px] text-dim">{subtitle}</div> : null}
+        {meta ? (
+          <div className="mt-[5px] font-mono text-[11px] text-faint">{meta}</div>
+        ) : null}
       </div>
       <button
         type="button"
         onClick={onClose}
         aria-label="Close"
-        className="flex h-8 w-8 flex-none items-center justify-center rounded-[9px] bg-panel2 text-dim hover:text-ink transition cursor-pointer"
+        className="flex h-8 w-8 flex-none cursor-pointer items-center justify-center rounded-[9px] border border-edge bg-transparent text-dim transition hover:text-ink"
       >
-        <CloseIcon size={16} />
+        <CloseIcon size={14} />
       </button>
     </div>
   )
@@ -146,12 +159,9 @@ export function OverlayHeader({
 export function Toast({ message }: { message: string | null }) {
   if (!message) return null
   return createPortal(
-    <div className="pointer-events-none fixed inset-x-0 bottom-[max(22px,env(safe-area-inset-bottom))] z-[1100] flex justify-center px-4">
-      <div className="anim-fadeup pointer-events-auto flex items-center gap-2.5 rounded-xl border border-edge2 bg-panel px-4 py-3 shadow-card">
-        <span className="flex h-[22px] w-[22px] items-center justify-center rounded-full border border-good-bd bg-good-bg text-good">
-          <CheckIcon size={13} />
-        </span>
-        <span className="text-[13.5px] font-medium text-ink">{message}</span>
+    <div className="pointer-events-none fixed inset-x-0 bottom-[max(20px,env(safe-area-inset-bottom))] z-[1100] flex justify-center px-4">
+      <div className="anim-fadeup pointer-events-auto rounded-[11px] border border-edge2 bg-panel px-[18px] py-3 text-[13px] font-medium text-ink shadow-card">
+        {message}
       </div>
     </div>,
     document.body,
@@ -163,15 +173,39 @@ export function Toast({ message }: { message: string | null }) {
 /* ------------------------------------------------------------------ */
 export function OptimizeOverlay({ step }: { step: string }) {
   return createPortal(
-    <div className="anim-fadeup fixed inset-0 z-[1050] flex items-center justify-center bg-[var(--backdrop)] backdrop-blur-[4px]">
-      <div className="flex flex-col items-center gap-[18px] rounded-2xl border border-edge2 bg-panel px-11 py-9 shadow-card">
-        <div className="h-[46px] w-[46px] animate-spin rounded-full border-[3px] border-edge border-t-accent" />
-        <div className="text-center">
-          <div className="text-[16px] font-semibold text-ink">Optimizing route…</div>
-          <div className="anim-pulse mt-1.5 font-mono text-[11.5px] text-faint">{step}</div>
-        </div>
-      </div>
+    <div
+      className="anim-fadeup fixed inset-0 z-[1050] flex flex-col items-center justify-center gap-[18px] backdrop-blur-[6px]"
+      style={{ background: 'color-mix(in srgb, var(--app-bg) 78%, transparent)' }}
+    >
+      <div className="h-[46px] w-[46px] animate-spin rounded-full border-[3px] border-edge border-t-accent" />
+      <div className="font-mono text-[12px] text-dim">{step}</div>
     </div>,
     document.body,
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* Splash — boot screen while the first optimization loads             */
+/* ------------------------------------------------------------------ */
+export function SplashScreen() {
+  return (
+    <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center gap-5 bg-app">
+      <div
+        className="anim-pulse flex h-14 w-14 items-center justify-center rounded-2xl bg-accent text-on-accent"
+        style={{ boxShadow: '0 0 40px color-mix(in srgb, var(--accent) 55%, transparent)' }}
+      >
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor">
+          <path d="M13 2 4 14h6l-1 8 9-12h-6z" />
+        </svg>
+      </div>
+      <div className="text-center">
+        <div className="text-[15px] font-semibold tracking-[-0.01em] text-ink">
+          Supercharger Quest Planner
+        </div>
+        <div className="mt-1.5 font-mono text-[11px] text-faint">
+          Charting the 2026 Americas competition…
+        </div>
+      </div>
+    </div>
   )
 }

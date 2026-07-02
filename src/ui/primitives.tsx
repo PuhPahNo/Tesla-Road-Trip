@@ -1,10 +1,4 @@
-import {
-  useId,
-  useState,
-  type ButtonHTMLAttributes,
-  type ReactNode,
-} from 'react'
-import { ChevronDownIcon } from './icons'
+import type { ButtonHTMLAttributes, ReactNode } from 'react'
 
 /** Tiny classname joiner. */
 export function cx(...parts: Array<string | false | null | undefined>): string {
@@ -28,6 +22,13 @@ export function toneClasses(tone: Tone): string {
   }
 }
 
+/** Day-rating color ramp from the design: ≥80 good, ≥62 accent2, else warn. */
+export function scoreColor(score: number): string {
+  if (score >= 80) return 'var(--good-tx)'
+  if (score >= 62) return 'var(--accent-2)'
+  return 'var(--warn-tx)'
+}
+
 /* ------------------------------------------------------------------ */
 /* Eyebrow — mono uppercase micro-label                                */
 /* ------------------------------------------------------------------ */
@@ -41,7 +42,7 @@ export function Eyebrow({
   return (
     <div
       className={cx(
-        'font-mono uppercase text-faint text-[9.5px] tracking-[0.14em]',
+        'font-mono uppercase text-faint text-[9px] tracking-[0.12em]',
         className,
       )}
     >
@@ -53,21 +54,20 @@ export function Eyebrow({
 /* ------------------------------------------------------------------ */
 /* Buttons                                                             */
 /* ------------------------------------------------------------------ */
-type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'accent2'
+type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'chip'
 type ButtonSize = 'sm' | 'md' | 'lg'
 
 const VARIANT: Record<ButtonVariant, string> = {
-  primary:
-    'bg-accent text-on-accent border-transparent shadow-[0_1px_2px_rgba(0,0,0,0.18)] hover:brightness-95',
+  primary: 'bg-accent text-on-accent border-transparent hover:brightness-95',
   secondary: 'bg-panel2 text-ink border-edge hover:brightness-95',
   ghost: 'bg-transparent text-dim border-transparent hover:text-ink',
-  accent2: 'bg-accent2 text-on-accent2 border-transparent hover:brightness-95',
+  chip: 'bg-chip text-ink border-glass-bd hover:brightness-110',
 }
 
 const SIZE: Record<ButtonSize, string> = {
-  sm: 'h-8 px-3 text-[12.5px] gap-1.5 rounded-lg',
-  md: 'h-[34px] px-3.5 text-[13px] gap-2 rounded-[9px]',
-  lg: 'h-[42px] px-4 text-[14px] gap-2 rounded-[11px]',
+  sm: 'h-[30px] px-3 text-[11.5px] gap-1.5 rounded-[8px]',
+  md: 'h-[34px] px-3 text-[12px] gap-2 rounded-[9px]',
+  lg: 'h-[42px] px-[22px] text-[13px] gap-2 rounded-[11px]',
 }
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -102,16 +102,24 @@ export function Button({
 interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   label: string
   size?: number
+  variant?: 'plain' | 'chip' | 'accent'
 }
 
 export function IconButton({
   label,
   size = 34,
+  variant = 'plain',
   className,
   children,
   type = 'button',
   ...props
 }: IconButtonProps) {
+  const look =
+    variant === 'accent'
+      ? 'border-transparent bg-accent text-on-accent hover:brightness-95'
+      : variant === 'chip'
+        ? 'border-glass-bd bg-chip text-ink hover:brightness-110'
+        : 'border-transparent bg-transparent text-dim hover:text-ink'
   return (
     <button
       type={type}
@@ -119,7 +127,8 @@ export function IconButton({
       title={label}
       style={{ width: size, height: size }}
       className={cx(
-        'inline-flex items-center justify-center rounded-[9px] border border-edge bg-panel2 text-ink hover:brightness-95 transition cursor-pointer disabled:opacity-60',
+        'inline-flex items-center justify-center rounded-[9px] border transition cursor-pointer disabled:opacity-60',
+        look,
         className,
       )}
       {...props}
@@ -130,7 +139,7 @@ export function IconButton({
 }
 
 /* ------------------------------------------------------------------ */
-/* Segmented control                                                   */
+/* Segmented control — pill group from the config slide-over          */
 /* ------------------------------------------------------------------ */
 export interface SegmentOption<T extends string> {
   value: T
@@ -141,24 +150,23 @@ export function SegmentedControl<T extends string>({
   options,
   value,
   onChange,
-  size = 'md',
-  tone = 'accent',
   ariaLabel,
+  className,
 }: {
   options: SegmentOption<T>[]
   value: T
   onChange: (value: T) => void
-  size?: 'sm' | 'md'
-  tone?: 'accent' | 'accent2'
   ariaLabel?: string
+  className?: string
 }) {
-  const onBg = tone === 'accent2' ? 'bg-accent2 text-on-accent2' : 'bg-accent text-on-accent'
-  const pad = size === 'sm' ? 'px-2.5 py-1 text-[11px]' : 'px-3 py-[5px] text-[12px]'
   return (
     <div
       role="tablist"
       aria-label={ariaLabel}
-      className="inline-flex items-center gap-[3px] rounded-[10px] border border-edge bg-panel2 p-[3px]"
+      className={cx(
+        'flex items-center gap-1.5 rounded-[11px] border border-edge bg-panel2 p-1',
+        className,
+      )}
     >
       {options.map((opt) => {
         const active = opt.value === value
@@ -170,9 +178,8 @@ export function SegmentedControl<T extends string>({
             type="button"
             onClick={() => onChange(opt.value)}
             className={cx(
-              'rounded-[7px] font-semibold leading-none transition cursor-pointer',
-              pad,
-              active ? onBg : 'bg-transparent text-dim hover:text-ink',
+              'h-[34px] flex-1 rounded-lg px-2 text-[11.5px] font-semibold leading-none transition cursor-pointer',
+              active ? 'bg-accent text-on-accent' : 'bg-transparent text-dim hover:text-ink',
             )}
           >
             {opt.label}
@@ -184,36 +191,28 @@ export function SegmentedControl<T extends string>({
 }
 
 /* ------------------------------------------------------------------ */
-/* Stat tile                                                           */
+/* Stat tile — chip-background mono tile from the glass panel         */
 /* ------------------------------------------------------------------ */
 export function StatTile({
   label,
   value,
   unit,
-  icon,
   className,
 }: {
   label: ReactNode
   value: ReactNode
   unit?: ReactNode
-  icon?: ReactNode
   className?: string
 }) {
   return (
-    <div
-      className={cx(
-        'rounded-xl border border-edge bg-panel2 px-3.5 py-[13px]',
-        className,
-      )}
-    >
-      <div className="mb-[7px] flex items-center gap-1.5 text-[10.5px] uppercase tracking-[0.06em] text-faint">
-        {icon}
+    <div className={cx('rounded-[11px] border border-edge bg-chip p-3', className)}>
+      <div className="font-mono text-[9px] uppercase tracking-[0.06em] text-faint">
         {label}
       </div>
-      <div className="font-mono text-[21px] font-semibold leading-none text-ink">
+      <div className="mt-1.5 font-mono text-[23px] font-semibold leading-none tracking-[-0.02em] text-ink">
         {value}
         {unit ? (
-          <span className="ml-[3px] text-[12px] font-normal text-faint">{unit}</span>
+          <span className="ml-[3px] text-[11px] font-normal text-dim">{unit}</span>
         ) : null}
       </div>
     </div>
@@ -239,7 +238,7 @@ export function Chip({
       className={cx(
         'inline-flex flex-none items-center gap-1.5 whitespace-nowrap rounded-full border text-[11.5px]',
         index != null ? 'py-[3px] pr-[9px] pl-[3px]' : 'px-[10px] py-[3px]',
-        tone === 'neutral' ? 'border-edge bg-panel2 text-ink' : toneClasses(tone),
+        tone === 'neutral' ? 'border-edge bg-chip text-ink' : toneClasses(tone),
         className,
       )}
     >
@@ -254,7 +253,7 @@ export function Chip({
 }
 
 /* ------------------------------------------------------------------ */
-/* Status pill (sites/day, over-cap, aux charge …)                     */
+/* Status pill (issues, long days, aux legs …)                         */
 /* ------------------------------------------------------------------ */
 export function Pill({
   children,
@@ -268,7 +267,7 @@ export function Pill({
   return (
     <span
       className={cx(
-        'inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 font-mono text-[11.5px]',
+        'inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 font-mono text-[10.5px]',
         toneClasses(tone),
         className,
       )}
@@ -283,7 +282,7 @@ export function Pill({
 /* ------------------------------------------------------------------ */
 export function ProgressBar({
   pct,
-  tone = 'accent',
+  tone = 'accent2',
   className,
 }: {
   pct: number
@@ -292,75 +291,14 @@ export function ProgressBar({
 }) {
   const clamped = Math.max(0, Math.min(100, pct))
   return (
-    <div className={cx('h-1.5 overflow-hidden rounded bg-chip', className)}>
+    <div className={cx('h-[5px] overflow-hidden rounded-[3px] bg-chip', className)}>
       <div
-        className={cx('h-full rounded', tone === 'accent2' ? 'bg-accent2' : 'bg-accent')}
+        className={cx(
+          'h-full rounded-[3px]',
+          tone === 'accent2' ? 'bg-accent2' : 'bg-accent',
+        )}
         style={{ width: `${clamped}%` }}
       />
-    </div>
-  )
-}
-
-/* ------------------------------------------------------------------ */
-/* Collapsible card (sidebar sections)                                 */
-/* ------------------------------------------------------------------ */
-export function Collapsible({
-  eyebrow,
-  title,
-  meta,
-  defaultOpen = false,
-  open: controlledOpen,
-  onToggle,
-  children,
-  className,
-}: {
-  eyebrow: ReactNode
-  title: ReactNode
-  meta?: ReactNode
-  defaultOpen?: boolean
-  open?: boolean
-  onToggle?: (open: boolean) => void
-  children: ReactNode
-  className?: string
-}) {
-  const [internalOpen, setInternalOpen] = useState(defaultOpen)
-  const isControlled = controlledOpen != null
-  const open = isControlled ? controlledOpen : internalOpen
-  const panelId = useId()
-
-  const toggle = () => {
-    const next = !open
-    if (!isControlled) setInternalOpen(next)
-    onToggle?.(next)
-  }
-
-  return (
-    <div
-      className={cx('overflow-hidden rounded-xl border border-edge bg-panel', className)}
-    >
-      <button
-        type="button"
-        onClick={toggle}
-        aria-expanded={open}
-        aria-controls={panelId}
-        className="flex w-full items-center gap-2.5 px-3.5 py-[13px] text-left text-ink cursor-pointer"
-      >
-        <div className="min-w-0 flex-1">
-          <div className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-faint">
-            {eyebrow}
-          </div>
-          <div className="mt-0.5 truncate text-[13.5px] font-semibold">{title}</div>
-        </div>
-        {meta ? <span className="font-mono text-[11px] text-dim">{meta}</span> : null}
-        <ChevronDownIcon
-          className={cx('text-faint transition-transform', open ? '' : '-rotate-90')}
-        />
-      </button>
-      {open && (
-        <div id={panelId} className="anim-fadeup">
-          {children}
-        </div>
-      )}
     </div>
   )
 }

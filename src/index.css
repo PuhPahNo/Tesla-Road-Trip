@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 /* =====================================================================
-   THEME TOKENS — captured from the Claude Design light + dark variants
+   THEME TOKENS — Supercharger Quest "Cockpit" redesign (Claude Design).
    Dark ("dash") is the default (:root). The no-flash script in index.html
    and the ThemeProvider toggle [data-theme] on <html>.
    ===================================================================== */
@@ -13,8 +13,8 @@
   --canvas-bg: #080b10;
   --panel: #11151c;
   --panel-2: #171c25;
-  --border: rgba(255, 255, 255, 0.075);
-  --border-2: rgba(255, 255, 255, 0.14);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-2: rgba(255, 255, 255, 0.16);
   --text: #e9edf2;
   --dim: #8b929e;
   --faint: #5f6671;
@@ -23,6 +23,7 @@
   --on-accent: #ffffff;
   --on-accent-2: #04211f;
   --node: #0e131a;
+  --amber: #f5a623;
   --good-bg: rgba(11, 213, 208, 0.12);
   --good-bd: rgba(11, 213, 208, 0.4);
   --good-tx: #5ce6e1;
@@ -32,26 +33,24 @@
   --info-bg: rgba(11, 160, 213, 0.12);
   --info-bd: rgba(11, 160, 213, 0.32);
   --info-tx: #5bc8f0;
-  --idle-bg: rgba(255, 255, 255, 0.035);
-  --idle-bd: rgba(255, 255, 255, 0.09);
-  --idle-tx: #7b828d;
-  --map-land: #10151d;
-  --map-line: rgba(255, 255, 255, 0.05);
   --chip: rgba(255, 255, 255, 0.06);
   --route: #ff453a;
-  --shadow: 0 10px 40px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.03);
-  --backdrop: rgba(3, 5, 8, 0.62);
+  --glass: rgba(15, 19, 26, 0.72);
+  --glass-2: rgba(23, 28, 37, 0.82);
+  --glass-bd: rgba(255, 255, 255, 0.1);
+  --shadow: 0 16px 50px rgba(0, 0, 0, 0.6);
+  --backdrop: rgba(3, 5, 8, 0.55);
   --glow: 1;
 }
 
 [data-theme='tesla'] {
   color-scheme: light;
   --app-bg: #ffffff;
-  --canvas-bg: #eef1f3;
+  --canvas-bg: #e9edee;
   --panel: #ffffff;
-  --panel-2: #f6f7f9;
+  --panel-2: #f5f6f8;
   --border: #e7e8ec;
-  --border-2: #d7d9df;
+  --border-2: #d3d6dd;
   --text: #171a20;
   --dim: #5c5e62;
   --faint: #9296a0;
@@ -60,6 +59,7 @@
   --on-accent: #ffffff;
   --on-accent-2: #ffffff;
   --node: #ffffff;
+  --amber: #c2740b;
   --good-bg: #e9f4ee;
   --good-bd: #bfe0cb;
   --good-tx: #1c6b3f;
@@ -69,14 +69,12 @@
   --info-bg: #eef4ff;
   --info-bd: #cfe0ff;
   --info-tx: #2b5fb3;
-  --idle-bg: #ffffff;
-  --idle-bd: #e3e5ea;
-  --idle-tx: #6b6e73;
-  --map-land: #e4e8ec;
-  --map-line: #ffffff;
-  --chip: #eceef1;
+  --chip: rgba(20, 22, 28, 0.05);
   --route: #e82127;
-  --shadow: 0 1px 3px rgba(20, 22, 28, 0.1), 0 12px 32px rgba(20, 22, 28, 0.08);
+  --glass: rgba(255, 255, 255, 0.8);
+  --glass-2: rgba(246, 247, 249, 0.92);
+  --glass-bd: rgba(20, 22, 28, 0.1);
+  --shadow: 0 14px 38px rgba(20, 22, 28, 0.16);
   --backdrop: rgba(23, 26, 32, 0.3);
   --glow: 0;
 }
@@ -100,6 +98,7 @@
   --color-on-accent: var(--on-accent);
   --color-on-accent2: var(--on-accent-2);
   --color-node: var(--node);
+  --color-amber: var(--amber);
   --color-chip: var(--chip);
   --color-route: var(--route);
   --color-good: var(--good-tx);
@@ -111,9 +110,7 @@
   --color-info: var(--info-tx);
   --color-info-bg: var(--info-bg);
   --color-info-bd: var(--info-bd);
-  --color-idle: var(--idle-tx);
-  --color-idle-bg: var(--idle-bg);
-  --color-idle-bd: var(--idle-bd);
+  --color-glass-bd: var(--glass-bd);
 
   --font-sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
@@ -141,8 +138,8 @@ body {
 }
 
 ::-webkit-scrollbar {
-  width: 9px;
-  height: 9px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-thumb {
   background: var(--border-2);
@@ -158,6 +155,17 @@ body.modal-open {
 }
 
 /* =====================================================================
+   Glass islands — the floating chrome surfaces of the cockpit design
+   ===================================================================== */
+.glass {
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-bd);
+  box-shadow: var(--shadow);
+}
+
+/* =====================================================================
    Keyframes from the design
    ===================================================================== */
 @keyframes spin {
@@ -168,21 +176,16 @@ body.modal-open {
 @keyframes pulse {
   0%,
   100% {
-    opacity: 0.4;
+    opacity: 0.35;
   }
   50% {
     opacity: 1;
   }
 }
-@keyframes draw {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
 @keyframes fadeUp {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -199,16 +202,6 @@ body.modal-open {
     transform: scale(1);
   }
 }
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(16px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
 @keyframes sheetUp {
   from {
     transform: translateY(100%);
@@ -217,18 +210,26 @@ body.modal-open {
     transform: translateY(0);
   }
 }
+@keyframes sheetRight {
+  from {
+    transform: translateX(110%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
 
 .anim-fadeup {
   animation: fadeUp 0.2s ease;
 }
 .anim-pop {
-  animation: pop 0.22s ease;
-}
-.anim-slidein {
-  animation: slideIn 0.25s ease;
+  animation: pop 0.2s ease;
 }
 .anim-sheet {
   animation: sheetUp 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.anim-slideover {
+  animation: sheetRight 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .anim-pulse {
   animation: pulse 1.2s ease infinite;
@@ -255,10 +256,9 @@ body.modal-open {
   font-family: var(--font-sans);
 }
 .leaflet-control-attribution {
-  background: color-mix(in srgb, var(--panel) 78%, transparent) !important;
+  background: transparent !important;
   color: var(--faint) !important;
-  border-radius: 7px 0 0 0;
-  font-size: 10px;
+  font-size: 9px;
 }
 .leaflet-control-attribution a {
   color: var(--dim) !important;
@@ -276,7 +276,7 @@ body.modal-open {
 .leaflet-popup-content {
   font-size: 12.5px;
   line-height: 1.5;
-  margin: 11px 14px;
+  margin: 11px 13px;
 }
 .leaflet-popup-close-button {
   color: var(--faint) !important;
@@ -286,25 +286,18 @@ body.modal-open {
   color: var(--text);
   border: 1px solid var(--border-2);
   box-shadow: var(--shadow);
-  border-radius: 8px;
+  border-radius: 7px;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 10.5px;
+  padding: 4px 7px;
 }
 .leaflet-tooltip-top::before {
   border-top-color: var(--border-2);
 }
 .sqp-state-tooltip {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 10.5px;
   letter-spacing: 0.01em;
-}
-.leaflet-bar a {
-  background: var(--panel);
-  color: var(--text);
-  border-color: var(--border);
-}
-.leaflet-bar a:hover {
-  background: var(--panel-2);
 }
 
 /* safe-area helpers for mobile */
