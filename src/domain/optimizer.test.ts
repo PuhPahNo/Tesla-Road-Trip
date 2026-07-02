@@ -169,6 +169,56 @@ describe('route optimizer', () => {
     expect(bayAreaVisits.length).toBeGreaterThanOrEqual(2)
   })
 
+  it('guarantees a state signature stop for states the streak drives through', () => {
+    const sedona = { lat: 34.8697, lon: -111.7609 }
+    const grandCanyon = { lat: 36.1069, lon: -112.1129 }
+    const result = optimizeRoutes(
+      [
+        ...buildStationGrid(),
+        makeNamedStation(800, 'Sedona Supercharger', 'Sedona', 'AZ', 34.8697, -111.7609),
+      ],
+      {
+        ...defaultPlannerConfig,
+        longestTripDays: 12,
+      },
+    )
+
+    // Any Arizona presence counts — even a route that only crosses the
+    // state via a range connector drives through it and owes a signature.
+    const arizonaRoutes = result.routes.filter((route) =>
+      route.visits.some((visit) => visit.station.address.state === 'AZ'),
+    )
+
+    expect(arizonaRoutes.length).toBeGreaterThan(0)
+    arizonaRoutes.forEach((route) => {
+      const covered = route.visits.some(
+        (visit) =>
+          haversineMiles(visit.station.position, sedona) <= 55 ||
+          haversineMiles(visit.station.position, grandCanyon) <= 95,
+      )
+      expect(covered).toBe(true)
+    })
+  })
+
+  it('warns when a driven-through state has no reachable signature stop', () => {
+    const result = optimizeRoutes(buildStationGrid(), {
+      ...defaultPlannerConfig,
+      longestTripDays: 12,
+    })
+    // The grid's only Florida stations sit in Jacksonville, far from every
+    // Florida signature (Kennedy Space Center, Disney, South Beach).
+    const floridaRoutes = result.routes.filter((route) =>
+      route.visits.some((visit) => visit.station.address.state === 'FL'),
+    )
+
+    expect(floridaRoutes.length).toBeGreaterThan(0)
+    floridaRoutes.forEach((route) => {
+      expect(
+        route.warnings.some((warning) => warning.includes('Florida')),
+      ).toBe(true)
+    })
+  })
+
   it('rates visited cities, landmarks, day segments, and the full trip', () => {
     const result = optimizeRoutes(
       [

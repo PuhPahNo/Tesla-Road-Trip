@@ -16,6 +16,8 @@ import {
   buildSegmentRating,
   emptySegmentRating,
 } from './ratings'
+import { STATE_SIGNATURES, type StateSignature } from './stateSignatures'
+import { STATE_CODE_TO_NAME } from './usStates'
 import type {
   Coordinate,
   DayPlan,
@@ -1549,6 +1551,7 @@ function chooseStationsForVariant(
     selected: selected.sort(
       (a, b) => a.order - b.order || a.distanceMiles - b.distanceMiles,
     ),
+    scored,
     waypointWarnings,
     protectedStationIds: forcedStationIds,
   }
@@ -1617,6 +1620,94 @@ function ensureVisitTargetStations(
   }
 
   return { selected: next, warnings }
+}
+
+/**
+ * Off-corridor cap for auto-added signature stops. Beyond this the detour
+ * would dominate the day plan, so the route warns instead of detouring;
+ * the user can still force it with an explicit must-visit target.
+ */
+const STATE_SIGNATURE_MAX_DETOUR_MILES = 220
+
+/**
+ * Guarantee the tour actually sees each state it drives through: for every
+ * state the route touches (streak stops and range connectors both count as
+ * driving through), make sure at least one stop falls near a signature
+ * destination (Grand Canyon/Sedona for AZ, the Strip for NV, Rocky
+ * Mountain NP for CO, …). When none is covered, force in the signature
+ * station that's cheapest to weave into the corridor as a streak stop.
+ */
+function ensureStateSignatureStations(
+  selected: ScoredStation[],
+  scored: ScoredStation[],
+  forcedStationIds: Set<string>,
+  routeStations: Station[],
+  handledStates: Set<string>,
+) {
+  const next = selected.slice()
+  const warnings: string[] = []
+  let forcedAny = false
+  const coverage = routeStations.slice()
+  const states = [...new Set(coverage.map((station) => station.address.state))]
+    .filter((state) => !handledStates.has(state) && STATE_SIGNATURES[state]?.length)
+    .sort()
+
+  for (const state of states) {
+    const signatures = STATE_SIGNATURES[state]
+    const satisfied = signatures.some((signature) =>
+      coverage.some(
+        (station) =>
+          haversineMiles(station.position, signature.position) <=
+          signature.radiusMiles,
+      ),
+    )
+    if (satisfied) continue
+
+    let best: { signature: StateSignature; candidate: ScoredStation } | undefined
+    for (const signature of signatures) {
+      const candidate = scored
+        .filter(
+          (item) =>
+            haversineMiles(item.station.position, signature.position) <=
+            signature.radiusMiles,
+        )
+        .sort((a, b) => a.distanceMiles - b.distanceMiles)[0]
+      if (!candidate) continue
+      if (!best || candidate.distanceMiles < best.candidate.distanceMiles) {
+        best = { signature, candidate }
+      }
+    }
+
+    const stateName = STATE_CODE_TO_NAME[state] ?? state
+    if (!best) {
+      warnings.push(
+        `This route stops in ${stateName} but no Supercharger sits near a signature stop there (${signatures
+          .map((signature) => signature.label)
+          .join(', ')}).`,
+      )
+      handledStates.add(state)
+      continue
+    }
+    if (best.candidate.distanceMiles > STATE_SIGNATURE_MAX_DETOUR_MILES) {
+      warnings.push(
+        `${best.signature.label} is ${round(best.candidate.distanceMiles)} miles off this corridor — skipped to protect the streak. Add it as a must-visit target to force the detour.`,
+      )
+      handledStates.add(state)
+      continue
+    }
+
+    handledStates.add(state)
+    forcedStationIds.add(best.candidate.station.id)
+    forcedAny = true
+    if (!next.some((item) => item.station.id === best.candidate.station.id)) {
+      next.push(best.candidate)
+    }
+    // A newly forced stop can cover a neighboring state too (e.g. Liberty
+    // State Park serves both the NY and NJ signatures).
+    coverage.push(best.candidate.station)
+  }
+
+  return { selected: next, warnings, forcedAny }
 }
 
 function trimWithForcedStations(
@@ -3180,17 +3271,17 @@ export function optimizeRoutes(
             : undefined,
       },
     )
-    const stationOrder =
-      config.plannerMode === 'longest_trip'
-        ? orderLongestTripStations(stationChoice.selected, config.start)
-        : optimizeStationOrder(stationChoice.selected, config.start)
-    const expandedStations = insertConnectorStops(
-      stationOrder,
-      stations,
-      config,
-    )
-    const orderedStations =
-      config.plannerMode === 'longest_trip'
+    const buildOrderedStations = (selected: ScoredStation[]) => {
+      const stationOrder =
+        config.plannerMode === 'longest_trip'
+          ? orderLongestTripStations(selected, config.start)
+          : optimizeStationOrder(selected, config.start)
+      const expandedStations = insertConnectorStops(
+        stationOrder,
+        stations,
+        config,
+      )
+      return config.plannerMode === 'longest_trip'
         ? repairLongestTripLegSpacing(
             takeRouteSequenceStations(
               expandedStations,
@@ -3203,6 +3294,35 @@ export function optimizeRoutes(
             stationChoice.protectedStationIds,
           )
         : expandedStations
+    }
+
+    let orderedStations = buildOrderedStations(stationChoice.selected)
+
+    // Longest Trip: connectors reveal every state the route actually
+    // drives through, so guarantee each one's signature stop and rebuild
+    // the sequence when new stops were woven in. A rebuild can route new
+    // connectors through yet another state, so iterate to a fixpoint
+    // (bounded — each state is handled at most once).
+    if (config.plannerMode === 'longest_trip') {
+      const handledStates = new Set<string>()
+      let signatureSelected = stationChoice.selected
+      for (let pass = 0; pass < 3; pass += 1) {
+        const signatureResult = ensureStateSignatureStations(
+          signatureSelected,
+          stationChoice.scored,
+          stationChoice.protectedStationIds,
+          orderedStations.map((item) => item.station),
+          handledStates,
+        )
+        stationChoice.waypointWarnings.push(...signatureResult.warnings)
+        if (!signatureResult.forcedAny) break
+        signatureSelected = signatureResult.selected.sort(
+          (a, b) => a.order - b.order || a.distanceMiles - b.distanceMiles,
+        )
+        orderedStations = buildOrderedStations(signatureSelected)
+      }
+    }
+
     const plans = buildRouteDayPlans(orderedStations, variant.name, config)
     const totalDays = plans.days.length
     const uniqueStations = plans.totals.uniqueStationCount
