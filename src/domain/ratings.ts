@@ -1,6 +1,7 @@
-import { round } from './geo'
+import { haversineMiles, round } from './geo'
 import { stationHighlights, type StationHighlight } from './highlights'
 import type {
+  Coordinate,
   DayPlan,
   PlaceRating,
   PlaceRatingType,
@@ -8,6 +9,17 @@ import type {
   SegmentRating,
   Station,
 } from './types'
+
+export interface RatingPlaceTarget {
+  id: string
+  type: PlaceRatingType
+  label: string
+  position: Coordinate
+  radiusMiles: number
+  rating: number
+  sceneryScore: number
+  summary: string
+}
 
 const STATE_SCENERY_SCORE: Record<string, number> = {
   AK: 96,
@@ -64,12 +76,13 @@ export function buildSegmentRating(
   visits: RouteStationVisit[],
   scope: 'day' | 'trip' = 'day',
   hasTravel = false,
+  ratingTargets: RatingPlaceTarget[] = [],
 ): SegmentRating {
   if (visits.length === 0) {
     return hasTravel ? driveOnlySegmentRating() : emptySegmentRating()
   }
 
-  const places = buildPlaceRatings(visits)
+  const places = buildPlaceRatings(visits, ratingTargets)
   const sceneryScore = computeSceneryScore(visits, places)
   const cityPlaces = places.filter((place) => place.type === 'city')
   const landmarkPlaces = places.filter((place) => place.type === 'landmark')
@@ -106,11 +119,14 @@ export function buildSegmentRating(
   }
 }
 
-export function buildRouteRating(days: DayPlan[]): SegmentRating {
+export function buildRouteRating(
+  days: DayPlan[],
+  ratingTargets: RatingPlaceTarget[] = [],
+): SegmentRating {
   const visits = days.flatMap((day) => day.visits)
   if (visits.length === 0) return emptySegmentRating()
 
-  const placeRating = buildSegmentRating(visits, 'trip')
+  const placeRating = buildSegmentRating(visits, 'trip', false, ratingTargets)
   const ratedDays = days.filter((day) => day.rating.score > 0)
   const weightedDayScore =
     ratedDays.length > 0
@@ -135,7 +151,10 @@ export function buildRouteRating(days: DayPlan[]): SegmentRating {
   }
 }
 
-function buildPlaceRatings(visits: RouteStationVisit[]): PlaceRating[] {
+function buildPlaceRatings(
+  visits: RouteStationVisit[],
+  ratingTargets: RatingPlaceTarget[] = [],
+): PlaceRating[] {
   const places = new Map<string, PlaceRating>()
 
   visits.forEach((visit) => {
@@ -151,6 +170,24 @@ function buildPlaceRatings(visits: RouteStationVisit[]): PlaceRating[] {
         visits: 1,
         summary: highlight.summary,
       })
+    })
+  })
+
+  ratingTargets.forEach((target) => {
+    const matchedVisits = visits.filter(
+      (visit) =>
+        haversineMiles(visit.station.position, target.position) <= target.radiusMiles,
+    )
+    if (matchedVisits.length === 0) return
+
+    addPlace(places, {
+      id: `target:${target.id}`,
+      type: target.type,
+      label: target.label,
+      rating: target.rating,
+      sceneryScore: target.sceneryScore,
+      visits: matchedVisits.length,
+      summary: target.summary,
     })
   })
 
@@ -183,18 +220,35 @@ function addCityPlace(places: Map<string, PlaceRating>, station: Station) {
 }
 
 function addPlace(places: Map<string, PlaceRating>, next: PlaceRating) {
-  const current = places.get(next.id)
+  const currentId = matchingPlaceId(places, next)
+  const current = currentId ? places.get(currentId) : undefined
   if (!current) {
     places.set(next.id, next)
     return
   }
 
-  places.set(next.id, {
+  places.set(currentId!, {
     ...current,
     rating: Math.max(current.rating, next.rating),
     sceneryScore: Math.max(current.sceneryScore, next.sceneryScore),
     visits: current.visits + next.visits,
+    summary: current.rating >= next.rating ? current.summary : next.summary,
   })
+}
+
+function matchingPlaceId(places: Map<string, PlaceRating>, next: PlaceRating) {
+  if (places.has(next.id)) return next.id
+
+  const labelKey = normalizedPlaceLabel(next)
+  for (const [id, place] of places) {
+    if (normalizedPlaceLabel(place) === labelKey) return id
+  }
+
+  return undefined
+}
+
+function normalizedPlaceLabel(place: Pick<PlaceRating, 'type' | 'label'>) {
+  return `${place.type}:${place.label.trim().toLowerCase()}`
 }
 
 function placeTypeForHighlight(highlight: StationHighlight): PlaceRatingType {

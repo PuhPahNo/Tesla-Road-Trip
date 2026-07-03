@@ -15,7 +15,10 @@ import {
   buildRouteRating,
   buildSegmentRating,
   emptySegmentRating,
+  type RatingPlaceTarget,
 } from './ratings'
+import { detailForCatalogPlace } from './placeDetails'
+import { getPlaceCatalogEntry } from './placeCatalog'
 import { STATE_SIGNATURES, type StateSignature } from './stateSignatures'
 import { STATE_CODE_TO_NAME } from './usStates'
 import type {
@@ -2131,6 +2134,7 @@ function buildDayPlans(
   /** Real per-leg drive hours (e.g. ORS durations, speed-limit aware). When
    *  present, drive time uses these instead of distance / averageMph. */
   precomputedDriveHours?: number[],
+  ratingTargets: RatingPlaceTarget[] = [],
 ) {
   const days: DayPlan[] = []
   const visits: RouteStationVisit[] = []
@@ -2171,7 +2175,7 @@ function buildDayPlans(
         day.longDayOptimized = true
         day.longDayReason = longDayOpportunity.reason
       } else {
-        days.push(finalizeDay(day, config))
+        days.push(finalizeDay(day, config, ratingTargets))
         day = emptyDay(day.day + 1)
       }
     }
@@ -2183,7 +2187,7 @@ function buildDayPlans(
       day.visits.length > 0 &&
       day.driveHours + activeDriveHours > getCurrentDayCap(day, config)
     ) {
-      days.push(finalizeDay(day, config))
+      days.push(finalizeDay(day, config, ratingTargets))
       day = emptyDay(day.day + 1)
     }
 
@@ -2238,7 +2242,7 @@ function buildDayPlans(
     day.visits.length > 0 &&
     day.driveHours + returnDriveHours > config.dailyDriveTargetHours
   ) {
-    days.push(finalizeDay(day, config))
+    days.push(finalizeDay(day, config, ratingTargets))
     day = emptyDay(day.day + 1)
   }
 
@@ -2249,7 +2253,7 @@ function buildDayPlans(
       `Return leg is ${round(returnLegMiles)} miles, above configured practical range.`,
     )
   }
-  days.push(finalizeDay(day, config))
+  days.push(finalizeDay(day, config, ratingTargets))
 
   const totalMiles = days.reduce((sum, item) => sum + item.miles, 0)
   const totalDriveHours = days.reduce((sum, item) => sum + item.driveHours, 0)
@@ -2323,6 +2327,7 @@ function buildLongestTripDayPlans(
   precomputedLegMiles?: number[],
   /** Real per-leg drive hours. */
   precomputedDriveHours?: number[],
+  ratingTargets: RatingPlaceTarget[] = [],
 ) {
   const days: DayPlan[] = []
   const visits: RouteStationVisit[] = []
@@ -2393,7 +2398,7 @@ function buildLongestTripDayPlans(
     }
 
     visits.push(visit)
-    days.push(finalizeDay(day, config))
+    days.push(finalizeDay(day, config, ratingTargets))
     previous = {
       position: scoredStation.station.position,
       order: scoredStation.order,
@@ -2480,6 +2485,7 @@ function buildRouteDayPlans(
   config: PlannerConfig,
   precomputedLegMiles?: number[],
   precomputedDriveHours?: number[],
+  ratingTargets: RatingPlaceTarget[] = [],
 ) {
   if (config.plannerMode === 'longest_trip') {
     return buildLongestTripDayPlans(
@@ -2488,6 +2494,7 @@ function buildRouteDayPlans(
       config,
       precomputedLegMiles,
       precomputedDriveHours,
+      ratingTargets,
     )
   }
 
@@ -2497,6 +2504,7 @@ function buildRouteDayPlans(
     config,
     precomputedLegMiles,
     precomputedDriveHours,
+    ratingTargets,
   )
 }
 
@@ -3230,7 +3238,126 @@ function dedupeWaypoints(waypoints: RouteWaypoint[]) {
   })
 }
 
-function finalizeDay(day: DayPlan, config: PlannerConfig): DayPlan {
+function ratingTargetsForVariant(
+  config: PlannerConfig,
+  forcedWaypoints: RouteWaypoint[],
+) {
+  return buildRatingTargets(
+    forcedWaypoints,
+    config.plannerMode === 'longest_trip' ? config.longestTripTargets : [],
+  )
+}
+
+function ratingTargetsForRefinedRoute(config: PlannerConfig, routeId: string) {
+  const savedRoute = config.savedCustomRoutes.find((route) => route.id === routeId)
+  const routeWaypoints =
+    savedRoute?.waypoints ??
+    (routeId === 'custom-ai-route' || routeId === 'custom-longest-trip'
+      ? config.customRouteWaypoints
+      : [])
+
+  return buildRatingTargets(
+    dedupeWaypoints([...config.requiredWaypoints, ...routeWaypoints]),
+    config.plannerMode === 'longest_trip' ? config.longestTripTargets : [],
+  )
+}
+
+function buildRatingTargets(
+  waypoints: RouteWaypoint[],
+  visitTargets: LongestTripVisitTarget[] = [],
+): RatingPlaceTarget[] {
+  const targets = [
+    ...waypoints.map(ratingTargetForWaypoint),
+    ...visitTargets
+      .map(ratingTargetForVisitTarget)
+      .filter((target): target is RatingPlaceTarget => Boolean(target)),
+  ]
+  const seen = new Set<string>()
+
+  return targets.filter((target) => {
+    const key = `${target.type}:${target.label.toLowerCase()}`
+    if (seen.has(target.id) || seen.has(key)) return false
+    seen.add(target.id)
+    seen.add(key)
+    return true
+  })
+}
+
+function ratingTargetForWaypoint(waypoint: RouteWaypoint): RatingPlaceTarget {
+  const catalogEntry = getPlaceCatalogEntry(waypoint.id)
+  const type = catalogEntry?.type ?? inferWaypointType(waypoint)
+  const detail = catalogEntry
+    ? detailForCatalogPlace(catalogEntry)
+    : fallbackRatingTargetDetail(type, waypoint.label)
+
+  return {
+    id: `waypoint:${waypoint.id}`,
+    type,
+    label: waypoint.label,
+    position: waypoint.position,
+    radiusMiles: ratingTargetRadius(waypoint.radiusMiles),
+    rating: detail.rating,
+    sceneryScore: detail.sceneryScore,
+    summary: detail.summary,
+  }
+}
+
+function ratingTargetForVisitTarget(
+  target: LongestTripVisitTarget,
+): RatingPlaceTarget | undefined {
+  if (target.type === 'state' || !target.position) return undefined
+
+  const catalogEntry = getPlaceCatalogEntry(target.id)
+  const type = catalogEntry?.type ?? target.type
+  const detail = catalogEntry
+    ? detailForCatalogPlace(catalogEntry)
+    : fallbackRatingTargetDetail(type, target.label)
+
+  return {
+    id: `visit-target:${target.id}`,
+    type,
+    label: target.label,
+    position: target.position,
+    radiusMiles: ratingTargetRadius(target.radiusMiles ?? 50),
+    rating: detail.rating,
+    sceneryScore: detail.sceneryScore,
+    summary: detail.summary,
+  }
+}
+
+function inferWaypointType(waypoint: RouteWaypoint) {
+  const value = `${waypoint.id} ${waypoint.reason ?? ''}`.toLowerCase()
+  return value.includes('city') ? 'city' : 'landmark'
+}
+
+function fallbackRatingTargetDetail(
+  type: RatingPlaceTarget['type'],
+  label: string,
+) {
+  if (type === 'city') {
+    return {
+      rating: 80,
+      sceneryScore: 62,
+      summary: `${label} is a selected city stop, so the route rating now reflects reaching that planned destination.`,
+    }
+  }
+
+  return {
+    rating: 82,
+    sceneryScore: 68,
+    summary: `${label} is a selected landmark stop, so the route rating now reflects reaching that planned destination.`,
+  }
+}
+
+function ratingTargetRadius(radiusMiles: number) {
+  return Math.max(35, Math.min(250, radiusMiles))
+}
+
+function finalizeDay(
+  day: DayPlan,
+  config: PlannerConfig,
+  ratingTargets: RatingPlaceTarget[] = [],
+): DayPlan {
   const warnings = [...day.warnings]
   const advisories = [...day.advisories]
   const overRangeVisits = day.visits.filter((visit) => visit.rangeWarning)
@@ -3302,7 +3429,12 @@ function finalizeDay(day: DayPlan, config: PlannerConfig): DayPlan {
       ...visit,
       day: day.day,
     })),
-    rating: buildSegmentRating(day.visits, 'day', day.miles > 0 || day.driveHours > 0),
+    rating: buildSegmentRating(
+      day.visits,
+      'day',
+      day.miles > 0 || day.driveHours > 0,
+      ratingTargets,
+    ),
   }
 }
 
@@ -3328,7 +3460,15 @@ export function refineRouteWithRoadLegs(
     segmentIndex: 0,
     segmentProgress: 0,
   }))
-  const plans = buildRouteDayPlans(scored, meta.name, config, legMiles, driveHours)
+  const ratingTargets = ratingTargetsForRefinedRoute(config, meta.id)
+  const plans = buildRouteDayPlans(
+    scored,
+    meta.name,
+    config,
+    legMiles,
+    driveHours,
+    ratingTargets,
+  )
   const totalDays = Math.max(1, plans.days.length)
   const uniqueStations = plans.totals.uniqueStationCount
   const chargeStops = plans.visits.length
@@ -3357,7 +3497,7 @@ export function refineRouteWithRoadLegs(
     advisories: plans.totals.advisories,
     longDays: plans.totals.longDays,
     routeLine: buildDisplayRouteLine(scored, config.start),
-    rating: buildRouteRating(plans.days),
+    rating: buildRouteRating(plans.days, ratingTargets),
   }
 }
 
@@ -3455,7 +3595,15 @@ export function optimizeRoutes(
       }
     }
 
-    const plans = buildRouteDayPlans(orderedStations, variant.name, config)
+    const ratingTargets = ratingTargetsForVariant(config, variant.forcedWaypoints)
+    const plans = buildRouteDayPlans(
+      orderedStations,
+      variant.name,
+      config,
+      undefined,
+      undefined,
+      ratingTargets,
+    )
     const totalDays = plans.days.length
     const uniqueStations = plans.totals.uniqueStationCount
     const chargeStops = plans.visits.length
@@ -3490,7 +3638,7 @@ export function optimizeRoutes(
       advisories: plans.totals.advisories,
       longDays: plans.totals.longDays,
       routeLine: buildDisplayRouteLine(orderedStations, config.start),
-      rating: buildRouteRating(plans.days),
+      rating: buildRouteRating(plans.days, ratingTargets),
     }
   })
 

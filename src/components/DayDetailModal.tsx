@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { stationHighlights } from '../domain/highlights'
 import type { DayPlan, RoutePlan, RouteStationVisit } from '../domain/types'
 import { Overlay, OverlayHeader } from '../ui/Overlay'
 import { cx } from '../ui/primitives'
@@ -133,18 +134,52 @@ function DayDetailContent({
 
 function VisitRow({ visit, route }: { visit: RouteStationVisit; route?: RoutePlan }) {
   const dotColor = visit.connectorStop ? 'var(--amber)' : route?.color ?? 'var(--accent)'
+  const badges = stationHighlights(visit.station).filter(
+    (highlight) => highlight.type === 'tesla_badge',
+  )
+  const hasBadges = badges.length > 0
   return (
-    <div className="flex gap-3 border-b border-edge px-[18px] py-[11px] last:border-b-0">
+    <div
+      className="flex gap-3 border-b border-edge px-[18px] py-[11px] last:border-b-0"
+      style={
+        hasBadges
+          ? {
+              background: 'color-mix(in srgb, var(--accent-2) 9%, transparent)',
+            }
+          : undefined
+      }
+    >
       <div className="flex flex-none flex-col items-center pt-0.5" aria-hidden>
         <span
           className="h-[9px] w-[9px] rounded-full border-2 border-panel"
-          style={{ background: dotColor }}
+          style={{
+            background: hasBadges ? 'var(--amber)' : dotColor,
+            boxShadow: hasBadges
+              ? '0 0 0 4px color-mix(in srgb, var(--amber) 18%, transparent)'
+              : undefined,
+          }}
         />
         <span className="mt-0.5 w-[2px] flex-1 bg-edge" />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="text-[13px] font-semibold text-ink">
-          {visit.sequence}. {visit.station.name}
+        <div className="flex flex-wrap items-center gap-2 text-[13px] font-semibold text-ink">
+          <span className="min-w-0 truncate">
+            {visit.sequence}. {visit.station.name}
+          </span>
+          {badges.map((badge) => (
+            <span
+              key={badge.id}
+              title={`${badge.summary} Rating ${badge.rating}/100.`}
+              className="inline-flex flex-none items-center gap-1 rounded-[8px] border px-2 py-0.5 font-mono text-[9.5px] uppercase tracking-[0.05em] text-amber"
+              style={{
+                borderColor: 'color-mix(in srgb, var(--amber) 48%, transparent)',
+                background: 'color-mix(in srgb, var(--amber) 14%, transparent)',
+              }}
+            >
+              Tesla badge
+              <span className="text-ink">{badge.rating}</span>
+            </span>
+          ))}
         </div>
         <div className="mt-[3px] font-mono text-[10.5px] text-faint">
           Day {visit.day} · {Math.round(visit.legMiles)} mi leg · {Math.round(visit.stopMinutes)}{' '}

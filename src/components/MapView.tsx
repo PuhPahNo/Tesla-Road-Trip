@@ -20,6 +20,7 @@ import type {
   Station,
 } from '../domain/types'
 import { haversineMiles, simplifyPolyline } from '../domain/geo'
+import { stationHighlights } from '../domain/highlights'
 import { STATE_NAME_TO_CODE } from '../domain/usStates'
 import usStatesRaw from '../assets/us-states.json'
 import { useTheme } from '../theme/theme'
@@ -53,6 +54,8 @@ const ROAD_POLYLINE_SMOOTH_FACTOR = 3.5
 const TURN_MARKER_MIN_LEG_MILES = 12
 const TURN_MARKER_MIN_ANGLE_DEGREES = 105
 const DAY_BOUNDARY_MATCH_TOLERANCE_MILES = 5
+const BADGE_MARKER_FILL = '#d72638'
+const BADGE_MARKER_STROKE = '#facc15'
 
 const TILE_URL = {
   tesla: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
@@ -307,39 +310,75 @@ function RouteStopMarkers({
   return (
     <>
       {visits.map((visit) => (
-        <CircleMarker
+        <RouteStopMarker
           key={`${route.id}-${visit.sequence}-${visit.station.id}`}
-          center={[visit.station.position.lat, visit.station.position.lon]}
-          radius={
-            (visit.connectorStop ? 3.5 : visit.sequence % 10 === 0 ? 5 : 4) * scale
-          }
-          pathOptions={{
-            color: nodeColor,
-            fillColor: visit.connectorStop ? connectorColor : route.color,
-            fillOpacity: 0.95,
-            opacity: 0.95,
-            weight: Math.max(0.75, 1.5 * scale),
-          }}
-        >
-          <Popup>
-            <strong>
-              {visit.sequence}. {visit.station.name}
-            </strong>
-            <br />
-            Day {visit.day} · {Math.round(visit.legMiles)} mi leg ·{' '}
-            {visit.stopMinutes} min stop
-            {visit.connectorStop ? (
-              <>
-                <br />
-                Transfer connector
-              </>
-            ) : null}
-            <br />
-            {visit.station.address.city}, {visit.station.address.state}
-          </Popup>
-        </CircleMarker>
+          route={route}
+          visit={visit}
+          scale={scale}
+          nodeColor={nodeColor}
+          connectorColor={connectorColor}
+        />
       ))}
     </>
+  )
+}
+
+function RouteStopMarker({
+  route,
+  visit,
+  scale,
+  nodeColor,
+  connectorColor,
+}: {
+  route: RoutePlan
+  visit: RouteStationVisit
+  scale: number
+  nodeColor: string
+  connectorColor: string
+}) {
+  const badges = teslaBadgeHighlights(visit)
+  const hasBadges = badges.length > 0
+  const baseRadius = visit.connectorStop ? 3.5 : visit.sequence % 10 === 0 ? 5 : 4
+
+  return (
+    <CircleMarker
+      center={[visit.station.position.lat, visit.station.position.lon]}
+      radius={(hasBadges ? Math.max(baseRadius, 6) : baseRadius) * scale}
+      pathOptions={{
+        color: hasBadges ? BADGE_MARKER_STROKE : nodeColor,
+        fillColor: hasBadges
+          ? BADGE_MARKER_FILL
+          : visit.connectorStop
+            ? connectorColor
+            : route.color,
+        fillOpacity: hasBadges ? 1 : 0.95,
+        opacity: 0.95,
+        weight: Math.max(hasBadges ? 2 : 0.75, (hasBadges ? 2.5 : 1.5) * scale),
+      }}
+    >
+      <Popup>
+        <strong>
+          {visit.sequence}. {visit.station.name}
+        </strong>
+        <br />
+        Day {visit.day} · {Math.round(visit.legMiles)} mi leg ·{' '}
+        {visit.stopMinutes} min stop
+        {visit.connectorStop ? (
+          <>
+            <br />
+            Transfer connector
+          </>
+        ) : null}
+        {hasBadges ? (
+          <>
+            <br />
+            Tesla badge: {badges.map((badge) => badge.label).join(', ')}
+          </>
+        ) : null}
+        <br />
+        {visit.station.address.city}, {visit.station.address.state}
+      </Popup>
+    </CircleMarker>
   )
 }
 
@@ -717,8 +756,15 @@ function selectRouteMarkers(visits: RouteStationVisit[], maxMarkers: number) {
       index === visits.length - 1 ||
       isDayBoundaryVisit(visits, index) ||
       isSharpTurnVisit(visits, index) ||
+      teslaBadgeHighlights(visit).length > 0 ||
       visit.sequence % 10 === 0 ||
       index % stride === 0,
+  )
+}
+
+function teslaBadgeHighlights(visit: RouteStationVisit) {
+  return stationHighlights(visit.station).filter(
+    (highlight) => highlight.type === 'tesla_badge',
   )
 }
 

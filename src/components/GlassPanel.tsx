@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
-import type { PlaceRating, RoutePlan } from '../domain/types'
+import type { DayPlan, PlaceRating, RoutePlan } from '../domain/types'
 import type { StateRouteStats } from '../domain/routeStats'
+import { stationHighlights } from '../domain/highlights'
 import { buildTripComposition, topLandmarkLabel } from '../domain/tripComposition'
 import type { StationsResponse } from '../api/client'
 import { ProgressBar, StatTile, cx, scoreColor } from '../ui/primitives'
@@ -265,6 +266,7 @@ export function DaysSection({
           cities.slice(0, 3).join(' · ') +
           (cities.length > 3 ? ` +${cities.length - 3}` : '')
         const active = hoveredDayIndex === index
+        const badgeCount = teslaBadgeCount(day)
         return (
           <button
             key={day.day}
@@ -303,6 +305,11 @@ export function DaysSection({
               <span>{day.uniqueStations} sites</span>
               <span>{day.miles.toLocaleString()} mi</span>
               <span>{day.driveHours.toFixed(1)}h</span>
+              {badgeCount > 0 && (
+                <span className="text-amber">
+                  {badgeCount} badge{badgeCount === 1 ? '' : 's'}
+                </span>
+              )}
               {day.longDayOptimized && <span className="text-amber">long day</span>}
               {day.warnings.length + day.advisories.length > 0 && (
                 <span className={day.warnings.length > 0 ? 'text-warn' : 'text-info'}>
@@ -316,6 +323,16 @@ export function DaysSection({
       })}
     </div>
   )
+}
+
+function teslaBadgeCount(day: DayPlan) {
+  const badges = new Set<string>()
+  day.visits.forEach((visit) => {
+    stationHighlights(visit.station)
+      .filter((highlight) => highlight.type === 'tesla_badge')
+      .forEach((highlight) => badges.add(highlight.id))
+  })
+  return badges.size
 }
 
 /* ------------------------------------------------------------------ */

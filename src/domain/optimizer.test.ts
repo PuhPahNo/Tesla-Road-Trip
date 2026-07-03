@@ -324,6 +324,61 @@ describe('route optimizer', () => {
     ).toBe(true)
   })
 
+  it('recalculates refined route ratings from selected custom place targets', () => {
+    const memphisStop = makeNamedStation(
+      702,
+      'Memphis Downtown Supercharger',
+      'Memphis',
+      'TN',
+      35.135,
+      -90.057,
+    )
+    const meta = {
+      id: 'custom-ai-route',
+      name: 'Custom AI Route',
+      strategy: 'Test custom target rating',
+      color: '#7c3aed',
+    }
+    const baseRoute = refineRouteWithRoadLegs(
+      [memphisStop],
+      mostUniqueConfig,
+      meta,
+      [60, 60],
+      [1, 1],
+    )
+    const targetedRoute = refineRouteWithRoadLegs(
+      [memphisStop],
+      {
+        ...mostUniqueConfig,
+        customRouteWaypoints: [
+          {
+            id: 'landmark-custom-civil-rights-museum',
+            label: 'National Civil Rights Museum',
+            position: { lat: 35.1345, lon: -90.0576 },
+            radiusMiles: 35,
+          },
+        ],
+      },
+      meta,
+      [60, 60],
+      [1, 1],
+    )
+
+    expect(
+      targetedRoute.rating.places.some((place) =>
+        place.label.includes('National Civil Rights Museum'),
+      ),
+    ).toBe(true)
+    expect(
+      targetedRoute.days.some((day) =>
+        day.rating.places.some((place) =>
+          place.label.includes('National Civil Rights Museum'),
+        ),
+      ),
+    ).toBe(true)
+    expect(targetedRoute.rating.score).toBeGreaterThan(baseRoute.rating.score)
+  })
+
   it('starts every loop with a northbound first stop that is not west when available', () => {
     const stations = [
       makeStation(
