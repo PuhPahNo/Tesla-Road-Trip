@@ -2,6 +2,8 @@ import { useId } from 'react'
 import type { RoutePlan } from '../domain/types'
 import { Overlay, OverlayHeader } from '../ui/Overlay'
 import { CheckIcon } from '../ui/icons'
+import { Button } from '../ui/primitives'
+import { buildTripComposition } from '../domain/tripComposition'
 
 export interface RoutePickerProps {
   routes: RoutePlan[]
@@ -9,6 +11,7 @@ export interface RoutePickerProps {
   open: boolean
   onClose: () => void
   onSelect: (id: string) => void
+  onCreateCustomRoute?: () => void
 }
 
 export function RoutePicker({
@@ -17,6 +20,7 @@ export function RoutePicker({
   open,
   onClose,
   onSelect,
+  onCreateCustomRoute,
 }: RoutePickerProps) {
   const titleId = useId()
   const isLongestTrip = routes[0]?.plannerMode === 'longest_trip'
@@ -36,6 +40,15 @@ export function RoutePicker({
       />
 
       <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-3">
+        {onCreateCustomRoute ? (
+          <Button
+            variant="primary"
+            className="mb-1 min-h-10 w-full"
+            onClick={onCreateCustomRoute}
+          >
+            Create Custom Route
+          </Button>
+        ) : null}
         {routes.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-edge bg-panel2 px-5 py-10 text-center">
             <div className="text-[14px] font-semibold text-ink">No routes yet</div>
@@ -44,6 +57,7 @@ export function RoutePicker({
         ) : (
           routes.map((route) => {
             const selected = route.id === selectedRouteId
+            const composition = buildTripComposition(route)
             return (
               <button
                 key={route.id}
@@ -74,6 +88,10 @@ export function RoutePicker({
                     {route.plannerMode === 'longest_trip' ? 'stops' : 'sites'} ·{' '}
                     {route.totalDays} days · {route.totalMiles.toLocaleString()} mi ·{' '}
                     {route.averageDriveHoursPerDay}h/day · ★ {route.rating.score}
+                  </span>
+                  <span className="mt-[4px] block font-mono text-[10.5px] text-faint">
+                    {composition.bigCities} big cities · {composition.landmarks} landmarks ·{' '}
+                    {composition.teslaBadges} Tesla badges
                   </span>
                 </span>
                 {selected ? (

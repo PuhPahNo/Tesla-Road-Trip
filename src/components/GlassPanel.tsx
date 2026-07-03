@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import type { PlaceRating, RoutePlan } from '../domain/types'
 import type { StateRouteStats } from '../domain/routeStats'
+import { buildTripComposition, topLandmarkLabel } from '../domain/tripComposition'
 import type { StationsResponse } from '../api/client'
 import { ProgressBar, StatTile, cx, scoreColor } from '../ui/primitives'
 import { AlertIcon, CloseIcon, InfoIcon, RefreshIcon } from '../ui/icons'
@@ -95,6 +96,7 @@ export function OverviewSection({
 }) {
   const isLongestTrip = route?.plannerMode === 'longest_trip'
   const dash = '—'
+  const composition = buildTripComposition(route)
   return (
     <div className="flex flex-col gap-3">
       <div className="grid grid-cols-2 gap-2">
@@ -127,6 +129,51 @@ export function OverviewSection({
           unit={route ? '/100' : undefined}
         />
       </div>
+
+      {route ? (
+        <Card>
+          <div className="mb-2.5 flex items-baseline justify-between gap-3">
+            <span className="text-[12.5px] font-semibold text-ink">
+              Trip composition
+            </span>
+            <span className="font-mono text-[10.5px] text-faint">
+              {composition.signatureStops} state signatures
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <MiniMetric label="Big cities" value={composition.bigCities} />
+            <MiniMetric label="Landmarks" value={composition.landmarks} />
+            <MiniMetric label="Tesla badges" value={composition.teslaBadges} />
+          </div>
+          <div className="mt-3 flex flex-col gap-1.5">
+            {composition.topCities.slice(0, 2).map((city) => (
+              <CompositionRow
+                key={`city-${city.id}`}
+                label={city.label}
+                meta={`big city · ${city.rating}/100`}
+              />
+            ))}
+            {composition.topLandmarks.slice(0, 3).map((landmark) => (
+              <CompositionRow
+                key={
+                  'signature' in landmark
+                    ? `sig-${landmark.signature.id}`
+                    : `landmark-${landmark.id}`
+                }
+                label={topLandmarkLabel(landmark)}
+                meta={'signature' in landmark ? 'state signature' : 'landmark'}
+              />
+            ))}
+            {composition.topBadges.map((badge) => (
+              <CompositionRow
+                key={`badge-${badge.id}`}
+                label={badge.label}
+                meta={`Tesla badge candidate · ${badge.rating}/100`}
+              />
+            ))}
+          </div>
+        </Card>
+      ) : null}
 
       {feasibility ? (
         <div
@@ -163,6 +210,30 @@ export function OverviewSection({
           Run Optimize to generate a route, then explore days, coverage, and stats here.
         </div>
       )}
+    </div>
+  )
+}
+
+function MiniMetric({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-[9px] border border-edge bg-panel2 px-2.5 py-2">
+      <div className="font-mono text-[8.5px] uppercase tracking-[0.08em] text-faint">
+        {label}
+      </div>
+      <div className="mt-1 font-mono text-[17px] font-semibold leading-none text-ink">
+        {value}
+      </div>
+    </div>
+  )
+}
+
+function CompositionRow({ label, meta }: { label: string; meta: string }) {
+  return (
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 text-[11.5px]">
+      <span className="min-w-0 truncate text-ink">{label}</span>
+      <span className="font-mono text-[9.5px] uppercase tracking-[0.06em] text-faint">
+        {meta}
+      </span>
     </div>
   )
 }

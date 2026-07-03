@@ -10,6 +10,8 @@ import {
 import { getKnownWaypoint, KNOWN_WAYPOINTS } from '../src/domain/highlights'
 import { optimizeRoutes } from '../src/domain/optimizer'
 import { buildStateRouteStats } from '../src/domain/routeStats'
+import { buildTripComposition } from '../src/domain/tripComposition'
+import { readSavedCustomRoutes } from './customRoutes'
 import type {
   OptimizeResponse,
   PlannerConfig,
@@ -148,7 +150,10 @@ export function registerAgentRoutes(
       await assertDailyBudget(dailyLimitUsd, maxRequestUsd)
 
       const parsed = agentRequestSchema.parse(request.body)
-      let workingConfig = sanitizePlannerConfig(parsed.config)
+      let workingConfig = sanitizePlannerConfig({
+        ...parsed.config,
+        savedCustomRoutes: await readSavedCustomRoutes(),
+      })
       let selectedRouteId = parsed.selectedRouteId
       let workingResult: OptimizeResponse | undefined
       const actions: string[] = []
@@ -297,7 +302,7 @@ async function createOpenAiResponse(apiKey: string, input: unknown[]) {
     body: JSON.stringify({
       model: process.env.OPENAI_MODEL ?? FALLBACK_MODEL,
       instructions:
-        `You are a route-planning assistant inside a local Tesla Supercharger Quest Planner app. Use tools when you need route data or when the user asks to change settings, require a stop, create a custom ordered route, or reoptimize. Known waypoint IDs are: ${KNOWN_WAYPOINTS.map((waypoint) => `${waypoint.id} (${waypoint.label})`).join(', ')}. For exact-order custom-route requests, call create_custom_route with only the intermediate waypoint IDs in order; omit Chattanooga/start/end. Keep final answers short and name the concrete changes made. You cannot execute arbitrary code, browse the web, or spend money outside this API call. Treat Tesla badge and landmark data as the app curated catalog, not official proof.`,
+        `You are a route-planning assistant inside a local Tesla Supercharger Quest Planner app. Use tools when you need route data or when the user asks to change settings, require a stop, create a temporary custom ordered route, or reoptimize. Known waypoint IDs are: ${KNOWN_WAYPOINTS.map((waypoint) => `${waypoint.id} (${waypoint.label})`).join(', ')}. For exact-order custom-route requests through those known waypoint IDs, call create_custom_route with only the intermediate waypoint IDs in order; omit Chattanooga/start/end. Persistent named saved routes are created by the app UI, not this OpenAI tool. Keep final answers short and name the concrete changes made. You cannot execute arbitrary code, browse the web, or spend money outside this API call. Treat Tesla badge and landmark data as the app curated catalog, not official proof.`,
       input,
       tools: plannerAgentTools,
       tool_choice: 'auto',
@@ -617,11 +622,17 @@ function summarizeConfig(config: PlannerConfig) {
     includeMexico: config.includeMexico,
     requiredWaypoints: config.requiredWaypoints,
     customRouteWaypoints: config.customRouteWaypoints,
+    savedCustomRoutes: config.savedCustomRoutes.map((route) => ({
+      id: route.id,
+      name: route.name,
+      waypointCount: route.waypoints.length,
+    })),
     longestTripTargets: config.longestTripTargets,
   }
 }
 
 function summarizeRoute(route: RoutePlan) {
+  const composition = buildTripComposition(route)
   return {
     id: route.id,
     plannerMode: route.plannerMode,
@@ -636,6 +647,13 @@ function summarizeRoute(route: RoutePlan) {
     stationsPerDay: route.stationsPerDay,
     warnings: route.warnings,
     advisories: route.advisories,
+    rating: route.rating,
+    composition: {
+      bigCities: composition.bigCities,
+      landmarks: composition.landmarks,
+      teslaBadges: composition.teslaBadges,
+      signatureStops: composition.signatureStops,
+    },
     firstDay: route.days[0],
     lastDay: route.days.at(-1),
   }

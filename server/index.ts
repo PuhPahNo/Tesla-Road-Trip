@@ -6,6 +6,10 @@ import { fileURLToPath } from 'node:url'
 import express from 'express'
 import { registerAgentRoutes } from './agent'
 import {
+  readSavedCustomRoutes,
+  registerCustomRouteRoutes,
+} from './customRoutes'
+import {
   defaultPlannerConfig,
   plannerConfigSchema,
 } from '../src/domain/config'
@@ -218,9 +222,11 @@ app.get('/api/stations', async (request, response) => {
 app.post('/api/optimize', async (request, response) => {
   try {
     const cache = await loadStations()
+    const savedCustomRoutes = await readSavedCustomRoutes()
     const config = plannerConfigSchema.parse({
       ...defaultPlannerConfig,
       ...request.body,
+      savedCustomRoutes,
       start: {
         ...defaultPlannerConfig.start,
         ...request.body?.start,
@@ -347,6 +353,7 @@ function demoWarning(): string[] {
     : []
 }
 
+registerCustomRouteRoutes(app)
 registerAgentRoutes(app, () => loadStations())
 
 type LatLon = { lat: number; lon: number }

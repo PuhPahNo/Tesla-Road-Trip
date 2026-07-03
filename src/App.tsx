@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   fetchHealth,
   fetchStations,
+  createCustomRoute,
   optimizeRoutes,
   refineRoute,
   type PlannerAgentResponse,
@@ -46,6 +47,7 @@ import { DayDetailModal } from './components/DayDetailModal'
 import { StateDetailModal } from './components/StateDetailModal'
 import { ConfigModal } from './components/ConfigModal'
 import { RouteCopilotPanel } from './components/RouteCopilot'
+import { CustomRouteModal, type CustomRouteDraft } from './components/CustomRouteModal'
 import {
   Overlay,
   OverlayHeader,
@@ -102,6 +104,8 @@ function App() {
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [configOpen, setConfigOpen] = useState(false)
   const [routePickerOpen, setRoutePickerOpen] = useState(false)
+  const [customRouteOpen, setCustomRouteOpen] = useState(false)
+  const [isSavingCustomRoute, setIsSavingCustomRoute] = useState(false)
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>()
   const [hoveredDayIndex, setHoveredDayIndex] = useState<number>()
   const [hoveredState, setHoveredState] = useState<string>()
@@ -395,6 +399,32 @@ function App() {
     setPanel((current) => (current === key ? null : key))
   }
 
+  const handleOpenCustomRoute = () => {
+    setRoutePickerOpen(false)
+    setCopilotOpen(false)
+    setMobileTab(null)
+    setCustomRouteOpen(true)
+  }
+
+  const handleCreateCustomRoute = async (draft: CustomRouteDraft) => {
+    setIsSavingCustomRoute(true)
+    setError(undefined)
+    try {
+      const saved = await createCustomRoute(draft)
+      const response = await optimizeRoutes(sanitizePlannerConfig(config))
+      applyOptimizationResult(response, saved.route.id)
+      setCustomRouteOpen(false)
+      setRoutePickerOpen(true)
+      showToast(`Saved ${saved.route.name} · stored at ${saved.storagePath}`)
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error ? requestError.message : 'Custom route save failed.',
+      )
+    } finally {
+      setIsSavingCustomRoute(false)
+    }
+  }
+
   const panelContent = (key: PanelKey) => {
     switch (key) {
       case 'overview':
@@ -492,8 +522,10 @@ function App() {
           {copilotOpen && (
             <RouteCopilotPanel
               config={config}
+              route={displayRoute}
               selectedRouteId={selectedRoute?.id}
               onApply={applyAgentResponse}
+              onOpenCustomRoute={handleOpenCustomRoute}
               onClose={() => setCopilotOpen(false)}
             />
           )}
@@ -600,8 +632,10 @@ function App() {
           >
             <RouteCopilotPanel
               config={config}
+              route={displayRoute}
               selectedRouteId={selectedRoute?.id}
               onApply={applyAgentResponse}
+              onOpenCustomRoute={handleOpenCustomRoute}
               mode="sheet"
               onClose={() => setMobileTab(null)}
             />
@@ -616,6 +650,7 @@ function App() {
         open={routePickerOpen}
         onClose={() => setRoutePickerOpen(false)}
         onSelect={handleSelectRoute}
+        onCreateCustomRoute={handleOpenCustomRoute}
       />
       <CalendarModal
         route={displayRoute}
@@ -640,6 +675,12 @@ function App() {
         onClose={() => setConfigOpen(false)}
         onChange={(next) => setConfig(sanitizePlannerConfig(next))}
         onApply={runOptimize}
+      />
+      <CustomRouteModal
+        open={customRouteOpen}
+        isSaving={isSavingCustomRoute}
+        onClose={() => setCustomRouteOpen(false)}
+        onCreate={handleCreateCustomRoute}
       />
 
       {/* Overlays */}

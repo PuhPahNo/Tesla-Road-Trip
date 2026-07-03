@@ -4,6 +4,8 @@ import type {
   PlannerConfig,
   RoadRouteResponse,
   RoutePlan,
+  RouteWaypoint,
+  SavedCustomRoute,
   Station,
 } from '../domain/types'
 
@@ -57,6 +59,22 @@ export interface HealthResponse {
   roadRouting?: { enabled: boolean }
 }
 
+export interface SavedCustomRoutesResponse {
+  storagePath: string
+  routes: SavedCustomRoute[]
+}
+
+export interface CreateCustomRouteRequest {
+  name: string
+  color?: string
+  waypoints: RouteWaypoint[]
+}
+
+export interface CreateCustomRouteResponse {
+  storagePath: string
+  route: SavedCustomRoute
+}
+
 export async function fetchHealth() {
   const response = await fetch('/api/health')
   return parseJsonResponse<HealthResponse>(response)
@@ -91,6 +109,31 @@ export async function optimizeRoutes(config: PlannerConfig) {
   })
 
   return parseJsonResponse<OptimizeResponse>(response)
+}
+
+export async function fetchCustomRoutes() {
+  const response = await fetch('/api/custom-routes')
+  return parseJsonResponse<SavedCustomRoutesResponse>(response)
+}
+
+export async function createCustomRoute(request: CreateCustomRouteRequest) {
+  const response = await fetch('/api/custom-routes', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  })
+
+  return parseJsonResponse<CreateCustomRouteResponse>(response)
+}
+
+export async function deleteCustomRoute(id: string) {
+  const response = await fetch(`/api/custom-routes/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  })
+
+  return parseJsonResponse<{ ok: boolean; routes: SavedCustomRoute[] }>(response)
 }
 
 export async function fetchRoadRoute(coordinates: Coordinate[]) {

@@ -55,6 +55,7 @@ export interface PlannerConfig {
   roadDistanceFactor: number
   requiredWaypoints: RouteWaypoint[]
   customRouteWaypoints: RouteWaypoint[]
+  savedCustomRoutes: SavedCustomRoute[]
   longestTripTargets: LongestTripVisitTarget[]
   start: Coordinate
 }
@@ -65,6 +66,15 @@ export interface RouteWaypoint {
   position: Coordinate
   radiusMiles: number
   reason?: string
+}
+
+export interface SavedCustomRoute {
+  id: string
+  name: string
+  color: string
+  waypoints: RouteWaypoint[]
+  createdAt: string
+  updatedAt: string
 }
 
 export interface LongestTripVisitTarget {

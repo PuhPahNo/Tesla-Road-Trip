@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { sendPlannerAgentMessage, type PlannerAgentResponse } from '../api/client'
-import type { PlannerConfig } from '../domain/types'
-import { cx } from '../ui/primitives'
+import type { PlannerConfig, RoutePlan } from '../domain/types'
+import { buildTripComposition } from '../domain/tripComposition'
+import { Button, cx, scoreColor } from '../ui/primitives'
 import { CloseIcon, SendIcon, SparkleIcon } from '../ui/icons'
 
 interface RouteCopilotPanelProps {
   config: PlannerConfig
+  route?: RoutePlan
   selectedRouteId?: string
   onApply: (response: PlannerAgentResponse) => void
+  onOpenCustomRoute?: () => void
   /** 'floating' renders the desktop glass panel; 'sheet' renders bare content for a mobile sheet. */
   mode?: 'floating' | 'sheet'
   onClose?: () => void
@@ -21,15 +24,15 @@ interface CopilotMessage {
 
 const SEED_MESSAGE: CopilotMessage = {
   role: 'assistant',
-  text: "Hi — I'm your route copilot. I can trim days, maximize unique sites, fix range warnings, or add a detour. Try a chip below.",
+  text: "I can reshape this route, explain tradeoffs, add must-see stops, fix warnings, or help build a saved custom route.",
 }
 
 const SUGGESTIONS = [
-  'Trim a day',
-  'Maximize unique stations',
+  'Explain this route',
+  'Find missed landmarks',
+  'Add Grand Canyon and Zion',
   'Fix range warnings',
-  'Add Yellowstone detour',
-  'Avoid tolls',
+  'Maximize big cities',
 ]
 
 function MessageBubble({ message }: { message: CopilotMessage }) {
@@ -59,8 +62,10 @@ function MessageBubble({ message }: { message: CopilotMessage }) {
 
 export function RouteCopilotPanel({
   config,
+  route,
   selectedRouteId,
   onApply,
+  onOpenCustomRoute,
   mode = 'floating',
   onClose,
 }: RouteCopilotPanelProps) {
@@ -107,6 +112,8 @@ export function RouteCopilotPanel({
     }
   }
 
+  const composition = buildTripComposition(route)
+
   const body = (
     <>
       <div className="flex flex-none items-center gap-2.5 border-b border-edge px-3.5 py-[13px]">
@@ -116,7 +123,7 @@ export function RouteCopilotPanel({
         <div className="min-w-0 flex-1">
           <div className="truncate text-[13.5px] font-semibold text-ink">Route Copilot</div>
           <div className="truncate font-mono text-[9.5px] text-faint">
-            Reshape the plan in plain language
+            Optimize, explain, or build custom routes
           </div>
         </div>
         {onClose ? (
@@ -129,6 +136,46 @@ export function RouteCopilotPanel({
             <CloseIcon size={13} />
           </button>
         ) : null}
+      </div>
+
+      <div className="border-b border-edge px-3.5 py-3">
+        <div className="rounded-[11px] border border-edge bg-chip p-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="truncate text-[12.5px] font-semibold text-ink">
+                {route?.name ?? 'No route selected'}
+              </div>
+              <div className="mt-1 font-mono text-[10.5px] text-faint">
+                {route
+                  ? `${route.totalDays} days · ${route.totalMiles.toLocaleString()} mi · ${route.uniqueStations.toLocaleString()} stops`
+                  : 'Run Optimize to give the copilot route context.'}
+              </div>
+            </div>
+            <span
+              className="flex-none font-mono text-[15px] font-semibold"
+              style={{ color: route ? scoreColor(route.rating.score) : 'var(--faint)' }}
+            >
+              {route ? route.rating.score : '--'}
+            </span>
+          </div>
+          {route ? (
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              <MiniStat label="Cities" value={composition.bigCities} />
+              <MiniStat label="Landmarks" value={composition.landmarks} />
+              <MiniStat label="Badges" value={composition.teslaBadges} />
+            </div>
+          ) : null}
+          {onOpenCustomRoute ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              className="mt-3 w-full"
+              onClick={onOpenCustomRoute}
+            >
+              Create Custom Route
+            </Button>
+          ) : null}
+        </div>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto p-3.5" aria-live="polite">
@@ -191,5 +238,18 @@ export function RouteCopilotPanel({
     <section className="glass anim-pop fixed right-4 top-[76px] z-[70] flex h-[min(560px,72vh)] w-[380px] flex-col overflow-hidden rounded-[15px]">
       {body}
     </section>
+  )
+}
+
+function MiniStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-[9px] border border-edge bg-panel2 px-2.5 py-2">
+      <div className="font-mono text-[9px] uppercase tracking-[0.08em] text-faint">
+        {label}
+      </div>
+      <div className="mt-1 font-mono text-[15px] font-semibold leading-none text-ink">
+        {value}
+      </div>
+    </div>
   )
 }

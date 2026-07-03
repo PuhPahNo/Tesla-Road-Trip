@@ -28,6 +28,7 @@ import type {
   RoutePlan,
   RouteStationVisit,
   RouteWaypoint,
+  SavedCustomRoute,
   Station,
 } from './types'
 
@@ -169,6 +170,7 @@ function buildMostUniqueSiteVariants(
   start: Coordinate,
   requiredWaypoints: RouteWaypoint[],
   customRouteWaypoints: RouteWaypoint[],
+  savedCustomRoutes: SavedCustomRoute[],
 ): RouteVariant[] {
   const variants = [
     {
@@ -795,6 +797,10 @@ function buildMostUniqueSiteVariants(
     })
   }
 
+  variants.push(
+    ...buildSavedCustomRouteVariants(start, requiredWaypoints, savedCustomRoutes),
+  )
+
   return variants
 }
 
@@ -881,6 +887,7 @@ function buildLongestTripVariants(
   requiredWaypoints: RouteWaypoint[],
   customRouteWaypoints: RouteWaypoint[],
   longestTripTargets: LongestTripVisitTarget[],
+  savedCustomRoutes: SavedCustomRoute[],
 ): RouteVariant[] {
   const variants: RouteVariant[] = [
     {
@@ -1431,7 +1438,51 @@ function buildLongestTripVariants(
     })
   }
 
+  variants.push(
+    ...buildSavedCustomRouteVariants(
+      start,
+      requiredWaypoints,
+      savedCustomRoutes,
+      longestTripTargets.map(visitTargetAnchor),
+      'streak corridor',
+    ),
+  )
+
   return variants
+}
+
+function buildSavedCustomRouteVariants(
+  start: Coordinate,
+  requiredWaypoints: RouteWaypoint[],
+  savedCustomRoutes: SavedCustomRoute[],
+  trailingAnchors: Array<Coordinate | undefined> = [],
+  strategyNoun = 'ordered corridor',
+): RouteVariant[] {
+  return savedCustomRoutes.map((route) => {
+    const forcedWaypoints = dedupeWaypoints([
+      ...requiredWaypoints,
+      ...route.waypoints,
+    ])
+    const anchors = [
+      start,
+      ...route.waypoints.map((waypoint) => waypoint.position),
+      ...trailingAnchors.filter((anchor): anchor is Coordinate => Boolean(anchor)),
+      start,
+    ]
+
+    return {
+      id: route.id,
+      name: route.name,
+      strategy: `Saved custom ${strategyNoun} through ${route.waypoints.map((waypoint) => waypoint.label).join(' -> ')} before returning to the start.`,
+      color: route.color,
+      corridorMiles: 150,
+      anchors: insertRequiredWaypoints(
+        closeAnchorsToStart(anchors, start),
+        requiredWaypoints,
+      ),
+      forcedWaypoints,
+    }
+  })
 }
 
 function chooseStationsForVariant(
@@ -3246,11 +3297,13 @@ export function optimizeRoutes(
           config.requiredWaypoints,
           config.customRouteWaypoints,
           config.longestTripTargets,
+          config.savedCustomRoutes,
         )
       : buildMostUniqueSiteVariants(
           config.start,
           config.requiredWaypoints,
           config.customRouteWaypoints,
+          config.savedCustomRoutes,
         )
   const routeTarget =
     config.plannerMode === 'longest_trip'

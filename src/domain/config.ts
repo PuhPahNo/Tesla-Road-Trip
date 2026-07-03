@@ -27,6 +27,7 @@ export const defaultPlannerConfig: PlannerConfig = {
   roadDistanceFactor: 1.18,
   requiredWaypoints: [],
   customRouteWaypoints: [],
+  savedCustomRoutes: [],
   longestTripTargets: [],
   start: CHATTANOOGA_37405_START,
 }
@@ -40,6 +41,15 @@ const routeWaypointSchema = z.object({
   }),
   radiusMiles: z.coerce.number().min(5).max(250),
   reason: z.string().max(240).optional(),
+})
+
+const savedCustomRouteSchema = z.object({
+  id: z.string().min(1).max(96),
+  name: z.string().min(1).max(80),
+  color: z.string().min(1).max(32),
+  waypoints: z.array(routeWaypointSchema).min(1).max(16),
+  createdAt: z.string().min(1).max(48),
+  updatedAt: z.string().min(1).max(48),
 })
 
 const longestTripVisitTargetSchema = z.object({
@@ -78,6 +88,7 @@ export const plannerConfigSchema = z.object({
   roadDistanceFactor: z.coerce.number().min(1).max(1.8),
   requiredWaypoints: z.array(routeWaypointSchema).max(8),
   customRouteWaypoints: z.array(routeWaypointSchema).max(12),
+  savedCustomRoutes: z.array(savedCustomRouteSchema).max(24),
   longestTripTargets: z.array(longestTripVisitTargetSchema).max(16),
   start: z.object({
     lat: z.coerce.number().min(-90).max(90),
@@ -92,6 +103,8 @@ export function sanitizePlannerConfig(config: Partial<PlannerConfig>): PlannerCo
     requiredWaypoints: config.requiredWaypoints ?? defaultPlannerConfig.requiredWaypoints,
     customRouteWaypoints:
       config.customRouteWaypoints ?? defaultPlannerConfig.customRouteWaypoints,
+    savedCustomRoutes:
+      config.savedCustomRoutes ?? defaultPlannerConfig.savedCustomRoutes,
     longestTripTargets:
       config.longestTripTargets ?? defaultPlannerConfig.longestTripTargets,
     start: {
