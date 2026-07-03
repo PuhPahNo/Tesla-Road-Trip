@@ -1,4 +1,5 @@
 import { STATE_CODE_TO_NAME } from './usStates'
+import { PLACE_CATALOG, type PlaceCategory } from './placeCatalog'
 import type { Coordinate, LongestTripVisitTargetType } from './types'
 
 export interface LongestTripDestination {
@@ -8,6 +9,8 @@ export interface LongestTripDestination {
   state: string
   position: Coordinate
   radiusMiles: number
+  categories: PlaceCategory[]
+  priority: number
 }
 
 export interface LongestTripStateTarget {
@@ -86,168 +89,18 @@ export const LONGEST_TRIP_STATE_TARGETS: LongestTripStateTarget[] =
     position: { lat: Number(lat), lon: Number(lon) },
   }))
 
-export const LONGEST_TRIP_DESTINATIONS: LongestTripDestination[] = [
-  {
-    id: 'city-nashville',
-    type: 'city',
-    label: 'Nashville',
-    state: 'TN',
-    position: { lat: 36.1627, lon: -86.7816 },
-    radiusMiles: 35,
-  },
-  {
-    id: 'city-chicago',
-    type: 'city',
-    label: 'Chicago',
-    state: 'IL',
-    position: { lat: 41.8781, lon: -87.6298 },
-    radiusMiles: 45,
-  },
-  {
-    id: 'city-new-york',
-    type: 'city',
-    label: 'New York City',
-    state: 'NY',
-    position: { lat: 40.7128, lon: -74.006 },
-    radiusMiles: 45,
-  },
-  {
-    id: 'city-washington-dc',
-    type: 'city',
-    label: 'Washington, DC',
-    state: 'DC',
-    position: { lat: 38.9072, lon: -77.0369 },
-    radiusMiles: 35,
-  },
-  {
-    id: 'city-new-orleans',
-    type: 'city',
-    label: 'New Orleans',
-    state: 'LA',
-    position: { lat: 29.9511, lon: -90.0715 },
-    radiusMiles: 45,
-  },
-  {
-    id: 'city-denver',
-    type: 'city',
-    label: 'Denver',
-    state: 'CO',
-    position: { lat: 39.7392, lon: -104.9903 },
-    radiusMiles: 55,
-  },
-  {
-    id: 'city-las-vegas',
-    type: 'city',
-    label: 'Las Vegas',
-    state: 'NV',
-    position: { lat: 36.1699, lon: -115.1398 },
-    radiusMiles: 45,
-  },
-  {
-    id: 'city-los-angeles',
-    type: 'city',
-    label: 'Los Angeles',
-    state: 'CA',
-    position: { lat: 34.0522, lon: -118.2437 },
-    radiusMiles: 55,
-  },
-  {
-    id: 'city-san-francisco',
-    type: 'city',
-    label: 'San Francisco Bay Area',
-    state: 'CA',
-    position: { lat: 37.7749, lon: -122.4194 },
-    radiusMiles: 55,
-  },
-  {
-    id: 'city-seattle',
-    type: 'city',
-    label: 'Seattle',
-    state: 'WA',
-    position: { lat: 47.6062, lon: -122.3321 },
-    radiusMiles: 55,
-  },
-  {
-    id: 'landmark-grand-canyon',
-    type: 'landmark',
-    label: 'Grand Canyon',
-    state: 'AZ',
-    position: { lat: 36.0544, lon: -112.1401 },
-    radiusMiles: 95,
-  },
-  {
-    id: 'landmark-yellowstone',
-    type: 'landmark',
-    label: 'Yellowstone gateway',
-    state: 'WY',
-    position: { lat: 44.428, lon: -110.5885 },
-    radiusMiles: 120,
-  },
-  {
-    id: 'landmark-yosemite',
-    type: 'landmark',
-    label: 'Yosemite gateway',
-    state: 'CA',
-    position: { lat: 37.8651, lon: -119.5383 },
-    radiusMiles: 90,
-  },
-  {
-    id: 'landmark-zion',
-    type: 'landmark',
-    label: 'Zion / southern Utah',
-    state: 'UT',
-    position: { lat: 37.2982, lon: -113.0263 },
-    radiusMiles: 85,
-  },
-  {
-    id: 'landmark-rocky-mountain',
-    type: 'landmark',
-    label: 'Rocky Mountain NP',
-    state: 'CO',
-    position: { lat: 40.3428, lon: -105.6836 },
-    radiusMiles: 80,
-  },
-  {
-    id: 'landmark-mount-rushmore',
-    type: 'landmark',
-    label: 'Mount Rushmore / Black Hills',
-    state: 'SD',
-    position: { lat: 43.8791, lon: -103.4591 },
-    radiusMiles: 90,
-  },
-  {
-    id: 'landmark-gateway-arch',
-    type: 'landmark',
-    label: 'Gateway Arch',
-    state: 'MO',
-    position: { lat: 38.6247, lon: -90.1848 },
-    radiusMiles: 35,
-  },
-  {
-    id: 'landmark-space-coast',
-    type: 'landmark',
-    label: 'Florida Space Coast',
-    state: 'FL',
-    position: { lat: 28.5729, lon: -80.649 },
-    radiusMiles: 55,
-  },
-  {
-    id: 'landmark-alamo',
-    type: 'landmark',
-    label: 'The Alamo',
-    state: 'TX',
-    position: { lat: 29.4259, lon: -98.4861 },
-    radiusMiles: 30,
-  },
-  {
-    id: 'landmark-acadia',
-    type: 'landmark',
-    label: 'Acadia / Bar Harbor',
-    state: 'ME',
-    position: { lat: 44.3386, lon: -68.2733 },
-    radiusMiles: 95,
-  },
-]
+export const LONGEST_TRIP_DESTINATIONS: LongestTripDestination[] = PLACE_CATALOG
+  .map((entry) => ({
+    id: entry.id,
+    type: entry.type,
+    label: entry.label,
+    state: entry.state,
+    position: entry.position,
+    radiusMiles: entry.radiusMiles,
+    categories: entry.categories,
+    priority: entry.priority,
+  }))
+  .sort((a, b) => b.priority - a.priority || a.label.localeCompare(b.label))
 
 export function getLongestTripDestination(id: string) {
   return LONGEST_TRIP_DESTINATIONS.find((destination) => destination.id === id)

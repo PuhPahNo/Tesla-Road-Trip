@@ -1,8 +1,13 @@
 import { useEffect, useId, useMemo, useState } from 'react'
 import type { RouteWaypoint } from '../domain/types'
-import { STATE_SIGNATURES } from '../domain/stateSignatures'
-import { detailForDestination, detailForSignature } from '../domain/placeDetails'
-import { LONGEST_TRIP_DESTINATIONS } from '../domain/visitTargets'
+import { detailForCatalogPlace } from '../domain/placeDetails'
+import {
+  PLACE_CATALOG,
+  PLACE_CATEGORY_LABELS,
+  PLACE_CATEGORY_OPTIONS,
+  type CatalogPlaceType,
+  type PlaceCategory,
+} from '../domain/placeCatalog'
 import { Overlay, OverlayHeader } from '../ui/Overlay'
 import { Button, scoreColor } from '../ui/primitives'
 import { CloseIcon } from '../ui/icons'
@@ -14,6 +19,7 @@ interface CatalogLocation {
   state: string
   position: { lat: number; lon: number }
   radiusMiles: number
+  categories: PlaceCategory[]
   rating: number
   summary: string
 }
@@ -41,6 +47,8 @@ export function CustomRouteModal({
   const titleId = useId()
   const [name, setName] = useState('')
   const [query, setQuery] = useState('')
+  const [typeFilter, setTypeFilter] = useState<'all' | CatalogPlaceType>('all')
+  const [categoryFilter, setCategoryFilter] = useState<'all' | PlaceCategory>('all')
   const [waypoints, setWaypoints] = useState<RouteWaypoint[]>([])
   const [manualLabel, setManualLabel] = useState('')
   const [manualLat, setManualLat] = useState('')
@@ -50,6 +58,8 @@ export function CustomRouteModal({
     if (open || isSaving) return
     setName('')
     setQuery('')
+    setTypeFilter('all')
+    setCategoryFilter('all')
     setWaypoints([])
     setManualLabel('')
     setManualLat('')
@@ -60,13 +70,17 @@ export function CustomRouteModal({
     const normalized = query.trim().toLowerCase()
     const selectedIds = new Set(waypoints.map((waypoint) => waypoint.id))
     return CATALOG.filter((item) => !selectedIds.has(item.id))
+      .filter((item) => (typeFilter === 'all' ? true : item.type === typeFilter))
+      .filter((item) =>
+        categoryFilter === 'all' ? true : item.categories.includes(categoryFilter),
+      )
       .filter((item) =>
         normalized
-          ? `${item.label} ${item.state} ${item.type}`.toLowerCase().includes(normalized)
+          ? `${item.label} ${item.state} ${item.type} ${item.categories.join(' ')}`.toLowerCase().includes(normalized)
           : true,
       )
-      .slice(0, 36)
-  }, [query, waypoints])
+      .slice(0, 72)
+  }, [categoryFilter, query, typeFilter, waypoints])
 
   const addCatalogItem = (item: CatalogLocation) => {
     setWaypoints((current) => [
@@ -149,13 +163,45 @@ export function CustomRouteModal({
             <label className="mb-2 block text-[12px] font-medium text-dim" htmlFor="custom-route-search">
               Add from loaded landmarks and cities
             </label>
-            <input
-              id="custom-route-search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search Yosemite, Zion, New York, Grand Canyon..."
-              className="h-10 w-full rounded-[10px] border border-edge bg-panel2 px-3 text-[13px] text-ink outline-none placeholder:text-faint"
-            />
+            <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_130px_160px]">
+              <input
+                id="custom-route-search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search Canton, Hollywood, civil rights..."
+                className="h-10 w-full rounded-[10px] border border-edge bg-panel2 px-3 text-[13px] text-ink outline-none placeholder:text-faint"
+              />
+              <select
+                value={typeFilter}
+                onChange={(event) =>
+                  setTypeFilter(event.target.value as 'all' | CatalogPlaceType)
+                }
+                aria-label="Filter by place type"
+                className="h-10 rounded-[10px] border border-edge bg-panel2 px-2.5 text-[12.5px] text-ink outline-none"
+              >
+                <option value="all">All types</option>
+                <option value="city">Cities</option>
+                <option value="landmark">Landmarks</option>
+              </select>
+              <select
+                value={categoryFilter}
+                onChange={(event) =>
+                  setCategoryFilter(event.target.value as 'all' | PlaceCategory)
+                }
+                aria-label="Filter by category"
+                className="h-10 rounded-[10px] border border-edge bg-panel2 px-2.5 text-[12.5px] text-ink outline-none"
+              >
+                <option value="all">All categories</option>
+                {PLACE_CATEGORY_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="mt-2 font-mono text-[10px] text-faint">
+              Showing {filteredCatalog.length} of {CATALOG.length} catalog stops
+            </div>
           </div>
 
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -181,6 +227,9 @@ export function CustomRouteModal({
                   >
                     {item.rating}
                   </span>
+                </div>
+                <div className="mt-1 truncate font-mono text-[9px] uppercase tracking-[0.08em] text-faint">
+                  {item.categories.map((category) => PLACE_CATEGORY_LABELS[category]).join(' · ')}
                 </div>
                 <div className="mt-2 line-clamp-2 text-[11.5px] leading-[1.4] text-dim">
                   {item.summary}
@@ -310,45 +359,21 @@ export function CustomRouteModal({
 }
 
 function buildCatalog(): CatalogLocation[] {
-  const destinationItems = LONGEST_TRIP_DESTINATIONS.map((destination) => {
-    const detail = detailForDestination(destination)
+  return PLACE_CATALOG.map((entry) => {
+    const detail = detailForCatalogPlace(entry)
     return {
-      id: `catalog-${destination.id}`,
-      label: destination.label,
-      type: destination.type,
-      state: destination.state,
-      position: destination.position,
-      radiusMiles: destination.radiusMiles,
+      id: entry.id,
+      label: entry.label,
+      type: entry.type,
+      state: entry.state,
+      position: entry.position,
+      radiusMiles: entry.radiusMiles,
+      categories: entry.categories,
       rating: detail.rating,
       summary: detail.summary,
     }
   })
-
-  const signatureItems = Object.entries(STATE_SIGNATURES).flatMap(([state, signatures]) =>
-    signatures.map((signature) => {
-      const detail = detailForSignature(signature, state)
-      return {
-        id: `signature-${signature.id}`,
-        label: signature.label,
-        type: 'landmark' as const,
-        state,
-        position: signature.position,
-        radiusMiles: signature.radiusMiles,
-        rating: detail.rating,
-        summary: detail.summary,
-      }
-    }),
-  )
-
-  const byKey = new Map<string, CatalogLocation>()
-  ;[...destinationItems, ...signatureItems]
     .sort((a, b) => b.rating - a.rating || a.label.localeCompare(b.label))
-    .forEach((item) => {
-      const key = `${item.label.toLowerCase()}-${item.state}`
-      if (!byKey.has(key)) byKey.set(key, item)
-    })
-
-  return [...byKey.values()]
 }
 
 function slug(value: string) {

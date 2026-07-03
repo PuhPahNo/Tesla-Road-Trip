@@ -1,4 +1,10 @@
 import { haversineMiles } from './geo'
+import { detailForCatalogPlace } from './placeDetails'
+import {
+  PLACE_CATALOG,
+  catalogEntryToWaypoint,
+  getPlaceCatalogEntry,
+} from './placeCatalog'
 import type {
   Coordinate,
   DayPlan,
@@ -31,57 +37,18 @@ interface HighlightRule {
   radiusMiles?: number
 }
 
-export const KNOWN_WAYPOINTS: RouteWaypoint[] = [
-  {
-    id: 'grand_canyon',
-    label: 'Grand Canyon',
-    position: { lat: 36.0544, lon: -112.1401 },
-    radiusMiles: 95,
-    reason: 'Route preference from the trip agent.',
-  },
-  {
-    id: 'los_angeles',
-    label: 'Los Angeles',
-    position: { lat: 34.0522, lon: -118.2437 },
-    radiusMiles: 55,
-    reason: 'Route preference from the trip agent.',
-  },
-  {
-    id: 'las_vegas',
-    label: 'Las Vegas',
-    position: { lat: 36.1699, lon: -115.1398 },
-    radiusMiles: 45,
-    reason: 'Route preference from the trip agent.',
-  },
-  {
-    id: 'san_francisco',
-    label: 'San Francisco',
-    position: { lat: 37.7749, lon: -122.4194 },
-    radiusMiles: 55,
-    reason: 'Route preference from the trip agent.',
-  },
-  {
-    id: 'seattle',
-    label: 'Seattle',
-    position: { lat: 47.6062, lon: -122.3321 },
-    radiusMiles: 55,
-    reason: 'Route preference from the trip agent.',
-  },
-  {
-    id: 'denver',
-    label: 'Denver',
-    position: { lat: 39.7392, lon: -104.9903 },
-    radiusMiles: 55,
-    reason: 'Route preference from the trip agent.',
-  },
-  {
-    id: 'new_york',
-    label: 'New York City',
-    position: { lat: 40.7128, lon: -74.006 },
-    radiusMiles: 45,
-    reason: 'Route preference from the trip agent.',
-  },
-]
+export const KNOWN_WAYPOINTS: RouteWaypoint[] =
+  PLACE_CATALOG.map(catalogEntryToWaypoint)
+
+const LEGACY_WAYPOINT_ALIASES: Record<string, string> = {
+  grand_canyon: 'landmark-az-grand-canyon',
+  los_angeles: 'city-los-angeles',
+  las_vegas: 'city-las-vegas',
+  san_francisco: 'city-san-francisco',
+  seattle: 'city-seattle',
+  denver: 'city-denver',
+  new_york: 'city-new-york',
+}
 
 const HIGHLIGHT_RULES: HighlightRule[] = [
   {
@@ -328,11 +295,12 @@ const HIGHLIGHT_RULES: HighlightRule[] = [
 ]
 
 export function getKnownWaypoint(id: string) {
-  return KNOWN_WAYPOINTS.find((waypoint) => waypoint.id === id)
+  const entry = getPlaceCatalogEntry(LEGACY_WAYPOINT_ALIASES[id] ?? id)
+  return entry ? catalogEntryToWaypoint(entry) : undefined
 }
 
 export function stationHighlights(station: Station): StationHighlight[] {
-  return HIGHLIGHT_RULES.filter((rule) => matchesRule(rule, station)).map(
+  const ruleHighlights = HIGHLIGHT_RULES.filter((rule) => matchesRule(rule, station)).map(
     ({ id, type, label, summary, rating, sceneryScore }) => ({
       id,
       type,
@@ -342,6 +310,23 @@ export function stationHighlights(station: Station): StationHighlight[] {
       sceneryScore: sceneryScore ?? defaultSceneryForType(type),
     }),
   )
+  const catalogHighlights = PLACE_CATALOG.filter(
+    (entry) =>
+      entry.state === station.address.state &&
+      haversineMiles(station.position, entry.position) <= entry.radiusMiles,
+  ).map((entry): StationHighlight => {
+    const detail = detailForCatalogPlace(entry)
+    return {
+      id: entry.id,
+      type: entry.type,
+      label: entry.label,
+      summary: detail.summary,
+      rating: detail.rating,
+      sceneryScore: detail.sceneryScore,
+    }
+  })
+
+  return dedupeHighlights([...ruleHighlights, ...catalogHighlights])
 }
 
 export function dayHighlights(day: DayPlan): StationHighlight[] {
@@ -353,8 +338,10 @@ export function dayHighlights(day: DayPlan): StationHighlight[] {
 export function dedupeHighlights(highlights: StationHighlight[]) {
   const seen = new Set<string>()
   return highlights.filter((highlight) => {
-    if (seen.has(highlight.id)) return false
+    const labelKey = `${highlight.type}:${highlight.label.toLowerCase()}`
+    if (seen.has(highlight.id) || seen.has(labelKey)) return false
     seen.add(highlight.id)
+    seen.add(labelKey)
     return true
   })
 }

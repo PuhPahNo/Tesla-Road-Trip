@@ -10,6 +10,11 @@ import {
   type LongestTripDestination,
   type LongestTripStateTarget,
 } from '../domain/visitTargets'
+import {
+  PLACE_CATEGORY_OPTIONS,
+  type CatalogPlaceType,
+  type PlaceCategory,
+} from '../domain/placeCatalog'
 import { Overlay } from '../ui/Overlay'
 import { Button, SegmentedControl, cx } from '../ui/primitives'
 import { CloseIcon } from '../ui/icons'
@@ -469,6 +474,9 @@ function LongestTripTargetsSection({
   config: PlannerConfig
   onChange: (config: PlannerConfig) => void
 }) {
+  const [destinationQuery, setDestinationQuery] = useState('')
+  const [destinationType, setDestinationType] = useState<'all' | CatalogPlaceType>('all')
+  const [destinationCategory, setDestinationCategory] = useState<'all' | PlaceCategory>('all')
   const selectedIds = useMemo(
     () => new Set(config.longestTripTargets.map((target) => target.id)),
     [config.longestTripTargets],
@@ -481,18 +489,36 @@ function LongestTripTargetsSection({
     () => LONGEST_TRIP_DESTINATIONS.filter((target) => !selectedIds.has(target.id)),
     [selectedIds],
   )
+  const filteredDestinations = useMemo(() => {
+    const normalized = destinationQuery.trim().toLowerCase()
+    return availableDestinations
+      .filter((target) =>
+        destinationType === 'all' ? true : target.type === destinationType,
+      )
+      .filter((target) =>
+        destinationCategory === 'all'
+          ? true
+          : target.categories.includes(destinationCategory),
+      )
+      .filter((target) =>
+        normalized
+          ? `${target.label} ${target.state} ${target.type} ${target.categories.join(' ')}`.toLowerCase().includes(normalized)
+          : true,
+      )
+      .slice(0, 160)
+  }, [availableDestinations, destinationCategory, destinationQuery, destinationType])
   const [selectedStateId, setSelectedStateId] = useState(availableStates[0]?.id ?? '')
   const [selectedDestinationId, setSelectedDestinationId] = useState(
-    availableDestinations[0]?.id ?? '',
+    filteredDestinations[0]?.id ?? '',
   )
   useEffect(() => {
     if (availableStates.some((target) => target.id === selectedStateId)) return
     setSelectedStateId(availableStates[0]?.id ?? '')
   }, [availableStates, selectedStateId])
   useEffect(() => {
-    if (availableDestinations.some((target) => target.id === selectedDestinationId)) return
-    setSelectedDestinationId(availableDestinations[0]?.id ?? '')
-  }, [availableDestinations, selectedDestinationId])
+    if (filteredDestinations.some((target) => target.id === selectedDestinationId)) return
+    setSelectedDestinationId(filteredDestinations[0]?.id ?? '')
+  }, [filteredDestinations, selectedDestinationId])
 
   const targetDays = config.longestTripTargets.reduce(
     (sum, target) => sum + target.stayDays,
@@ -535,10 +561,10 @@ function LongestTripTargetsSection({
   const addSelectedDestination = () => {
     const target =
       LONGEST_TRIP_DESTINATIONS.find((item) => item.id === selectedDestinationId) ??
-      availableDestinations[0]
+      filteredDestinations[0]
     if (!target) return
     addTarget(destinationTarget(target))
-    const nextAvailable = availableDestinations.find((item) => item.id !== target.id)
+    const nextAvailable = filteredDestinations.find((item) => item.id !== target.id)
     setSelectedDestinationId(nextAvailable?.id ?? '')
   }
 
@@ -553,16 +579,54 @@ function LongestTripTargetsSection({
         onAdd={addSelectedState}
         disabled={availableStates.length === 0}
       />
+      <div className="grid gap-2">
+        <input
+          value={destinationQuery}
+          onChange={(event) => setDestinationQuery(event.target.value)}
+          placeholder="Search Canton, Hollywood, civil rights..."
+          aria-label="Search city or landmark targets"
+          className="min-h-10 min-w-0 rounded-[9px] border border-edge bg-panel2 px-2.5 text-[12.5px] text-ink placeholder:text-faint"
+        />
+        <div className="grid gap-2 sm:grid-cols-2">
+          <select
+            value={destinationType}
+            onChange={(event) =>
+              setDestinationType(event.target.value as 'all' | CatalogPlaceType)
+            }
+            aria-label="Filter target type"
+            className="min-h-10 rounded-[9px] border border-edge bg-panel2 px-2.5 text-[12.5px] text-ink"
+          >
+            <option value="all">All types</option>
+            <option value="city">Cities</option>
+            <option value="landmark">Landmarks</option>
+          </select>
+          <select
+            value={destinationCategory}
+            onChange={(event) =>
+              setDestinationCategory(event.target.value as 'all' | PlaceCategory)
+            }
+            aria-label="Filter target category"
+            className="min-h-10 rounded-[9px] border border-edge bg-panel2 px-2.5 text-[12.5px] text-ink"
+          >
+            <option value="all">All categories</option>
+            {PLACE_CATEGORY_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
       <TargetSelect
         label="City or landmark"
         value={selectedDestinationId}
-        options={availableDestinations.map((target) => ({
+        options={filteredDestinations.map((target) => ({
           value: target.id,
           label: target.label,
         }))}
         onChange={setSelectedDestinationId}
         onAdd={addSelectedDestination}
-        disabled={availableDestinations.length === 0}
+        disabled={filteredDestinations.length === 0}
       />
       <div
         className={cx(

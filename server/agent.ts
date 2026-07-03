@@ -7,8 +7,15 @@ import {
   plannerConfigSchema,
   sanitizePlannerConfig,
 } from '../src/domain/config'
-import { getKnownWaypoint, KNOWN_WAYPOINTS } from '../src/domain/highlights'
+import { getKnownWaypoint } from '../src/domain/highlights'
 import { optimizeRoutes } from '../src/domain/optimizer'
+import {
+  PLACE_CATALOG,
+  PLACE_CATEGORY_LABELS,
+  searchPlaceCatalog,
+  type CatalogPlaceType,
+  type PlaceCategory,
+} from '../src/domain/placeCatalog'
 import { buildStateRouteStats } from '../src/domain/routeStats'
 import { buildTripComposition } from '../src/domain/tripComposition'
 import { readSavedCustomRoutes } from './customRoutes'
@@ -99,15 +106,26 @@ const BOOLEAN_SETTING_KEYS = [
   'showAllStations',
 ] as const
 
+const PLACE_CATEGORY_VALUES = Object.keys(PLACE_CATEGORY_LABELS) as [
+  PlaceCategory,
+  ...PlaceCategory[],
+]
+
+const catalogSearchArgsSchema = z.object({
+  query: z.string().max(120).optional().nullable(),
+  state: z.string().min(2).max(3).optional().nullable(),
+  type: z.enum(['city', 'landmark']).optional().nullable(),
+  category: z.enum(PLACE_CATEGORY_VALUES).optional().nullable(),
+  limit: z.number().int().min(1).max(50).optional().nullable(),
+})
+
 const waypointArgsSchema = z.object({
-  waypointId: z.enum(KNOWN_WAYPOINTS.map((waypoint) => waypoint.id) as [string, ...string[]]),
+  waypointId: z.string().min(1).max(96),
 })
 
 const customRouteArgsSchema = z.object({
   waypointIds: z
-    .array(
-      z.enum(KNOWN_WAYPOINTS.map((waypoint) => waypoint.id) as [string, ...string[]]),
-    )
+    .array(z.string().min(1).max(96))
     .min(1)
     .max(12),
 })
@@ -302,7 +320,7 @@ async function createOpenAiResponse(apiKey: string, input: unknown[]) {
     body: JSON.stringify({
       model: process.env.OPENAI_MODEL ?? FALLBACK_MODEL,
       instructions:
-        `You are a route-planning assistant inside a local Tesla Supercharger Quest Planner app. Use tools when you need route data or when the user asks to change settings, require a stop, create a temporary custom ordered route, or reoptimize. Known waypoint IDs are: ${KNOWN_WAYPOINTS.map((waypoint) => `${waypoint.id} (${waypoint.label})`).join(', ')}. For exact-order custom-route requests through those known waypoint IDs, call create_custom_route with only the intermediate waypoint IDs in order; omit Chattanooga/start/end. Persistent named saved routes are created by the app UI, not this OpenAI tool. Keep final answers short and name the concrete changes made. You cannot execute arbitrary code, browse the web, or spend money outside this API call. Treat Tesla badge and landmark data as the app curated catalog, not official proof.`,
+        `You are a route-planning assistant inside a local Tesla Supercharger Quest Planner app. Use tools when you need route data or when the user asks to change settings, require a stop, create a temporary custom ordered route, or reoptimize. The app has ${PLACE_CATALOG.length} curated city and landmark stops across categories such as national parks, history, civil rights, sports, music, entertainment, science, coasts, scenic stops, and roadside attractions. Use search_catalog_locations to find exact waypoint IDs before adding requested stops or creating custom routes. For exact-order custom-route requests through catalog waypoints, call create_custom_route with only the intermediate waypoint IDs in order; omit Chattanooga/start/end. Persistent named saved routes are created by the app UI, not this OpenAI tool. Keep final answers short and name the concrete changes made. You cannot execute arbitrary code, browse the web, or spend money outside this API call. Treat Tesla badge and landmark data as the app curated catalog, not official proof.`,
       input,
       tools: plannerAgentTools,
       tool_choice: 'auto',
@@ -386,6 +404,30 @@ async function runAgentTool(
     return {
       config: summarizeConfig(context.workingConfig),
       ignoredFields: parsed.ignoredFields,
+    }
+  }
+
+  if (name === 'search_catalog_locations') {
+    const parsed = catalogSearchArgsSchema.parse(args)
+    const matches = searchPlaceCatalog({
+      query: parsed.query ?? '',
+      state: parsed.state ?? undefined,
+      type: (parsed.type ?? undefined) as CatalogPlaceType | undefined,
+      category: parsed.category ?? undefined,
+      limit: parsed.limit ?? 20,
+    })
+
+    return {
+      catalogSize: PLACE_CATALOG.length,
+      matches: matches.map((entry) => ({
+        id: entry.id,
+        label: entry.label,
+        type: entry.type,
+        state: entry.state,
+        categories: entry.categories.map((category) => PLACE_CATEGORY_LABELS[category]),
+        priority: entry.priority,
+        radiusMiles: entry.radiusMiles,
+      })),
     }
   }
 
@@ -539,15 +581,35 @@ const plannerAgentTools = [
   },
   {
     type: 'function',
+    name: 'search_catalog_locations',
+    description:
+      'Search the curated city and landmark catalog by text, state, type, or category. Use this before adding requested places unless the exact waypoint ID is already known.',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: { type: 'string' },
+        state: { type: 'string', description: 'Two-letter state code such as OH, CA, or TN.' },
+        type: { type: 'string', enum: ['city', 'landmark'] },
+        category: {
+          type: 'string',
+          enum: Object.keys(PLACE_CATEGORY_LABELS),
+        },
+        limit: { type: 'number' },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    type: 'function',
     name: 'add_required_waypoint',
     description:
-      'Require routes to pass through a known waypoint corridor before reoptimizing.',
+      'Require routes to pass through a catalog waypoint corridor before reoptimizing. Use waypoint IDs returned by search_catalog_locations.',
     parameters: {
       type: 'object',
       properties: {
         waypointId: {
           type: 'string',
-          enum: KNOWN_WAYPOINTS.map((waypoint) => waypoint.id),
+          description: 'Catalog waypoint ID, for example landmark-oh-pro-football-hall-of-fame.',
         },
       },
       required: ['waypointId'],
@@ -558,7 +620,7 @@ const plannerAgentTools = [
     type: 'function',
     name: 'create_custom_route',
     description:
-      'Create and optimize an additional Custom AI Route candidate through known waypoints in the exact order provided. Omit the start/end location from waypointIds.',
+      'Create and optimize an additional Custom AI Route candidate through catalog waypoints in the exact order provided. Omit the start/end location from waypointIds.',
     parameters: {
       type: 'object',
       properties: {
@@ -568,7 +630,7 @@ const plannerAgentTools = [
           maxItems: 12,
           items: {
             type: 'string',
-            enum: KNOWN_WAYPOINTS.map((waypoint) => waypoint.id),
+            description: 'Catalog waypoint ID returned by search_catalog_locations.',
           },
         },
       },
