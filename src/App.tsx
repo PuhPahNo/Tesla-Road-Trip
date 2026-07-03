@@ -20,6 +20,7 @@ import type {
   PlannerConfig,
   RoutePlan,
   Station,
+  DayPlan,
 } from './domain/types'
 import { useIsMobile } from './hooks/useMediaQuery'
 import {
@@ -43,7 +44,6 @@ import { FocusBar } from './components/FocusBar'
 import { CalendarModal } from './components/CalendarModal'
 import { MapView, type FitPadding } from './components/MapView'
 import { RoutePicker } from './components/RoutePicker'
-import { DayDetailModal } from './components/DayDetailModal'
 import { StateDetailModal } from './components/StateDetailModal'
 import { ConfigModal } from './components/ConfigModal'
 import { RouteCopilotPanel } from './components/RouteCopilot'
@@ -69,6 +69,13 @@ const OPTIMIZE_STEPS = [
 ]
 
 const PLAY_INTERVAL_MS = 1400
+
+type DayStateScore = {
+  state: string
+  visits: number
+  miles: number
+  firstSequence: number
+}
 
 type RoadRouteState =
   | { status: 'idle'; routeId?: string }
@@ -106,7 +113,6 @@ function App() {
   const [routePickerOpen, setRoutePickerOpen] = useState(false)
   const [customRouteOpen, setCustomRouteOpen] = useState(false)
   const [isSavingCustomRoute, setIsSavingCustomRoute] = useState(false)
-  const [selectedDayIndex, setSelectedDayIndex] = useState<number>()
   const [hoveredDayIndex, setHoveredDayIndex] = useState<number>()
   const [hoveredState, setHoveredState] = useState<string>()
   const [curDay, setCurDay] = useState(0)
@@ -315,8 +321,6 @@ function App() {
     [displayRoute, visibleStations],
   )
   const selectedStateStats = allStateStats.find((s) => s.state === selectedStateCode)
-  const activeDay =
-    displayRoute && selectedDayIndex != null ? displayRoute.days[selectedDayIndex] : undefined
 
   const activeRoadLine =
     selectedRoute &&
@@ -381,15 +385,17 @@ function App() {
     setPlaying(false)
   }
   const handleSelectState = (state: string) => {
+    setCalendarOpen(false)
     setSelectedStateCode(state)
     setMobileTab(null)
   }
   const handleOpenDay = (dayIndex: number) => {
-    setSelectedDayIndex(dayIndex)
     setCurDay(dayIndex)
     setHoveredDayIndex(undefined)
     setCalendarOpen(false)
     setMobileTab(null)
+    const primaryState = primaryStateForDay(displayRoute?.days[dayIndex])
+    if (primaryState) setSelectedStateCode(primaryState)
   }
   const handleSetDay = (dayIndex: number) => {
     if (!displayRoute) return
@@ -658,11 +664,6 @@ function App() {
         onClose={() => setCalendarOpen(false)}
         onOpenDay={handleOpenDay}
       />
-      <DayDetailModal
-        day={activeDay}
-        route={displayRoute}
-        onClose={() => setSelectedDayIndex(undefined)}
-      />
       <StateDetailModal
         state={selectedStateStats}
         onClose={() => setSelectedStateCode(undefined)}
@@ -689,6 +690,37 @@ function App() {
       <Toast message={toast} />
     </div>
   )
+}
+
+function primaryStateForDay(day?: DayPlan): string | undefined {
+  if (!day) return undefined
+
+  const scores = new Map<string, DayStateScore>()
+  day.visits.forEach((visit) => {
+    const state = visit.station.address.state
+    if (!state) return
+
+    const score =
+      scores.get(state) ??
+      ({
+        state,
+        visits: 0,
+        miles: 0,
+        firstSequence: visit.sequence,
+      } satisfies DayStateScore)
+    score.visits += 1
+    score.miles += visit.legMiles
+    score.firstSequence = Math.min(score.firstSequence, visit.sequence)
+    scores.set(state, score)
+  })
+
+  return Array.from(scores.values()).sort(
+    (a, b) =>
+      b.visits - a.visits ||
+      b.miles - a.miles ||
+      a.firstSequence - b.firstSequence ||
+      a.state.localeCompare(b.state),
+  )[0]?.state
 }
 
 export default App

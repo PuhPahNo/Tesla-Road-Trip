@@ -22,7 +22,7 @@ function DayTile({
     <button
       type="button"
       onClick={onOpen}
-      aria-label={`Open day ${day.day} detail`}
+      aria-label={`Open day ${day.day} state coverage`}
       className="flex min-h-[104px] cursor-pointer flex-col gap-1.5 rounded-xl p-3 text-left transition hover:brightness-110"
       style={{
         border: day.longDayOptimized
@@ -51,7 +51,7 @@ function DayTile({
 
 /**
  * Trip calendar — the whole route as week-by-week day tiles, tinted by
- * day rating. Clicking a tile opens that day's full detail.
+ * day rating. Clicking a tile opens state coverage for that day's primary state.
  */
 export function CalendarModal({
   route,
@@ -124,7 +124,7 @@ export function CalendarModal({
           Long-day boost
         </span>
         <span className="flex-1" />
-        <span className="hidden sm:inline">Click a day to open its full detail</span>
+        <span className="hidden sm:inline">Click a day to open state coverage</span>
       </div>
     </Overlay>
   )

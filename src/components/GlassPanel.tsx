@@ -276,7 +276,7 @@ export function DaysSection({
             onMouseLeave={() => onHoverDay?.(undefined)}
             onFocus={() => onHoverDay?.(index)}
             onBlur={() => onHoverDay?.(undefined)}
-            aria-label={`Open day ${day.day} detail, rating ${day.rating.score} out of 100`}
+            aria-label={`Open day ${day.day} state coverage, rating ${day.rating.score} out of 100`}
             className={cx(
               'flex w-full cursor-pointer flex-col rounded-[11px] border px-[11px] py-2.5 text-left transition',
               active ? 'border-accent2' : 'border-edge bg-chip',
