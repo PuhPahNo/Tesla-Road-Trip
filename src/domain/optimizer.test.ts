@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { defaultPlannerConfig } from './config'
 import { haversineMiles } from './geo'
 import { optimizeRoutes, refineRouteWithRoadLegs } from './optimizer'
-import type { Station } from './types'
+import type { SavedCustomRoute, Station } from './types'
 
 function makeStation(index: number, lat: number, lon: number, state = 'TN'): Station {
   return {
@@ -167,6 +167,50 @@ describe('route optimizer', () => {
     expect(route.uniqueStations).toBe(12)
     expect(californiaVisits.length).toBeGreaterThanOrEqual(3)
     expect(bayAreaVisits.length).toBeGreaterThanOrEqual(2)
+  })
+
+  it('optimizes saved custom stop order instead of preserving selection order', () => {
+    const unorderedRoute: SavedCustomRoute = {
+      id: 'saved-unordered-test',
+      name: 'Unordered Stops',
+      color: '#7c3aed',
+      waypoints: [
+        {
+          id: 'city-los-angeles',
+          label: 'Los Angeles',
+          position: { lat: 34.0522, lon: -118.2437 },
+          radiusMiles: 55,
+        },
+        {
+          id: 'city-atlanta',
+          label: 'Atlanta',
+          position: { lat: 33.749, lon: -84.388 },
+          radiusMiles: 50,
+        },
+      ],
+      createdAt: '2026-07-03T00:00:00.000Z',
+      updatedAt: '2026-07-03T00:00:00.000Z',
+    }
+    const result = optimizeRoutes(buildStationGrid(), {
+      ...defaultPlannerConfig,
+      longestTripDays: 12,
+      savedCustomRoutes: [unorderedRoute],
+    })
+    const route = result.routes.find((candidate) => candidate.id === unorderedRoute.id)
+    expect(route).toBeDefined()
+    if (!route) throw new Error('Saved custom route was not generated.')
+
+    const firstGeorgiaIndex = route.visits.findIndex(
+      (visit) => visit.station.address.state === 'GA',
+    )
+    const firstCaliforniaIndex = route.visits.findIndex(
+      (visit) => visit.station.address.state === 'CA',
+    )
+
+    expect(route.strategy).toContain('optimizes 2 selected stops')
+    expect(firstGeorgiaIndex).toBeGreaterThanOrEqual(0)
+    expect(firstCaliforniaIndex).toBeGreaterThanOrEqual(0)
+    expect(firstGeorgiaIndex).toBeLessThan(firstCaliforniaIndex)
   })
 
   it('guarantees a state signature stop for states the streak drives through', () => {

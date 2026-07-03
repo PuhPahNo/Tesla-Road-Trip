@@ -119,17 +119,6 @@ export function CustomRouteModal({
     setWaypoints((current) => current.filter((waypoint) => waypoint.id !== id))
   }
 
-  const moveWaypoint = (index: number, direction: -1 | 1) => {
-    setWaypoints((current) => {
-      const nextIndex = index + direction
-      if (nextIndex < 0 || nextIndex >= current.length) return current
-      const next = current.slice()
-      const [item] = next.splice(index, 1)
-      next.splice(nextIndex, 0, item)
-      return next
-    })
-  }
-
   const submit = () => {
     const trimmedName = name.trim()
     if (!trimmedName || waypoints.length === 0 || isSaving) return
@@ -142,7 +131,7 @@ export function CustomRouteModal({
         titleId={titleId}
         kicker="Custom route"
         title="Create saved route"
-        meta="Pick landmark/city stops in order, then optimize and grade the route."
+        meta="Pick landmark/city stops; the optimizer chooses the route order and Supercharger sequence."
         onClose={onClose}
       />
 
@@ -273,7 +262,7 @@ export function CustomRouteModal({
         <aside className="flex min-h-0 flex-col border-t border-edge bg-panel2 p-4 md:border-l md:border-t-0">
           <div className="flex items-baseline justify-between gap-3">
             <div className="font-mono text-[9px] uppercase tracking-[0.1em] text-faint">
-              Route order
+              Selected stops
             </div>
             <div className="font-mono text-[10.5px] text-faint">
               {waypoints.length} stops
@@ -283,8 +272,9 @@ export function CustomRouteModal({
           <div className="mt-3 min-h-0 flex-1 overflow-y-auto">
             {waypoints.length === 0 ? (
               <div className="rounded-[11px] border border-dashed border-edge bg-chip p-5 text-center text-[12.5px] leading-[1.5] text-dim">
-                Add at least one stop. The optimizer will route from Chattanooga through
-                your stops and back.
+                Add at least one stop. The optimizer will choose the stop order,
+                Supercharger sequence, day plan, and return leg from your configured
+                trip settings.
               </div>
             ) : (
               <div className="flex flex-col gap-2">
@@ -315,24 +305,6 @@ export function CustomRouteModal({
                         <CloseIcon size={12} />
                       </button>
                     </div>
-                    <div className="mt-2 flex gap-2 pl-8">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        disabled={index === 0}
-                        onClick={() => moveWaypoint(index, -1)}
-                      >
-                        Up
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        disabled={index === waypoints.length - 1}
-                        onClick={() => moveWaypoint(index, 1)}
-                      >
-                        Down
-                      </Button>
-                    </div>
                   </div>
                 ))}
               </div>
@@ -349,7 +321,7 @@ export function CustomRouteModal({
               disabled={isSaving || !name.trim() || waypoints.length === 0}
               onClick={submit}
             >
-              {isSaving ? 'Saving...' : 'Save route'}
+              {isSaving ? 'Saving...' : 'Save and optimize'}
             </Button>
           </div>
         </aside>

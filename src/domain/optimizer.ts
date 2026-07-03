@@ -802,7 +802,13 @@ function buildMostUniqueSiteVariants(
   }
 
   variants.push(
-    ...buildSavedCustomRouteVariants(start, requiredWaypoints, savedCustomRoutes),
+    ...buildSavedCustomRouteVariants(
+      start,
+      requiredWaypoints,
+      savedCustomRoutes,
+      [],
+      'route',
+    ),
   )
 
   return variants
@@ -1454,7 +1460,7 @@ function buildLongestTripVariants(
       requiredWaypoints,
       savedCustomRoutes,
       longestTripTargets.map(visitTargetAnchor),
-      'streak corridor',
+      'streak route',
     ),
   )
 
@@ -1466,24 +1472,26 @@ function buildSavedCustomRouteVariants(
   requiredWaypoints: RouteWaypoint[],
   savedCustomRoutes: SavedCustomRoute[],
   trailingAnchors: Array<Coordinate | undefined> = [],
-  strategyNoun = 'ordered corridor',
+  strategyNoun = 'route',
 ): RouteVariant[] {
   return savedCustomRoutes.map((route) => {
+    const optimizedWaypoints = orderWaypointsForRoute(route.waypoints, start)
     const forcedWaypoints = dedupeWaypoints([
       ...requiredWaypoints,
       ...route.waypoints,
     ])
     const anchors = [
       start,
-      ...route.waypoints.map((waypoint) => waypoint.position),
+      ...optimizedWaypoints.map((waypoint) => waypoint.position),
       ...trailingAnchors.filter((anchor): anchor is Coordinate => Boolean(anchor)),
       start,
     ]
+    const selectedLabels = route.waypoints.map((waypoint) => waypoint.label)
 
     return {
       id: route.id,
       name: route.name,
-      strategy: `Saved custom ${strategyNoun} through ${route.waypoints.map((waypoint) => waypoint.label).join(' -> ')} before returning to the start.`,
+      strategy: `Saved custom ${strategyNoun} that optimizes ${route.waypoints.length} selected stop${route.waypoints.length === 1 ? '' : 's'} (${selectedLabels.join(', ')}) against the current trip settings and Supercharger coverage.`,
       color: route.color,
       corridorMiles: 150,
       anchors: insertRequiredWaypoints(
@@ -1493,6 +1501,67 @@ function buildSavedCustomRouteVariants(
       forcedWaypoints,
     }
   })
+}
+
+function orderWaypointsForRoute(
+  waypoints: RouteWaypoint[],
+  start: Coordinate,
+): RouteWaypoint[] {
+  const remaining = waypoints.slice()
+  const ordered: RouteWaypoint[] = []
+  let current = start
+
+  while (remaining.length > 0) {
+    let bestIndex = 0
+    let bestMiles = Infinity
+    remaining.forEach((waypoint, index) => {
+      const miles = haversineMiles(current, waypoint.position)
+      if (
+        miles < bestMiles ||
+        (miles === bestMiles &&
+          waypoint.label.localeCompare(remaining[bestIndex].label) < 0)
+      ) {
+        bestMiles = miles
+        bestIndex = index
+      }
+    })
+    const next = remaining.splice(bestIndex, 1)[0]
+    ordered.push(next)
+    current = next.position
+  }
+
+  if (ordered.length <= 2) return ordered
+
+  const leg = (a: Coordinate, b: Coordinate) => haversineMiles(a, b)
+  const n = ordered.length
+  const MAX_PASSES = 8
+  for (let pass = 0; pass < MAX_PASSES; pass += 1) {
+    let improved = false
+    for (let i = 0; i < n - 1; i += 1) {
+      for (let j = i + 1; j < n; j += 1) {
+        const before =
+          leg(i === 0 ? start : ordered[i - 1].position, ordered[i].position) +
+          leg(
+            ordered[j].position,
+            j === n - 1 ? start : ordered[j + 1].position,
+          )
+        const after =
+          leg(i === 0 ? start : ordered[i - 1].position, ordered[j].position) +
+          leg(
+            ordered[i].position,
+            j === n - 1 ? start : ordered[j + 1].position,
+          )
+
+        if (after + 1e-9 < before) {
+          ordered.splice(i, j - i + 1, ...ordered.slice(i, j + 1).reverse())
+          improved = true
+        }
+      }
+    }
+    if (!improved) break
+  }
+
+  return ordered
 }
 
 function chooseStationsForVariant(
