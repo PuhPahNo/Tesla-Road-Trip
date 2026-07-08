@@ -8,8 +8,11 @@ import {
   plannerConfigSchema,
   sanitizePlannerConfig,
 } from '../src/domain/config'
+import { haversineMiles } from '../src/domain/geo'
 import { getKnownWaypoint } from '../src/domain/highlights'
 import { optimizeRoutes } from '../src/domain/optimizer'
+import { detailForCatalogPlace } from '../src/domain/placeDetails'
+import { effectivePlaceRating, suggestedStayDays } from '../src/domain/stays'
 import {
   PLACE_CATALOG,
   PLACE_CATEGORY_LABELS,
@@ -308,7 +311,7 @@ async function createOpenAiResponse(apiKey: string, input: unknown[]) {
     body: JSON.stringify({
       model: process.env.OPENAI_MODEL ?? FALLBACK_MODEL,
       instructions:
-        `You are a route-planning assistant inside a local Tesla Supercharger Quest Planner app. Use tools when you need route data or when the user asks to change settings, require a stop, create a temporary custom ordered route, or reoptimize. The app has ${PLACE_CATALOG.length} curated city and landmark stops across categories such as national parks, history, civil rights, sports, music, entertainment, science, coasts, scenic stops, and roadside attractions. Use search_catalog_locations to find exact waypoint IDs before adding requested stops or creating custom routes. For exact-order custom-route requests through catalog waypoints, call create_custom_route with only the intermediate waypoint IDs in order; omit Chattanooga/start/end. Persistent named saved routes are created by the app UI, not this OpenAI tool. Keep final answers short and name the concrete changes made. You cannot execute arbitrary code, browse the web, or spend money outside this API call. Treat Tesla badge and landmark data as the app curated catalog, not official proof.`,
+        `You are a route-planning assistant inside a local Tesla Supercharger Quest Planner app. Use tools when you need route data or when the user asks to change settings, require a stop, create a temporary custom ordered route, or reoptimize. The app has ${PLACE_CATALOG.length} curated city and landmark stops across categories such as national parks, history, civil rights, sports, music, entertainment, science, coasts, scenic stops, and roadside attractions. Longest Trip routes automatically give top-rated places multi-night basecamp stays (a new unique Supercharger each day keeps the streak alive); the tripPace setting (sprint/balanced/savor) and autoStays toggle control this, favoriteCategories/mutedCategories bias which places qualify, and suggest_stays shows current stays plus candidates before pacing advice. Use search_catalog_locations to find exact waypoint IDs before adding requested stops or creating custom routes. For exact-order custom-route requests through catalog waypoints, call create_custom_route with only the intermediate waypoint IDs in order; omit Chattanooga/start/end. Persistent named saved routes are created by the app UI, not this OpenAI tool. Keep final answers short and name the concrete changes made. You cannot execute arbitrary code, browse the web, or spend money outside this API call. Treat Tesla badge and landmark data as the app curated catalog, not official proof.`,
       input,
       tools: plannerAgentTools,
       tool_choice: 'auto',
@@ -493,6 +496,13 @@ async function runAgentTool(
     }
   }
 
+  if (name === 'suggest_stays') {
+    const parsed = routeDetailArgsSchema.parse(args)
+    const result = await context.ensureOptimized()
+    const route = getSelectedRoute(result, parsed.routeId ?? context.selectedRouteId)
+    return suggestStaysForRoute(route, context.workingConfig)
+  }
+
   if (name === 'optimize_trip') {
     const result = await context.ensureOptimized()
     const route = getSelectedRoute(result, context.selectedRouteId)
@@ -530,6 +540,19 @@ const plannerAgentTools = [
         routeId: { type: ['string', 'null'] },
         day: { type: ['number', 'null'] },
         state: { type: ['string', 'null'] },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    type: 'function',
+    name: 'suggest_stays',
+    description:
+      'List the selected route\'s current multi-night basecamp stays plus the highest-rated places on the route that could earn longer stays at balanced or savor pace. Use before advising on trip pacing.',
+    parameters: {
+      type: 'object',
+      properties: {
+        routeId: { type: ['string', 'null'] },
       },
       additionalProperties: false,
     },
@@ -686,6 +709,10 @@ function summarizeConfig(config: PlannerConfig) {
   return {
     plannerMode: config.plannerMode,
     longestTripDays: config.longestTripDays,
+    tripPace: config.tripPace,
+    autoStays: config.autoStays,
+    favoriteCategories: config.favoriteCategories,
+    mutedCategories: config.mutedCategories,
     targetStations: config.targetStations,
     tripWeeks: config.tripWeeks,
     dailyDriveTargetHours: config.dailyDriveTargetHours,
@@ -704,9 +731,90 @@ function summarizeConfig(config: PlannerConfig) {
   }
 }
 
+/** Group consecutive stay-tagged days into one entry per basecamp. */
+function groupRouteStays(route: RoutePlan) {
+  const stays: Array<{
+    placeId: string
+    label: string
+    nights: number
+    firstDay: number
+    lastDay: number
+  }> = []
+
+  route.days.forEach((day) => {
+    if (!day.stay) return
+    const last = stays.at(-1)
+    if (last && last.placeId === day.stay.placeId && day.stay.night > 1) {
+      last.lastDay = day.day
+      return
+    }
+    if (day.stay.night === 1) {
+      stays.push({
+        placeId: day.stay.placeId,
+        label: day.stay.label,
+        nights: day.stay.totalNights,
+        firstDay: day.day,
+        lastDay: day.day,
+      })
+    }
+  })
+
+  return stays
+}
+
+function suggestStaysForRoute(route: RoutePlan, config: PlannerConfig) {
+  const currentStays = groupRouteStays(route)
+  const currentIds = new Set(currentStays.map((stay) => stay.placeId))
+  const placesOnRoute = new Map<string, (typeof PLACE_CATALOG)[number]>()
+
+  route.visits.forEach((visit) => {
+    PLACE_CATALOG.forEach((entry) => {
+      if (placesOnRoute.has(entry.id)) return
+      if (
+        haversineMiles(visit.station.position, entry.position) <=
+        entry.radiusMiles
+      ) {
+        placesOnRoute.set(entry.id, entry)
+      }
+    })
+  })
+
+  const candidates = [...placesOnRoute.values()]
+    .map((entry) => {
+      const rating = effectivePlaceRating(
+        detailForCatalogPlace(entry).rating,
+        entry.categories,
+        config,
+      )
+      return {
+        id: entry.id,
+        label: entry.label,
+        state: entry.state,
+        effectiveRating: rating,
+        suggestedDays: {
+          balanced: suggestedStayDays(rating, 'balanced'),
+          savor: suggestedStayDays(rating, 'savor'),
+        },
+        alreadyAStay: currentIds.has(entry.id),
+      }
+    })
+    .filter((candidate) => candidate.suggestedDays.savor >= 2)
+    .sort((a, b) => b.effectiveRating - a.effectiveRating)
+    .slice(0, 12)
+
+  return {
+    tripPace: config.tripPace,
+    autoStays: config.autoStays,
+    currentStays,
+    candidates,
+    note: 'Longer stays need Longest Trip mode with autoStays on; each extra night reserves a new unique Supercharger near the place. Use set_trip_settings (tripPace/autoStays) or a manual visit target with stayDays to act on these.',
+  }
+}
+
 function summarizeRoute(route: RoutePlan) {
   const composition = buildTripComposition(route)
   return {
+    stays: groupRouteStays(route),
     id: route.id,
     plannerMode: route.plannerMode,
     name: route.name,

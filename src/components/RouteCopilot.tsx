@@ -24,15 +24,15 @@ interface CopilotMessage {
 
 const SEED_MESSAGE: CopilotMessage = {
   role: 'assistant',
-  text: "I can reshape this route, explain tradeoffs, add must-see stops, fix warnings, or help build a saved custom route.",
+  text: "I can reshape this route, tune your trip pace and basecamp stays, add must-see stops, fix warnings, or help build a saved custom route.",
 }
 
 const SUGGESTIONS = [
   'Explain this route',
-  'Find missed landmarks',
+  'Where should I stay 2+ nights?',
+  'Give me more time at the best stops',
   'Add Grand Canyon and Zion',
   'Fix range warnings',
-  'Maximize big cities',
 ]
 
 function MessageBubble({ message }: { message: CopilotMessage }) {
