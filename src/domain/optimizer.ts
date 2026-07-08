@@ -1581,6 +1581,8 @@ function chooseStationsForVariant(
   options: {
     spreadAlongCorridor?: boolean
     visitTargets?: LongestTripVisitTarget[]
+    /** What one stayDays unit means in warnings: a streak day or a reserved stop. */
+    visitTargetUnit?: 'streak day' | 'reserved stop'
     /** Per-station rating bonus miles — see buildStationRatingBonus. */
     ratingBonus?: Map<string, number>
   } = {},
@@ -1670,6 +1672,7 @@ function chooseStationsForVariant(
       options.visitTargets,
       target,
       forcedStationIds,
+      options.visitTargetUnit,
     )
     selected = visitTargetResult.selected
     waypointWarnings.push(...visitTargetResult.warnings)
@@ -1709,6 +1712,7 @@ function ensureVisitTargetStations(
   targets: LongestTripVisitTarget[],
   targetStationCount: number,
   forcedStationIds: Set<string>,
+  unit: 'streak day' | 'reserved stop' = 'streak day',
 ) {
   let next = selected.slice()
   const warnings: string[] = []
@@ -1720,7 +1724,9 @@ function ensureVisitTargetStations(
 
   if (requestedDays > targetStationCount) {
     warnings.push(
-      `Configured visit targets request ${requestedDays} streak days inside a ${targetStationCount}-day Longest Trip. Some requested stay days may be skipped.`,
+      unit === 'streak day'
+        ? `Configured visit targets request ${requestedDays} streak days inside a ${targetStationCount}-day Longest Trip. Some requested stay days may be skipped.`
+        : `Configured visit targets request ${requestedDays} reserved stops inside a ${targetStationCount}-station route. Some requested stops may be skipped.`,
     )
   }
 
@@ -1749,7 +1755,7 @@ function ensureVisitTargetStations(
 
     if (added < requested) {
       warnings.push(
-        `${target.label} requested ${requested} streak day${requested === 1 ? '' : 's'}, but only ${added} unique matching Supercharger stop${added === 1 ? '' : 's'} were available.`,
+        `${target.label} requested ${requested} ${unit}${requested === 1 ? '' : 's'}, but only ${added} unique matching Supercharger stop${added === 1 ? '' : 's'} were available.`,
       )
     }
   })
@@ -2485,7 +2491,7 @@ function buildLongestTripDayPlans(
   }
 
   return {
-    days: tagStayDays(days, config),
+    days,
     visits,
     totals: {
       totalMiles: round(totalMiles),
@@ -2507,25 +2513,26 @@ function buildRouteDayPlans(
   precomputedDriveHours?: number[],
   ratingTargets: RatingPlaceTarget[] = [],
 ) {
-  if (config.plannerMode === 'longest_trip') {
-    return buildLongestTripDayPlans(
-      selectedStations,
-      routeName,
-      config,
-      precomputedLegMiles,
-      precomputedDriveHours,
-      ratingTargets,
-    )
-  }
+  const plans =
+    config.plannerMode === 'longest_trip'
+      ? buildLongestTripDayPlans(
+          selectedStations,
+          routeName,
+          config,
+          precomputedLegMiles,
+          precomputedDriveHours,
+          ratingTargets,
+        )
+      : buildDayPlans(
+          selectedStations,
+          routeName,
+          config,
+          precomputedLegMiles,
+          precomputedDriveHours,
+          ratingTargets,
+        )
 
-  return buildDayPlans(
-    selectedStations,
-    routeName,
-    config,
-    precomputedLegMiles,
-    precomputedDriveHours,
-    ratingTargets,
-  )
+  return { ...plans, days: tagStayDays(plans.days, config) }
 }
 
 function getCurrentDayCap(day: DayPlan, config: PlannerConfig) {
@@ -3263,12 +3270,10 @@ function ratingTargetsForVariant(
   forcedWaypoints: RouteWaypoint[],
   autoStayTargets: LongestTripVisitTarget[] = [],
 ) {
-  return buildRatingTargets(
-    forcedWaypoints,
-    config.plannerMode === 'longest_trip'
-      ? [...config.longestTripTargets, ...autoStayTargets]
-      : [],
-  )
+  return buildRatingTargets(forcedWaypoints, [
+    ...config.longestTripTargets,
+    ...autoStayTargets,
+  ])
 }
 
 function ratingTargetsForRefinedRoute(config: PlannerConfig, routeId: string) {
@@ -3281,7 +3286,7 @@ function ratingTargetsForRefinedRoute(config: PlannerConfig, routeId: string) {
 
   return buildRatingTargets(
     dedupeWaypoints([...config.requiredWaypoints, ...routeWaypoints]),
-    config.plannerMode === 'longest_trip' ? config.longestTripTargets : [],
+    config.longestTripTargets,
   )
 }
 
@@ -3569,7 +3574,9 @@ export function optimizeRoutes(
         visitTargets:
           config.plannerMode === 'longest_trip'
             ? [...config.longestTripTargets, ...autoStayTargets]
-            : undefined,
+            : config.longestTripTargets,
+        visitTargetUnit:
+          config.plannerMode === 'longest_trip' ? 'streak day' : 'reserved stop',
         ratingBonus: stationRatingBonus,
       },
     )

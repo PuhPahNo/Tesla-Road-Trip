@@ -229,26 +229,41 @@ function stayPlacesForTagging(config: PlannerConfig): StayPlace[] {
 }
 
 /**
- * Describe multi-day dwells after day plans exist: consecutive single-visit
- * streak days whose stations share a catalog place (or manual target) area
- * become one stay, tagged night-by-night. Purely descriptive — numbers,
+ * Describe multi-day dwells after day plans exist: consecutive days whose
+ * visits all sit inside one catalog place (or manual target) area become one
+ * stay, tagged night-by-night. Works for single-visit streak days and for
+ * multi-stop Most Unique Sites days alike. Purely descriptive — numbers,
  * ordering, and ratings are untouched — so it works the same for estimated
  * and road-refined plans.
  */
 export function tagStayDays(days: DayPlan[], config: PlannerConfig): DayPlan[] {
-  if (config.plannerMode !== 'longest_trip' || days.length < 2) return days
+  if (days.length < 2) return days
 
   const places = stayPlacesForTagging(config)
   const matchesByDay = days.map((day) => {
     const found = new Map<string, StayPlace>()
-    if (day.visits.length !== 1) return found
+    if (day.visits.length === 0) return found
 
-    const station = day.visits[0].station
+    const [first, ...rest] = day.visits
     places.forEach((place) => {
-      if (haversineMiles(station.position, place.position) <= place.radiusMiles) {
+      if (
+        haversineMiles(first.station.position, place.position) <=
+        place.radiusMiles
+      ) {
         found.set(place.id, place)
       }
     })
+    for (const visit of rest) {
+      if (found.size === 0) break
+      for (const [id, place] of found) {
+        if (
+          haversineMiles(visit.station.position, place.position) >
+          place.radiusMiles
+        ) {
+          found.delete(id)
+        }
+      }
+    }
     return found
   })
 

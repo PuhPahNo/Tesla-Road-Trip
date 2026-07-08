@@ -211,16 +211,40 @@ describe('tagStayDays', () => {
     expect(tagged[4].stay).toBeUndefined()
   })
 
-  it('leaves plans untouched outside longest trip mode', () => {
-    const days = [
-      singleVisitDay(1, GRAND_CANYON),
-      singleVisitDay(2, GRAND_CANYON),
-    ]
+  it('tags multi-visit days only when every stop shares the place area', () => {
+    const nearCanyon = (offset: number) => ({
+      lat: GRAND_CANYON.lat + offset * 0.1,
+      lon: GRAND_CANYON.lon + offset * 0.1,
+    })
+    const denver = { lat: 39.7, lon: -105.0 }
+    const multiVisitDay = (day: number, positions: Coordinate[]): DayPlan => {
+      const base = singleVisitDay(day, positions[0])
+      return {
+        ...base,
+        uniqueStations: positions.length,
+        visits: positions.map((position, index) => ({
+          ...base.visits[0],
+          sequence: day * 10 + index,
+          station: stationAt(day * 10 + index, position),
+        })),
+      }
+    }
+
     const tagged = tagStayDays(
-      days,
+      [
+        multiVisitDay(1, [nearCanyon(0), nearCanyon(1)]),
+        multiVisitDay(2, [nearCanyon(1), nearCanyon(2)]),
+        multiVisitDay(3, [nearCanyon(0), denver]),
+      ],
       configWith({ plannerMode: 'most_unique_sites' }),
     )
 
-    expect(tagged.every((day) => day.stay === undefined)).toBe(true)
+    expect(tagged[0].stay).toMatchObject({
+      label: 'Grand Canyon',
+      night: 1,
+      totalNights: 2,
+    })
+    expect(tagged[1].stay?.night).toBe(2)
+    expect(tagged[2].stay).toBeUndefined()
   })
 })

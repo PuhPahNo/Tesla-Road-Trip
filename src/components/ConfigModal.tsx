@@ -502,10 +502,12 @@ function TargetSelect({
 
 function TargetStayRow({
   target,
+  unit,
   onStayDaysChange,
   onRemove,
 }: {
   target: LongestTripVisitTarget
+  unit: string
   onStayDaysChange: (stayDays: number) => void
   onRemove: () => void
 }) {
@@ -538,7 +540,7 @@ function TargetStayRow({
         onChange={(event) => onStayDaysChange(Number(event.target.value))}
         className="h-9 w-16 rounded-[9px] border border-edge bg-chip px-1 text-center font-mono text-[12.5px] text-ink"
       />
-      <span className="flex-none text-[11px] text-faint">days</span>
+      <span className="flex-none text-[11px] text-faint">{unit}</span>
       <button
         type="button"
         onClick={onRemove}
@@ -604,11 +606,14 @@ function LongestTripTargetsSection({
     setSelectedDestinationId(filteredDestinations[0]?.id ?? '')
   }, [filteredDestinations, selectedDestinationId])
 
+  const isLongestTrip = config.plannerMode === 'longest_trip'
   const targetDays = config.longestTripTargets.reduce(
     (sum, target) => sum + target.stayDays,
     0,
   )
-  const exceedsTarget = targetDays > config.longestTripDays
+  const exceedsTarget = isLongestTrip
+    ? targetDays > config.longestTripDays
+    : targetDays > config.targetStations
 
   const setTargets = (longestTripTargets: LongestTripVisitTarget[]) =>
     onChange({ ...config, longestTripTargets })
@@ -720,13 +725,15 @@ function LongestTripTargetsSection({
             : 'border-edge bg-panel2 text-faint',
         )}
       >
-        {targetDays.toLocaleString()} of {config.longestTripDays.toLocaleString()} streak
-        days reserved for selected targets.
+        {isLongestTrip
+          ? `${targetDays.toLocaleString()} of ${config.longestTripDays.toLocaleString()} streak days reserved for selected targets.`
+          : `${targetDays.toLocaleString()} Supercharger stop${targetDays === 1 ? '' : 's'} reserved near selected targets.`}
       </div>
       {config.longestTripTargets.map((target) => (
         <TargetStayRow
           key={target.id}
           target={target}
+          unit={isLongestTrip ? 'days' : 'stops'}
           onStayDaysChange={(stayDays) => updateStayDays(target.id, stayDays)}
           onRemove={() => removeTarget(target.id)}
         />
@@ -845,9 +852,7 @@ export function ConfigModal({
 
         <CategoryPreferencesSection config={config} onChange={onChange} />
 
-        {config.plannerMode === 'longest_trip' ? (
-          <LongestTripTargetsSection config={config} onChange={onChange} />
-        ) : null}
+        <LongestTripTargetsSection config={config} onChange={onChange} />
 
         <div className="flex flex-col gap-4">
           <SectionLabel>Daily limits</SectionLabel>

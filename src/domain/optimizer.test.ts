@@ -169,6 +169,31 @@ describe('route optimizer', () => {
     expect(bayAreaVisits.length).toBeGreaterThanOrEqual(2)
   })
 
+  it('reserves visit target stations in most unique sites mode', () => {
+    const bayArea = { lat: 37.8, lon: -122.4 }
+    const result = optimizeRoutes(buildStationGrid(), {
+      ...mostUniqueConfig,
+      targetStations: 30,
+      tripWeeks: 9,
+      longestTripTargets: [
+        {
+          id: 'landmark-bay-area-test',
+          type: 'landmark',
+          label: 'Bay Area',
+          position: bayArea,
+          radiusMiles: 100,
+          stayDays: 3,
+        },
+      ],
+    })
+    const route = result.routes[0]
+    const bayAreaVisits = route.visits.filter(
+      (visit) => haversineMiles(visit.station.position, bayArea) <= 100,
+    )
+
+    expect(bayAreaVisits.length).toBeGreaterThanOrEqual(3)
+  })
+
   it('tags rating-driven stay nights on longest trip day plans', () => {
     const result = optimizeRoutes(buildStationGrid(), {
       ...defaultPlannerConfig,
