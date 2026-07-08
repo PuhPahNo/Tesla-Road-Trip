@@ -27,6 +27,7 @@ interface CatalogLocation {
 export interface CustomRouteDraft {
   name: string
   waypoints: RouteWaypoint[]
+  keepOrder: boolean
 }
 
 export interface CustomRouteModalProps {
@@ -50,6 +51,7 @@ export function CustomRouteModal({
   const [typeFilter, setTypeFilter] = useState<'all' | CatalogPlaceType>('all')
   const [categoryFilter, setCategoryFilter] = useState<'all' | PlaceCategory>('all')
   const [waypoints, setWaypoints] = useState<RouteWaypoint[]>([])
+  const [keepOrder, setKeepOrder] = useState(false)
   const [manualLabel, setManualLabel] = useState('')
   const [manualLat, setManualLat] = useState('')
   const [manualLon, setManualLon] = useState('')
@@ -61,6 +63,7 @@ export function CustomRouteModal({
     setTypeFilter('all')
     setCategoryFilter('all')
     setWaypoints([])
+    setKeepOrder(false)
     setManualLabel('')
     setManualLat('')
     setManualLon('')
@@ -122,7 +125,7 @@ export function CustomRouteModal({
   const submit = () => {
     const trimmedName = name.trim()
     if (!trimmedName || waypoints.length === 0 || isSaving) return
-    onCreate({ name: trimmedName, waypoints })
+    onCreate({ name: trimmedName, waypoints, keepOrder })
   }
 
   return (
@@ -131,7 +134,7 @@ export function CustomRouteModal({
         titleId={titleId}
         kicker="Custom route"
         title="Create saved route"
-        meta="Pick landmark/city stops; the optimizer chooses the route order and Supercharger sequence."
+        meta="Pick landmark/city stops; the optimizer picks the stop order and Supercharger sequence unless you lock the order below."
         onClose={onClose}
       />
 
@@ -310,6 +313,24 @@ export function CustomRouteModal({
               </div>
             )}
           </div>
+
+          <label className="mt-3 flex flex-none cursor-pointer items-center justify-between gap-3 rounded-[11px] border border-edge bg-panel2 px-[13px] py-2.5">
+            <span className="min-w-0">
+              <span className="block text-[12.5px] font-medium text-ink">
+                Keep stop order
+              </span>
+              <span className="mt-0.5 block text-[11px] text-faint">
+                Visit stops exactly as listed instead of letting the optimizer
+                reorder them.
+              </span>
+            </span>
+            <input
+              type="checkbox"
+              checked={keepOrder}
+              onChange={(event) => setKeepOrder(event.target.checked)}
+              className="h-4 w-4 flex-none accent-[var(--accent)]"
+            />
+          </label>
 
           <div className="mt-4 flex flex-none gap-2">
             <Button variant="secondary" className="flex-1" onClick={onClose}>

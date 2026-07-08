@@ -33,6 +33,7 @@ const savedRouteSchema = z.object({
   name: z.string().min(1).max(80),
   color: z.string().min(1).max(32),
   waypoints: z.array(waypointSchema).min(1).max(16),
+  keepOrder: z.boolean().optional(),
   createdAt: z.string().min(1).max(48),
   updatedAt: z.string().min(1).max(48),
 })
@@ -41,6 +42,7 @@ const createRouteSchema = z.object({
   name: z.string().min(1).max(80),
   color: z.string().min(1).max(32).optional(),
   waypoints: z.array(waypointSchema).min(1).max(16),
+  keepOrder: z.boolean().optional(),
 })
 
 const routeListSchema = z.array(savedRouteSchema).max(100)
@@ -88,6 +90,7 @@ export function registerCustomRouteRoutes(app: Express) {
         name: parsed.name.trim(),
         color: parsed.color ?? COLORS[existing.length % COLORS.length],
         waypoints: normalizeWaypoints(parsed.waypoints),
+        ...(parsed.keepOrder ? { keepOrder: true } : {}),
         createdAt: now,
         updatedAt: now,
       }

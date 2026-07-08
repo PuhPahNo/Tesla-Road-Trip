@@ -1480,7 +1480,9 @@ function buildSavedCustomRouteVariants(
   strategyNoun = 'route',
 ): RouteVariant[] {
   return savedCustomRoutes.map((route) => {
-    const optimizedWaypoints = orderWaypointsForRoute(route.waypoints, start)
+    const optimizedWaypoints = route.keepOrder
+      ? route.waypoints
+      : orderWaypointsForRoute(route.waypoints, start)
     const forcedWaypoints = dedupeWaypoints([
       ...requiredWaypoints,
       ...route.waypoints,
@@ -1496,7 +1498,9 @@ function buildSavedCustomRouteVariants(
     return {
       id: route.id,
       name: route.name,
-      strategy: `Saved custom ${strategyNoun} that optimizes ${route.waypoints.length} selected stop${route.waypoints.length === 1 ? '' : 's'} (${selectedLabels.join(', ')}) against the current trip settings and Supercharger coverage.`,
+      strategy: route.keepOrder
+        ? `Saved custom ${strategyNoun} that visits ${route.waypoints.length} stop${route.waypoints.length === 1 ? '' : 's'} in your exact saved order (${selectedLabels.join(' -> ')}).`
+        : `Saved custom ${strategyNoun} that optimizes ${route.waypoints.length} selected stop${route.waypoints.length === 1 ? '' : 's'} (${selectedLabels.join(', ')}) against the current trip settings and Supercharger coverage.`,
       color: route.color,
       corridorMiles: 150,
       anchors: insertRequiredWaypoints(

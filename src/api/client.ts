@@ -68,6 +68,7 @@ export interface CreateCustomRouteRequest {
   name: string
   color?: string
   waypoints: RouteWaypoint[]
+  keepOrder?: boolean
 }
 
 export interface CreateCustomRouteResponse {

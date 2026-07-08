@@ -80,6 +80,8 @@ export interface SavedCustomRoute {
   name: string
   color: string
   waypoints: RouteWaypoint[]
+  /** Visit stops exactly in the saved order instead of letting the optimizer reorder them. */
+  keepOrder?: boolean
   createdAt: string
   updatedAt: string
 }

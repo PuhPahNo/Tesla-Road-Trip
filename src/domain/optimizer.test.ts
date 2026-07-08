@@ -260,6 +260,51 @@ describe('route optimizer', () => {
     expect(firstGeorgiaIndex).toBeLessThan(firstCaliforniaIndex)
   })
 
+  it('preserves saved stop order when keepOrder is set', () => {
+    const orderedRoute: SavedCustomRoute = {
+      id: 'saved-ordered-test',
+      name: 'Ordered Stops',
+      color: '#7c3aed',
+      keepOrder: true,
+      waypoints: [
+        {
+          id: 'city-los-angeles',
+          label: 'Los Angeles',
+          position: { lat: 34.0522, lon: -118.2437 },
+          radiusMiles: 55,
+        },
+        {
+          id: 'city-atlanta',
+          label: 'Atlanta',
+          position: { lat: 33.749, lon: -84.388 },
+          radiusMiles: 50,
+        },
+      ],
+      createdAt: '2026-07-03T00:00:00.000Z',
+      updatedAt: '2026-07-03T00:00:00.000Z',
+    }
+    const result = optimizeRoutes(buildStationGrid(), {
+      ...defaultPlannerConfig,
+      longestTripDays: 12,
+      savedCustomRoutes: [orderedRoute],
+    })
+    const route = result.routes.find((candidate) => candidate.id === orderedRoute.id)
+    expect(route).toBeDefined()
+    if (!route) throw new Error('Ordered custom route was not generated.')
+
+    const firstGeorgiaIndex = route.visits.findIndex(
+      (visit) => visit.station.address.state === 'GA',
+    )
+    const firstCaliforniaIndex = route.visits.findIndex(
+      (visit) => visit.station.address.state === 'CA',
+    )
+
+    expect(route.strategy).toContain('exact saved order')
+    expect(firstCaliforniaIndex).toBeGreaterThanOrEqual(0)
+    expect(firstGeorgiaIndex).toBeGreaterThanOrEqual(0)
+    expect(firstCaliforniaIndex).toBeLessThan(firstGeorgiaIndex)
+  })
+
   it('guarantees a state signature stop for states the streak drives through', () => {
     const sedona = { lat: 34.8697, lon: -111.7609 }
     const grandCanyon = { lat: 36.1069, lon: -112.1129 }
