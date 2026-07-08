@@ -10,7 +10,7 @@ import {
 } from '../domain/placeCatalog'
 import { Overlay, OverlayHeader } from '../ui/Overlay'
 import { Button, scoreColor } from '../ui/primitives'
-import { CloseIcon } from '../ui/icons'
+import { ChevronDownIcon, ChevronUpIcon, CloseIcon } from '../ui/icons'
 
 interface CatalogLocation {
   id: string
@@ -52,6 +52,7 @@ export function CustomRouteModal({
   const [categoryFilter, setCategoryFilter] = useState<'all' | PlaceCategory>('all')
   const [waypoints, setWaypoints] = useState<RouteWaypoint[]>([])
   const [keepOrder, setKeepOrder] = useState(false)
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
   const [manualLabel, setManualLabel] = useState('')
   const [manualLat, setManualLat] = useState('')
   const [manualLon, setManualLon] = useState('')
@@ -64,6 +65,7 @@ export function CustomRouteModal({
     setCategoryFilter('all')
     setWaypoints([])
     setKeepOrder(false)
+    setDragIndex(null)
     setManualLabel('')
     setManualLat('')
     setManualLon('')
@@ -120,6 +122,18 @@ export function CustomRouteModal({
 
   const removeWaypoint = (id: string) => {
     setWaypoints((current) => current.filter((waypoint) => waypoint.id !== id))
+  }
+
+  // Reordering implies the user cares about sequence, so lock it in.
+  const moveWaypoint = (from: number, to: number) => {
+    if (from === to || to < 0 || to >= waypoints.length) return
+    setWaypoints((current) => {
+      const next = current.slice()
+      const [moved] = next.splice(from, 1)
+      next.splice(to, 0, moved)
+      return next
+    })
+    setKeepOrder(true)
   }
 
   const submit = () => {
@@ -284,7 +298,18 @@ export function CustomRouteModal({
                 {waypoints.map((waypoint, index) => (
                   <div
                     key={`${waypoint.id}-${index}`}
-                    className="rounded-[11px] border border-edge bg-chip p-3"
+                    draggable
+                    onDragStart={() => setDragIndex(index)}
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={(event) => {
+                      event.preventDefault()
+                      if (dragIndex !== null) moveWaypoint(dragIndex, index)
+                      setDragIndex(null)
+                    }}
+                    onDragEnd={() => setDragIndex(null)}
+                    className={`cursor-grab rounded-[11px] border bg-chip p-3 ${
+                      dragIndex === index ? 'border-accent2 opacity-70' : 'border-edge'
+                    }`}
                   >
                     <div className="flex items-start gap-2">
                       <div className="flex h-6 w-6 flex-none items-center justify-center rounded-full bg-accent text-[11px] font-semibold text-on-accent">
@@ -299,6 +324,24 @@ export function CustomRouteModal({
                           {waypoint.position.lon.toFixed(3)}
                         </div>
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => moveWaypoint(index, index - 1)}
+                        disabled={index === 0}
+                        aria-label={`Move ${waypoint.label} earlier`}
+                        className="flex h-7 w-7 flex-none cursor-pointer items-center justify-center rounded-lg border border-edge bg-transparent text-dim transition hover:text-ink disabled:cursor-default disabled:opacity-30"
+                      >
+                        <ChevronUpIcon size={12} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveWaypoint(index, index + 1)}
+                        disabled={index === waypoints.length - 1}
+                        aria-label={`Move ${waypoint.label} later`}
+                        className="flex h-7 w-7 flex-none cursor-pointer items-center justify-center rounded-lg border border-edge bg-transparent text-dim transition hover:text-ink disabled:cursor-default disabled:opacity-30"
+                      >
+                        <ChevronDownIcon size={12} />
+                      </button>
                       <button
                         type="button"
                         onClick={() => removeWaypoint(waypoint.id)}

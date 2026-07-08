@@ -28,6 +28,14 @@ export function ChevronDownIcon({ size = 12, ...props }: IconProps) {
   )
 }
 
+export function ChevronUpIcon({ size = 12, ...props }: IconProps) {
+  return (
+    <svg {...base({ size, ...props })} fill="none" stroke="currentColor" strokeWidth={2.5}>
+      <path d="M6 15l6-6 6 6" />
+    </svg>
+  )
+}
+
 export function ChevronLeftIcon({ size = 15, ...props }: IconProps) {
   return (
     <svg {...base({ size, ...props })} fill="none" stroke="currentColor" strokeWidth={2.4}>
