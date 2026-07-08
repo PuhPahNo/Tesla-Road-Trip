@@ -3,6 +3,7 @@ import path from 'node:path'
 import type { Express } from 'express'
 import { z } from 'zod'
 import {
+  PLANNER_NUMERIC_LIMITS,
   defaultPlannerConfig,
   plannerConfigSchema,
   sanitizePlannerConfig,
@@ -83,21 +84,7 @@ const routeDetailArgsSchema = z.object({
   state: z.string().min(2).max(3).nullable().optional(),
 })
 
-const NUMERIC_SETTING_LIMITS = {
-  longestTripDays: { min: 1, max: 365, integer: true },
-  targetStations: { min: 25, max: 5000, integer: true },
-  tripWeeks: { min: 1, max: 52 },
-  dailyDriveTargetHours: { min: 1, max: 14 },
-  dailyDriveMaxHours: { min: 1, max: 16 },
-  longDayMaxHours: { min: 2, max: 14 },
-  longDayMinSitesPerExtraHour: { min: 0.1, max: 30 },
-  averageMph: { min: 25, max: 85 },
-  practicalRangeMiles: { min: 80, max: 350 },
-  closeStationRadiusMiles: { min: 0.5, max: 25 },
-  closeStationStopMinutes: { min: 1, max: 60 },
-  distanceChargeStopMinutes: { min: 2, max: 90 },
-  roadDistanceFactor: { min: 1, max: 1.8 },
-} as const
+const NUMERIC_SETTING_LIMITS = PLANNER_NUMERIC_LIMITS
 
 const BOOLEAN_SETTING_KEYS = [
   'longDayOptimization',

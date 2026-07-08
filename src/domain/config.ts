@@ -34,6 +34,36 @@ export const defaultPlannerConfig: PlannerConfig = {
   start: CHATTANOOGA_37405_START,
 }
 
+/**
+ * Single source of truth for numeric planner-setting bounds — the zod
+ * schema below and the copilot's set_trip_settings validation both
+ * derive from this table.
+ */
+export const PLANNER_NUMERIC_LIMITS = {
+  longestTripDays: { min: 1, max: 365, integer: true },
+  targetStations: { min: 25, max: 5000, integer: true },
+  tripWeeks: { min: 1, max: 52 },
+  dailyDriveTargetHours: { min: 1, max: 14 },
+  dailyDriveMaxHours: { min: 1, max: 16 },
+  longDayMaxHours: { min: 2, max: 14 },
+  longDayMinSitesPerExtraHour: { min: 0.1, max: 30 },
+  averageMph: { min: 25, max: 85 },
+  practicalRangeMiles: { min: 80, max: 350 },
+  closeStationRadiusMiles: { min: 0.5, max: 25 },
+  closeStationStopMinutes: { min: 1, max: 60 },
+  distanceChargeStopMinutes: { min: 2, max: 90 },
+  roadDistanceFactor: { min: 1, max: 1.8 },
+} as const
+
+export type PlannerNumericSettingKey = keyof typeof PLANNER_NUMERIC_LIMITS
+
+function limitedNumber(key: PlannerNumericSettingKey) {
+  const limit = PLANNER_NUMERIC_LIMITS[key]
+  const base = z.coerce.number()
+  const withInt = 'integer' in limit && limit.integer ? base.int() : base
+  return withInt.min(limit.min).max(limit.max)
+}
+
 const routeWaypointSchema = z.object({
   id: z.string().min(1).max(64),
   label: z.string().min(1).max(80),
@@ -71,25 +101,25 @@ const longestTripVisitTargetSchema = z.object({
 
 export const plannerConfigSchema = z.object({
   plannerMode: z.enum(['longest_trip', 'most_unique_sites']).default('longest_trip'),
-  longestTripDays: z.coerce.number().int().min(1).max(365),
+  longestTripDays: limitedNumber('longestTripDays'),
   tripPace: z.enum(['sprint', 'balanced', 'savor']).default('balanced'),
   autoStays: z.boolean().default(true),
-  targetStations: z.coerce.number().int().min(25).max(5000),
-  tripWeeks: z.coerce.number().min(1).max(52),
-  dailyDriveTargetHours: z.coerce.number().min(1).max(14),
-  dailyDriveMaxHours: z.coerce.number().min(1).max(16),
+  targetStations: limitedNumber('targetStations'),
+  tripWeeks: limitedNumber('tripWeeks'),
+  dailyDriveTargetHours: limitedNumber('dailyDriveTargetHours'),
+  dailyDriveMaxHours: limitedNumber('dailyDriveMaxHours'),
   longDayOptimization: z.boolean(),
-  longDayMaxHours: z.coerce.number().min(2).max(14),
-  longDayMinSitesPerExtraHour: z.coerce.number().min(0.1).max(30),
-  averageMph: z.coerce.number().min(25).max(85),
-  practicalRangeMiles: z.coerce.number().min(80).max(350),
-  closeStationRadiusMiles: z.coerce.number().min(0.5).max(25),
-  closeStationStopMinutes: z.coerce.number().min(1).max(60),
-  distanceChargeStopMinutes: z.coerce.number().min(2).max(90),
+  longDayMaxHours: limitedNumber('longDayMaxHours'),
+  longDayMinSitesPerExtraHour: limitedNumber('longDayMinSitesPerExtraHour'),
+  averageMph: limitedNumber('averageMph'),
+  practicalRangeMiles: limitedNumber('practicalRangeMiles'),
+  closeStationRadiusMiles: limitedNumber('closeStationRadiusMiles'),
+  closeStationStopMinutes: limitedNumber('closeStationStopMinutes'),
+  distanceChargeStopMinutes: limitedNumber('distanceChargeStopMinutes'),
   includeCanada: z.boolean(),
   includeMexico: z.boolean(),
   showAllStations: z.boolean(),
-  roadDistanceFactor: z.coerce.number().min(1).max(1.8),
+  roadDistanceFactor: limitedNumber('roadDistanceFactor'),
   requiredWaypoints: z.array(routeWaypointSchema).max(8),
   customRouteWaypoints: z.array(routeWaypointSchema).max(12),
   savedCustomRoutes: z.array(savedCustomRouteSchema).max(24),
