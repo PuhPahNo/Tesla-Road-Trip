@@ -559,6 +559,18 @@ const plannerAgentTools = [
           description:
             'Longest Trip only: automatically give highly rated places multi-day stays with a new unique Supercharger each day.',
         },
+        favoriteCategories: {
+          type: 'array',
+          items: { type: 'string', enum: Object.keys(PLACE_CATEGORY_LABELS) },
+          description:
+            'Place categories the user loves — rated higher when choosing stops and stay lengths. Replaces the whole list.',
+        },
+        mutedCategories: {
+          type: 'array',
+          items: { type: 'string', enum: Object.keys(PLACE_CATEGORY_LABELS) },
+          description:
+            'Place categories the user wants downplayed — rated lower for stops and stays. Replaces the whole list.',
+        },
         tripWeeks: { type: 'number' },
         dailyDriveTargetHours: { type: 'number' },
         dailyDriveMaxHours: { type: 'number' },
@@ -750,6 +762,23 @@ function parsePlannerSettingsArgs(args: Record<string, unknown>) {
     if (key === 'tripPace') {
       if (value === 'sprint' || value === 'balanced' || value === 'savor') {
         settings.tripPace = value
+        return
+      }
+
+      ignoredFields.push(key)
+      return
+    }
+
+    if (key === 'favoriteCategories' || key === 'mutedCategories') {
+      if (
+        Array.isArray(value) &&
+        value.every(
+          (item) =>
+            typeof item === 'string' &&
+            (PLACE_CATEGORY_VALUES as readonly string[]).includes(item),
+        )
+      ) {
+        settings[key] = value as PlaceCategory[]
         return
       }
 

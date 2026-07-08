@@ -1,3 +1,5 @@
+import type { PlaceCategory } from './placeCatalog'
+
 export type CountryName = 'USA' | 'Canada' | 'Mexico' | string
 
 export interface Coordinate {
@@ -40,6 +42,8 @@ export interface PlannerConfig {
   longestTripDays: number
   tripPace: TripPace
   autoStays: boolean
+  favoriteCategories: PlaceCategory[]
+  mutedCategories: PlaceCategory[]
   targetStations: number
   tripWeeks: number
   dailyDriveTargetHours: number

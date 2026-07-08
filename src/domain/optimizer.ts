@@ -3548,7 +3548,7 @@ export function optimizeRoutes(
       ? config.longestTripDays
       : config.targetStations
 
-  const stationRatingBonus = buildStationRatingBonus(stations)
+  const stationRatingBonus = buildStationRatingBonus(stations, config)
 
   const routes: RoutePlan[] = variants.map((variant) => {
     const autoStayTargets =

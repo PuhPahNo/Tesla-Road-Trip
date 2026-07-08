@@ -74,6 +74,78 @@ const AUTO_STAYS_TOGGLE: ToggleSpec = {
   hint: 'Top-rated places earn extra basecamp nights, each on a new unique Supercharger.',
 }
 
+type CategoryPreferenceState = 'neutral' | 'favorite' | 'muted'
+
+function CategoryPreferencesSection({
+  config,
+  onChange,
+}: {
+  config: PlannerConfig
+  onChange: (config: PlannerConfig) => void
+}) {
+  const stateFor = (value: PlaceCategory): CategoryPreferenceState =>
+    config.favoriteCategories.includes(value)
+      ? 'favorite'
+      : config.mutedCategories.includes(value)
+        ? 'muted'
+        : 'neutral'
+
+  const cycle = (value: PlaceCategory) => {
+    const state = stateFor(value)
+    const favoriteCategories = config.favoriteCategories.filter(
+      (category) => category !== value,
+    )
+    const mutedCategories = config.mutedCategories.filter(
+      (category) => category !== value,
+    )
+    if (state === 'neutral') favoriteCategories.push(value)
+    else if (state === 'favorite') mutedCategories.push(value)
+    onChange({ ...config, favoriteCategories, mutedCategories })
+  }
+
+  return (
+    <div className="flex flex-col gap-[9px]">
+      <SectionLabel>Place preferences</SectionLabel>
+      <div className="text-[11px] leading-[1.5] text-faint">
+        Tap to cycle: neutral → ★ favorite (rated higher for stays and stops) →
+        ✕ muted (rated lower).
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {PLACE_CATEGORY_OPTIONS.map(({ value, label }) => {
+          const state = stateFor(value)
+          return (
+            <button
+              key={value}
+              type="button"
+              onClick={() => cycle(value)}
+              aria-label={`${label} preference: ${state}`}
+              className={cx(
+                'cursor-pointer rounded-full border px-3 py-1.5 text-[11.5px] font-medium transition',
+                state === 'favorite'
+                  ? 'border-accent2 text-accent2'
+                  : state === 'muted'
+                    ? 'border-edge text-faint line-through'
+                    : 'border-edge bg-chip text-dim hover:text-ink',
+              )}
+              style={
+                state === 'favorite'
+                  ? {
+                      background:
+                        'color-mix(in srgb, var(--accent-2) 10%, transparent)',
+                    }
+                  : undefined
+              }
+            >
+              {state === 'favorite' ? '★ ' : state === 'muted' ? '✕ ' : ''}
+              {label}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 const LONGEST_TRIP_TARGETS: SliderSpec[] = [
   {
     key: 'longestTripDays',
@@ -770,6 +842,8 @@ export function ConfigModal({
             />
           </div>
         ) : null}
+
+        <CategoryPreferencesSection config={config} onChange={onChange} />
 
         {config.plannerMode === 'longest_trip' ? (
           <LongestTripTargetsSection config={config} onChange={onChange} />

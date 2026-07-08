@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { defaultPlannerConfig } from './config'
 import { emptySegmentRating } from './ratings'
-import { planAutoStays, suggestedStayDays, tagStayDays } from './stays'
+import {
+  effectivePlaceRating,
+  planAutoStays,
+  suggestedStayDays,
+  tagStayDays,
+} from './stays'
+import type { PlaceCategory } from './placeCatalog'
 import type { Coordinate, DayPlan, PlannerConfig, Station } from './types'
 
 const GRAND_CANYON = { lat: 36.1069, lon: -112.1129 }
@@ -72,6 +78,48 @@ describe('suggestedStayDays', () => {
     expect(suggestedStayDays(85, 'savor')).toBe(2)
     expect(suggestedStayDays(95, 'savor')).toBe(3)
     expect(suggestedStayDays(99, 'savor')).toBe(4)
+  })
+})
+
+describe('effectivePlaceRating', () => {
+  const prefs = (
+    favoriteCategories: PlaceCategory[] = [],
+    mutedCategories: PlaceCategory[] = [],
+  ) => ({ favoriteCategories, mutedCategories })
+
+  it('is the raw rating with no preferences', () => {
+    expect(effectivePlaceRating(90, ['national-park'], prefs())).toBe(90)
+  })
+
+  it('boosts favorite categories and penalizes muted ones', () => {
+    expect(
+      effectivePlaceRating(90, ['national-park'], prefs(['national-park'])),
+    ).toBe(96)
+    expect(
+      effectivePlaceRating(90, ['national-park'], prefs([], ['national-park'])),
+    ).toBe(78)
+  })
+
+  it('clamps to the 0-100 range', () => {
+    expect(effectivePlaceRating(98, ['music'], prefs(['music']))).toBe(100)
+  })
+})
+
+describe('planAutoStays with category preferences', () => {
+  const canyonCorridor = [CHATTANOOGA, GRAND_CANYON, CHATTANOOGA]
+
+  it('drops muted-category places from auto stays', () => {
+    const stays = planAutoStays(
+      canyonCorridor,
+      120,
+      configWith({
+        mutedCategories: ['national-park', 'scenic'],
+      }),
+    )
+
+    expect(
+      stays.some((stay) => stay.id === 'landmark-az-grand-canyon'),
+    ).toBe(false)
   })
 })
 

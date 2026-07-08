@@ -1,5 +1,11 @@
 import { z } from 'zod'
+import { PLACE_CATEGORY_LABELS, type PlaceCategory } from './placeCatalog'
 import type { PlannerConfig } from './types'
+
+const PLACE_CATEGORY_VALUES = Object.keys(PLACE_CATEGORY_LABELS) as [
+  PlaceCategory,
+  ...PlaceCategory[],
+]
 
 export const CHATTANOOGA_37405_START = {
   lat: 35.0795399,
@@ -11,6 +17,8 @@ export const defaultPlannerConfig: PlannerConfig = {
   longestTripDays: 60,
   tripPace: 'balanced',
   autoStays: true,
+  favoriteCategories: [],
+  mutedCategories: [],
   targetStations: 650,
   tripWeeks: 9,
   dailyDriveTargetHours: 5,
@@ -104,6 +112,8 @@ export const plannerConfigSchema = z.object({
   longestTripDays: limitedNumber('longestTripDays'),
   tripPace: z.enum(['sprint', 'balanced', 'savor']).default('balanced'),
   autoStays: z.boolean().default(true),
+  favoriteCategories: z.array(z.enum(PLACE_CATEGORY_VALUES)).max(16).default([]),
+  mutedCategories: z.array(z.enum(PLACE_CATEGORY_VALUES)).max(16).default([]),
   targetStations: limitedNumber('targetStations'),
   tripWeeks: limitedNumber('tripWeeks'),
   dailyDriveTargetHours: limitedNumber('dailyDriveTargetHours'),
@@ -141,6 +151,10 @@ export function sanitizePlannerConfig(config: Partial<PlannerConfig>): PlannerCo
       config.savedCustomRoutes ?? defaultPlannerConfig.savedCustomRoutes,
     longestTripTargets:
       config.longestTripTargets ?? defaultPlannerConfig.longestTripTargets,
+    favoriteCategories:
+      config.favoriteCategories ?? defaultPlannerConfig.favoriteCategories,
+    mutedCategories:
+      config.mutedCategories ?? defaultPlannerConfig.mutedCategories,
     start: {
       ...defaultPlannerConfig.start,
       ...config.start,

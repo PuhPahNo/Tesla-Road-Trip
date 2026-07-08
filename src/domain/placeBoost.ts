@@ -1,6 +1,7 @@
 import { haversineMiles } from './geo'
 import { PLACE_CATALOG } from './placeCatalog'
 import { detailForCatalogPlace } from './placeDetails'
+import { effectivePlaceRating, type CategoryPreferences } from './stays'
 import type { Station } from './types'
 
 /**
@@ -23,11 +24,23 @@ export function ratingBonusMiles(rating: number): number {
  * all route variants) and read during station selection as an effective
  * corridor distance: distanceMiles - bonus.
  */
-export function buildStationRatingBonus(stations: Station[]): Map<string, number> {
+export function buildStationRatingBonus(
+  stations: Station[],
+  preferences: CategoryPreferences = {
+    favoriteCategories: [],
+    mutedCategories: [],
+  },
+): Map<string, number> {
   const places = PLACE_CATALOG.map((entry) => ({
     position: entry.position,
     radiusMiles: entry.radiusMiles,
-    bonus: ratingBonusMiles(detailForCatalogPlace(entry).rating),
+    bonus: ratingBonusMiles(
+      effectivePlaceRating(
+        detailForCatalogPlace(entry).rating,
+        entry.categories,
+        preferences,
+      ),
+    ),
   }))
     .filter((place) => place.bonus > 0)
     .sort((a, b) => b.bonus - a.bonus)

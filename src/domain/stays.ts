@@ -1,5 +1,5 @@
 import { haversineMiles, scoreAgainstPolyline } from './geo'
-import { PLACE_CATALOG } from './placeCatalog'
+import { PLACE_CATALOG, type PlaceCategory } from './placeCatalog'
 import { detailForCatalogPlace } from './placeDetails'
 import type {
   Coordinate,
@@ -45,6 +45,39 @@ export const TRIP_PACE_DESCRIPTIONS: Record<TripPace, string> = {
 const MIN_STAY_SPACING_MILES = 70
 const MAX_AUTO_STAYS_PER_ROUTE = 10
 
+export const FAVORITE_CATEGORY_RATING_BOOST = 6
+export const MUTED_CATEGORY_RATING_PENALTY = 12
+
+export type CategoryPreferences = Pick<
+  PlannerConfig,
+  'favoriteCategories' | 'mutedCategories'
+>
+
+/**
+ * A place's rating through the lens of the user's category preferences:
+ * favorites earn a boost (more likely to become stays and selection
+ * targets), muted categories take a penalty. Display ratings stay raw —
+ * this only shapes planning decisions.
+ */
+export function effectivePlaceRating(
+  rating: number,
+  categories: PlaceCategory[],
+  preferences: CategoryPreferences,
+): number {
+  const favored = categories.some((category) =>
+    preferences.favoriteCategories.includes(category),
+  )
+  const muted = categories.some((category) =>
+    preferences.mutedCategories.includes(category),
+  )
+  const adjusted =
+    rating +
+    (favored ? FAVORITE_CATEGORY_RATING_BOOST : 0) -
+    (muted ? MUTED_CATEGORY_RATING_PENALTY : 0)
+
+  return Math.max(0, Math.min(100, adjusted))
+}
+
 /**
  * Total streak days a place earns from its rating: 1 pass-through day plus
  * extra basecamp nights on a curve that stays flat until minStayRating and
@@ -89,13 +122,17 @@ export function planAutoStays(
 
   const candidates = PLACE_CATALOG.map((entry) => ({
     entry,
-    detail: detailForCatalogPlace(entry),
+    rating: effectivePlaceRating(
+      detailForCatalogPlace(entry).rating,
+      entry.categories,
+      config,
+    ),
     corridorDistanceMiles: scoreAgainstPolyline(entry.position, anchors)
       .distanceMiles,
   }))
-    .filter(({ entry, detail, corridorDistanceMiles }) => {
+    .filter(({ entry, rating, corridorDistanceMiles }) => {
       if (manualIds.has(entry.id)) return false
-      if (suggestedStayDays(detail.rating, config.tripPace) < 2) return false
+      if (suggestedStayDays(rating, config.tripPace) < 2) return false
       if (corridorDistanceMiles > corridorMiles + entry.radiusMiles) return false
       return !manualAreas.some(
         (manual) =>
@@ -105,7 +142,7 @@ export function planAutoStays(
     })
     .sort(
       (a, b) =>
-        b.detail.rating - a.detail.rating ||
+        b.rating - a.rating ||
         b.entry.priority - a.entry.priority ||
         a.entry.label.localeCompare(b.entry.label),
     )
@@ -122,7 +159,7 @@ export function planAutoStays(
   const stays: LongestTripVisitTarget[] = []
   const keptPositions: Coordinate[] = []
 
-  for (const { entry, detail } of candidates) {
+  for (const { entry, rating } of candidates) {
     if (stays.length >= MAX_AUTO_STAYS_PER_ROUTE || extraNightBudget <= 0) break
     if (
       keptPositions.some(
@@ -133,7 +170,7 @@ export function planAutoStays(
       continue
     }
 
-    const desiredExtra = suggestedStayDays(detail.rating, config.tripPace) - 1
+    const desiredExtra = suggestedStayDays(rating, config.tripPace) - 1
     const extra = Math.min(desiredExtra, extraNightBudget)
     if (extra <= 0) continue
 
