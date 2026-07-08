@@ -19,6 +19,7 @@ import {
 } from './ratings'
 import { detailForCatalogPlace } from './placeDetails'
 import { getPlaceCatalogEntry } from './placeCatalog'
+import { buildStationRatingBonus } from './placeBoost'
 import { planAutoStays, tagStayDays } from './stays'
 import { STATE_SIGNATURES, type StateSignature } from './stateSignatures'
 import { STATE_CODE_TO_NAME } from './usStates'
@@ -1576,11 +1577,17 @@ function chooseStationsForVariant(
   options: {
     spreadAlongCorridor?: boolean
     visitTargets?: LongestTripVisitTarget[]
+    /** Per-station rating bonus miles — see buildStationRatingBonus. */
+    ratingBonus?: Map<string, number>
   } = {},
 ) {
   const target = Math.min(targetStations, stations.length)
   let corridorMiles = variant.corridorMiles
   let scored = scoreStations(variant.anchors, stations)
+  const bonusOf = (station: ScoredStation) =>
+    options.ratingBonus?.get(station.station.id) ?? 0
+  const effectiveDistance = (station: ScoredStation) =>
+    station.distanceMiles - bonusOf(station)
 
   while (
     scored.filter((station) => station.distanceMiles <= corridorMiles).length <
@@ -1595,7 +1602,7 @@ function chooseStationsForVariant(
   if (variant.stationFilter) {
     const primary = scored
       .filter((station) => variant.stationFilter?.(station.station))
-      .sort((a, b) => a.distanceMiles - b.distanceMiles)
+      .sort((a, b) => effectiveDistance(a) - effectiveDistance(b))
       .slice(0, target)
 
     if (primary.length >= target) {
@@ -1606,24 +1613,25 @@ function chooseStationsForVariant(
         .filter(
           (station) =>
             !primaryIds.has(station.station.id) &&
-            station.distanceMiles <= corridorMiles,
+            effectiveDistance(station) <= corridorMiles,
         )
-        .sort((a, b) => a.distanceMiles - b.distanceMiles)
+        .sort((a, b) => effectiveDistance(a) - effectiveDistance(b))
         .slice(0, target - primary.length)
 
       selected = [...primary, ...filler]
     }
   } else if (options.spreadAlongCorridor) {
     selected = selectStationsAcrossCorridor(
-      scored.filter((station) => station.distanceMiles <= corridorMiles),
+      scored.filter((station) => effectiveDistance(station) <= corridorMiles),
       target,
       variant.anchors,
       variant.anchors[0],
+      bonusOf,
     )
   } else {
     selected = scored
-      .filter((station) => station.distanceMiles <= corridorMiles)
-      .sort((a, b) => a.distanceMiles - b.distanceMiles)
+      .filter((station) => effectiveDistance(station) <= corridorMiles)
+      .sort((a, b) => effectiveDistance(a) - effectiveDistance(b))
       .slice(0, target)
   }
 
@@ -1937,6 +1945,7 @@ function selectStationsAcrossCorridor(
   target: number,
   anchors: Coordinate[],
   start: Coordinate,
+  bonusOf: (station: ScoredStation) => number = () => 0,
 ) {
   if (target <= 0) return []
   if (candidates.length <= target) {
@@ -1976,7 +1985,8 @@ function selectStationsAcrossCorridor(
 
       const score =
         haversineMiles(candidate.station.position, desiredPoint) +
-        candidate.distanceMiles * 0.05
+        candidate.distanceMiles * 0.05 -
+        bonusOf(candidate)
       if (score < bestScore) {
         bestScore = score
         best = candidate
@@ -3538,6 +3548,8 @@ export function optimizeRoutes(
       ? config.longestTripDays
       : config.targetStations
 
+  const stationRatingBonus = buildStationRatingBonus(stations)
+
   const routes: RoutePlan[] = variants.map((variant) => {
     const autoStayTargets =
       config.plannerMode === 'longest_trip'
@@ -3554,6 +3566,7 @@ export function optimizeRoutes(
           config.plannerMode === 'longest_trip'
             ? [...config.longestTripTargets, ...autoStayTargets]
             : undefined,
+        ratingBonus: stationRatingBonus,
       },
     )
     const buildOrderedStations = (selected: ScoredStation[]) => {
