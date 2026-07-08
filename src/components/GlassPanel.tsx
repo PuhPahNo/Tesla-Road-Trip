@@ -301,6 +301,16 @@ export function DaysSection({
                 {cityLabel || 'Open road'}
               </span>
             </div>
+            {day.stay && (
+              <div className="mt-1 flex items-center gap-2 pl-11 font-mono text-[10.5px] text-accent2">
+                <span className="truncate">
+                  ⛺ {day.stay.label} · night {day.stay.night}/{day.stay.totalNights}
+                </span>
+                {stayFreeHours(day) > 0 && (
+                  <span className="flex-none">~{stayFreeHours(day)}h free</span>
+                )}
+              </div>
+            )}
             <div className="mt-1.5 flex items-center gap-3 pl-11 font-mono text-[10.5px] text-faint">
               <span>{day.uniqueStations} sites</span>
               <span>{day.miles.toLocaleString()} mi</span>
@@ -323,6 +333,11 @@ export function DaysSection({
       })}
     </div>
   )
+}
+
+/** Rough hours left for the destination out of a 12-hour on-the-road day. */
+function stayFreeHours(day: DayPlan) {
+  return Math.max(0, Math.round(12 - day.driveHours - day.stopMinutes / 60))
 }
 
 function teslaBadgeCount(day: DayPlan) {

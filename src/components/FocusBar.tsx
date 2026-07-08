@@ -100,6 +100,11 @@ export function FocusBar({
           </div>
           <div className="mt-1 flex justify-center gap-3 whitespace-nowrap font-mono text-[10px] text-faint">
             <span style={{ color: scoreColor(day.rating.score) }}>★ {day.rating.score}</span>
+            {day.stay && (
+              <span className="text-accent2">
+                ⛺ N{day.stay.night}/{day.stay.totalNights}
+              </span>
+            )}
             {!isMobile && <span>{day.uniqueStations} sites</span>}
             <span>{day.miles.toLocaleString()} mi</span>
             {!isMobile && <span>{day.driveHours.toFixed(1)}h</span>}

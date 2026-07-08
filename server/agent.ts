@@ -104,6 +104,7 @@ const BOOLEAN_SETTING_KEYS = [
   'includeCanada',
   'includeMexico',
   'showAllStations',
+  'autoStays',
 ] as const
 
 const PLACE_CATEGORY_VALUES = Object.keys(PLACE_CATEGORY_LABELS) as [
@@ -560,6 +561,17 @@ const plannerAgentTools = [
           type: 'string',
           enum: ['longest_trip', 'most_unique_sites'],
         },
+        tripPace: {
+          type: 'string',
+          enum: ['sprint', 'balanced', 'savor'],
+          description:
+            'How much the route lingers: rating-driven extra basecamp nights at top places (sprint = none, savor = most).',
+        },
+        autoStays: {
+          type: 'boolean',
+          description:
+            'Longest Trip only: automatically give highly rated places multi-day stays with a new unique Supercharger each day.',
+        },
         tripWeeks: { type: 'number' },
         dailyDriveTargetHours: { type: 'number' },
         dailyDriveMaxHours: { type: 'number' },
@@ -741,6 +753,16 @@ function parsePlannerSettingsArgs(args: Record<string, unknown>) {
     if (key === 'plannerMode') {
       if (value === 'longest_trip' || value === 'most_unique_sites') {
         settings.plannerMode = value
+        return
+      }
+
+      ignoredFields.push(key)
+      return
+    }
+
+    if (key === 'tripPace') {
+      if (value === 'sprint' || value === 'balanced' || value === 'savor') {
+        settings.tripPace = value
         return
       }
 

@@ -9,6 +9,8 @@ export const CHATTANOOGA_37405_START = {
 export const defaultPlannerConfig: PlannerConfig = {
   plannerMode: 'longest_trip',
   longestTripDays: 60,
+  tripPace: 'balanced',
+  autoStays: true,
   targetStations: 650,
   tripWeeks: 9,
   dailyDriveTargetHours: 5,
@@ -70,6 +72,8 @@ const longestTripVisitTargetSchema = z.object({
 export const plannerConfigSchema = z.object({
   plannerMode: z.enum(['longest_trip', 'most_unique_sites']).default('longest_trip'),
   longestTripDays: z.coerce.number().int().min(1).max(365),
+  tripPace: z.enum(['sprint', 'balanced', 'savor']).default('balanced'),
+  autoStays: z.boolean().default(true),
   targetStations: z.coerce.number().int().min(25).max(5000),
   tripWeeks: z.coerce.number().min(1).max(52),
   dailyDriveTargetHours: z.coerce.number().min(1).max(14),

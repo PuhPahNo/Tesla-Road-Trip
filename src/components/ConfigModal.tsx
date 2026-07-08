@@ -3,7 +3,9 @@ import type {
   LongestTripVisitTarget,
   PlannerConfig,
   PlannerMode,
+  TripPace,
 } from '../domain/types'
+import { TRIP_PACE_DESCRIPTIONS, TRIP_PACE_LABELS } from '../domain/stays'
 import {
   LONGEST_TRIP_DESTINATIONS,
   LONGEST_TRIP_STATE_TARGETS,
@@ -61,6 +63,16 @@ const PLANNER_MODE_OPTIONS: Array<{ value: PlannerMode; label: string }> = [
   { value: 'most_unique_sites', label: 'Most Unique Sites' },
   { value: 'longest_trip', label: 'Longest Trip' },
 ]
+
+const TRIP_PACE_OPTIONS: Array<{ value: TripPace; label: string }> = (
+  ['sprint', 'balanced', 'savor'] as const
+).map((value) => ({ value, label: TRIP_PACE_LABELS[value] }))
+
+const AUTO_STAYS_TOGGLE: ToggleSpec = {
+  key: 'autoStays',
+  label: 'Rating-based stays',
+  hint: 'Top-rated places earn extra basecamp nights, each on a new unique Supercharger.',
+}
 
 const LONGEST_TRIP_TARGETS: SliderSpec[] = [
   {
@@ -738,6 +750,26 @@ export function ConfigModal({
           <SectionLabel>Trip targets</SectionLabel>
           {renderSliders(tripTargetSpecs)}
         </div>
+
+        {config.plannerMode === 'longest_trip' ? (
+          <div className="flex flex-col gap-[9px]">
+            <SectionLabel>Trip pace</SectionLabel>
+            <SegmentedControl<TripPace>
+              options={TRIP_PACE_OPTIONS}
+              value={config.tripPace}
+              onChange={(tripPace) => onChange({ ...config, tripPace })}
+              ariaLabel="Trip pace"
+            />
+            <div className="text-[11px] leading-[1.5] text-faint">
+              {TRIP_PACE_DESCRIPTIONS[config.tripPace]}
+            </div>
+            <ToggleRow
+              spec={AUTO_STAYS_TOGGLE}
+              checked={config.autoStays}
+              onChange={(next) => setBool('autoStays', next)}
+            />
+          </div>
+        ) : null}
 
         {config.plannerMode === 'longest_trip' ? (
           <LongestTripTargetsSection config={config} onChange={onChange} />

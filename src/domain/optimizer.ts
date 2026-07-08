@@ -19,6 +19,7 @@ import {
 } from './ratings'
 import { detailForCatalogPlace } from './placeDetails'
 import { getPlaceCatalogEntry } from './placeCatalog'
+import { planAutoStays, tagStayDays } from './stays'
 import { STATE_SIGNATURES, type StateSignature } from './stateSignatures'
 import { STATE_CODE_TO_NAME } from './usStates'
 import type {
@@ -1921,6 +1922,11 @@ function visitTargetCandidates(
   const nearby = withDistance.filter(
     (item) => item.targetDistanceMiles <= radius,
   )
+  // Auto-stays only reserve stations the route already passes; manual
+  // targets fall back to the nearest stations because the user demanded them.
+  if (target.auto) {
+    return nearby.map((item) => item.station)
+  }
   return (nearby.length > 0 ? nearby : withDistance.slice(0, 12)).map(
     (item) => item.station,
   )
@@ -2465,7 +2471,7 @@ function buildLongestTripDayPlans(
   }
 
   return {
-    days,
+    days: tagStayDays(days, config),
     visits,
     totals: {
       totalMiles: round(totalMiles),
@@ -3241,10 +3247,13 @@ function dedupeWaypoints(waypoints: RouteWaypoint[]) {
 function ratingTargetsForVariant(
   config: PlannerConfig,
   forcedWaypoints: RouteWaypoint[],
+  autoStayTargets: LongestTripVisitTarget[] = [],
 ) {
   return buildRatingTargets(
     forcedWaypoints,
-    config.plannerMode === 'longest_trip' ? config.longestTripTargets : [],
+    config.plannerMode === 'longest_trip'
+      ? [...config.longestTripTargets, ...autoStayTargets]
+      : [],
   )
 }
 
@@ -3530,6 +3539,10 @@ export function optimizeRoutes(
       : config.targetStations
 
   const routes: RoutePlan[] = variants.map((variant) => {
+    const autoStayTargets =
+      config.plannerMode === 'longest_trip'
+        ? planAutoStays(variant.anchors, variant.corridorMiles, config)
+        : []
     const stationChoice = chooseStationsForVariant(
       variant,
       stations,
@@ -3539,7 +3552,7 @@ export function optimizeRoutes(
         spreadAlongCorridor: config.plannerMode === 'longest_trip',
         visitTargets:
           config.plannerMode === 'longest_trip'
-            ? config.longestTripTargets
+            ? [...config.longestTripTargets, ...autoStayTargets]
             : undefined,
       },
     )
@@ -3595,7 +3608,11 @@ export function optimizeRoutes(
       }
     }
 
-    const ratingTargets = ratingTargetsForVariant(config, variant.forcedWaypoints)
+    const ratingTargets = ratingTargetsForVariant(
+      config,
+      variant.forcedWaypoints,
+      autoStayTargets,
+    )
     const plans = buildRouteDayPlans(
       orderedStations,
       variant.name,

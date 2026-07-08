@@ -33,10 +33,13 @@ export interface Station {
 
 export type PlannerMode = 'longest_trip' | 'most_unique_sites'
 export type LongestTripVisitTargetType = 'state' | 'city' | 'landmark'
+export type TripPace = 'sprint' | 'balanced' | 'savor'
 
 export interface PlannerConfig {
   plannerMode: PlannerMode
   longestTripDays: number
+  tripPace: TripPace
+  autoStays: boolean
   targetStations: number
   tripWeeks: number
   dailyDriveTargetHours: number
@@ -85,6 +88,8 @@ export interface LongestTripVisitTarget {
   state?: string
   position?: Coordinate
   radiusMiles?: number
+  /** Synthetic rating-driven stay target (never persisted in config). */
+  auto?: boolean
 }
 
 export interface RouteStationVisit {
@@ -126,6 +131,14 @@ export interface PlannerAdvisory {
   message: string
 }
 
+export interface DayStay {
+  placeId: string
+  label: string
+  rating: number
+  night: number
+  totalNights: number
+}
+
 export interface DayPlan {
   day: number
   miles: number
@@ -139,6 +152,7 @@ export interface DayPlan {
   longDayOptimized: boolean
   longDayReason?: string
   rating: SegmentRating
+  stay?: DayStay
 }
 
 export interface RoutePlan {

@@ -169,6 +169,53 @@ describe('route optimizer', () => {
     expect(bayAreaVisits.length).toBeGreaterThanOrEqual(2)
   })
 
+  it('tags rating-driven stay nights on longest trip day plans', () => {
+    const result = optimizeRoutes(buildStationGrid(), {
+      ...defaultPlannerConfig,
+      longestTripDays: 20,
+      tripPace: 'balanced',
+      autoStays: true,
+    })
+    const stayDays = result.routes.flatMap((route) =>
+      route.days.filter((day) => day.stay),
+    )
+
+    expect(stayDays.length).toBeGreaterThan(0)
+    stayDays.forEach((day) => {
+      expect(day.stay!.totalNights).toBeGreaterThanOrEqual(2)
+      expect(day.stay!.night).toBeGreaterThanOrEqual(1)
+      expect(day.stay!.night).toBeLessThanOrEqual(day.stay!.totalNights)
+      expect(day.visits.length).toBe(1)
+    })
+
+    const routeWithRun = result.routes.find((route) =>
+      route.days.some((day) => day.stay?.night === 1 && day.stay.totalNights >= 2),
+    )
+    expect(routeWithRun).toBeDefined()
+    const days = routeWithRun!.days
+    const runStart = days.findIndex(
+      (day) => day.stay?.night === 1 && day.stay.totalNights >= 2,
+    )
+    const run = days[runStart].stay!
+    for (let night = 1; night <= run.totalNights; night += 1) {
+      const day = days[runStart + night - 1]
+      expect(day.stay?.placeId).toBe(run.placeId)
+      expect(day.stay?.night).toBe(night)
+    }
+  })
+
+  it('drops all stays on sprint pace with auto stays disabled', () => {
+    const result = optimizeRoutes(buildStationGrid(), {
+      ...defaultPlannerConfig,
+      longestTripDays: 12,
+      tripPace: 'sprint',
+      autoStays: false,
+    })
+
+    expect(result.config.tripPace).toBe('sprint')
+    expect(result.config.autoStays).toBe(false)
+  })
+
   it('optimizes saved custom stop order instead of preserving selection order', () => {
     const unorderedRoute: SavedCustomRoute = {
       id: 'saved-unordered-test',

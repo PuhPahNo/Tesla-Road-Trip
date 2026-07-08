@@ -41,6 +41,11 @@ function DayTile({
       <div className="truncate text-[12px] font-medium text-ink">
         {cities.slice(0, 2).join(' → ') || 'Open road'}
       </div>
+      {day.stay && (
+        <div className="truncate font-mono text-[9.5px] text-accent2">
+          ⛺ {day.stay.label} · N{day.stay.night}/{day.stay.totalNights}
+        </div>
+      )}
       <div className="font-mono text-[9.5px] text-faint">
         {day.uniqueStations} sites · {day.miles.toLocaleString()} mi ·{' '}
         {day.driveHours.toFixed(1)}h
