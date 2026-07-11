@@ -185,6 +185,22 @@ try {
     'button[aria-label^="Select route "]',
     (buttons) => buttons.length,
   )
+  const routeLayout = await page.evaluate(() => {
+    const buttons = Array.from(
+      document.querySelectorAll('button[aria-label^="Select route "]'),
+    )
+    const heights = buttons.map(
+      (button) => button.parentElement?.getBoundingClientRect().height ?? 0,
+    )
+    const dialog = document.querySelector('[role="dialog"]')
+    const list = dialog?.querySelector('.overflow-y-auto')
+    return {
+      minRouteCardHeight: Math.min(...heights),
+      routeListScrollable: Boolean(
+        list && list.scrollHeight > list.clientHeight,
+      ),
+    }
+  })
   await page.keyboard.press('Escape')
   await page.waitForFunction(
     () =>
@@ -227,6 +243,7 @@ try {
     }
   })
   Object.assign(checks, overviewChecks)
+  Object.assign(checks, routeLayout)
   checks.routeOptions = routeOptions
 
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 })
@@ -245,6 +262,8 @@ try {
 
   const failures = []
   if (checks.routeOptions < 20) failures.push('expected at least 20 route options')
+  if (checks.minRouteCardHeight < 100) failures.push('route cards were vertically compressed')
+  if (!checks.routeListScrollable) failures.push('route list should scroll instead of shrinking cards')
   if (checks.dayRows < 1) failures.push('expected day-level rows')
   if (!checks.focusBar) failures.push('expected the focus day bar')
   if (!checks.calendarButton) failures.push('expected the trip calendar button')

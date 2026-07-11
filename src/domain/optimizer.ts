@@ -23,7 +23,9 @@ import { buildStationRatingBonus } from './placeBoost'
 import { planAutoStays, tagStayDays } from './stays'
 import { STATE_SIGNATURES, type StateSignature } from './stateSignatures'
 import { STATE_CODE_TO_NAME } from './usStates'
+import { resolveInitialDirection } from './routeDirection'
 import type {
+  CompassDirection,
   Coordinate,
   DayPlan,
   LongestTripVisitTarget,
@@ -47,6 +49,9 @@ interface RouteVariant {
   forcedWaypoints: RouteWaypoint[]
   targetDays?: number
   stationFilter?: (station: Station) => boolean
+  /** Undefined preserves the built-in north-first behavior; anchor keeps the
+   * saved custom anchor order without imposing a compass heading. */
+  initialHeading?: CompassDirection | 'anchor'
 }
 
 interface ScoredStation {
@@ -1481,9 +1486,14 @@ function buildSavedCustomRouteVariants(
   strategyNoun = 'route',
 ): RouteVariant[] {
   return savedCustomRoutes.map((route) => {
+    const resolvedDirection = resolveInitialDirection(
+      route.directionPreference,
+      route.startMonth,
+      start,
+    )
     const optimizedWaypoints = route.keepOrder
       ? route.waypoints
-      : orderWaypointsForRoute(route.waypoints, start)
+      : orderWaypointsForRoute(route.waypoints, start, resolvedDirection)
     const forcedWaypoints = dedupeWaypoints([
       ...requiredWaypoints,
       ...route.waypoints,
@@ -1495,16 +1505,22 @@ function buildSavedCustomRouteVariants(
       start,
     ]
     const selectedLabels = route.waypoints.map((waypoint) => waypoint.label)
+    const directionNote = route.directionPreference
+      ? resolvedDirection
+        ? ` It starts ${resolvedDirection} first based on the saved ${route.directionPreference === 'seasonal' ? 'season-smart' : 'direction'} preference.`
+        : ' It keeps the most efficient starting leg for the selected month.'
+      : ''
 
     return {
       id: route.id,
       name: route.name,
       strategy: route.keepOrder
         ? `Saved custom ${strategyNoun} that visits ${route.waypoints.length} stop${route.waypoints.length === 1 ? '' : 's'} in your exact saved order (${selectedLabels.join(' -> ')}).`
-        : `Saved custom ${strategyNoun} that optimizes ${route.waypoints.length} selected stop${route.waypoints.length === 1 ? '' : 's'} (${selectedLabels.join(', ')}) against the current trip settings and Supercharger coverage.`,
+        : `Saved custom ${strategyNoun} that optimizes ${route.waypoints.length} selected stop${route.waypoints.length === 1 ? '' : 's'} (${selectedLabels.join(', ')}) against the current trip settings and Supercharger coverage.${directionNote}`,
       color: route.color,
       corridorMiles: 150,
       targetDays: route.targetDays,
+      initialHeading: route.keepOrder ? 'anchor' : resolvedDirection ?? 'anchor',
       anchors: insertRequiredWaypoints(
         closeAnchorsToStart(anchors, start),
         requiredWaypoints,
@@ -1517,10 +1533,25 @@ function buildSavedCustomRouteVariants(
 function orderWaypointsForRoute(
   waypoints: RouteWaypoint[],
   start: Coordinate,
+  initialDirection?: CompassDirection,
 ): RouteWaypoint[] {
   const remaining = waypoints.slice()
   const ordered: RouteWaypoint[] = []
   let current = start
+  const directionIndex = initialDirection
+    ? chooseDirectionalItemIndex(
+        remaining,
+        start,
+        initialDirection,
+        (waypoint) => waypoint.position,
+      )
+    : -1
+
+  if (directionIndex >= 0) {
+    const first = remaining.splice(directionIndex, 1)[0]
+    ordered.push(first)
+    current = first.position
+  }
 
   while (remaining.length > 0) {
     let bestIndex = 0
@@ -1548,7 +1579,7 @@ function orderWaypointsForRoute(
   const MAX_PASSES = 8
   for (let pass = 0; pass < MAX_PASSES; pass += 1) {
     let improved = false
-    for (let i = 0; i < n - 1; i += 1) {
+    for (let i = directionIndex >= 0 ? 1 : 0; i < n - 1; i += 1) {
       for (let j = i + 1; j < n; j += 1) {
         const before =
           leg(i === 0 ? start : ordered[i - 1].position, ordered[i].position) +
@@ -1573,6 +1604,46 @@ function orderWaypointsForRoute(
   }
 
   return ordered
+}
+
+function chooseDirectionalItemIndex<T>(
+  items: T[],
+  start: Coordinate,
+  direction: CompassDirection,
+  positionOf: (item: T) => Coordinate,
+) {
+  const cosLat = Math.cos((start.lat * Math.PI) / 180) || 1
+  let bestIndex = -1
+  let bestAlignment = -Infinity
+  let bestMiles = Infinity
+
+  items.forEach((item, index) => {
+    const position = positionOf(item)
+    const northMiles = (position.lat - start.lat) * 69
+    const eastMiles = (position.lon - start.lon) * 69 * cosLat
+    const progress =
+      direction === 'north'
+        ? northMiles
+        : direction === 'south'
+          ? -northMiles
+          : direction === 'east'
+            ? eastMiles
+            : -eastMiles
+    if (progress <= 10) return
+
+    const miles = haversineMiles(start, position)
+    const alignment = progress / Math.max(1, miles)
+    if (
+      alignment > bestAlignment + 1e-9 ||
+      (Math.abs(alignment - bestAlignment) <= 1e-9 && miles < bestMiles)
+    ) {
+      bestAlignment = alignment
+      bestMiles = miles
+      bestIndex = index
+    }
+  })
+
+  return bestIndex
 }
 
 function chooseStationsForVariant(
@@ -2641,6 +2712,7 @@ function insertConnectorStops(
   orderedStations: ScoredStation[],
   candidateStations: Station[],
   config: PlannerConfig,
+  initialHeading?: CompassDirection | 'anchor',
 ) {
   if (orderedStations.length === 0) return orderedStations
 
@@ -2657,7 +2729,9 @@ function insertConnectorStops(
       candidateStations,
       usedStationIds,
       config,
-      expanded.length === 0 && !isNorthNotWest(station.station, config.start),
+      initialHeading === undefined &&
+        expanded.length === 0 &&
+        !isNorthNotWest(station.station, config.start),
     )
     expanded.push(...connectors, station)
     usedStationIds.add(station.station.id)
@@ -2826,6 +2900,7 @@ function asConnectorScoredStation(
 function optimizeStationOrder(
   selected: ScoredStation[],
   start: Coordinate,
+  initialHeading?: CompassDirection | 'anchor',
 ): ScoredStation[] {
   if (selected.length === 0) return selected
 
@@ -2836,19 +2911,29 @@ function optimizeStationOrder(
 
   const remaining = selected.slice()
   const ordered: ScoredStation[] = []
-  const northFirstIndex = chooseNorthFirstStationIndex(remaining, start)
-  const fixedNorthFirst = northFirstIndex >= 0
+  const firstIndex =
+    initialHeading === undefined
+      ? chooseNorthFirstStationIndex(remaining, start)
+      : initialHeading === 'anchor'
+        ? -1
+        : chooseDirectionalItemIndex(
+            remaining,
+            start,
+            initialHeading,
+            (station) => station.station.position,
+          )
+  const fixedFirst = firstIndex >= 0
 
-  if (fixedNorthFirst) {
-    const first = remaining.splice(northFirstIndex, 1)[0]
+  if (fixedFirst) {
+    const first = remaining.splice(firstIndex, 1)[0]
     ordered.push(first)
   }
 
-  // Nearest-neighbour tour from the start point, after the north-first stop.
-  let curX = fixedNorthFirst
+  // Nearest-neighbour tour from the start point, after any fixed first stop.
+  let curX = fixedFirst
     ? projX(ordered[0].station.position)
     : startX
-  let curY = fixedNorthFirst
+  let curY = fixedFirst
     ? ordered[0].station.position.lat
     : startY
   while (remaining.length > 0) {
@@ -2884,7 +2969,7 @@ function optimizeStationOrder(
   const MAX_PASSES = 8
   for (let pass = 0; pass < MAX_PASSES; pass += 1) {
     let improved = false
-    for (let i = fixedNorthFirst ? 1 : 0; i < n - 1; i += 1) {
+    for (let i = fixedFirst ? 1 : 0; i < n - 1; i += 1) {
       for (let j = i + 1; j < n; j += 1) {
         const before =
           (i === 0 ? toStart(i) : edge(i - 1, i)) +
@@ -2953,14 +3038,25 @@ function chooseNearestStationIndex(
 function orderLongestTripStations(
   selected: ScoredStation[],
   start: Coordinate,
+  initialHeading?: CompassDirection | 'anchor',
 ): ScoredStation[] {
   const ordered = selected
     .slice()
     .sort((a, b) => a.order - b.order || a.distanceMiles - b.distanceMiles)
-  const northFirstIndex = chooseNorthFirstStationIndex(ordered, start)
+  const firstIndex =
+    initialHeading === undefined
+      ? chooseNorthFirstStationIndex(ordered, start)
+      : initialHeading === 'anchor'
+        ? -1
+        : chooseDirectionalItemIndex(
+            ordered,
+            start,
+            initialHeading,
+            (station) => station.station.position,
+          )
 
-  if (northFirstIndex > 0) {
-    const first = ordered.splice(northFirstIndex, 1)[0]
+  if (firstIndex > 0) {
+    const first = ordered.splice(firstIndex, 1)[0]
     ordered.unshift(first)
   }
 
@@ -3589,12 +3685,13 @@ export function optimizeRoutes(
     const buildOrderedStations = (selected: ScoredStation[]) => {
       const stationOrder =
         config.plannerMode === 'longest_trip'
-          ? orderLongestTripStations(selected, config.start)
-          : optimizeStationOrder(selected, config.start)
+          ? orderLongestTripStations(selected, config.start, variant.initialHeading)
+          : optimizeStationOrder(selected, config.start, variant.initialHeading)
       const expandedStations = insertConnectorStops(
         stationOrder,
         stations,
         config,
+        variant.initialHeading,
       )
       return config.plannerMode === 'longest_trip'
         ? repairLongestTripLegSpacing(

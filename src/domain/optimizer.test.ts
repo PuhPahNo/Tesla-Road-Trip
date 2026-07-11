@@ -291,6 +291,8 @@ describe('route optimizer', () => {
       name: 'Ordered Stops',
       color: '#7c3aed',
       keepOrder: true,
+      startMonth: 1,
+      directionPreference: 'south',
       waypoints: [
         {
           id: 'city-los-angeles',
@@ -328,6 +330,90 @@ describe('route optimizer', () => {
     expect(firstCaliforniaIndex).toBeGreaterThanOrEqual(0)
     expect(firstGeorgiaIndex).toBeGreaterThanOrEqual(0)
     expect(firstCaliforniaIndex).toBeLessThan(firstGeorgiaIndex)
+  })
+
+  it('honors an explicit first heading for an optimized custom route', () => {
+    const eastFirstRoute: SavedCustomRoute = {
+      id: 'saved-east-first',
+      name: 'East First Loop',
+      color: '#0891b2',
+      startMonth: 1,
+      directionPreference: 'east',
+      waypoints: [
+        {
+          id: 'city-los-angeles',
+          label: 'Los Angeles',
+          position: { lat: 34.0522, lon: -118.2437 },
+          radiusMiles: 55,
+        },
+        {
+          id: 'city-new-york',
+          label: 'New York City',
+          position: { lat: 40.7128, lon: -74.006 },
+          radiusMiles: 50,
+        },
+      ],
+      createdAt: '2026-07-11T00:00:00.000Z',
+      updatedAt: '2026-07-11T00:00:00.000Z',
+    }
+    const result = optimizeRoutes(buildStationGrid(), {
+      ...defaultPlannerConfig,
+      longestTripDays: 12,
+      savedCustomRoutes: [eastFirstRoute],
+    })
+    const route = result.routes.find((candidate) => candidate.id === eastFirstRoute.id)
+    expect(route).toBeDefined()
+    if (!route) throw new Error('East-first custom route was not generated.')
+
+    expect(route.strategy).toContain('starts east first')
+    expect(route.visits[0]?.station.position.lon).toBeGreaterThan(
+      defaultPlannerConfig.start.lon,
+    )
+  })
+
+  it('starts a winter custom route south when season-smart direction is selected', () => {
+    const winterRoute: SavedCustomRoute = {
+      id: 'saved-winter-south-first',
+      name: 'Winter Loop',
+      color: '#7c3aed',
+      startMonth: 1,
+      directionPreference: 'seasonal',
+      waypoints: [
+        {
+          id: 'city-new-york',
+          label: 'New York City',
+          position: { lat: 40.7128, lon: -74.006 },
+          radiusMiles: 50,
+        },
+        {
+          id: 'landmark-az-grand-canyon',
+          label: 'Grand Canyon',
+          position: { lat: 36.1069, lon: -112.1129 },
+          radiusMiles: 95,
+        },
+        {
+          id: 'city-miami',
+          label: 'Miami',
+          position: { lat: 25.7617, lon: -80.1918 },
+          radiusMiles: 55,
+        },
+      ],
+      createdAt: '2026-07-11T00:00:00.000Z',
+      updatedAt: '2026-07-11T00:00:00.000Z',
+    }
+    const result = optimizeRoutes(buildStationGrid(), {
+      ...defaultPlannerConfig,
+      longestTripDays: 12,
+      savedCustomRoutes: [winterRoute],
+    })
+    const route = result.routes.find((candidate) => candidate.id === winterRoute.id)
+    expect(route).toBeDefined()
+    if (!route) throw new Error('Winter custom route was not generated.')
+
+    expect(route.strategy).toContain('starts south first')
+    expect(route.visits[0]?.station.position.lat).toBeLessThan(
+      defaultPlannerConfig.start.lat,
+    )
   })
 
   it('uses a saved custom route day target without changing prebuilt route targets', () => {

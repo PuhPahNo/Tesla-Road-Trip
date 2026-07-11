@@ -43,6 +43,9 @@ try {
   await page.waitForSelector('#custom-route-name', { timeout: 30_000 })
   await page.type('#custom-route-name', originalName)
   await setInputValue(page, '#custom-route-days', '70')
+  await page.select('#custom-route-month', '1')
+  await page.select('#custom-route-direction', 'seasonal')
+  await page.select('select[aria-label="Filter by category"]', 'tesla-badge')
   const firstAddedLabel = await page.$eval(
     'button[aria-label^="Add "][aria-label$=" to custom route"]',
     (button) => {
@@ -62,6 +65,18 @@ try {
   )
   if (!createdText.includes('70 days')) {
     throw new Error('Created custom route did not use its 70-day target.')
+  }
+  const createdRoute = await page.evaluate(async (name) => {
+    const response = await fetch('/api/custom-routes')
+    const payload = await response.json()
+    return payload.routes.find((route) => route.name === name)
+  }, originalName)
+  if (
+    createdRoute?.startMonth !== 1 ||
+    createdRoute?.directionPreference !== 'seasonal' ||
+    firstAddedLabel !== 'Grand Canyon'
+  ) {
+    throw new Error('Created custom route did not persist its winter direction and badge target.')
   }
 
   await page.click(`button[aria-label="Edit ${originalName}"]`)
@@ -108,6 +123,9 @@ try {
   console.log(
     JSON.stringify({
       createDays: 70,
+      startMonth: createdRoute.startMonth,
+      directionPreference: createdRoute.directionPreference,
+      badgeTarget: firstAddedLabel,
       editDays: 71,
       addedAndRemovedLocations: true,
       renamed: true,

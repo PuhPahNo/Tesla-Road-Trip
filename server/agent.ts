@@ -127,6 +127,11 @@ const savedRouteUpdateArgsSchema = z
     routeId: z.string().min(1).max(96).optional().nullable(),
     name: z.string().min(1).max(80).optional().nullable(),
     targetDays: z.number().int().min(1).max(365).optional().nullable(),
+    startMonth: z.number().int().min(1).max(12).optional().nullable(),
+    directionPreference: z
+      .enum(['seasonal', 'north', 'south', 'east', 'west'])
+      .optional()
+      .nullable(),
     waypointIdsToAdd: z
       .array(z.string().min(1).max(96))
       .max(16)
@@ -343,7 +348,7 @@ async function createOpenAiResponse(
     body: JSON.stringify({
       model: process.env.OPENAI_MODEL ?? FALLBACK_MODEL,
       instructions:
-        `You are a route-planning assistant inside the Charge Quest app. Use tools when you need route data or when the user asks to change settings, require a stop, create a temporary custom ordered route, edit the selected saved route, or reoptimize. The app has ${PLACE_CATALOG.length} curated city and landmark stops across categories such as national parks, history, civil rights, sports, music, entertainment, science, coasts, scenic stops, and roadside attractions. Longest Trip routes automatically give top-rated places multi-night basecamp stays (a new unique Supercharger each day keeps the streak alive); the tripPace setting (sprint/balanced/savor) and autoStays toggle control this, favoriteCategories/mutedCategories bias which places qualify, and suggest_stays shows current stays plus candidates before pacing advice. Use search_catalog_locations to find exact waypoint IDs before adding requested stops or creating custom routes. For exact-order temporary custom-route requests through catalog waypoints, call create_custom_route with only the intermediate waypoint IDs in order; omit Chattanooga/start/end. When the selected route is a persistent saved route, use update_saved_custom_route once with all requested additions, removals, renaming, day-target, and order changes batched together; that tool saves and reoptimizes the route. Avoid repeating a tool call after it succeeds. Keep final answers short and name the concrete changes made. You cannot execute arbitrary code, browse the web, or spend money outside this API call. Treat Tesla badge and landmark data as the app curated catalog, not official proof.${allowTools ? '' : ' Do not request more tools; summarize the completed changes and any unfinished request now.'}`,
+        `You are a route-planning assistant inside the Charge Quest app. Use tools when you need route data or when the user asks to change settings, require a stop, create a temporary custom ordered route, edit the selected saved route, or reoptimize. The app has ${PLACE_CATALOG.length} curated city and landmark stops across categories such as national parks, history, civil rights, sports, music, entertainment, science, coasts, scenic stops, roadside attractions, and curated Tesla badge candidates. Longest Trip routes automatically give top-rated places multi-night basecamp stays (a new unique Supercharger each day keeps the streak alive); the tripPace setting (sprint/balanced/savor) and autoStays toggle control this, favoriteCategories/mutedCategories bias which places qualify, and suggest_stays shows current stays plus candidates before pacing advice. Saved routes can also keep a startMonth and directionPreference (seasonal/north/south/east/west); season-smart winter trips from Chattanooga start south and summer trips start north. Use search_catalog_locations to find exact waypoint IDs before adding requested stops or creating custom routes. For exact-order temporary custom-route requests through catalog waypoints, call create_custom_route with only the intermediate waypoint IDs in order; omit Chattanooga/start/end. When the selected route is a persistent saved route, use update_saved_custom_route once with all requested additions, removals, renaming, day-target, direction, and order changes batched together; that tool saves and reoptimizes the route. Avoid repeating a tool call after it succeeds. Keep final answers short and name the concrete changes made. You cannot execute arbitrary code, browse the web, or spend money outside this API call. Treat Tesla badge and landmark data as the app curated catalog, not official proof.${allowTools ? '' : ' Do not request more tools; summarize the completed changes and any unfinished request now.'}`,
       input,
       tools: plannerAgentTools,
       tool_choice: allowTools ? 'auto' : 'none',
@@ -544,6 +549,12 @@ async function runAgentTool(
       ...(parsed.keepOrder !== undefined && parsed.keepOrder !== null
         ? { keepOrder: parsed.keepOrder }
         : {}),
+      ...(parsed.startMonth !== undefined && parsed.startMonth !== null
+        ? { startMonth: parsed.startMonth }
+        : {}),
+      ...(parsed.directionPreference !== undefined && parsed.directionPreference !== null
+        ? { directionPreference: parsed.directionPreference }
+        : {}),
       waypoints,
     })
     if (!updated) throw new Error('Saved route not found.')
@@ -567,6 +578,8 @@ async function runAgentTool(
           label: waypoint.label,
         })),
         keepOrder: Boolean(updated.route.keepOrder),
+        startMonth: updated.route.startMonth,
+        directionPreference: updated.route.directionPreference,
       },
       route: summarizeRoute(route),
     }
@@ -774,7 +787,7 @@ const plannerAgentTools = [
     type: 'function',
     name: 'update_saved_custom_route',
     description:
-      'Persist and reoptimize one saved custom route. Batch every requested rename, route-specific day target, waypoint addition/removal, and order change into one call. Use catalog waypoint IDs.',
+      'Persist and reoptimize one saved custom route. Batch every requested rename, route-specific day target, start month, direction, waypoint addition/removal, and order change into one call. Use catalog waypoint IDs.',
     parameters: {
       type: 'object',
       properties: {
@@ -787,6 +800,15 @@ const plannerAgentTools = [
           type: ['number', 'null'],
           description:
             'Streak-day target for this saved route only. Does not change the global trip configuration.',
+        },
+        startMonth: {
+          type: ['number', 'null'],
+          description: 'Trip start month as 1 through 12.',
+        },
+        directionPreference: {
+          type: ['string', 'null'],
+          enum: ['seasonal', 'north', 'south', 'east', 'west', null],
+          description: 'Preferred first heading for the optimized saved route.',
         },
         waypointIdsToAdd: {
           type: ['array', 'null'],
@@ -863,6 +885,8 @@ function summarizeConfig(config: PlannerConfig) {
         label: waypoint.label,
       })),
       keepOrder: Boolean(route.keepOrder),
+      startMonth: route.startMonth,
+      directionPreference: route.directionPreference,
     })),
     longestTripTargets: config.longestTripTargets,
   }

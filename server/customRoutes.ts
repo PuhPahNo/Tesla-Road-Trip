@@ -35,6 +35,10 @@ const savedRouteSchema = z.object({
   waypoints: z.array(waypointSchema).min(1).max(16),
   targetDays: z.coerce.number().int().min(1).max(365).optional(),
   keepOrder: z.boolean().optional(),
+  startMonth: z.coerce.number().int().min(1).max(12).optional(),
+  directionPreference: z
+    .enum(['seasonal', 'north', 'south', 'east', 'west'])
+    .optional(),
   createdAt: z.string().min(1).max(48),
   updatedAt: z.string().min(1).max(48),
 })
@@ -45,6 +49,10 @@ const createRouteSchema = z.object({
   waypoints: z.array(waypointSchema).min(1).max(16),
   targetDays: z.coerce.number().int().min(1).max(365).optional(),
   keepOrder: z.boolean().optional(),
+  startMonth: z.coerce.number().int().min(1).max(12).optional(),
+  directionPreference: z
+    .enum(['seasonal', 'north', 'south', 'east', 'west'])
+    .optional(),
 })
 
 const updateRouteSchema = createRouteSchema
@@ -89,6 +97,10 @@ export async function updateSavedCustomRoute(
       : {}),
     ...(parsed.targetDays !== undefined ? { targetDays: parsed.targetDays } : {}),
     ...(parsed.keepOrder !== undefined ? { keepOrder: parsed.keepOrder } : {}),
+    ...(parsed.startMonth !== undefined ? { startMonth: parsed.startMonth } : {}),
+    ...(parsed.directionPreference !== undefined
+      ? { directionPreference: parsed.directionPreference }
+      : {}),
     updatedAt: new Date().toISOString(),
   }
   const routes = existing.slice()
@@ -125,6 +137,10 @@ export function registerCustomRouteRoutes(app: Express) {
         waypoints: normalizeWaypoints(parsed.waypoints),
         ...(parsed.targetDays !== undefined ? { targetDays: parsed.targetDays } : {}),
         ...(parsed.keepOrder ? { keepOrder: true } : {}),
+        ...(parsed.startMonth !== undefined ? { startMonth: parsed.startMonth } : {}),
+        ...(parsed.directionPreference !== undefined
+          ? { directionPreference: parsed.directionPreference }
+          : {}),
         createdAt: now,
         updatedAt: now,
       }

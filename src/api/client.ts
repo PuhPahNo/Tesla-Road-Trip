@@ -70,6 +70,8 @@ export interface CreateCustomRouteRequest {
   waypoints: RouteWaypoint[]
   targetDays?: number
   keepOrder?: boolean
+  startMonth?: number
+  directionPreference?: SavedCustomRoute['directionPreference']
 }
 
 export interface CreateCustomRouteResponse {

@@ -34,12 +34,15 @@ Required checks:
 5. Confirm Travel Preferences does not expose a must-see location editor.
 6. Change generated-route defaults, toggle Canada and Mexico, and toggle long-day optimization.
 7. Save preferences and confirm the routes reoptimize.
-8. Open Create Custom Route and confirm trip length, must-see stops, and stop order are route-specific.
-9. Confirm the custom route builder shows the inherited vehicle, range, pace, and daily-drive preferences.
-10. Confirm OSRM road geometry reaches ready state or reports a visible routing error.
-11. Switch through several route candidates, including at least one regional/deadhead-heavy route.
-12. Confirm per-day route stats, long-day explanations, and advisory badges are readable.
-13. Check desktop and mobile screenshots for overlapping text, clipped buttons, broken map, or confusing hierarchy.
+8. Open Create Custom Route and confirm trip month, starting direction, trip length, must-see stops, and stop order are route-specific.
+9. Select a winter month with Season-smart and confirm the saved route starts south; verify an explicit heading overrides it.
+10. Filter must-see stops to Tesla badge candidates and add one to the saved route.
+11. Confirm the custom route builder shows the inherited vehicle, range, pace, and daily-drive preferences.
+12. Confirm generated route cards keep their full height in a scrolling list and saved routes expose both Edit and Delete.
+13. Confirm OSRM road geometry reaches ready state or reports a visible routing error.
+14. Switch through several route candidates, including at least one regional/deadhead-heavy route.
+15. Confirm per-day route stats, long-day explanations, and advisory badges are readable.
+16. Check desktop and mobile screenshots for overlapping text, clipped buttons, broken map, or confusing hierarchy.
 
 ## Known Model Limitations
 

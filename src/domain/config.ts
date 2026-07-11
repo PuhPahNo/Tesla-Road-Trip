@@ -90,6 +90,10 @@ const savedCustomRouteSchema = z.object({
   waypoints: z.array(routeWaypointSchema).min(1).max(16),
   targetDays: limitedNumber('longestTripDays').optional(),
   keepOrder: z.boolean().optional(),
+  startMonth: z.coerce.number().int().min(1).max(12).optional(),
+  directionPreference: z
+    .enum(['seasonal', 'north', 'south', 'east', 'west'])
+    .optional(),
   createdAt: z.string().min(1).max(48),
   updatedAt: z.string().min(1).max(48),
 })

@@ -36,6 +36,8 @@ export interface Station {
 export type PlannerMode = 'longest_trip' | 'most_unique_sites'
 export type LongestTripVisitTargetType = 'state' | 'city' | 'landmark'
 export type TripPace = 'sprint' | 'balanced' | 'savor'
+export type CompassDirection = 'north' | 'south' | 'east' | 'west'
+export type RouteDirectionPreference = 'seasonal' | CompassDirection
 
 export interface PlannerConfig {
   plannerMode: PlannerMode
@@ -84,6 +86,10 @@ export interface SavedCustomRoute {
   targetDays?: number
   /** Visit stops exactly in the saved order instead of letting the optimizer reorder them. */
   keepOrder?: boolean
+  /** Calendar month (1-12) used by the season-aware starting direction. */
+  startMonth?: number
+  /** Preferred first heading for the optimized loop. */
+  directionPreference?: RouteDirectionPreference
   createdAt: string
   updatedAt: string
 }

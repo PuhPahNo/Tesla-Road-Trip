@@ -1,6 +1,18 @@
 import { useEffect, useId, useMemo, useState } from 'react'
-import type { PlannerConfig, RouteWaypoint, SavedCustomRoute } from '../domain/types'
+import type {
+  PlannerConfig,
+  RouteDirectionPreference,
+  RouteWaypoint,
+  SavedCustomRoute,
+} from '../domain/types'
+import { CHATTANOOGA_37405_START } from '../domain/config'
 import { TRIP_PACE_LABELS } from '../domain/stays'
+import {
+  directionPreferenceDescription,
+  MONTH_OPTIONS,
+  ROUTE_DIRECTION_OPTIONS,
+} from '../domain/routeDirection'
+import { TESLA_BADGE_WAYPOINT_IDS } from '../domain/highlights'
 import { detailForCatalogPlace } from '../domain/placeDetails'
 import {
   PLACE_CATALOG,
@@ -23,13 +35,18 @@ interface CatalogLocation {
   categories: PlaceCategory[]
   rating: number
   summary: string
+  teslaBadge: boolean
 }
+
+type CatalogCategoryFilter = 'all' | PlaceCategory | 'tesla-badge'
 
 export interface CustomRouteDraft {
   name: string
   waypoints: RouteWaypoint[]
   targetDays: number
   keepOrder: boolean
+  startMonth: number
+  directionPreference: RouteDirectionPreference
 }
 
 export interface CustomRouteModalProps {
@@ -64,9 +81,12 @@ export function CustomRouteModal({
   const [targetDays, setTargetDays] = useState(String(defaultTargetDays))
   const [query, setQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState<'all' | CatalogPlaceType>('all')
-  const [categoryFilter, setCategoryFilter] = useState<'all' | PlaceCategory>('all')
+  const [categoryFilter, setCategoryFilter] = useState<CatalogCategoryFilter>('all')
   const [waypoints, setWaypoints] = useState<RouteWaypoint[]>([])
   const [keepOrder, setKeepOrder] = useState(false)
+  const [startMonth, setStartMonth] = useState(() => new Date().getMonth() + 1)
+  const [directionPreference, setDirectionPreference] =
+    useState<RouteDirectionPreference>('seasonal')
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const [manualLabel, setManualLabel] = useState('')
   const [manualLat, setManualLat] = useState('')
@@ -81,6 +101,8 @@ export function CustomRouteModal({
     setCategoryFilter('all')
     setWaypoints(route?.waypoints ?? [])
     setKeepOrder(Boolean(route?.keepOrder))
+    setStartMonth(route?.startMonth ?? new Date().getMonth() + 1)
+    setDirectionPreference(route?.directionPreference ?? 'seasonal')
     setDragIndex(null)
     setManualLabel('')
     setManualLat('')
@@ -93,7 +115,11 @@ export function CustomRouteModal({
     return CATALOG.filter((item) => !selectedIds.has(item.id))
       .filter((item) => (typeFilter === 'all' ? true : item.type === typeFilter))
       .filter((item) =>
-        categoryFilter === 'all' ? true : item.categories.includes(categoryFilter),
+        categoryFilter === 'all'
+          ? true
+          : categoryFilter === 'tesla-badge'
+            ? item.teslaBadge
+            : item.categories.includes(categoryFilter),
       )
       .filter((item) =>
         normalized
@@ -163,7 +189,14 @@ export function CustomRouteModal({
       parsedTargetDays > 365 ||
       isSaving
     ) return
-    onSave({ name: trimmedName, waypoints, targetDays: parsedTargetDays, keepOrder })
+    onSave({
+      name: trimmedName,
+      waypoints,
+      targetDays: parsedTargetDays,
+      keepOrder,
+      startMonth,
+      directionPreference,
+    })
   }
 
   const validTargetDays =
@@ -175,7 +208,7 @@ export function CustomRouteModal({
         titleId={titleId}
         kicker="Route builder"
         title={route ? 'Edit custom route' : 'Create custom route'}
-        meta="Trip length, must-see stops, and stop order belong to this route. Travel preferences are inherited automatically."
+        meta="Trip month, first heading, length, must-see stops, and stop order belong to this route. Travel preferences are inherited automatically."
         onClose={onClose}
       />
 
@@ -237,11 +270,63 @@ export function CustomRouteModal({
             </label>
           </div>
 
+          <div className="mt-4 rounded-[11px] border border-edge bg-chip p-3">
+            <div className="font-mono text-[9px] uppercase tracking-[0.1em] text-faint">
+              How should this trip begin?
+            </div>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <label className="block text-[12px] font-medium text-dim" htmlFor="custom-route-month">
+                Trip starts
+                <select
+                  id="custom-route-month"
+                  aria-label="Trip start month"
+                  value={startMonth}
+                  onChange={(event) => setStartMonth(Number(event.target.value))}
+                  className="mt-2 h-11 w-full rounded-[10px] border border-edge bg-panel2 px-3 text-[13px] text-ink outline-none"
+                >
+                  {MONTH_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block text-[12px] font-medium text-dim" htmlFor="custom-route-direction">
+                First heading
+                <select
+                  id="custom-route-direction"
+                  aria-label="Starting direction preference"
+                  value={directionPreference}
+                  disabled={keepOrder}
+                  onChange={(event) =>
+                    setDirectionPreference(event.target.value as RouteDirectionPreference)
+                  }
+                  className="mt-2 h-11 w-full rounded-[10px] border border-edge bg-panel2 px-3 text-[13px] text-ink outline-none disabled:opacity-50"
+                >
+                  {ROUTE_DIRECTION_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div className="mt-2 text-[11px] leading-[1.5] text-faint">
+              {keepOrder
+                ? 'Exact stop order is on, so the first saved stop sets the heading.'
+                : directionPreferenceDescription(
+                    directionPreference,
+                    startMonth,
+                    CHATTANOOGA_37405_START,
+                  )}
+            </div>
+          </div>
+
           <div className="mt-4">
             <label className="mb-2 block text-[12px] font-medium text-dim" htmlFor="custom-route-search">
               Choose must-see stops
             </label>
-            <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_130px_160px]">
+            <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_130px_185px]">
               <input
                 id="custom-route-search"
                 value={query}
@@ -264,12 +349,13 @@ export function CustomRouteModal({
               <select
                 value={categoryFilter}
                 onChange={(event) =>
-                  setCategoryFilter(event.target.value as 'all' | PlaceCategory)
+                  setCategoryFilter(event.target.value as CatalogCategoryFilter)
                 }
                 aria-label="Filter by category"
                 className="h-10 rounded-[10px] border border-edge bg-panel2 px-2.5 text-[12.5px] text-ink outline-none"
               >
                 <option value="all">All categories</option>
+                <option value="tesla-badge">Tesla badge candidates</option>
                 {PLACE_CATEGORY_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
@@ -280,6 +366,12 @@ export function CustomRouteModal({
             <div className="mt-2 font-mono text-[10px] text-faint">
               Showing {filteredCatalog.length} of {CATALOG.length} catalog stops
             </div>
+            {categoryFilter === 'tesla-badge' ? (
+              <div className="mt-2 rounded-[9px] border border-edge bg-chip px-3 py-2 text-[11px] leading-[1.45] text-faint">
+                Curated Tesla badge candidates only. Confirm current badge availability
+                in the Tesla app before relying on the stop.
+              </div>
+            ) : null}
           </div>
 
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -308,7 +400,10 @@ export function CustomRouteModal({
                   </span>
                 </div>
                 <div className="mt-1 truncate font-mono text-[9px] uppercase tracking-[0.08em] text-faint">
-                  {item.categories.map((category) => PLACE_CATEGORY_LABELS[category]).join(' · ')}
+                  {[
+                    ...(item.teslaBadge ? ['Tesla badge candidate'] : []),
+                    ...item.categories.map((category) => PLACE_CATEGORY_LABELS[category]),
+                  ].join(' · ')}
                 </div>
                 <div className="mt-2 line-clamp-2 text-[11.5px] leading-[1.4] text-dim">
                   {item.summary}
@@ -491,6 +586,7 @@ function buildCatalog(): CatalogLocation[] {
       categories: entry.categories,
       rating: detail.rating,
       summary: detail.summary,
+      teslaBadge: TESLA_BADGE_WAYPOINT_IDS.has(entry.id),
     }
   })
     .sort((a, b) => b.rating - a.rating || a.label.localeCompare(b.label))

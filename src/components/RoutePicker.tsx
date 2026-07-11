@@ -71,7 +71,7 @@ export function RoutePicker({
             return (
               <div
                 key={route.id}
-                className="flex w-full items-stretch overflow-hidden rounded-xl transition"
+                className="flex w-full flex-none items-stretch overflow-hidden rounded-xl transition"
                 style={{
                   border: `1px solid ${selected ? 'var(--accent)' : 'var(--border)'}`,
                   background: selected

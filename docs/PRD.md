@@ -66,7 +66,9 @@ A single Tesla Model Y owner planning an 8-10 week road trip from the Chattanoog
 
 **Custom route inputs**
 - Route name and route-specific trip length.
+- Trip start month and a season-smart or explicit north/south/east/west first heading.
 - Must-see cities, landmarks, and manual locations.
+- Tesla badge candidates as a dedicated target filter.
 - Optimized or exact saved stop order.
 - A visible summary of the inherited vehicle, range, pace, and daily-drive preferences.
 
@@ -75,6 +77,8 @@ A single Tesla Model Y owner planning an 8-10 week road trip from the Chattanoog
 - Must-see locations are edited only in the custom route builder, never in Travel Preferences.
 - Travel Preferences explains that generated-route targets are defaults and saved custom routes keep their own duration and stops.
 - The custom route builder explains which travel preferences it inherits.
+- Winter season-smart routes from Chattanooga begin south; summer routes begin north; explicit headings always win.
+- Route candidate cards retain their content height inside the scrolling list, with visible Edit and Delete actions for saved routes.
 - Both surfaces have clear labels, helper text, and usable desktop and mobile layouts.
 - Saving preferences reoptimizes all routes; saving a custom route persists and selects that route.
 

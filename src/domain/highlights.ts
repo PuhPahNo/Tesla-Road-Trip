@@ -35,6 +35,7 @@ interface HighlightRule {
   nameIncludes?: string[]
   near?: Coordinate
   radiusMiles?: number
+  waypointId?: string
 }
 
 export const KNOWN_WAYPOINTS: RouteWaypoint[] =
@@ -63,6 +64,7 @@ const HIGHLIGHT_RULES: HighlightRule[] = [
     nameIncludes: ['grand canyon', 'tusayan', 'williams', 'flagstaff'],
     near: { lat: 36.0544, lon: -112.1401 },
     radiusMiles: 95,
+    waypointId: 'landmark-az-grand-canyon',
   },
   {
     id: 'city-los-angeles',
@@ -293,6 +295,12 @@ const HIGHLIGHT_RULES: HighlightRule[] = [
     radiusMiles: 95,
   },
 ]
+
+export const TESLA_BADGE_WAYPOINT_IDS = new Set(
+  HIGHLIGHT_RULES.filter((rule) => rule.type === 'tesla_badge')
+    .map((rule) => rule.waypointId)
+    .filter((id): id is string => Boolean(id)),
+)
 
 export function getKnownWaypoint(id: string) {
   const entry = getPlaceCatalogEntry(LEGACY_WAYPOINT_ALIASES[id] ?? id)
