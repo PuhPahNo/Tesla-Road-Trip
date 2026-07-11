@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import type { DayPlan, PlaceRating, RoutePlan } from '../domain/types'
 import type { StateRouteStats } from '../domain/routeStats'
+import type { ContestStatus } from '../domain/rules'
 import { stationHighlights } from '../domain/highlights'
 import { buildTripComposition, topLandmarkLabel } from '../domain/tripComposition'
 import type { StationsResponse } from '../api/client'
@@ -567,13 +568,13 @@ export function StatusSection({
   stationStatus,
   isLoadingStations,
   onRefresh,
-  passportDeadline,
+  contestStatus,
   roadStatus,
 }: {
   stationStatus?: StationsResponse
   isLoadingStations: boolean
   onRefresh: () => void
-  passportDeadline: string
+  contestStatus: ContestStatus
   roadStatus: RoadStatusVM
 }) {
   const count = stationStatus?.filteredStations
@@ -601,11 +602,18 @@ export function StatusSection({
       <Card>
         <CardKicker>Rule guardrails</CardKicker>
         <div className="mt-1.5 text-[13px] font-semibold text-ink">
-          Passport deadline {passportDeadline}
+          {contestStatus.headline}
         </div>
         <div className="mt-[7px] text-[12px] leading-[1.5] text-dim">
-          No minimum charge duration is stated in the contest rules. The planner treats stop
-          time as a configurable assumption.
+          {contestStatus.detail}{' '}
+          <a
+            href={contestStatus.sourceUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="font-medium text-info underline decoration-transparent underline-offset-2 transition hover:decoration-current"
+          >
+            Official Tesla rules
+          </a>
         </div>
         <div
           className="mt-2.5 rounded-[9px] px-[11px] py-[9px] text-[11.5px] leading-[1.45] text-dim"

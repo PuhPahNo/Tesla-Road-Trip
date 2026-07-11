@@ -187,7 +187,7 @@ export function OptimizeOverlay({ step }: { step: string }) {
 /* ------------------------------------------------------------------ */
 /* Splash — boot screen while the first optimization loads             */
 /* ------------------------------------------------------------------ */
-export function SplashScreen() {
+export function SplashScreen({ subtitle }: { subtitle: string }) {
   return (
     <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center gap-5 bg-app">
       <div
@@ -203,7 +203,7 @@ export function SplashScreen() {
           Supercharger Quest Planner
         </div>
         <div className="mt-1.5 font-mono text-[11px] text-faint">
-          Charting the 2026 Americas competition…
+          {subtitle}
         </div>
       </div>
     </div>

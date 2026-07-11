@@ -32,10 +32,12 @@ export const RAIL_ITEMS: Array<{ key: PanelKey; label: string; icon: typeof Grid
 export function BrandIsland({
   routeName,
   routeColor,
+  contestLabel,
   onOpenRoutePicker,
 }: {
   routeName: string
   routeColor?: string
+  contestLabel: string
   onOpenRoutePicker: () => void
 }) {
   return (
@@ -50,7 +52,7 @@ export function BrandIsland({
       />
       <div className="hidden flex-none pr-1 leading-[1.05] sm:block">
         <div className="whitespace-nowrap font-mono text-[8.5px] uppercase tracking-[0.14em] text-faint">
-          2026 · Americas
+          {contestLabel}
         </div>
         <div className="whitespace-nowrap text-[13px] font-semibold tracking-[-0.01em] text-ink">
           Quest Planner

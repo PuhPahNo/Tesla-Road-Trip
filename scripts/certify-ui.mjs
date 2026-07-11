@@ -37,7 +37,7 @@ try {
     () => {
       const text = document.body.textContent ?? ''
       return (
-        !text.includes('Charting the 2026 Americas competition') &&
+        !text.includes('Charting the Americas Supercharger network') &&
         !document.querySelector('.animate-spin') &&
         text.includes('DAY ')
       )

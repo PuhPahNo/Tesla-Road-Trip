@@ -15,7 +15,6 @@ import {
   buildAllStateRouteStats,
   buildStateRouteStats,
 } from './domain/routeStats'
-import { TESLA_CONTEST_RULES } from './domain/rules'
 import type {
   Coordinate,
   OptimizeResponse,
@@ -26,6 +25,7 @@ import type {
   DayPlan,
 } from './domain/types'
 import { useIsMobile } from './hooks/useMediaQuery'
+import { useContestStatus } from './hooks/useContestStatus'
 import {
   ActionsIsland,
   BrandIsland,
@@ -89,6 +89,7 @@ type RoadRouteState =
 
 function App() {
   const isMobile = useIsMobile()
+  const contestStatus = useContestStatus()
 
   // ---- planner data state (preserved from the original app) ----
   const [config, setConfig] = useState<PlannerConfig>(defaultPlannerConfig)
@@ -500,7 +501,7 @@ function App() {
             stationStatus={stationStatus}
             isLoadingStations={isLoadingStations}
             onRefresh={loadStations}
-            passportDeadline={TESLA_CONTEST_RULES.passportDeadline}
+            contestStatus={contestStatus}
             roadStatus={roadStatus}
           />
         )
@@ -530,6 +531,7 @@ function App() {
       <BrandIsland
         routeName={selectedRoute?.name ?? 'No route yet'}
         routeColor={selectedRoute?.color}
+        contestLabel={contestStatus.brandLabel}
         onOpenRoutePicker={() => setRoutePickerOpen(true)}
       />
       <ActionsIsland
@@ -625,7 +627,7 @@ function App() {
                   stationStatus={stationStatus}
                   isLoadingStations={isLoadingStations}
                   onRefresh={loadStations}
-                  passportDeadline={TESLA_CONTEST_RULES.passportDeadline}
+                  contestStatus={contestStatus}
                   roadStatus={roadStatus}
                 />
               </div>
@@ -733,7 +735,11 @@ function App() {
       />
 
       {/* Overlays */}
-      {!ready && <SplashScreen />}
+      {!ready && (
+        <SplashScreen
+          subtitle={`Charting the ${contestStatus.region} Supercharger network…`}
+        />
+      )}
       {isOptimizing && ready && <OptimizeOverlay step={optimizeStep} />}
       <Toast message={toast} />
     </div>
