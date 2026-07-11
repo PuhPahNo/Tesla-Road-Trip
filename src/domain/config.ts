@@ -1,6 +1,11 @@
 import { z } from 'zod'
 import { PLACE_CATEGORY_LABELS, type PlaceCategory } from './placeCatalog'
 import type { PlannerConfig } from './types'
+import {
+  DEFAULT_VEHICLE_PROFILE_ID,
+  practicalRangeForVehicle,
+  VEHICLE_PROFILE_IDS,
+} from './vehicleProfiles'
 
 const PLACE_CATEGORY_VALUES = Object.keys(PLACE_CATEGORY_LABELS) as [
   PlaceCategory,
@@ -27,7 +32,9 @@ export const defaultPlannerConfig: PlannerConfig = {
   longDayMaxHours: 9,
   longDayMinSitesPerExtraHour: 2.5,
   averageMph: 60,
-  practicalRangeMiles: 220,
+  vehicleProfileId: DEFAULT_VEHICLE_PROFILE_ID,
+  practicalRangeMiles: practicalRangeForVehicle(DEFAULT_VEHICLE_PROFILE_ID),
+  manualPracticalRange: false,
   closeStationRadiusMiles: 5,
   closeStationStopMinutes: 2,
   distanceChargeStopMinutes: 18,
@@ -94,6 +101,16 @@ const savedCustomRouteSchema = z.object({
   directionPreference: z
     .enum(['seasonal', 'north', 'south', 'east', 'west'])
     .optional(),
+  travelPreferences: z
+    .object({
+      vehicleProfileId: z.enum(VEHICLE_PROFILE_IDS),
+      practicalRangeMiles: limitedNumber('practicalRangeMiles'),
+      manualPracticalRange: z.boolean(),
+      tripPace: z.enum(['sprint', 'balanced', 'savor']),
+      dailyDriveTargetHours: limitedNumber('dailyDriveTargetHours'),
+      dailyDriveMaxHours: limitedNumber('dailyDriveMaxHours'),
+    })
+    .optional(),
   createdAt: z.string().min(1).max(48),
   updatedAt: z.string().min(1).max(48),
 })
@@ -128,7 +145,9 @@ export const plannerConfigSchema = z.object({
   longDayMaxHours: limitedNumber('longDayMaxHours'),
   longDayMinSitesPerExtraHour: limitedNumber('longDayMinSitesPerExtraHour'),
   averageMph: limitedNumber('averageMph'),
+  vehicleProfileId: z.enum(VEHICLE_PROFILE_IDS).default(DEFAULT_VEHICLE_PROFILE_ID),
   practicalRangeMiles: limitedNumber('practicalRangeMiles'),
+  manualPracticalRange: z.boolean().default(false),
   closeStationRadiusMiles: limitedNumber('closeStationRadiusMiles'),
   closeStationStopMinutes: limitedNumber('closeStationStopMinutes'),
   distanceChargeStopMinutes: limitedNumber('distanceChargeStopMinutes'),

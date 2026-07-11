@@ -3,6 +3,8 @@ import path from 'node:path'
 import type { Express } from 'express'
 import { z } from 'zod'
 import type { RouteWaypoint, SavedCustomRoute } from '../src/domain/types'
+import { VEHICLE_PROFILE_IDS } from '../src/domain/vehicleProfiles'
+import { PLANNER_NUMERIC_LIMITS } from '../src/domain/config'
 
 const DATA_DIR = process.env.DATA_DIR ?? (process.env.RENDER ? '/data' : path.resolve(process.cwd(), '.data'))
 const CUSTOM_ROUTES_PATH =
@@ -28,6 +30,29 @@ const waypointSchema = z.object({
   reason: z.string().max(240).optional(),
 })
 
+const travelPreferencesSchema = z
+  .object({
+    vehicleProfileId: z.enum(VEHICLE_PROFILE_IDS),
+    practicalRangeMiles: z.coerce
+      .number()
+      .min(PLANNER_NUMERIC_LIMITS.practicalRangeMiles.min)
+      .max(PLANNER_NUMERIC_LIMITS.practicalRangeMiles.max),
+    manualPracticalRange: z.boolean(),
+    tripPace: z.enum(['sprint', 'balanced', 'savor']),
+    dailyDriveTargetHours: z.coerce
+      .number()
+      .min(PLANNER_NUMERIC_LIMITS.dailyDriveTargetHours.min)
+      .max(PLANNER_NUMERIC_LIMITS.dailyDriveTargetHours.max),
+    dailyDriveMaxHours: z.coerce
+      .number()
+      .min(PLANNER_NUMERIC_LIMITS.dailyDriveMaxHours.min)
+      .max(PLANNER_NUMERIC_LIMITS.dailyDriveMaxHours.max),
+  })
+  .refine(
+    (value) => value.dailyDriveMaxHours >= value.dailyDriveTargetHours,
+    'Daily maximum must be at least the comfortable drive target.',
+  )
+
 const savedRouteSchema = z.object({
   id: z.string().min(1).max(96),
   name: z.string().min(1).max(80),
@@ -39,6 +64,7 @@ const savedRouteSchema = z.object({
   directionPreference: z
     .enum(['seasonal', 'north', 'south', 'east', 'west'])
     .optional(),
+  travelPreferences: travelPreferencesSchema.optional(),
   createdAt: z.string().min(1).max(48),
   updatedAt: z.string().min(1).max(48),
 })
@@ -53,6 +79,7 @@ const createRouteSchema = z.object({
   directionPreference: z
     .enum(['seasonal', 'north', 'south', 'east', 'west'])
     .optional(),
+  travelPreferences: travelPreferencesSchema.nullable().optional(),
 })
 
 const updateRouteSchema = createRouteSchema
@@ -101,8 +128,12 @@ export async function updateSavedCustomRoute(
     ...(parsed.directionPreference !== undefined
       ? { directionPreference: parsed.directionPreference }
       : {}),
+    ...(parsed.travelPreferences
+      ? { travelPreferences: parsed.travelPreferences }
+      : {}),
     updatedAt: new Date().toISOString(),
   }
+  if (parsed.travelPreferences === null) delete route.travelPreferences
   const routes = existing.slice()
   routes[routeIndex] = route
   await writeSavedCustomRoutes(routes)
@@ -140,6 +171,9 @@ export function registerCustomRouteRoutes(app: Express) {
         ...(parsed.startMonth !== undefined ? { startMonth: parsed.startMonth } : {}),
         ...(parsed.directionPreference !== undefined
           ? { directionPreference: parsed.directionPreference }
+          : {}),
+        ...(parsed.travelPreferences
+          ? { travelPreferences: parsed.travelPreferences }
           : {}),
         createdAt: now,
         updatedAt: now,

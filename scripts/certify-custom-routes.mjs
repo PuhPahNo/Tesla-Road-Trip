@@ -45,7 +45,38 @@ try {
   await setInputValue(page, '#custom-route-days', '70')
   await page.select('#custom-route-month', '1')
   await page.select('#custom-route-direction', 'seasonal')
+  await page.click('input[aria-label="Customize travel preferences for this route"]')
+  await page.select('select[aria-label="Custom route vehicle profile"]', 'model-s-awd')
+  await page.select('select[aria-label="Custom route trip pace"]', 'savor')
+  await setInputValue(
+    page,
+    'input[aria-label="Custom route comfortable drive hours"]',
+    '4',
+  )
+  await setInputValue(
+    page,
+    'input[aria-label="Custom route maximum drive hours"]',
+    '5',
+  )
+  await page.click('input[aria-label="Override custom route practical range"]')
+  await setInputValue(
+    page,
+    'input[aria-label="Custom route practical range miles"]',
+    '290',
+  )
   await page.select('select[aria-label="Filter by category"]', 'tesla-badge')
+  const badgeLabels = await page.$$eval(
+    'button[aria-label^="Add "][aria-label$=" to custom route"]',
+    (buttons) =>
+      buttons.map((button) =>
+        (button.getAttribute('aria-label') ?? '')
+          .replace(/^Add /, '')
+          .replace(/ to custom route$/, ''),
+      ),
+  )
+  if (badgeLabels.length !== 6) {
+    throw new Error(`Expected 6 contiguous-US badge targets, found ${badgeLabels.length}.`)
+  }
   const firstAddedLabel = await page.$eval(
     'button[aria-label^="Add "][aria-label$=" to custom route"]',
     (button) => {
@@ -74,9 +105,17 @@ try {
   if (
     createdRoute?.startMonth !== 1 ||
     createdRoute?.directionPreference !== 'seasonal' ||
+    createdRoute?.travelPreferences?.vehicleProfileId !== 'model-s-awd' ||
+    createdRoute?.travelPreferences?.tripPace !== 'savor' ||
+    createdRoute?.travelPreferences?.dailyDriveTargetHours !== 4 ||
+    createdRoute?.travelPreferences?.dailyDriveMaxHours !== 5 ||
+    createdRoute?.travelPreferences?.practicalRangeMiles !== 290 ||
+    createdRoute?.travelPreferences?.manualPracticalRange !== true ||
     firstAddedLabel !== 'Grand Canyon'
   ) {
-    throw new Error('Created custom route did not persist its winter direction and badge target.')
+    throw new Error(
+      'Created custom route did not persist its direction, travel overrides, and badge target.',
+    )
   }
 
   await page.click(`button[aria-label="Edit ${originalName}"]`)
@@ -125,6 +164,8 @@ try {
       createDays: 70,
       startMonth: createdRoute.startMonth,
       directionPreference: createdRoute.directionPreference,
+      travelPreferences: createdRoute.travelPreferences,
+      badgeTargetsAvailable: badgeLabels,
       badgeTarget: firstAddedLabel,
       editDays: 71,
       addedAndRemovedLocations: true,

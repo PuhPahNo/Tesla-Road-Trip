@@ -1,4 +1,5 @@
 import type { PlaceCategory } from './placeCatalog'
+import type { VehicleProfileId } from './vehicleProfiles'
 
 export type CountryName = 'USA' | 'Canada' | 'Mexico' | string
 
@@ -54,7 +55,9 @@ export interface PlannerConfig {
   longDayMaxHours: number
   longDayMinSitesPerExtraHour: number
   averageMph: number
+  vehicleProfileId: VehicleProfileId
   practicalRangeMiles: number
+  manualPracticalRange: boolean
   closeStationRadiusMiles: number
   closeStationStopMinutes: number
   distanceChargeStopMinutes: number
@@ -90,8 +93,19 @@ export interface SavedCustomRoute {
   startMonth?: number
   /** Preferred first heading for the optimized loop. */
   directionPreference?: RouteDirectionPreference
+  /** Optional route-specific snapshot that overrides the global travel presets. */
+  travelPreferences?: RouteTravelPreferences
   createdAt: string
   updatedAt: string
+}
+
+export interface RouteTravelPreferences {
+  vehicleProfileId: VehicleProfileId
+  practicalRangeMiles: number
+  manualPracticalRange: boolean
+  tripPace: TripPace
+  dailyDriveTargetHours: number
+  dailyDriveMaxHours: number
 }
 
 export interface LongestTripVisitTarget {

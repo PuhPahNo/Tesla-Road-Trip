@@ -2,8 +2,10 @@ import { useEffect, useId, useMemo, useState } from 'react'
 import type {
   PlannerConfig,
   RouteDirectionPreference,
+  RouteTravelPreferences,
   RouteWaypoint,
   SavedCustomRoute,
+  TripPace,
 } from '../domain/types'
 import { CHATTANOOGA_37405_START } from '../domain/config'
 import { TRIP_PACE_LABELS } from '../domain/stays'
@@ -24,6 +26,12 @@ import {
 import { Overlay, OverlayHeader } from '../ui/Overlay'
 import { Button, scoreColor } from '../ui/primitives'
 import { ChevronDownIcon, ChevronUpIcon, CloseIcon } from '../ui/icons'
+import {
+  getVehicleProfile,
+  practicalRangeForVehicle,
+  VEHICLE_PROFILES,
+  type VehicleProfileId,
+} from '../domain/vehicleProfiles'
 
 interface CatalogLocation {
   id: string
@@ -47,6 +55,7 @@ export interface CustomRouteDraft {
   keepOrder: boolean
   startMonth: number
   directionPreference: RouteDirectionPreference
+  travelPreferences?: RouteTravelPreferences | null
 }
 
 export interface CustomRouteModalProps {
@@ -59,7 +68,9 @@ export interface CustomRouteModalProps {
     | 'tripPace'
     | 'dailyDriveTargetHours'
     | 'dailyDriveMaxHours'
+    | 'vehicleProfileId'
     | 'practicalRangeMiles'
+    | 'manualPracticalRange'
   >
   onClose: () => void
   onSave: (draft: CustomRouteDraft) => void
@@ -87,6 +98,10 @@ export function CustomRouteModal({
   const [startMonth, setStartMonth] = useState(() => new Date().getMonth() + 1)
   const [directionPreference, setDirectionPreference] =
     useState<RouteDirectionPreference>('seasonal')
+  const [customizePreferences, setCustomizePreferences] = useState(false)
+  const [routePreferences, setRoutePreferences] = useState<RouteTravelPreferences>(
+    () => routeTravelPreferencesFrom(preferences),
+  )
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const [manualLabel, setManualLabel] = useState('')
   const [manualLat, setManualLat] = useState('')
@@ -103,11 +118,15 @@ export function CustomRouteModal({
     setKeepOrder(Boolean(route?.keepOrder))
     setStartMonth(route?.startMonth ?? new Date().getMonth() + 1)
     setDirectionPreference(route?.directionPreference ?? 'seasonal')
+    setCustomizePreferences(Boolean(route?.travelPreferences))
+    setRoutePreferences(
+      route?.travelPreferences ?? routeTravelPreferencesFrom(preferences),
+    )
     setDragIndex(null)
     setManualLabel('')
     setManualLat('')
     setManualLon('')
-  }, [defaultTargetDays, open, route])
+  }, [defaultTargetDays, open, preferences, route])
 
   const filteredCatalog = useMemo(() => {
     const normalized = query.trim().toLowerCase()
@@ -196,6 +215,11 @@ export function CustomRouteModal({
       keepOrder,
       startMonth,
       directionPreference,
+      travelPreferences: customizePreferences
+        ? normalizedTravelPreferences(routePreferences)
+        : route
+          ? null
+          : undefined,
     })
   }
 
@@ -208,18 +232,43 @@ export function CustomRouteModal({
         titleId={titleId}
         kicker="Route builder"
         title={route ? 'Edit custom route' : 'Create custom route'}
-        meta="Trip month, first heading, length, must-see stops, and stop order belong to this route. Travel preferences are inherited automatically."
+        meta="Trip month, first heading, length, must-see stops, and stop order belong to this route. Global travel preferences start as presets and can be overridden here."
         onClose={onClose}
       />
 
       <div className="flex flex-none flex-col gap-2 border-b border-edge bg-chip px-4 py-3">
         <div className="flex items-baseline justify-between gap-3">
           <div className="font-mono text-[9px] uppercase tracking-[0.1em] text-faint">
-            Inherited travel preferences
+            Travel preferences
           </div>
-          <div className="font-mono text-[9.5px] text-faint">Tesla Model Y LR</div>
+          <label className="flex cursor-pointer items-center gap-2 text-[10.5px] text-dim">
+            <input
+              type="checkbox"
+              checked={customizePreferences}
+              onChange={(event) => {
+                setCustomizePreferences(event.target.checked)
+                if (event.target.checked && !route?.travelPreferences) {
+                  setRoutePreferences(routeTravelPreferencesFrom(preferences))
+                }
+              }}
+              aria-label="Customize travel preferences for this route"
+              className="h-4 w-4 accent-[var(--accent)]"
+            />
+            Customize for this route
+          </label>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="font-mono text-[9.5px] text-faint">
+          {customizePreferences
+            ? 'Saved with this route · global changes will not replace these values'
+            : `Using Preferences presets · ${getVehicleProfile(preferences.vehicleProfileId).label}`}
+        </div>
+        {customizePreferences ? (
+          <RoutePreferencesEditor
+            value={routePreferences}
+            onChange={setRoutePreferences}
+          />
+        ) : (
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           <PreferenceSummary label="Pace" value={TRIP_PACE_LABELS[preferences.tripPace]} />
           <PreferenceSummary
             label="Comfortable day"
@@ -233,7 +282,8 @@ export function CustomRouteModal({
             label="Practical range"
             value={`${preferences.practicalRangeMiles} mi`}
           />
-        </div>
+          </div>
+        )}
       </div>
 
       <div className="grid min-h-0 flex-1 gap-0 overflow-hidden md:grid-cols-[minmax(0,1fr)_360px]">
@@ -562,6 +612,169 @@ export function CustomRouteModal({
   )
 }
 
+function RoutePreferencesEditor({
+  value,
+  onChange,
+}: {
+  value: RouteTravelPreferences
+  onChange: (value: RouteTravelPreferences) => void
+}) {
+  const setVehicle = (vehicleProfileId: VehicleProfileId) =>
+    onChange({
+      ...value,
+      vehicleProfileId,
+      practicalRangeMiles: value.manualPracticalRange
+        ? value.practicalRangeMiles
+        : practicalRangeForVehicle(vehicleProfileId),
+    })
+
+  return (
+    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+      <label className="text-[10.5px] text-dim">
+        Vehicle
+        <select
+          aria-label="Custom route vehicle profile"
+          value={value.vehicleProfileId}
+          onChange={(event) => setVehicle(event.target.value as VehicleProfileId)}
+          className="mt-1 h-9 w-full rounded-[9px] border border-edge bg-panel2 px-2 text-[11.5px] text-ink outline-none"
+        >
+          {VEHICLE_PROFILES.map((profile) => (
+            <option key={profile.id} value={profile.id}>
+              {profile.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="text-[10.5px] text-dim">
+        Pace
+        <select
+          aria-label="Custom route trip pace"
+          value={value.tripPace}
+          onChange={(event) =>
+            onChange({ ...value, tripPace: event.target.value as TripPace })
+          }
+          className="mt-1 h-9 w-full rounded-[9px] border border-edge bg-panel2 px-2 text-[11.5px] text-ink outline-none"
+        >
+          {(Object.entries(TRIP_PACE_LABELS) as Array<[TripPace, string]>).map(
+            ([tripPace, label]) => (
+              <option key={tripPace} value={tripPace}>
+                {label}
+              </option>
+            ),
+          )}
+        </select>
+      </label>
+      <CompactNumberPreference
+        label="Comfortable day"
+        ariaLabel="Custom route comfortable drive hours"
+        value={value.dailyDriveTargetHours}
+        min={1}
+        max={14}
+        step={0.25}
+        unit="h"
+        onChange={(dailyDriveTargetHours) =>
+          onChange({
+            ...value,
+            dailyDriveTargetHours,
+            dailyDriveMaxHours: Math.max(
+              dailyDriveTargetHours,
+              value.dailyDriveMaxHours,
+            ),
+          })
+        }
+      />
+      <CompactNumberPreference
+        label="Daily maximum"
+        ariaLabel="Custom route maximum drive hours"
+        value={value.dailyDriveMaxHours}
+        min={value.dailyDriveTargetHours}
+        max={16}
+        step={0.25}
+        unit="h"
+        onChange={(dailyDriveMaxHours) =>
+          onChange({ ...value, dailyDriveMaxHours })
+        }
+      />
+      <div className="text-[10.5px] text-dim">
+        Practical range
+        <div className="mt-1 flex h-9 items-center gap-1 rounded-[9px] border border-edge bg-panel2 px-2">
+          <input
+            aria-label="Custom route practical range miles"
+            type="number"
+            min={80}
+            max={350}
+            step={5}
+            disabled={!value.manualPracticalRange}
+            value={value.practicalRangeMiles}
+            onChange={(event) =>
+              onChange({ ...value, practicalRangeMiles: Number(event.target.value) })
+            }
+            className="min-w-0 flex-1 bg-transparent text-right font-mono text-[11.5px] text-ink outline-none disabled:opacity-70"
+          />
+          <span className="font-mono text-[9px] text-faint">mi</span>
+        </div>
+        <label className="mt-1 flex cursor-pointer items-center gap-1 text-[9.5px] text-faint">
+          <input
+            type="checkbox"
+            checked={value.manualPracticalRange}
+            onChange={(event) =>
+              onChange({
+                ...value,
+                manualPracticalRange: event.target.checked,
+                practicalRangeMiles: event.target.checked
+                  ? value.practicalRangeMiles
+                  : practicalRangeForVehicle(value.vehicleProfileId),
+              })
+            }
+            aria-label="Override custom route practical range"
+            className="h-3.5 w-3.5 accent-[var(--accent)]"
+          />
+          Manual override
+        </label>
+      </div>
+    </div>
+  )
+}
+
+function CompactNumberPreference({
+  label,
+  ariaLabel,
+  value,
+  min,
+  max,
+  step,
+  unit,
+  onChange,
+}: {
+  label: string
+  ariaLabel: string
+  value: number
+  min: number
+  max: number
+  step: number
+  unit: string
+  onChange: (value: number) => void
+}) {
+  return (
+    <label className="text-[10.5px] text-dim">
+      {label}
+      <div className="mt-1 flex h-9 items-center gap-1 rounded-[9px] border border-edge bg-panel2 px-2">
+        <input
+          aria-label={ariaLabel}
+          type="number"
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={(event) => onChange(Number(event.target.value))}
+          className="min-w-0 flex-1 bg-transparent text-right font-mono text-[11.5px] text-ink outline-none"
+        />
+        <span className="font-mono text-[9px] text-faint">{unit}</span>
+      </div>
+    </label>
+  )
+}
+
 function PreferenceSummary({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-[9px] border border-edge bg-panel2 px-2.5 py-2">
@@ -571,6 +784,34 @@ function PreferenceSummary({ label, value }: { label: string; value: string }) {
       <div className="mt-1 text-[12px] font-semibold text-ink">{value}</div>
     </div>
   )
+}
+
+function routeTravelPreferencesFrom(
+  preferences: CustomRouteModalProps['preferences'],
+): RouteTravelPreferences {
+  return {
+    vehicleProfileId: preferences.vehicleProfileId,
+    practicalRangeMiles: preferences.practicalRangeMiles,
+    manualPracticalRange: preferences.manualPracticalRange,
+    tripPace: preferences.tripPace,
+    dailyDriveTargetHours: preferences.dailyDriveTargetHours,
+    dailyDriveMaxHours: preferences.dailyDriveMaxHours,
+  }
+}
+
+function normalizedTravelPreferences(
+  preferences: RouteTravelPreferences,
+): RouteTravelPreferences {
+  return {
+    ...preferences,
+    practicalRangeMiles: preferences.manualPracticalRange
+      ? preferences.practicalRangeMiles
+      : practicalRangeForVehicle(preferences.vehicleProfileId),
+    dailyDriveMaxHours: Math.max(
+      preferences.dailyDriveTargetHours,
+      preferences.dailyDriveMaxHours,
+    ),
+  }
 }
 
 function buildCatalog(): CatalogLocation[] {

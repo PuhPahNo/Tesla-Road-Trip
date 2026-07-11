@@ -446,6 +446,61 @@ describe('route optimizer', () => {
     ).toBe(12)
   })
 
+  it('applies saved route travel overrides without changing global preferences', () => {
+    const routeId = 'saved-route-preferences'
+    const savedRoute: SavedCustomRoute = {
+      id: routeId,
+      name: 'Slow Scenic Route',
+      color: '#0891b2',
+      waypoints: [
+        {
+          id: 'city-atlanta',
+          label: 'Atlanta',
+          position: { lat: 33.749, lon: -84.388 },
+          radiusMiles: 50,
+        },
+      ],
+      travelPreferences: {
+        vehicleProfileId: 'model-s-awd',
+        practicalRangeMiles: 305,
+        manualPracticalRange: false,
+        tripPace: 'savor',
+        dailyDriveTargetHours: 2,
+        dailyDriveMaxHours: 3,
+      },
+      createdAt: '2026-07-11T00:00:00.000Z',
+      updatedAt: '2026-07-11T00:00:00.000Z',
+    }
+    const station = makeNamedStation(
+      850,
+      'Atlanta Supercharger',
+      'Atlanta',
+      'GA',
+      33.749,
+      -84.388,
+    )
+    const route = refineRouteWithRoadLegs(
+      [station],
+      {
+        ...mostUniqueConfig,
+        dailyDriveTargetHours: 8,
+        dailyDriveMaxHours: 10,
+        savedCustomRoutes: [savedRoute],
+      },
+      {
+        id: routeId,
+        name: savedRoute.name,
+        strategy: 'Route-specific preference test',
+        color: savedRoute.color,
+      },
+      [180, 180],
+      [4, 4],
+    )
+
+    expect(route.days.length).toBeGreaterThan(1)
+    expect(route.days.every((day) => day.driveHours <= 4)).toBe(true)
+  })
+
   it('guarantees a state signature stop for states the streak drives through', () => {
     const sedona = { lat: 34.8697, lon: -111.7609 }
     const grandCanyon = { lat: 36.1069, lon: -112.1129 }

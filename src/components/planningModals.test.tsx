@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { defaultPlannerConfig } from '../domain/config'
 import type { RoutePlan, SavedCustomRoute } from '../domain/types'
@@ -24,6 +24,7 @@ describe('planning modal responsibilities', () => {
   })
 
   it('keeps global preferences in Config without a second must-see editor', () => {
+    const onChange = vi.fn()
     render(
       <ConfigModal
         config={defaultPlannerConfig}
@@ -31,7 +32,7 @@ describe('planning modal responsibilities', () => {
         isOptimizing={false}
         roadRoutingEnabled={false}
         onClose={vi.fn()}
-        onChange={vi.fn()}
+        onChange={onChange}
         onApply={vi.fn()}
       />,
     )
@@ -40,11 +41,28 @@ describe('planning modal responsibilities', () => {
     expect(within(dialog).getByText('Set defaults for every route')).toBeTruthy()
     expect(within(dialog).getByText('Vehicle & range')).toBeTruthy()
     expect(within(dialog).getByText('Driving preferences')).toBeTruthy()
+    const vehicleSelect = within(dialog).getByLabelText('Vehicle profile')
+    fireEvent.change(vehicleSelect, { target: { value: 'model-s-awd' } })
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        vehicleProfileId: 'model-s-awd',
+        practicalRangeMiles: 305,
+        manualPracticalRange: false,
+      }),
+    )
+    expect(
+      (within(dialog).getByLabelText('Practical range miles') as HTMLInputElement)
+        .disabled,
+    ).toBe(true)
+    fireEvent.click(within(dialog).getByLabelText('Use manual practical range'))
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ manualPracticalRange: true }),
+    )
     expect(within(dialog).queryByText('Must-visit targets')).toBeNull()
     expect(within(dialog).queryByLabelText('Search city or landmark targets')).toBeNull()
   })
 
-  it('makes route-specific stops and inherited defaults explicit in the route builder', () => {
+  it('uses global preferences as editable route presets and exposes all badge targets', () => {
     render(
       <CustomRouteModal
         open
@@ -58,7 +76,7 @@ describe('planning modal responsibilities', () => {
 
     const dialog = screen.getByRole('dialog')
     expect(within(dialog).getByText('Create custom route')).toBeTruthy()
-    expect(within(dialog).getByText('Inherited travel preferences')).toBeTruthy()
+    expect(within(dialog).getByText('Travel preferences')).toBeTruthy()
     expect(within(dialog).getByText('Choose must-see stops')).toBeTruthy()
     expect(within(dialog).getByText('Daily maximum')).toBeTruthy()
     expect(within(dialog).getByText('6.5h')).toBeTruthy()
@@ -68,6 +86,31 @@ describe('planning modal responsibilities', () => {
     ).toBe('seasonal')
     expect(within(dialog).getByLabelText('Trip start month')).toBeTruthy()
     expect(within(dialog).getByRole('option', { name: 'Tesla badge candidates' })).toBeTruthy()
+    fireEvent.click(
+      within(dialog).getByLabelText('Customize travel preferences for this route'),
+    )
+    expect(within(dialog).getByLabelText('Custom route vehicle profile')).toBeTruthy()
+    expect(within(dialog).getByLabelText('Custom route trip pace')).toBeTruthy()
+    expect(within(dialog).getByLabelText('Custom route maximum drive hours')).toBeTruthy()
+    expect(within(dialog).getByLabelText('Custom route practical range miles')).toBeTruthy()
+
+    fireEvent.change(within(dialog).getByLabelText('Filter by category'), {
+      target: { value: 'tesla-badge' },
+    })
+    ;[
+      'Grand Canyon',
+      'Santa Monica Pier',
+      'Tesla Diner (Hollywood)',
+      'Tesla Oasis (Lost Hills)',
+      'Yosemite gateway',
+      'Yellowstone gateway',
+    ].forEach((label) => {
+      expect(
+        within(dialog).getByRole('button', {
+          name: `Add ${label} to custom route`,
+        }),
+      ).toBeTruthy()
+    })
   })
 
   it('keeps route cards full-height so custom Edit and Delete actions remain visible', () => {

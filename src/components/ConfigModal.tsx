@@ -12,6 +12,12 @@ import {
 import { Overlay } from '../ui/Overlay'
 import { Button, SegmentedControl, cx } from '../ui/primitives'
 import { CloseIcon } from '../ui/icons'
+import {
+  getVehicleProfile,
+  practicalRangeForVehicle,
+  VEHICLE_PROFILES,
+  type VehicleProfileId,
+} from '../domain/vehicleProfiles'
 
 export interface ConfigModalProps {
   config: PlannerConfig
@@ -150,16 +156,7 @@ const LONGEST_TRIP_DEFAULTS: SliderSpec[] = [
   },
 ]
 
-const VEHICLE_MODEL: SliderSpec[] = [
-  {
-    key: 'practicalRangeMiles',
-    label: 'Practical range',
-    hint: 'Conservative real-world range used to plan charging legs.',
-    min: 80,
-    max: 350,
-    step: 5,
-    unit: 'mi',
-  },
+const VEHICLE_ASSUMPTIONS: SliderSpec[] = [
   {
     key: 'averageMph',
     label: 'Average speed',
@@ -427,6 +424,22 @@ export function ConfigModal({
   const setNumber = (key: SliderKey, value: number) => onChange({ ...config, [key]: value })
   const setBool = (key: ToggleKey, value: boolean) => onChange({ ...config, [key]: value })
   const setMode = (plannerMode: PlannerMode) => onChange({ ...config, plannerMode })
+  const setVehicle = (vehicleProfileId: VehicleProfileId) =>
+    onChange({
+      ...config,
+      vehicleProfileId,
+      practicalRangeMiles: config.manualPracticalRange
+        ? config.practicalRangeMiles
+        : practicalRangeForVehicle(vehicleProfileId),
+    })
+  const setManualRange = (manualPracticalRange: boolean) =>
+    onChange({
+      ...config,
+      manualPracticalRange,
+      practicalRangeMiles: manualPracticalRange
+        ? config.practicalRangeMiles
+        : practicalRangeForVehicle(config.vehicleProfileId),
+    })
   const routeDefaultSpecs =
     config.plannerMode === 'longest_trip'
       ? LONGEST_TRIP_DEFAULTS
@@ -481,18 +494,63 @@ export function ConfigModal({
       <div className="flex min-h-0 flex-1 flex-col gap-[18px] overflow-y-auto p-[18px]">
         <div className="flex flex-col gap-4">
           <SectionLabel>Vehicle & range</SectionLabel>
-          <div className="flex items-center justify-between gap-3 rounded-[11px] border border-edge bg-panel2 px-[13px] py-3">
-            <div className="min-w-0">
-              <div className="text-[12.5px] font-medium text-ink">Vehicle profile</div>
-              <div className="mt-0.5 text-[11px] text-faint">
-                Charge Quest is calibrated for the owner’s car.
+          <label className="block text-[12.5px] font-medium text-ink" htmlFor="vehicle-profile">
+            Vehicle profile
+            <select
+              id="vehicle-profile"
+              aria-label="Vehicle profile"
+              value={config.vehicleProfileId}
+              onChange={(event) => setVehicle(event.target.value as VehicleProfileId)}
+              className="mt-2 h-11 w-full rounded-[10px] border border-edge bg-panel2 px-3 text-[13px] text-ink outline-none"
+            >
+              {VEHICLE_PROFILES.map((profile) => (
+                <option key={profile.id} value={profile.id}>
+                  {profile.label}
+                </option>
+              ))}
+            </select>
+            <span className="mt-1.5 block text-[11px] font-normal leading-[1.45] text-faint">
+              Sets a conservative highway planning range for charging legs.
+            </span>
+          </label>
+
+          <div className="rounded-[11px] border border-edge bg-panel2 px-[13px] py-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-[12.5px] font-medium text-ink">Practical range</div>
+                <div className="mt-0.5 text-[11px] text-faint">
+                  {config.manualPracticalRange
+                    ? 'Manual override used by the optimizer.'
+                    : `Automatically set for ${getVehicleProfile(config.vehicleProfileId).label}.`}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  aria-label="Practical range miles"
+                  type="number"
+                  min={80}
+                  max={350}
+                  step={5}
+                  disabled={!config.manualPracticalRange}
+                  value={config.practicalRangeMiles}
+                  onChange={(event) => setNumber('practicalRangeMiles', Number(event.target.value))}
+                  className="h-9 w-[82px] rounded-[9px] border border-edge bg-chip px-2.5 text-right font-mono text-[12px] text-ink outline-none disabled:opacity-70"
+                />
+                <span className="font-mono text-[10px] text-faint">mi</span>
               </div>
             </div>
-            <span className="flex-none whitespace-nowrap rounded-[9px] border border-edge bg-chip px-3 py-1.5 font-mono text-[12px] text-ink">
-              Tesla Model Y LR
-            </span>
+            <label className="mt-3 flex cursor-pointer items-center gap-2 text-[11.5px] text-dim">
+              <input
+                type="checkbox"
+                checked={config.manualPracticalRange}
+                onChange={(event) => setManualRange(event.target.checked)}
+                aria-label="Use manual practical range"
+                className="h-4 w-4 accent-[var(--accent)]"
+              />
+              Override the vehicle-based range
+            </label>
           </div>
-          {renderSliders(VEHICLE_MODEL)}
+          {renderSliders(VEHICLE_ASSUMPTIONS)}
         </div>
 
         <div className="flex flex-col gap-4">

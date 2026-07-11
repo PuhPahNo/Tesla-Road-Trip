@@ -13,6 +13,7 @@ dist-ssr
 *.local
 .env
 .quest-agent-usage.json
+.data/
 
 # Local OSRM map extracts + built routing graph (multi-GB)
 osrm-data/

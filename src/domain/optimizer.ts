@@ -48,6 +48,7 @@ interface RouteVariant {
   anchors: Coordinate[]
   forcedWaypoints: RouteWaypoint[]
   targetDays?: number
+  travelPreferences?: SavedCustomRoute['travelPreferences']
   stationFilter?: (station: Station) => boolean
   /** Undefined preserves the built-in north-first behavior; anchor keeps the
    * saved custom anchor order without imposing a compass heading. */
@@ -1520,6 +1521,7 @@ function buildSavedCustomRouteVariants(
       color: route.color,
       corridorMiles: 150,
       targetDays: route.targetDays,
+      travelPreferences: route.travelPreferences,
       initialHeading: route.keepOrder ? 'anchor' : resolvedDirection ?? 'anchor',
       anchors: insertRequiredWaypoints(
         closeAnchorsToStart(anchors, start),
@@ -3570,6 +3572,15 @@ function finalizeDay(
  * so totals, day boundaries, gaps and range flags all become road-accurate.
  * `legMiles` length must be orderedStations.length + 1 (the last is the return leg).
  */
+function plannerConfigForRoute(config: PlannerConfig, routeId: string) {
+  const routePreferences = config.savedCustomRoutes.find(
+    (route) => route.id === routeId,
+  )?.travelPreferences
+  return routePreferences
+    ? sanitizePlannerConfig({ ...config, ...routePreferences })
+    : config
+}
+
 export function refineRouteWithRoadLegs(
   orderedStations: Station[],
   partialConfig: Partial<PlannerConfig>,
@@ -3578,7 +3589,8 @@ export function refineRouteWithRoadLegs(
   /** Optional real drive hours per leg (e.g. ORS speed-limit durations). */
   driveHours?: number[],
 ): RoutePlan {
-  const config = sanitizePlannerConfig(partialConfig)
+  const baseConfig = sanitizePlannerConfig(partialConfig)
+  const config = plannerConfigForRoute(baseConfig, meta.id)
   const scored: ScoredStation[] = orderedStations.map((station) => ({
     station,
     distanceMiles: 0,
@@ -3658,13 +3670,16 @@ export function optimizeRoutes(
   const stationRatingBonus = buildStationRatingBonus(stations, config)
 
   const routes: RoutePlan[] = variants.map((variant) => {
+    const routeConfig = variant.travelPreferences
+      ? sanitizePlannerConfig({ ...config, ...variant.travelPreferences })
+      : config
     const routeTarget =
-      config.plannerMode === 'longest_trip'
+      routeConfig.plannerMode === 'longest_trip'
         ? variant.targetDays ?? defaultRouteTarget
         : defaultRouteTarget
     const autoStayTargets =
-      config.plannerMode === 'longest_trip'
-        ? planAutoStays(variant.anchors, variant.corridorMiles, config)
+      routeConfig.plannerMode === 'longest_trip'
+        ? planAutoStays(variant.anchors, variant.corridorMiles, routeConfig)
         : []
     const stationChoice = chooseStationsForVariant(
       variant,
@@ -3672,28 +3687,28 @@ export function optimizeRoutes(
       routeTarget,
       variant.forcedWaypoints,
       {
-        spreadAlongCorridor: config.plannerMode === 'longest_trip',
+        spreadAlongCorridor: routeConfig.plannerMode === 'longest_trip',
         visitTargets:
-          config.plannerMode === 'longest_trip'
-            ? [...config.longestTripTargets, ...autoStayTargets]
-            : config.longestTripTargets,
+          routeConfig.plannerMode === 'longest_trip'
+            ? [...routeConfig.longestTripTargets, ...autoStayTargets]
+            : routeConfig.longestTripTargets,
         visitTargetUnit:
-          config.plannerMode === 'longest_trip' ? 'streak day' : 'reserved stop',
+          routeConfig.plannerMode === 'longest_trip' ? 'streak day' : 'reserved stop',
         ratingBonus: stationRatingBonus,
       },
     )
     const buildOrderedStations = (selected: ScoredStation[]) => {
       const stationOrder =
-        config.plannerMode === 'longest_trip'
-          ? orderLongestTripStations(selected, config.start, variant.initialHeading)
-          : optimizeStationOrder(selected, config.start, variant.initialHeading)
+        routeConfig.plannerMode === 'longest_trip'
+          ? orderLongestTripStations(selected, routeConfig.start, variant.initialHeading)
+          : optimizeStationOrder(selected, routeConfig.start, variant.initialHeading)
       const expandedStations = insertConnectorStops(
         stationOrder,
         stations,
-        config,
+        routeConfig,
         variant.initialHeading,
       )
-      return config.plannerMode === 'longest_trip'
+      return routeConfig.plannerMode === 'longest_trip'
         ? repairLongestTripLegSpacing(
             takeRouteSequenceStations(
               expandedStations,
@@ -3701,7 +3716,7 @@ export function optimizeRoutes(
               stationChoice.protectedStationIds,
             ),
             stations,
-            config,
+            routeConfig,
             routeTarget,
             stationChoice.protectedStationIds,
           )
@@ -3715,7 +3730,7 @@ export function optimizeRoutes(
     // the sequence when new stops were woven in. A rebuild can route new
     // connectors through yet another state, so iterate to a fixpoint
     // (bounded — each state is handled at most once).
-    if (config.plannerMode === 'longest_trip') {
+    if (routeConfig.plannerMode === 'longest_trip') {
       const handledStates = new Set<string>()
       let signatureSelected = stationChoice.selected
       for (let pass = 0; pass < 3; pass += 1) {
@@ -3736,14 +3751,14 @@ export function optimizeRoutes(
     }
 
     const ratingTargets = ratingTargetsForVariant(
-      config,
+      routeConfig,
       variant.forcedWaypoints,
       autoStayTargets,
     )
     const plans = buildRouteDayPlans(
       orderedStations,
       variant.name,
-      config,
+      routeConfig,
       undefined,
       undefined,
       ratingTargets,
@@ -3758,7 +3773,7 @@ export function optimizeRoutes(
 
     return {
       id: variant.id,
-      plannerMode: config.plannerMode,
+      plannerMode: routeConfig.plannerMode,
       name: variant.name,
       strategy: variant.strategy,
       color: variant.color,
@@ -3781,7 +3796,7 @@ export function optimizeRoutes(
       warnings: [...stationChoice.waypointWarnings, ...plans.totals.warnings],
       advisories: plans.totals.advisories,
       longDays: plans.totals.longDays,
-      routeLine: buildDisplayRouteLine(orderedStations, config.start),
+      routeLine: buildDisplayRouteLine(orderedStations, routeConfig.start),
       rating: buildRouteRating(plans.days, ratingTargets),
     }
   })

@@ -72,6 +72,7 @@ export interface CreateCustomRouteRequest {
   keepOrder?: boolean
   startMonth?: number
   directionPreference?: SavedCustomRoute['directionPreference']
+  travelPreferences?: SavedCustomRoute['travelPreferences'] | null
 }
 
 export interface CreateCustomRouteResponse {
