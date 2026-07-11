@@ -39,7 +39,14 @@ export function ChargeQuestRouter() {
               }
             />
           </Route>
-          <Route path="planner" element={<App />} />
+          <Route
+            path="planner"
+            element={
+              <ProtectedRoute unauthenticatedTo="signup">
+                <App />
+              </ProtectedRoute>
+            }
+          />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>

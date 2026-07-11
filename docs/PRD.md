@@ -37,12 +37,15 @@ Tesla's public contest page does not specify a minimum charging duration for a s
 - Explain why the planner exists through concise, competition-focused trip-planning tradeoffs.
 - Invite visitors to challenge Anthony's route, vote for states, suggest stops, arrange meetups, or build a competing route.
 - Use the same sans-serif and mono typography as the rest of Charge Quest without a separate diary or handwritten aesthetic.
+- Use full-bleed road-trip photography, oversized type, high-contrast light/dark/red canvases, and asymmetrical compositions so consecutive sections do not repeat a SaaS card-grid template.
+- Funnel signed-out visitors through account creation before opening the planner; signed-in members can enter the planner directly.
 
 **Acceptance Criteria**
 - The first viewport clearly identifies Anthony as the person behind Charge Quest.
-- Primary actions are Build your competition route and Follow my quest.
+- Primary actions are Sign up and build your route and Follow mine for signed-out visitors.
 - Live community counts and trip status render without blocking the page when the community API is unavailable.
 - The page remains usable on mobile without fixed-background or motion dependencies.
+- Direct signed-out requests to `/planner` redirect to signup and return to the planner after successful account creation.
 
 ### 1. Station Ingestion
 **Objective:** Retrieve, normalize, and filter Supercharge.info station data.

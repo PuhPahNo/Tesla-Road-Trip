@@ -29,14 +29,15 @@ Required coverage:
 - Preferences persist per account and saved routes are isolated between members.
 - Community state votes, suggestions, votes, achievements, and moderated meetup invitations survive across sessions.
 - Anthony admin can activate/deactivate the tracker and publish field updates.
-- The homepage leads with Anthony's 2026 quest story and maps live trip/community data into the public quest board.
+- The homepage leads with Anthony's competition challenge, uses distinct cinematic/editorial/gallery/product compositions, and maps live trip/community data into the public experience.
+- Signed-out users cannot render the planner and are redirected to signup with a planner return path.
 
 ## Manual Browser Certification
 
 Required checks:
 
-1. Load the homepage and confirm Anthony's competition challenge, accurate custom-route workflow preview, community invitation, and live status metrics are visible and readable on desktop and mobile.
-2. Open the planner and confirm the map is visible on first screen.
+1. Load the homepage and confirm the cinematic hero, light editorial statement, destination collage, red planner showcase, community photography, and signup challenge remain distinct and readable on desktop and mobile.
+2. While signed out, open the planner and confirm signup is required; complete signup and confirm the planner opens with the map visible.
 3. Confirm station feed status and source timestamp are visible.
 4. Open Travel Preferences and confirm vehicle/range, trip pace, daily-drive limits, generated-route defaults, coverage, and advanced assumptions are present.
 5. Confirm Travel Preferences does not expose a must-see location editor.

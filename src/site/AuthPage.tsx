@@ -41,16 +41,16 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
   return (
     <div className="mx-auto grid min-h-[calc(100vh-170px)] max-w-[1080px] items-center gap-10 px-5 py-14 lg:grid-cols-[.9fr_1.1fr] lg:px-8">
       <div className="hidden lg:block">
-        <div className="site-kicker">First-party Charge Quest account</div>
+        <div className="site-kicker">Your competition starts here</div>
         <h1 className="mt-4 text-[56px] font-semibold leading-[.98] tracking-[-0.05em]">
-          Your routes should belong to you.
+          Get the same planner Anthony built for himself.
         </h1>
         <p className="mt-6 max-w-[480px] text-[16px] leading-[1.65] text-dim">
-          Save custom routes, keep your vehicle and driving preferences, join the
-          community, vote on trip ideas, and send Anthony route meetups.
+          Build a route that can challenge his, save every version, keep your Tesla
+          and driving preferences, and join the community following the 2026 run.
         </p>
         <div className="mt-8 grid max-w-[480px] grid-cols-2 gap-3">
-          {['Private route library', 'Saved preferences', 'Community suggestions', 'No third-party login'].map((item) => (
+          {['Full route optimizer', 'Private route library', 'Competition community', 'No third-party login'].map((item) => (
             <div key={item} className="rounded-[12px] border border-edge bg-chip p-4 text-[12px] font-medium text-dim">{item}</div>
           ))}
         </div>
@@ -59,7 +59,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
       <div className="site-card mx-auto w-full max-w-[500px] p-6 sm:p-8">
         <div className="site-kicker">{signupMode ? 'Create your account' : 'Welcome back'}</div>
         <h1 className="mt-3 text-[34px] font-semibold tracking-[-0.04em]">
-          {signupMode ? 'Save your first quest.' : 'Continue your quest.'}
+          {signupMode ? 'Build the route that beats his.' : 'Continue your quest.'}
         </h1>
         <p className="mt-3 text-[13px] leading-[1.6] text-dim">
           {signupMode

@@ -362,24 +362,57 @@ body.modal-open {
 }
 
 /* =====================================================================
-   Homepage — competition challenge + real planner preview
+   Homepage — cinematic competition editorial
    ===================================================================== */
-.cq-home-hero {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--panel) 46%, var(--app-bg)), var(--app-bg));
+.cq-cinematic-hero > img {
+  object-position: 50% 58%;
+  transform: scale(1.015);
 }
 
-.cq-hero-backdrop {
-  background-image:
-    radial-gradient(circle at 18% 16%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 29%),
-    radial-gradient(circle at 82% 52%, color-mix(in srgb, var(--accent-2) 9%, transparent), transparent 31%),
-    linear-gradient(var(--border) 1px, transparent 1px),
-    linear-gradient(90deg, var(--border) 1px, transparent 1px);
-  background-size: 100% 100%, 100% 100%, 64px 64px, 64px 64px;
-  mask-image: linear-gradient(to bottom, black, transparent 95%);
+.cq-hero-shade {
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0.02) 34%, rgba(0, 0, 0, 0.78) 100%),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.48), transparent 60%);
+}
+
+.cq-editorial-light {
+  background: #f1eee6;
+  color: #0a0b0d;
+}
+
+.cq-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-auto-rows: 76px;
+  gap: 18px;
+}
+
+.cq-photo-canyon {
+  grid-column: 1 / 9;
+  grid-row: 1 / 8;
+}
+
+.cq-photo-bison {
+  grid-column: 9 / 13;
+  grid-row: 2 / 7;
+}
+
+.cq-gallery-statement {
+  grid-column: 1 / 5;
+  grid-row: 8 / 13;
+}
+
+.cq-photo-bridge {
+  grid-column: 5 / 13;
+  grid-row: 8 / 14;
 }
 
 .cq-planner-preview {
   box-shadow: 0 30px 90px color-mix(in srgb, #000 48%, transparent);
+}
+
+.cq-product-stage .cq-planner-preview {
+  transform: translateY(18px);
 }
 
 .cq-preview-step {
@@ -389,7 +422,7 @@ body.modal-open {
   gap: 7px;
   border-radius: 8px;
   padding: 8px;
-  color: var(--faint);
+  color: rgba(255, 255, 255, 0.35);
   font-size: 9px;
 }
 
@@ -400,7 +433,7 @@ body.modal-open {
   flex: none;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 999px;
   font-family: var(--font-mono);
 }
@@ -412,8 +445,8 @@ body.modal-open {
 }
 
 .cq-preview-step-active {
-  background: var(--chip);
-  color: var(--text);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
 }
 
 .cq-preview-step-active span {
@@ -422,15 +455,29 @@ body.modal-open {
   color: #fff;
 }
 
-.cq-challenge-band {
-  background:
-    linear-gradient(120deg, color-mix(in srgb, var(--accent) 7%, var(--panel)), color-mix(in srgb, var(--accent-2) 6%, var(--panel))),
-    var(--panel);
-}
-
 @media (max-width: 640px) {
   .site-nav {
     position: relative;
+  }
+}
+
+@media (max-width: 900px) {
+  .cq-photo-grid {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .cq-photo-grid figure,
+  .cq-gallery-statement {
+    min-height: 420px;
+  }
+
+  .cq-gallery-statement {
+    min-height: 340px;
+  }
+
+  .cq-product-stage .cq-planner-preview {
+    transform: none;
   }
 }
 

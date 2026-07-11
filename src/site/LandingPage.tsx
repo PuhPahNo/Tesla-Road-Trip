@@ -1,26 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchCommunity, type CommunitySnapshot } from '../api/siteClient'
-
-const FEATURES = [
-  {
-    number: '01',
-    title: 'Build around the places you want to visit',
-    body: 'Choose parks, cities, landmarks, and Tesla Iconic Chargers first. Charge Quest works out a viable Supercharger sequence around them.',
-  },
-  {
-    number: '02',
-    title: 'Plan for your Tesla and your tolerance',
-    body: 'Set your vehicle, practical highway range, trip pace, comfortable drive time, and absolute daily maximum.',
-  },
-  {
-    number: '03',
-    title: 'Save routes and come back ready to compete',
-    body: 'Keep multiple route ideas, override preferences per trip, reorder important stops, and optimize again without starting over.',
-  },
-]
+import { useAuth } from './AuthContext'
 
 export function LandingPage() {
+  const { user } = useAuth()
   const [community, setCommunity] = useState<CommunitySnapshot>()
 
   useEffect(() => {
@@ -28,6 +12,8 @@ export function LandingPage() {
   }, [])
 
   const trip = community?.trip
+  const plannerHref = user ? '/planner' : '/signup?returnTo=%2Fplanner'
+  const plannerCta = user ? 'Build your route' : 'Sign up and build your route'
   const stateVoteCount = useMemo(
     () => community?.stateVotes.reduce((total, state) => total + state.votes, 0) ?? 0,
     [community],
@@ -35,159 +21,258 @@ export function LandingPage() {
 
   return (
     <>
-      <section className="cq-home-hero relative isolate overflow-hidden border-b border-edge">
-        <div className="cq-hero-backdrop pointer-events-none absolute inset-0 -z-10" />
-        <div className="mx-auto grid min-h-[700px] max-w-[1240px] items-center gap-12 px-5 py-16 lg:grid-cols-[1.05fr_.95fr] lg:px-8 lg:py-24">
-          <div className="max-w-[720px]">
-            <div className="inline-flex rounded-full border border-accent/35 bg-accent/10 px-3 py-1.5 font-mono text-[9.5px] uppercase tracking-[0.12em] text-accent">
-              Built for the 2026 Tesla Supercharging Competition
+      <section className="cq-cinematic-hero relative min-h-[calc(100vh-70px)] overflow-hidden bg-black text-white">
+        <img
+          src="/landing/desert-road.jpg"
+          alt="An open highway running through the painted desert"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+        <div className="cq-hero-shade absolute inset-0" />
+        <div className="relative mx-auto flex min-h-[calc(100vh-70px)] max-w-[1440px] flex-col justify-between px-5 py-8 lg:px-12 lg:py-12">
+          <div className="flex items-center justify-between gap-5 font-mono text-[9px] uppercase tracking-[0.14em] text-white/65">
+            <span>Anthony · Chattanooga, TN</span>
+            <span className="hidden sm:block">2026 Tesla Supercharging Competition</span>
+          </div>
+
+          <div className="max-w-[1100px] pb-5">
+            <div className="mb-5 font-mono text-[10px] uppercase tracking-[0.16em] text-white/75">
+              I built the planner. You bring the route.
             </div>
-            <h1 className="mt-7 max-w-[800px] text-[clamp(48px,7vw,88px)] font-semibold leading-[0.93] tracking-[-0.058em] text-ink">
-              Think you can build a better quest than mine?
+            <h1 className="max-w-[1080px] text-[clamp(58px,9.8vw,150px)] font-semibold leading-[0.82] tracking-[-0.072em] text-white">
+              Think you can beat my quest?
             </h1>
-            <p className="mt-7 max-w-[660px] text-[18px] leading-[1.65] text-dim">
-              I’m Anthony. I’m planning my own run at the 2026 competition, and I
-              built Charge Quest to turn a giant list of Superchargers into a road
-              trip actually worth driving.
-            </p>
-            <p className="mt-4 max-w-[640px] text-[15px] leading-[1.7] text-faint">
-              Now I’m giving fellow competitors the same planner I’m using. Build
-              your route around your Tesla, your pace, the places you care about,
-              and the Iconic Charger badges you want—then come see how your plan
-              stacks up against mine.
-            </p>
-            <div className="mt-9 flex flex-wrap gap-3">
-              <Link to="/planner" className="site-primary-button min-h-12 px-5 text-[14px] no-underline">
-                Build your competition route
-              </Link>
-              <Link to="/track-anthony" className="site-secondary-button min-h-12 px-5 text-[14px] no-underline">
-                Follow my quest
-              </Link>
-            </div>
-            <div className="mt-6 font-mono text-[9.5px] uppercase tracking-[0.1em] text-faint">
-              Anthony · 26 · Chattanooga, Tennessee · Fellow competitor
+            <div className="mt-8 grid max-w-[980px] gap-7 md:grid-cols-[1fr_auto] md:items-end">
+              <p className="max-w-[680px] text-[17px] leading-[1.65] text-white/78 sm:text-[20px]">
+                I’m Anthony. I built Charge Quest for my own 2026 competition run,
+                and I’m giving every other competitor the same route-planning tool
+                I’m using. Build yours. Save it. Then come see how it stacks up.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Link to={plannerHref} className="rounded-full bg-white px-6 py-3.5 text-[13px] font-semibold text-black no-underline transition hover:bg-accent hover:text-white">
+                  {plannerCta}
+                </Link>
+                <Link to="/track-anthony" className="rounded-full border border-white/35 bg-black/20 px-6 py-3.5 text-[13px] font-semibold text-white no-underline backdrop-blur-md transition hover:border-white">
+                  Follow mine
+                </Link>
+              </div>
             </div>
           </div>
 
-          <PlannerPreview />
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-[1240px] px-5 py-24 lg:px-8">
-        <div className="grid gap-10 lg:grid-cols-[.78fr_1.22fr]">
-          <div>
-            <div className="site-kicker">The same tool I’m using</div>
-            <h2 className="mt-4 text-[clamp(34px,4.8vw,58px)] font-semibold leading-[1.02] tracking-[-0.047em]">
-              I built the advantage. I’m sharing it with the competition.
-            </h2>
-            <p className="mt-5 max-w-[520px] text-[14.5px] leading-[1.7] text-dim">
-              Charge Quest is not a stripped-down demo for visitors. You get the
-              same route builder, vehicle settings, badge targets, and optimizer
-              I’m using to plan my own trip.
-            </p>
-          </div>
-
-          <div>
-            {FEATURES.map((feature) => (
-              <article key={feature.number} className="grid gap-4 border-t border-edge py-7 sm:grid-cols-[64px_1fr] last:border-b">
-                <div className="font-mono text-[11px] text-accent2">{feature.number}</div>
-                <div>
-                  <h3 className="text-[22px] font-semibold tracking-[-0.025em]">{feature.title}</h3>
-                  <p className="mt-3 max-w-[680px] text-[14px] leading-[1.7] text-dim">{feature.body}</p>
-                </div>
-              </article>
-            ))}
+          <div className="flex items-end justify-between gap-5 font-mono text-[8px] uppercase tracking-[0.13em] text-white/45">
+            <span>Photo · Pierre Jeanneret / Unsplash</span>
+            <span>Scroll to explore ↓</span>
           </div>
         </div>
       </section>
 
-      <section className="border-y border-edge bg-panel/40">
-        <div className="mx-auto grid max-w-[1240px] gap-10 px-5 py-20 lg:grid-cols-[.9fr_1.1fr] lg:px-8">
-          <div>
-            <div className="site-kicker">Why I made it</div>
-            <h2 className="mt-4 text-[clamp(34px,5vw,58px)] font-semibold leading-[1.02] tracking-[-0.047em]">
-              The fastest route is not always the best quest.
+      <section className="cq-editorial-light px-5 py-28 sm:py-36 lg:px-8 lg:py-44">
+        <div className="mx-auto max-w-[1320px]">
+          <div className="grid gap-10 lg:grid-cols-[1.35fr_.65fr] lg:items-end">
+            <h2 className="max-w-[1040px] text-[clamp(56px,9vw,132px)] font-semibold leading-[0.86] tracking-[-0.072em]">
+              The charger is not the destination.
             </h2>
+            <div className="max-w-[430px] pb-2">
+              <div className="mb-5 h-1 w-16 bg-[#e82127]" />
+              <p className="text-[17px] leading-[1.7] text-black/65">
+                Normal planners optimize the trip away. Charge Quest starts with
+                parks, cities, badge locations, and the days you actually want—then
+                makes the Supercharger network support the experience.
+              </p>
+            </div>
           </div>
-          <div className="max-w-[700px] text-[16px] leading-[1.75] text-dim">
-            <p>
-              Every normal planner wanted to move me between chargers as efficiently
-              as possible. That is useful, but it misses the point of spending weeks
-              on the road. I want national parks, cities, Tesla badges, and driving
-              days I can sustain without hating the trip by week three.
-            </p>
-            <p className="mt-5">
-              Charge Quest lets the experiences define the route and uses the
-              Supercharger network to make it possible. If that helps someone build
-              a route good enough to beat mine, fair play—that makes the competition
-              more interesting.
-            </p>
+          <div className="mt-24 grid gap-8 border-t border-black/15 pt-8 sm:grid-cols-3">
+            <EditorialFact number="17" label="Iconic Charger targets researched" />
+            <EditorialFact number="3" label="Steps from idea to optimized route" />
+            <EditorialFact number="1" label="Planner shared with the competition" />
           </div>
         </div>
       </section>
 
-      <section className="cq-challenge-band border-b border-edge">
-        <div className="mx-auto grid max-w-[1240px] gap-10 px-5 py-20 lg:grid-cols-[1.05fr_.95fr] lg:px-8 lg:py-24">
-          <div>
-            <div className="site-kicker">Compete, compare, follow along</div>
-            <h2 className="mt-4 max-w-[720px] text-[clamp(38px,5.6vw,68px)] font-semibold leading-[.98] tracking-[-0.052em]">
-              Build your route. Challenge mine. Follow the run.
-            </h2>
-            <p className="mt-6 max-w-[650px] text-[16px] leading-[1.7] text-dim">
-              Vote for a state I should spend more time in, tell me which stop I’m
-              missing, or invite me to grab coffee when I pass through. Once the trip
-              starts, the live tracker will show exactly where I am and how the quest
-              is going.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link to="/community" className="site-primary-button no-underline">Join the community</Link>
-              <Link to="/track-anthony" className="site-secondary-button no-underline">Track Anthony</Link>
+      <section className="cq-destination-gallery overflow-hidden bg-[#090a0c] px-5 py-24 text-white lg:px-8 lg:py-32">
+        <div className="mx-auto max-w-[1380px]">
+          <div className="mb-16 flex flex-col justify-between gap-7 md:flex-row md:items-end">
+            <div>
+              <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-[#23d7d1]">Build around the places that matter</div>
+              <h2 className="mt-4 max-w-[820px] text-[clamp(44px,6.4vw,92px)] font-semibold leading-[0.91] tracking-[-0.06em]">
+                One route. A whole country worth stopping for.
+              </h2>
             </div>
+            <p className="max-w-[390px] text-[14px] leading-[1.7] text-white/55">
+              Badge stations, national parks, city nights, local suggestions—pick
+              the anchors and let the optimizer solve the charging sequence between them.
+            </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 self-center">
-            <CommunityMetric label="State votes" value={stateVoteCount} note="Lobbying for a visit" />
-            <CommunityMetric label="Suggestions" value={community?.suggestions.length ?? 0} note="Stops and route ideas" />
-            <CommunityMetric label="Meetups" value={community?.meetups.length ?? 0} note="Approved along the route" />
-            <CommunityMetric
-              label="Anthony’s status"
-              value={trip?.active ? `Day ${trip.dayNumber ?? '—'}` : 'Pre-trip'}
-              note={trip?.active ? trip.currentLocation || 'On the road' : 'Planning the 2026 run'}
+          <div className="cq-photo-grid">
+            <PhotoFigure
+              className="cq-photo-canyon"
+              src="/landing/grand-canyon.jpg"
+              alt="Grand Canyon at sunset"
+              eyebrow="Arizona"
+              title="Grand Canyon"
+              credit="Steve Wrzeszczynski / Unsplash"
+            />
+            <PhotoFigure
+              className="cq-photo-bison"
+              src="/landing/yellowstone-bison.jpg"
+              alt="A herd of bison walking along a Yellowstone road"
+              eyebrow="Wyoming"
+              title="Yellowstone"
+              credit="Zac Bowling / Unsplash"
+            />
+            <div className="cq-gallery-statement flex flex-col justify-between bg-[#e82127] p-7 sm:p-9">
+              <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-white/60">The route is yours</div>
+              <div>
+                <div className="text-[clamp(52px,7vw,94px)] font-semibold leading-[.82] tracking-[-0.07em]">48</div>
+                <div className="mt-3 max-w-[260px] text-[16px] font-semibold leading-[1.2]">contiguous states competing for a place in your plan.</div>
+              </div>
+            </div>
+            <PhotoFigure
+              className="cq-photo-bridge"
+              src="/landing/golden-gate.jpg"
+              alt="Golden Gate Bridge with traffic at dusk"
+              eyebrow="California"
+              title="Golden Gate Bridge"
+              credit="Leo_Visions / Unsplash"
             />
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-[940px] px-5 py-24 text-center lg:py-28">
-        <div className="site-kicker">Your move</div>
-        <h2 className="mt-4 text-[clamp(38px,6vw,70px)] font-semibold leading-[.97] tracking-[-0.055em]">
-          See if you can plan a better one.
-        </h2>
-        <p className="mx-auto mt-6 max-w-[650px] text-[16px] leading-[1.7] text-dim">
-          Open the full planner for free. Create an account when you want to save
-          routes, keep your preferences, and join the competition community.
-        </p>
-        <Link to="/planner" className="site-primary-button mt-8 min-h-12 px-6 text-[14px] no-underline">
-          Start building your route
-        </Link>
+      <section className="cq-product-stage overflow-hidden bg-[#e82127] px-5 py-24 text-white lg:px-8 lg:py-32">
+        <div className="mx-auto max-w-[1320px]">
+          <div className="grid gap-12 lg:grid-cols-[.75fr_1.25fr] lg:items-end">
+            <div className="max-w-[540px]">
+              <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-white/65">The actual advantage</div>
+              <h2 className="mt-5 text-[clamp(48px,6.4vw,88px)] font-semibold leading-[0.9] tracking-[-0.062em]">
+                The tool I’m using is yours.
+              </h2>
+              <p className="mt-7 text-[16px] leading-[1.7] text-white/78">
+                This is not a visitor demo. Set your vehicle and real-world range,
+                choose your pace, add the places and badges you care about, then
+                optimize a route you can save and keep refining.
+              </p>
+              <Link to={plannerHref} className="mt-8 inline-flex rounded-full bg-black px-6 py-3.5 text-[13px] font-semibold text-white no-underline transition hover:bg-white hover:text-black">
+                {user ? 'Open the full planner' : 'Create your free account'}
+              </Link>
+            </div>
+
+            <PlannerPreview />
+          </div>
+        </div>
+      </section>
+
+      <section className="grid min-h-[720px] bg-black text-white lg:grid-cols-2">
+        <div className="relative min-h-[520px] overflow-hidden lg:min-h-full">
+          <img
+            src="/landing/tesla-chargers.jpg"
+            alt="Tesla Superchargers illuminated at night"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/10" />
+          <div className="absolute bottom-6 left-6 font-mono text-[8px] uppercase tracking-[0.12em] text-white/55">
+            Photo · Stephen Mease / Unsplash
+          </div>
+        </div>
+
+        <div className="flex items-center px-5 py-20 lg:px-14 xl:px-20">
+          <div className="w-full max-w-[620px]">
+            <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-[#23d7d1]">Compete. Compare. Follow along.</div>
+            <h2 className="mt-5 text-[clamp(46px,6vw,82px)] font-semibold leading-[0.9] tracking-[-0.062em]">
+              Build yours. Challenge mine.
+            </h2>
+            <p className="mt-7 max-w-[560px] text-[16px] leading-[1.7] text-white/60">
+              Vote for where I should go, submit the stop I’m overlooking, or invite
+              me for coffee when I pass through. When the trip starts, the community
+              can follow the route and every field update live.
+            </p>
+
+            <div className="mt-10 grid grid-cols-2 border-y border-white/15 sm:grid-cols-4">
+              <DarkMetric label="State votes" value={stateVoteCount} />
+              <DarkMetric label="Suggestions" value={community?.suggestions.length ?? 0} />
+              <DarkMetric label="Meetups" value={community?.meetups.length ?? 0} />
+              <DarkMetric label="Status" value={trip?.active ? `Day ${trip.dayNumber ?? '—'}` : 'Pre-trip'} />
+            </div>
+
+            <div className="mt-9 flex flex-wrap gap-3">
+              <Link to="/community" className="rounded-full bg-white px-6 py-3.5 text-[13px] font-semibold text-black no-underline">Join the challenge</Link>
+              <Link to="/track-anthony" className="rounded-full border border-white/30 px-6 py-3.5 text-[13px] font-semibold text-white no-underline">Track Anthony</Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="cq-editorial-light px-5 py-28 text-center sm:py-36 lg:px-8 lg:py-44">
+        <div className="mx-auto max-w-[1120px]">
+          <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-black/45">Your move</div>
+          <h2 className="mt-5 text-[clamp(60px,10vw,148px)] font-semibold leading-[0.82] tracking-[-0.075em]">
+            Plan a route worth beating.
+          </h2>
+          <p className="mx-auto mt-9 max-w-[620px] text-[17px] leading-[1.7] text-black/60">
+            Use the planner for free. Create an account when you want to save routes,
+            join the community, and keep refining your competition plan.
+          </p>
+          <Link to={plannerHref} className="mt-9 inline-flex rounded-full bg-black px-8 py-4 text-[14px] font-semibold text-white no-underline transition hover:bg-[#e82127]">
+            {user ? 'Start your Charge Quest' : 'Sign up and challenge Anthony'}
+          </Link>
+        </div>
       </section>
     </>
   )
 }
 
+function EditorialFact({ number, label }: { number: string; label: string }) {
+  return (
+    <div>
+      <div className="text-[clamp(42px,5vw,70px)] font-semibold leading-none tracking-[-0.055em]">{number}</div>
+      <div className="mt-3 max-w-[220px] text-[12px] font-medium uppercase tracking-[0.08em] text-black/45">{label}</div>
+    </div>
+  )
+}
+
+function PhotoFigure({
+  className,
+  src,
+  alt,
+  eyebrow,
+  title,
+  credit,
+}: {
+  className: string
+  src: string
+  alt: string
+  eyebrow: string
+  title: string
+  credit: string
+}) {
+  return (
+    <figure className={`${className} group relative m-0 overflow-hidden bg-panel`}>
+      <img src={src} alt={alt} loading="lazy" className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.025]" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/5 to-transparent" />
+      <figcaption className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-5 p-5 sm:p-7">
+        <div>
+          <div className="font-mono text-[8px] uppercase tracking-[0.13em] text-white/55">{eyebrow}</div>
+          <div className="mt-1 text-[22px] font-semibold tracking-[-0.03em] text-white">{title}</div>
+        </div>
+        <div className="max-w-[150px] text-right font-mono text-[7px] uppercase tracking-[0.08em] text-white/35">{credit}</div>
+      </figcaption>
+    </figure>
+  )
+}
+
 function PlannerPreview() {
   return (
-    <div className="cq-planner-preview mx-auto w-full max-w-[540px] overflow-hidden rounded-[22px] border border-edge2 bg-panel shadow-card">
-      <div className="flex items-center justify-between border-b border-edge bg-panel2 px-5 py-4">
+    <div className="cq-planner-preview overflow-hidden rounded-[20px] border border-white/15 bg-[#0d1016] text-white shadow-2xl">
+      <div className="flex items-center justify-between border-b border-white/10 bg-[#131821] px-5 py-4 sm:px-6">
         <div>
-          <div className="font-mono text-[8.5px] uppercase tracking-[0.12em] text-accent2">Inside Charge Quest</div>
+          <div className="font-mono text-[8px] uppercase tracking-[0.13em] text-[#23d7d1]">Charge Quest planner</div>
           <div className="mt-1 text-[17px] font-semibold">Create a custom route</div>
         </div>
-        <div className="font-mono text-[9px] text-faint">Step 2 of 3</div>
+        <div className="font-mono text-[8px] uppercase tracking-[0.1em] text-white/35">Step 2 of 3</div>
       </div>
 
-      <div className="grid grid-cols-3 border-b border-edge bg-app/40 p-2">
-        {['Trip setup', 'Destinations', 'Review & optimize'].map((step, index) => (
+      <div className="grid grid-cols-3 border-b border-white/10 p-2">
+        {['Trip setup', 'Destinations', 'Review'].map((step, index) => (
           <div key={step} className={`cq-preview-step ${index === 1 ? 'cq-preview-step-active' : ''}`}>
             <span>{index + 1}</span>
             <strong>{step}</strong>
@@ -195,35 +280,37 @@ function PlannerPreview() {
         ))}
       </div>
 
-      <div className="p-5 sm:p-6">
-        <div className="grid grid-cols-2 gap-3">
-          <PreviewField label="Vehicle" value="Model Y Long Range" />
-          <PreviewField label="Trip length" value="60 days" />
-          <PreviewField label="Pace" value="Balanced" />
-          <PreviewField label="First heading" value="Season-smart" />
+      <div className="grid gap-6 p-5 sm:grid-cols-[.9fr_1.1fr] sm:p-6">
+        <div>
+          <div className="grid grid-cols-2 gap-2">
+            <PreviewField label="Vehicle" value="Model Y LR" />
+            <PreviewField label="Trip" value="60 days" />
+            <PreviewField label="Pace" value="Balanced" />
+            <PreviewField label="Heading" value="Season-smart" />
+          </div>
+          <div className="mt-4 rounded-[11px] border border-white/10 bg-white/[.04] p-3">
+            <div className="font-mono text-[8px] uppercase tracking-[0.1em] text-white/35">Practical range</div>
+            <div className="mt-2 flex items-center justify-between text-[12px]">
+              <span className="font-semibold">230 miles</span>
+              <span className="text-white/35">Vehicle preset</span>
+            </div>
+          </div>
         </div>
 
-        <div className="mt-6">
+        <div>
           <div className="flex items-center justify-between gap-3">
-            <div className="text-[12px] font-semibold text-ink">Places that matter</div>
-            <div className="font-mono text-[8.5px] uppercase tracking-[0.08em] text-faint">17 Iconic Chargers available</div>
+            <div className="text-[11px] font-semibold">Selected destinations</div>
+            <div className="font-mono text-[7.5px] uppercase tracking-[0.08em] text-white/35">4 anchors</div>
           </div>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {['Yellowstone', 'Grand Canyon', 'Tesla Diner', 'Miami Beach'].map((place) => (
-              <span key={place} className="rounded-full border border-edge bg-chip px-3 py-2 text-[10.5px] font-medium text-dim">
-                {place}
-              </span>
+          <div className="mt-3 flex flex-col gap-2">
+            {['Yellowstone', 'Grand Canyon', 'Tesla Diner', 'Miami Beach'].map((place, index) => (
+              <div key={place} className="flex items-center gap-3 rounded-[10px] border border-white/10 bg-white/[.04] px-3 py-2.5">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#e82127] text-[9px] font-semibold">{index + 1}</span>
+                <span className="text-[11.5px] font-semibold">{place}</span>
+              </div>
             ))}
-            <span className="rounded-full border border-dashed border-edge2 px-3 py-2 text-[10.5px] text-faint">+ Add destination</span>
           </div>
-        </div>
-
-        <div className="mt-6 flex items-center justify-between gap-4 rounded-[12px] border border-edge bg-app/55 p-4">
-          <div>
-            <div className="text-[12px] font-semibold text-ink">Ready when your route is.</div>
-            <div className="mt-1 text-[10.5px] text-faint">Charging sequence and daily plan come next.</div>
-          </div>
-          <div className="flex-none rounded-[9px] bg-accent px-4 py-2.5 text-[11px] font-semibold text-white">Review route</div>
+          <div className="mt-3 rounded-[9px] bg-[#e82127] px-4 py-3 text-center text-[11px] font-semibold">Review and optimize</div>
         </div>
       </div>
     </div>
@@ -232,19 +319,18 @@ function PlannerPreview() {
 
 function PreviewField({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[11px] border border-edge bg-chip p-3">
-      <div className="font-mono text-[8px] uppercase tracking-[0.09em] text-faint">{label}</div>
-      <div className="mt-1.5 truncate text-[12px] font-semibold text-ink">{value}</div>
+    <div className="rounded-[10px] border border-white/10 bg-white/[.04] p-3">
+      <div className="font-mono text-[7.5px] uppercase tracking-[0.09em] text-white/35">{label}</div>
+      <div className="mt-1.5 truncate text-[11px] font-semibold text-white">{value}</div>
     </div>
   )
 }
 
-function CommunityMetric({ label, value, note }: { label: string; value: string | number; note: string }) {
+function DarkMetric({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-[16px] border border-edge bg-app/55 p-4 sm:p-5">
-      <div className="font-mono text-[8.5px] uppercase tracking-[0.11em] text-faint">{label}</div>
-      <div className="mt-2 text-[clamp(22px,4vw,34px)] font-semibold tracking-[-0.04em] text-ink">{value}</div>
-      <div className="mt-1 text-[11px] leading-[1.45] text-faint">{note}</div>
+    <div className="border-r border-white/15 px-3 py-5 first:pl-0 last:border-r-0 sm:px-4">
+      <div className="font-mono text-[7.5px] uppercase tracking-[0.1em] text-white/35">{label}</div>
+      <div className="mt-2 text-[20px] font-semibold tracking-[-0.03em]">{value}</div>
     </div>
   )
 }

@@ -12,6 +12,11 @@ const NAV_ITEMS = [
 export function SiteShell() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const navItems = NAV_ITEMS.map((item) =>
+    item.to === '/planner' && !user
+      ? { to: '/signup?returnTo=%2Fplanner', label: 'Get the planner' }
+      : item,
+  )
 
   return (
     <div className="site-page min-h-screen bg-app text-ink">
@@ -28,7 +33,7 @@ export function SiteShell() {
           </NavLink>
 
           <nav className="ml-auto hidden items-center gap-1 md:flex" aria-label="Main navigation">
-            {NAV_ITEMS.map((item) => (
+            {navItems.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
@@ -89,7 +94,7 @@ export function SiteShell() {
           </div>
         </div>
         <nav className="flex gap-1 overflow-x-auto border-t border-edge px-3 py-2 md:hidden" aria-label="Mobile navigation">
-          {NAV_ITEMS.map((item) => (
+          {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -113,7 +118,9 @@ export function SiteShell() {
         <div className="mx-auto flex max-w-[1240px] flex-col gap-4 text-[11.5px] text-faint sm:flex-row sm:items-center sm:justify-between">
           <div>Charge Quest · Built by Anthony for the 2026 Tesla Supercharging Competition.</div>
           <div className="flex gap-4">
-            <NavLink to="/planner" className="text-faint no-underline hover:text-ink">Planner</NavLink>
+            <NavLink to={user ? '/planner' : '/signup?returnTo=%2Fplanner'} className="text-faint no-underline hover:text-ink">
+              {user ? 'Planner' : 'Get the planner'}
+            </NavLink>
             <NavLink to="/community" className="text-faint no-underline hover:text-ink">Community</NavLink>
             <NavLink to="/track-anthony" className="text-faint no-underline hover:text-ink">Track Anthony</NavLink>
           </div>
