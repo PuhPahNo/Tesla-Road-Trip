@@ -2,6 +2,11 @@ import { useId } from 'react'
 import type { DayPlan, RoutePlan } from '../domain/types'
 import { Overlay, OverlayHeader } from '../ui/Overlay'
 import { scoreColor } from '../ui/primitives'
+import {
+  badgeOpportunitiesForRoute,
+  tripDateForDay,
+  type TeslaBadgeOpportunity,
+} from '../domain/teslaBadges'
 
 function stars(score: number) {
   const full = Math.max(1, Math.min(5, Math.round(score / 20)))
@@ -10,9 +15,13 @@ function stars(score: number) {
 
 function DayTile({
   day,
+  date,
+  badgeGoals,
   onOpen,
 }: {
   day: DayPlan
+  date?: string
+  badgeGoals: TeslaBadgeOpportunity[]
   onOpen: () => void
 }) {
   const cities = [...new Set(day.visits.map((visit) => visit.station.address.city))]
@@ -38,6 +47,7 @@ function DayTile({
           <span className="text-faint">{star.empty}</span>
         </span>
       </div>
+      {date ? <div className="font-mono text-[9px] text-faint">{date}</div> : null}
       <div className="truncate text-[12px] font-medium text-ink">
         {cities.slice(0, 2).join(' → ') || 'Open road'}
       </div>
@@ -50,6 +60,11 @@ function DayTile({
         {day.uniqueStations} sites · {day.miles.toLocaleString()} mi ·{' '}
         {day.driveHours.toFixed(1)}h
       </div>
+      {badgeGoals.length > 0 ? (
+        <div className="mt-auto truncate font-mono text-[9px] text-amber">
+          ◆ {badgeGoals.map((badge) => badge.label).join(' · ')}
+        </div>
+      ) : null}
     </button>
   )
 }
@@ -73,6 +88,7 @@ export function CalendarModal({
   if (!route) return null
 
   const isLongestTrip = route.plannerMode === 'longest_trip'
+  const badgeOpportunities = badgeOpportunitiesForRoute(route)
   const weeks: Array<{ label: string; days: Array<{ day: DayPlan; index: number }> }> = []
   for (let i = 0; i < route.days.length; i += 7) {
     weeks.push({
@@ -86,7 +102,7 @@ export function CalendarModal({
       <OverlayHeader
         kicker={`Trip calendar · ${isLongestTrip ? 'Longest Trip' : 'Most Unique Sites'}`}
         title={route.name}
-        meta={`${route.totalDays} days · ${route.uniqueStations.toLocaleString()} sites · start Chattanooga, TN 37405`}
+        meta={`${route.totalDays} days · ${route.uniqueStations.toLocaleString()} sites · ${route.tripStartDate ? `starts ${route.tripStartDate}` : 'start date not set'} · Chattanooga, TN 37405`}
         titleId={titleId}
         onClose={onClose}
       />
@@ -99,7 +115,13 @@ export function CalendarModal({
             </div>
             <div className="grid grid-cols-2 gap-[9px] sm:grid-cols-4 md:grid-cols-7">
               {week.days.map(({ day, index }) => (
-                <DayTile key={day.day} day={day} onOpen={() => onOpenDay(index)} />
+                <DayTile
+                  key={day.day}
+                  day={day}
+                  date={tripDateForDay(route.tripStartDate, day.day)}
+                  badgeGoals={badgeOpportunities.filter((badge) => badge.day === day.day)}
+                  onOpen={() => onOpenDay(index)}
+                />
               ))}
             </div>
           </div>

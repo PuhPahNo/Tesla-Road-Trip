@@ -5,6 +5,13 @@ import {
   catalogEntryToWaypoint,
   getPlaceCatalogEntry,
 } from './placeCatalog'
+import {
+  TESLA_BADGE_WAYPOINT_IDS,
+  TESLA_ICONIC_BADGES,
+  getTeslaBadgeWaypoint,
+  iconicBadgeWaypoint,
+  iconicBadgesForStation,
+} from './teslaBadges'
 import type {
   Coordinate,
   DayPlan,
@@ -39,7 +46,10 @@ interface HighlightRule {
 }
 
 export const KNOWN_WAYPOINTS: RouteWaypoint[] =
-  PLACE_CATALOG.map(catalogEntryToWaypoint)
+  [
+    ...PLACE_CATALOG.map(catalogEntryToWaypoint),
+    ...TESLA_ICONIC_BADGES.filter((badge) => badge.routeTarget).map(iconicBadgeWaypoint),
+  ]
 
 const LEGACY_WAYPOINT_ALIASES: Record<string, string> = {
   grand_canyon: 'landmark-az-grand-canyon',
@@ -52,90 +62,6 @@ const LEGACY_WAYPOINT_ALIASES: Record<string, string> = {
 }
 
 const HIGHLIGHT_RULES: HighlightRule[] = [
-  {
-    id: 'tesla-grand-canyon',
-    type: 'tesla_badge',
-    label: 'Grand Canyon Badge',
-    summary: 'Tesla app badge candidate near the Grand Canyon travel corridor.',
-    rating: 97,
-    sceneryScore: 98,
-    states: ['AZ'],
-    cities: ['Grand Canyon', 'Tusayan', 'Williams', 'Flagstaff'],
-    nameIncludes: ['grand canyon', 'tusayan', 'williams', 'flagstaff'],
-    near: { lat: 36.0544, lon: -112.1401 },
-    radiusMiles: 95,
-    waypointId: 'landmark-az-grand-canyon',
-  },
-  {
-    id: 'tesla-santa-monica',
-    type: 'tesla_badge',
-    label: 'Santa Monica Badge',
-    summary: 'Tesla app Iconic Charger badge destination around Santa Monica.',
-    rating: 91,
-    sceneryScore: 88,
-    states: ['CA'],
-    cities: ['Santa Monica'],
-    nameIncludes: ['santa monica'],
-    near: { lat: 34.01, lon: -118.4962 },
-    radiusMiles: 25,
-    waypointId: 'landmark-ca-santa-monica-pier',
-  },
-  {
-    id: 'tesla-diner',
-    type: 'tesla_badge',
-    label: 'Tesla Diner Badge',
-    summary: 'Tesla app Iconic Charger badge destination at the Hollywood Tesla Diner.',
-    rating: 94,
-    sceneryScore: 74,
-    states: ['CA'],
-    cities: ['Los Angeles', 'West Hollywood', 'Hollywood'],
-    nameIncludes: ['tesla diner', 'santa monica boulevard'],
-    near: { lat: 34.0908, lon: -118.344 },
-    radiusMiles: 12,
-    waypointId: 'landmark-ca-tesla-diner',
-  },
-  {
-    id: 'tesla-oasis',
-    type: 'tesla_badge',
-    label: 'Tesla Oasis Badge',
-    summary: 'Tesla app Iconic Charger badge destination at Tesla Oasis in Lost Hills.',
-    rating: 93,
-    sceneryScore: 70,
-    states: ['CA'],
-    cities: ['Lost Hills'],
-    nameIncludes: ['tesla oasis', 'lost hills'],
-    near: { lat: 35.6163, lon: -119.6943 },
-    radiusMiles: 20,
-    waypointId: 'landmark-ca-tesla-oasis',
-  },
-  {
-    id: 'tesla-yosemite',
-    type: 'tesla_badge',
-    label: 'Yosemite Badge',
-    summary: 'Tesla app Iconic Charger badge destination in the Yosemite travel corridor.',
-    rating: 98,
-    sceneryScore: 99,
-    states: ['CA'],
-    cities: ['Mariposa', 'Oakhurst', 'Groveland', 'Fish Camp'],
-    nameIncludes: ['yosemite', 'mariposa', 'oakhurst', 'groveland'],
-    near: { lat: 37.8651, lon: -119.5383 },
-    radiusMiles: 95,
-    waypointId: 'landmark-ca-yosemite',
-  },
-  {
-    id: 'tesla-yellowstone',
-    type: 'tesla_badge',
-    label: 'Yellowstone Badge',
-    summary: 'Tesla app Iconic Charger badge destination in the Yellowstone travel corridor.',
-    rating: 97,
-    sceneryScore: 99,
-    states: ['WY', 'MT', 'ID'],
-    cities: ['West Yellowstone', 'Gardiner', 'Jackson', 'Bozeman', 'Idaho Falls'],
-    nameIncludes: ['yellowstone', 'gardiner', 'west yellowstone'],
-    near: { lat: 44.428, lon: -110.5885 },
-    radiusMiles: 130,
-    waypointId: 'landmark-wy-yellowstone',
-  },
   {
     id: 'city-los-angeles',
     type: 'city',
@@ -366,18 +292,26 @@ const HIGHLIGHT_RULES: HighlightRule[] = [
   },
 ]
 
-export const TESLA_BADGE_WAYPOINT_IDS = new Set(
-  HIGHLIGHT_RULES.filter((rule) => rule.type === 'tesla_badge')
-    .map((rule) => rule.waypointId)
-    .filter((id): id is string => Boolean(id)),
-)
+export { TESLA_BADGE_WAYPOINT_IDS }
 
 export function getKnownWaypoint(id: string) {
+  const badgeWaypoint = getTeslaBadgeWaypoint(id)
+  if (badgeWaypoint) return badgeWaypoint
   const entry = getPlaceCatalogEntry(LEGACY_WAYPOINT_ALIASES[id] ?? id)
   return entry ? catalogEntryToWaypoint(entry) : undefined
 }
 
 export function stationHighlights(station: Station): StationHighlight[] {
+  const badgeHighlights = iconicBadgesForStation(station).map(
+    (badge): StationHighlight => ({
+      id: badge.id,
+      type: 'tesla_badge',
+      label: badge.label,
+      summary: badge.summary,
+      rating: badge.rating,
+      sceneryScore: badge.sceneryScore,
+    }),
+  )
   const ruleHighlights = HIGHLIGHT_RULES.filter((rule) => matchesRule(rule, station)).map(
     ({ id, type, label, summary, rating, sceneryScore }) => ({
       id,
@@ -404,7 +338,7 @@ export function stationHighlights(station: Station): StationHighlight[] {
     }
   })
 
-  return dedupeHighlights([...ruleHighlights, ...catalogHighlights])
+  return dedupeHighlights([...badgeHighlights, ...ruleHighlights, ...catalogHighlights])
 }
 
 export function dayHighlights(day: DayPlan): StationHighlight[] {

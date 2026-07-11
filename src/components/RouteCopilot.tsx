@@ -162,7 +162,7 @@ export function RouteCopilotPanel({
             <div className="mt-3 grid grid-cols-3 gap-2">
               <MiniStat label="Cities" value={composition.bigCities} />
               <MiniStat label="Landmarks" value={composition.landmarks} />
-              <MiniStat label="Badges" value={composition.teslaBadges} />
+              <MiniStat label="Badge goals" value={composition.teslaBadges + composition.badgeOpportunities.length} />
             </div>
           ) : null}
           {onOpenCustomRoute ? (

@@ -6,7 +6,7 @@ const FEATURES = [
   {
     number: '01',
     title: 'Route around the trip you actually want',
-    body: 'Choose cities, national parks, roadside stops, Tesla badge candidates, trip month, and your preferred first heading. The charger sequence gets built around the experience—not the other way around.',
+    body: 'Choose cities, national parks, roadside stops, researched Tesla Iconic Chargers, an exact trip date, and your preferred first heading. The charger sequence gets built around the experience—not the other way around.',
   },
   {
     number: '02',
@@ -108,7 +108,7 @@ export function LandingPage() {
                     <div className="absolute right-[4%] top-[45%] h-3 w-3 rounded-full border-2 border-white bg-accent" />
                   </div>
                   <div className="mt-2 text-[12px] leading-[1.5] text-dim">
-                    Cities, parks, badge candidates, and a unique Supercharger plan for
+                    Cities, parks, Iconic Chargers, and a unique Supercharger plan for
                     every day of the quest.
                   </div>
                 </div>

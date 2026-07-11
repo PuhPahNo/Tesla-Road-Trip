@@ -30,6 +30,7 @@ npm run build
 npm run lint
 npm run certify:ui
 npm run certify:community
+npm run certify:badges
 ```
 
 ## What It Does
@@ -38,6 +39,7 @@ npm run certify:community
 - First-party username/password accounts with unique usernames of at least three characters, secure password hashes, and HTTP-only sessions—no email, OAuth, or external identity provider.
 - Account-owned route libraries and planner preferences; users cannot read or mutate another member's routes.
 - Community suggestions, votes, achievements, state-interest signals, and moderated meetup invitations.
+- Researched Tesla charging-badge planning: exact Iconic Charger targets, trip-date Special Events, and realistic milestone opportunities such as Pit Stop, Explorer, and Charging Streak.
 - Public **Track Anthony** page that stays parked until Anthony activates a trip, then shows day, location, progress, field updates, and approved meetups.
 - Anthony-only admin page for trip publishing and meetup moderation.
 
@@ -96,3 +98,4 @@ See `.env.example` for agent and routing configuration, and [docs/OSRM.md](docs/
 - [PRD](docs/PRD.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Test Plan](docs/TEST_PLAN.md)
+- [Tesla Badge Research](docs/TESLA_BADGES.md)

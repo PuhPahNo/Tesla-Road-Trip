@@ -58,7 +58,7 @@ try {
   await page.waitForSelector('#custom-route-name', { timeout: 30_000 })
   await page.type('#custom-route-name', originalName)
   await setInputValue(page, '#custom-route-days', '70')
-  await page.select('#custom-route-month', '1')
+  await setInputValue(page, '#custom-route-date', '2026-01-10')
   await page.select('#custom-route-direction', 'seasonal')
   await page.click('input[aria-label="Customize travel preferences for this route"]')
   await page.select('select[aria-label="Custom route vehicle profile"]', 'model-s-awd')
@@ -79,6 +79,7 @@ try {
     'input[aria-label="Custom route practical range miles"]',
     '290',
   )
+  await clickButtonByText(page, 'Continue to destinations')
   await page.select('select[aria-label="Filter by category"]', 'tesla-badge')
   const badgeLabels = await page.$$eval(
     'button[aria-label^="Add "][aria-label$=" to custom route"]',
@@ -89,8 +90,8 @@ try {
           .replace(/ to custom route$/, ''),
       ),
   )
-  if (badgeLabels.length !== 6) {
-    throw new Error(`Expected 6 contiguous-US badge targets, found ${badgeLabels.length}.`)
+  if (badgeLabels.length !== 17) {
+    throw new Error(`Expected 17 North American badge targets, found ${badgeLabels.length}.`)
   }
   const firstAddedLabel = await page.$eval(
     'button[aria-label^="Add "][aria-label$=" to custom route"]',
@@ -100,6 +101,7 @@ try {
       return label.replace(/^Add /, '').replace(/ to custom route$/, '')
     },
   )
+  await clickButtonByText(page, 'Review route')
   await clickButtonByText(page, 'Save and optimize')
 
   await page.waitForSelector(`button[aria-label^="Select route ${originalName},"]`, {
@@ -119,6 +121,7 @@ try {
   }, originalName)
   if (
     createdRoute?.startMonth !== 1 ||
+    createdRoute?.startDate !== '2026-01-10' ||
     createdRoute?.directionPreference !== 'seasonal' ||
     createdRoute?.travelPreferences?.vehicleProfileId !== 'model-s-awd' ||
     createdRoute?.travelPreferences?.tripPace !== 'savor' ||
@@ -137,11 +140,13 @@ try {
   await page.waitForSelector('#custom-route-name', { timeout: 30_000 })
   await setInputValue(page, '#custom-route-name', updatedName)
   await setInputValue(page, '#custom-route-days', '71')
+  await clickButtonByText(page, 'Continue to destinations')
   await page.$eval(
     'button[aria-label^="Add "][aria-label$=" to custom route"]',
     (button) => button.click(),
   )
   await page.click(`button[aria-label="Remove ${firstAddedLabel}"]`)
+  await clickButtonByText(page, 'Review route')
   await clickButtonByText(page, 'Update and optimize')
 
   await page.waitForSelector(`button[aria-label^="Select route ${updatedName},"]`, {
@@ -178,6 +183,7 @@ try {
     JSON.stringify({
       createDays: 70,
       startMonth: createdRoute.startMonth,
+      startDate: createdRoute.startDate,
       directionPreference: createdRoute.directionPreference,
       travelPreferences: createdRoute.travelPreferences,
       badgeTargetsAvailable: badgeLabels,

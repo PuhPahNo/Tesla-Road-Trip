@@ -19,7 +19,8 @@
     "brand:assets": "node scripts/generate-brand-assets.mjs",
     "certify:ui": "node scripts/certify-ui.mjs",
     "certify:custom-routes": "node scripts/certify-custom-routes.mjs",
-    "certify:community": "node scripts/certify-community.mjs"
+    "certify:community": "node scripts/certify-community.mjs",
+    "certify:badges": "tsx scripts/certify-tesla-badges.ts"
   },
   "dependencies": {
     "concurrently": "^10.0.3",

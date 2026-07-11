@@ -582,6 +582,21 @@ export function ConfigModal({
             These controls shape the built-in route candidates. A saved custom
             route keeps its own duration and must-see stops.
           </div>
+          <label className="text-[12.5px] font-medium text-ink">
+            Generated trip start date
+            <input
+              type="date"
+              aria-label="Generated trip start date"
+              value={config.tripStartDate}
+              onChange={(event) =>
+                onChange({ ...config, tripStartDate: event.target.value })
+              }
+              className="mt-2 h-10 w-full rounded-[10px] border border-edge bg-panel2 px-3 text-[12.5px] text-ink outline-none"
+            />
+            <span className="mt-1 block text-[11px] font-normal leading-[1.4] text-faint">
+              Used to flag date-limited Tesla badges in generated routes.
+            </span>
+          </label>
           <SegmentedControl<PlannerMode>
             options={PLANNER_MODE_OPTIONS}
             value={config.plannerMode}

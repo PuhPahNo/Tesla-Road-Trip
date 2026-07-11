@@ -160,7 +160,7 @@ export function AdminPage() {
             <label className="site-field-label">Location<input required className="site-input" value={update.location} onChange={(event) => setUpdate((current) => ({ ...current, location: event.target.value }))} placeholder="Boulder, Colorado" /></label>
             <label className="site-field-label sm:col-span-2">Headline<input required minLength={3} maxLength={140} className="site-input" value={update.title} onChange={(event) => setUpdate((current) => ({ ...current, title: event.target.value }))} placeholder="Red Rocks before the snow" /></label>
             <label className="site-field-label sm:col-span-2">Update<textarea required minLength={10} maxLength={1200} rows={5} className="site-input resize-y" value={update.body} onChange={(event) => setUpdate((current) => ({ ...current, body: event.target.value }))} /></label>
-            <label className="site-field-label sm:col-span-2">Visiting (optional)<input maxLength={240} className="site-input" value={update.visiting} onChange={(event) => setUpdate((current) => ({ ...current, visiting: event.target.value }))} placeholder="Red Rocks, downtown Denver, two badge candidates" /></label>
+            <label className="site-field-label sm:col-span-2">Visiting (optional)<input maxLength={240} className="site-input" value={update.visiting} onChange={(event) => setUpdate((current) => ({ ...current, visiting: event.target.value }))} placeholder="Red Rocks, downtown Denver, two Iconic Chargers" /></label>
           </div>
           <button type="submit" className="site-primary-button mt-5">Publish update</button>
         </form>

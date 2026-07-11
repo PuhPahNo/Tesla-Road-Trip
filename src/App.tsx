@@ -752,6 +752,7 @@ function App() {
         isSaving={isSavingCustomRoute}
         route={editingCustomRoute}
         defaultTargetDays={config.longestTripDays}
+        defaultStartDate={config.tripStartDate}
         preferences={config}
         onClose={() => {
           setCustomRouteOpen(false)

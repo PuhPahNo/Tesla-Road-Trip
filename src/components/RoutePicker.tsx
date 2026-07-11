@@ -104,7 +104,7 @@ export function RoutePicker({
                     </span>
                     <span className="mt-[4px] block font-mono text-[10.5px] text-faint">
                       {composition.bigCities} big cities · {composition.landmarks} landmarks ·{' '}
-                      {composition.teslaBadges} Tesla badges
+                      {composition.teslaBadges} iconic badges · {composition.badgeOpportunities.length} achievement goals
                     </span>
                   </span>
                   {selected ? (

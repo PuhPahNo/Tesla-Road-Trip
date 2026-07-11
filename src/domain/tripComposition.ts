@@ -2,6 +2,10 @@ import { haversineMiles } from './geo'
 import { stationHighlights, type StationHighlight } from './highlights'
 import { STATE_SIGNATURES, type StateSignature } from './stateSignatures'
 import type { PlaceRating, RoutePlan } from './types'
+import {
+  badgeOpportunitiesForRoute,
+  type TeslaBadgeOpportunity,
+} from './teslaBadges'
 
 export interface StateSignatureHit {
   state: string
@@ -12,6 +16,7 @@ export interface TripComposition {
   bigCities: number
   landmarks: number
   teslaBadges: number
+  badgeOpportunities: TeslaBadgeOpportunity[]
   signatureStops: number
   topCities: StationHighlight[]
   topLandmarks: Array<StationHighlight | StateSignatureHit>
@@ -25,6 +30,7 @@ export function buildTripComposition(route?: RoutePlan): TripComposition {
       bigCities: 0,
       landmarks: 0,
       teslaBadges: 0,
+      badgeOpportunities: [],
       signatureStops: 0,
       topCities: [],
       topLandmarks: [],
@@ -68,6 +74,7 @@ export function buildTripComposition(route?: RoutePlan): TripComposition {
     bigCities: cityHighlights.length,
     landmarks: landmarkIds.size,
     teslaBadges: badgeHighlights.length,
+    badgeOpportunities: badgeOpportunitiesForRoute(route),
     signatureStops: signatureHits.length,
     topCities: cityHighlights.slice(0, 5),
     topLandmarks: [...landmarkHighlights.slice(0, 5), ...signatureHits.slice(0, 5)].slice(

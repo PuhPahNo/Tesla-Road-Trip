@@ -10,6 +10,7 @@ npm run build
 npm run lint
 npm run certify:ui
 npm run certify:community
+npm run certify:badges
 ```
 
 Required coverage:
@@ -40,18 +41,19 @@ Required checks:
 5. Confirm Travel Preferences does not expose a must-see location editor.
 6. Change generated-route defaults, toggle Canada and Mexico, and toggle long-day optimization.
 7. Save preferences and confirm the routes reoptimize.
-8. Open Create Custom Route and confirm trip month, starting direction, trip length, must-see stops, and stop order are route-specific.
+8. Open Create Custom Route and confirm it progresses through Trip setup, Destinations, and Review & optimize; verify Back preserves entered values and later steps stay unavailable until required fields are complete.
 9. Select a winter month with Season-smart and confirm the saved route starts south; verify an explicit heading overrides it.
-10. Filter must-see stops to Tesla badge candidates and add one to the saved route.
-11. Confirm the custom route builder starts with inherited vehicle, range, pace, and daily-drive presets and can save route-specific overrides.
-12. Confirm generated route cards keep their full height in a scrolling list and saved routes expose both Edit and Delete.
-13. Confirm OSRM road geometry reaches ready state or reports a visible routing error.
-14. Switch through several route candidates, including at least one regional/deadhead-heavy route.
-15. Confirm per-day route stats, long-day explanations, and advisory badges are readable.
-16. Check desktop and mobile screenshots for overlapping text, clipped buttons, broken map, or confusing hierarchy.
-17. Create two accounts and confirm neither can see the other account's routes.
-18. Submit a meetup invitation as a member, approve it as Anthony admin, and confirm it appears publicly only after approval.
-19. Turn Anthony's trip off and confirm Track Anthony shows the pre-trip state; turn it on and publish an update to confirm live progress appears.
+10. Filter must-see stops to Tesla Iconic Chargers and confirm all 17 researched North American targets appear; Waikiki is cataloged but disabled for mainland routing, and Canada targets require Include Canada.
+11. Set a trip window spanning April 22, 2026 or July 4, 2026 and confirm the matching Special Event badge is flagged on the correct route day.
+12. Confirm the custom route builder starts with inherited vehicle, range, pace, and daily-drive presets and can save route-specific overrides.
+13. Confirm generated route cards keep their full height in a scrolling list and saved routes expose both Edit and Delete.
+14. Confirm ORS road geometry reaches ready state or reports a visible routing error.
+15. Switch through several route candidates, including at least one regional/deadhead-heavy route.
+16. Confirm per-day route stats, long-day explanations, Iconic Charger hits, and achievement opportunities are readable.
+17. Check desktop and mobile screenshots for overlapping text, clipped buttons, broken map, or confusing hierarchy.
+18. Create two accounts and confirm neither can see the other account's routes.
+19. Submit a meetup invitation as a member, approve it as Anthony admin, and confirm it appears publicly only after approval.
+20. Turn Anthony's trip off and confirm Track Anthony shows the pre-trip state; turn it on and publish an update to confirm live progress appears.
 
 ## Known Model Limitations
 

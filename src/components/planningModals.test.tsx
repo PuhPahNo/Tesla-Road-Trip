@@ -41,6 +41,10 @@ describe('planning modal responsibilities', () => {
     expect(within(dialog).getByText('Set defaults for every route')).toBeTruthy()
     expect(within(dialog).getByText('Vehicle & range')).toBeTruthy()
     expect(within(dialog).getByText('Driving preferences')).toBeTruthy()
+    expect(
+      (within(dialog).getByLabelText('Generated trip start date') as HTMLInputElement)
+        .value,
+    ).toBe(defaultPlannerConfig.tripStartDate)
     const vehicleSelect = within(dialog).getByLabelText('Vehicle profile')
     fireEvent.change(vehicleSelect, { target: { value: 'model-s-awd' } })
     expect(onChange).toHaveBeenCalledWith(
@@ -62,30 +66,34 @@ describe('planning modal responsibilities', () => {
     expect(within(dialog).queryByLabelText('Search city or landmark targets')).toBeNull()
   })
 
-  it('uses global preferences as editable route presets and exposes all badge targets', () => {
+  it('guides users through setup, destinations, and review while preserving route presets', () => {
+    const onSave = vi.fn()
     render(
       <CustomRouteModal
         open
         isSaving={false}
         defaultTargetDays={60}
+        defaultStartDate="2026-04-20"
         preferences={defaultPlannerConfig}
         onClose={vi.fn()}
-        onSave={vi.fn()}
+        onSave={onSave}
       />,
     )
 
     const dialog = screen.getByRole('dialog')
     expect(within(dialog).getByText('Create custom route')).toBeTruthy()
+    expect(within(dialog).getByText('Start with the trip basics')).toBeTruthy()
     expect(within(dialog).getByText('Travel preferences')).toBeTruthy()
-    expect(within(dialog).getByText('Choose must-see stops')).toBeTruthy()
+    expect(within(dialog).queryByText('Add the places that matter')).toBeNull()
     expect(within(dialog).getByText('Daily maximum')).toBeTruthy()
     expect(within(dialog).getByText('6.5h')).toBeTruthy()
     expect(
       (within(dialog).getByLabelText('Starting direction preference') as HTMLSelectElement)
         .value,
     ).toBe('seasonal')
-    expect(within(dialog).getByLabelText('Trip start month')).toBeTruthy()
-    expect(within(dialog).getByRole('option', { name: 'Tesla badge candidates' })).toBeTruthy()
+    expect(
+      (within(dialog).getByLabelText('Trip start date') as HTMLInputElement).value,
+    ).toBe('2026-04-20')
     fireEvent.click(
       within(dialog).getByLabelText('Customize travel preferences for this route'),
     )
@@ -93,17 +101,46 @@ describe('planning modal responsibilities', () => {
     expect(within(dialog).getByLabelText('Custom route trip pace')).toBeTruthy()
     expect(within(dialog).getByLabelText('Custom route maximum drive hours')).toBeTruthy()
     expect(within(dialog).getByLabelText('Custom route practical range miles')).toBeTruthy()
+    expect(within(dialog).getByText(/Earth Day 2026 · day 3/)).toBeTruthy()
+
+    fireEvent.change(within(dialog).getByLabelText('Route name'), {
+      target: { value: 'Badge Run' },
+    })
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Continue to destinations' }),
+    )
+    expect(within(dialog).getByText('Add the places that matter')).toBeTruthy()
+    expect(within(dialog).queryByText('Travel preferences')).toBeNull()
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Back' }))
+    expect(
+      (within(dialog).getByLabelText('Route name') as HTMLInputElement).value,
+    ).toBe('Badge Run')
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Continue to destinations' }),
+    )
+    expect(within(dialog).getByRole('option', { name: 'Tesla Iconic Chargers' })).toBeTruthy()
 
     fireEvent.change(within(dialog).getByLabelText('Filter by category'), {
       target: { value: 'tesla-badge' },
     })
     ;[
+      'Arches',
+      'Bryce Canyon',
+      'Death Valley',
+      'Golden Gate Bridge',
       'Grand Canyon',
-      'Santa Monica Pier',
-      'Tesla Diner (Hollywood)',
-      'Tesla Oasis (Lost Hills)',
-      'Yosemite gateway',
-      'Yellowstone gateway',
+      'Joshua Tree',
+      'Las Vegas Strip',
+      'Miami Beach',
+      'Niagara Falls',
+      'Oasis',
+      'San Antonio River',
+      'Santa Monica',
+      'Tesla Diner',
+      'Waikiki',
+      'Whistler',
+      'Yellowstone',
+      'Yosemite',
     ].forEach((label) => {
       expect(
         within(dialog).getByRole('button', {
@@ -111,6 +148,29 @@ describe('planning modal responsibilities', () => {
         }),
       ).toBeTruthy()
     })
+    expect(
+      (within(dialog).getByLabelText('Add Waikiki to custom route') as HTMLButtonElement)
+        .disabled,
+    ).toBe(true)
+    expect(
+      (within(dialog).getByLabelText('Add Whistler to custom route') as HTMLButtonElement)
+        .disabled,
+    ).toBe(true)
+
+    fireEvent.click(within(dialog).getByLabelText('Add Grand Canyon to custom route'))
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Review route' }))
+    expect(within(dialog).getByText('Review the route, then optimize')).toBeTruthy()
+    expect(within(dialog).getByText('Stop order')).toBeTruthy()
+    expect(within(dialog).getByText('Badge Run')).toBeTruthy()
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save and optimize' }))
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Badge Run',
+        targetDays: 60,
+        startDate: '2026-04-20',
+        waypoints: [expect.objectContaining({ label: 'Grand Canyon' })],
+      }),
+    )
   })
 
   it('keeps route cards full-height so custom Edit and Delete actions remain visible', () => {

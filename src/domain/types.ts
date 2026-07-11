@@ -42,6 +42,8 @@ export type RouteDirectionPreference = 'seasonal' | CompassDirection
 
 export interface PlannerConfig {
   plannerMode: PlannerMode
+  /** Calendar date used to flag date-limited charging badges on generated routes. */
+  tripStartDate: string
   longestTripDays: number
   tripPace: TripPace
   autoStays: boolean
@@ -91,6 +93,8 @@ export interface SavedCustomRoute {
   keepOrder?: boolean
   /** Calendar month (1-12) used by the season-aware starting direction. */
   startMonth?: number
+  /** Exact start date used for route direction and date-limited badge opportunities. */
+  startDate?: string
   /** Preferred first heading for the optimized loop. */
   directionPreference?: RouteDirectionPreference
   /** Optional route-specific snapshot that overrides the global travel presets. */
@@ -186,6 +190,7 @@ export interface DayPlan {
 export interface RoutePlan {
   id: string
   plannerMode: PlannerMode
+  tripStartDate?: string
   name: string
   strategy: string
   color: string

@@ -48,6 +48,7 @@ interface RouteVariant {
   anchors: Coordinate[]
   forcedWaypoints: RouteWaypoint[]
   targetDays?: number
+  startDate?: string
   travelPreferences?: SavedCustomRoute['travelPreferences']
   stationFilter?: (station: Station) => boolean
   /** Undefined preserves the built-in north-first behavior; anchor keeps the
@@ -1487,9 +1488,12 @@ function buildSavedCustomRouteVariants(
   strategyNoun = 'route',
 ): RouteVariant[] {
   return savedCustomRoutes.map((route) => {
+    const routeStartMonth = route.startDate
+      ? Number(route.startDate.slice(5, 7))
+      : route.startMonth
     const resolvedDirection = resolveInitialDirection(
       route.directionPreference,
-      route.startMonth,
+      routeStartMonth,
       start,
     )
     const optimizedWaypoints = route.keepOrder
@@ -1521,6 +1525,7 @@ function buildSavedCustomRouteVariants(
       color: route.color,
       corridorMiles: 150,
       targetDays: route.targetDays,
+      startDate: route.startDate,
       travelPreferences: route.travelPreferences,
       initialHeading: route.keepOrder ? 'anchor' : resolvedDirection ?? 'anchor',
       anchors: insertRequiredWaypoints(
@@ -3581,6 +3586,11 @@ function plannerConfigForRoute(config: PlannerConfig, routeId: string) {
     : config
 }
 
+function tripStartDateForRoute(config: PlannerConfig, routeId: string) {
+  return config.savedCustomRoutes.find((route) => route.id === routeId)?.startDate ??
+    config.tripStartDate
+}
+
 export function refineRouteWithRoadLegs(
   orderedStations: Station[],
   partialConfig: Partial<PlannerConfig>,
@@ -3615,6 +3625,7 @@ export function refineRouteWithRoadLegs(
   return {
     id: meta.id,
     plannerMode: config.plannerMode,
+    tripStartDate: tripStartDateForRoute(config, meta.id),
     name: meta.name,
     strategy: meta.strategy,
     color: meta.color,
@@ -3774,6 +3785,7 @@ export function optimizeRoutes(
     return {
       id: variant.id,
       plannerMode: routeConfig.plannerMode,
+      tripStartDate: variant.startDate ?? routeConfig.tripStartDate,
       name: variant.name,
       strategy: variant.strategy,
       color: variant.color,

@@ -22,6 +22,7 @@ import {
 } from '../src/domain/placeCatalog'
 import { buildStateRouteStats } from '../src/domain/routeStats'
 import { buildTripComposition } from '../src/domain/tripComposition'
+import { TESLA_ICONIC_BADGES, searchTeslaIconicBadges } from '../src/domain/teslaBadges'
 import { readSavedCustomRoutes, updateSavedCustomRoute } from './customRoutes'
 import { getRequestUser } from './auth'
 import type {
@@ -109,6 +110,7 @@ const catalogSearchArgsSchema = z.object({
   state: z.string().min(2).max(3).optional().nullable(),
   type: z.enum(['city', 'landmark']).optional().nullable(),
   category: z.enum(PLACE_CATEGORY_VALUES).optional().nullable(),
+  badgeOnly: z.boolean().optional().nullable(),
   limit: z.number().int().min(1).max(50).optional().nullable(),
 })
 
@@ -129,6 +131,7 @@ const savedRouteUpdateArgsSchema = z
     name: z.string().min(1).max(80).optional().nullable(),
     targetDays: z.number().int().min(1).max(365).optional().nullable(),
     startMonth: z.number().int().min(1).max(12).optional().nullable(),
+    startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
     directionPreference: z
       .enum(['seasonal', 'north', 'south', 'east', 'west'])
       .optional()
@@ -352,7 +355,7 @@ async function createOpenAiResponse(
     body: JSON.stringify({
       model: process.env.OPENAI_MODEL ?? FALLBACK_MODEL,
       instructions:
-        `You are a route-planning assistant inside the Charge Quest app. Use tools when you need route data or when the user asks to change settings, require a stop, create a temporary custom ordered route, edit the selected saved route, or reoptimize. The app has ${PLACE_CATALOG.length} curated city and landmark stops across categories such as national parks, history, civil rights, sports, music, entertainment, science, coasts, scenic stops, roadside attractions, and curated Tesla badge candidates. Longest Trip routes automatically give top-rated places multi-night basecamp stays (a new unique Supercharger each day keeps the streak alive); the tripPace setting (sprint/balanced/savor) and autoStays toggle control this, favoriteCategories/mutedCategories bias which places qualify, and suggest_stays shows current stays plus candidates before pacing advice. Saved routes can also keep a startMonth and directionPreference (seasonal/north/south/east/west); season-smart winter trips from Chattanooga start south and summer trips start north. Use search_catalog_locations to find exact waypoint IDs before adding requested stops or creating custom routes. For exact-order temporary custom-route requests through catalog waypoints, call create_custom_route with only the intermediate waypoint IDs in order; omit Chattanooga/start/end. When the selected route is a persistent saved route, use update_saved_custom_route once with all requested additions, removals, renaming, day-target, direction, and order changes batched together; that tool saves and reoptimizes the route. Avoid repeating a tool call after it succeeds. Keep final answers short and name the concrete changes made. You cannot execute arbitrary code, browse the web, or spend money outside this API call. Treat Tesla badge and landmark data as the app curated catalog, not official proof.${allowTools ? '' : ' Do not request more tools; summarize the completed changes and any unfinished request now.'}`,
+        `You are a route-planning assistant inside the Charge Quest app. Use tools when you need route data or when the user asks to change settings, require a stop, create a temporary custom ordered route, edit the selected saved route, or reoptimize. The app has ${PLACE_CATALOG.length} curated city and landmark stops plus ${TESLA_ICONIC_BADGES.length} researched Tesla Iconic Charger targets. Longest Trip routes automatically give top-rated places multi-night basecamp stays (a new unique Supercharger each day keeps the streak alive); the tripPace setting (sprint/balanced/savor) and autoStays toggle control this, favoriteCategories/mutedCategories bias which places qualify, and suggest_stays shows current stays plus candidates before pacing advice. Saved routes can keep an exact startDate and directionPreference (seasonal/north/south/east/west); season-smart winter trips from Chattanooga start south and summer trips start north. Use search_catalog_locations with badgeOnly for Tesla badge requests so you add the exact qualifying Supercharger waypoint, not a broad attraction waypoint. For exact-order temporary custom-route requests through catalog waypoints, call create_custom_route with only the intermediate waypoint IDs in order; omit Chattanooga/start/end. When the selected route is a persistent saved route, use update_saved_custom_route once with all requested additions, removals, renaming, day-target, date, direction, and order changes batched together; that tool saves and reoptimizes the route. Avoid repeating a tool call after it succeeds. Keep final answers short and name the concrete changes made. You cannot execute arbitrary code, browse the web, or spend money outside this API call. Treat Tesla badge eligibility as curated planning data and tell users to confirm it in the Tesla app.${allowTools ? '' : ' Do not request more tools; summarize the completed changes and any unfinished request now.'}`,
       input,
       tools: plannerAgentTools,
       tool_choice: allowTools ? 'auto' : 'none',
@@ -441,25 +444,47 @@ async function runAgentTool(
 
   if (name === 'search_catalog_locations') {
     const parsed = catalogSearchArgsSchema.parse(args)
-    const matches = searchPlaceCatalog({
-      query: parsed.query ?? '',
-      state: parsed.state ?? undefined,
-      type: (parsed.type ?? undefined) as CatalogPlaceType | undefined,
-      category: parsed.category ?? undefined,
-      limit: parsed.limit ?? 20,
-    })
+    const limit = parsed.limit ?? 20
+    const badgeMatches = parsed.category
+      ? []
+      : searchTeslaIconicBadges({
+          query: parsed.query ?? '',
+          state: parsed.state ?? undefined,
+          limit,
+        }).map((badge) => ({
+          id: badge.waypointId,
+          label: badge.label,
+          type: 'landmark' as const,
+          state: badge.state,
+          categories: badge.categories.map((category) => PLACE_CATEGORY_LABELS[category]),
+          priority: badge.rating,
+          radiusMiles: badge.radiusMiles,
+          teslaBadge: true,
+          availabilityNote: badge.availabilityNote,
+        }))
+    const placeMatches = parsed.badgeOnly
+      ? []
+      : searchPlaceCatalog({
+          query: parsed.query ?? '',
+          state: parsed.state ?? undefined,
+          type: (parsed.type ?? undefined) as CatalogPlaceType | undefined,
+          category: parsed.category ?? undefined,
+          limit,
+        }).map((entry) => ({
+          id: entry.id,
+          label: entry.label,
+          type: entry.type,
+          state: entry.state,
+          categories: entry.categories.map((category) => PLACE_CATEGORY_LABELS[category]),
+          priority: entry.priority,
+          radiusMiles: entry.radiusMiles,
+          teslaBadge: false,
+        }))
+    const matches = [...badgeMatches, ...placeMatches].slice(0, limit)
 
     return {
-      catalogSize: PLACE_CATALOG.length,
-      matches: matches.map((entry) => ({
-        id: entry.id,
-        label: entry.label,
-        type: entry.type,
-        state: entry.state,
-        categories: entry.categories.map((category) => PLACE_CATEGORY_LABELS[category]),
-        priority: entry.priority,
-        radiusMiles: entry.radiusMiles,
-      })),
+      catalogSize: PLACE_CATALOG.length + TESLA_ICONIC_BADGES.length,
+      matches,
     }
   }
 
@@ -559,6 +584,9 @@ async function runAgentTool(
       ...(parsed.startMonth !== undefined && parsed.startMonth !== null
         ? { startMonth: parsed.startMonth }
         : {}),
+      ...(parsed.startDate !== undefined && parsed.startDate !== null
+        ? { startDate: parsed.startDate }
+        : {}),
       ...(parsed.directionPreference !== undefined && parsed.directionPreference !== null
         ? { directionPreference: parsed.directionPreference }
         : {}),
@@ -586,6 +614,7 @@ async function runAgentTool(
         })),
         keepOrder: Boolean(updated.route.keepOrder),
         startMonth: updated.route.startMonth,
+        startDate: updated.route.startDate,
         directionPreference: updated.route.directionPreference,
       },
       route: summarizeRoute(route),
@@ -689,6 +718,10 @@ const plannerAgentTools = [
           type: 'string',
           enum: ['longest_trip', 'most_unique_sites'],
         },
+        tripStartDate: {
+          type: 'string',
+          description: 'Generated-route start date in YYYY-MM-DD format.',
+        },
         tripPace: {
           type: 'string',
           enum: ['sprint', 'balanced', 'savor'],
@@ -746,6 +779,10 @@ const plannerAgentTools = [
           type: 'string',
           enum: Object.keys(PLACE_CATEGORY_LABELS),
         },
+        badgeOnly: {
+          type: 'boolean',
+          description: 'Return researched Tesla Iconic Charger targets only.',
+        },
         limit: { type: 'number' },
       },
       additionalProperties: false,
@@ -794,7 +831,7 @@ const plannerAgentTools = [
     type: 'function',
     name: 'update_saved_custom_route',
     description:
-      'Persist and reoptimize one saved custom route. Batch every requested rename, route-specific day target, start month, direction, waypoint addition/removal, and order change into one call. Use catalog waypoint IDs.',
+      'Persist and reoptimize one saved custom route. Batch every requested rename, route-specific day target, exact start date, direction, waypoint addition/removal, and order change into one call. Use catalog waypoint IDs.',
     parameters: {
       type: 'object',
       properties: {
@@ -810,7 +847,11 @@ const plannerAgentTools = [
         },
         startMonth: {
           type: ['number', 'null'],
-          description: 'Trip start month as 1 through 12.',
+          description: 'Legacy trip start month as 1 through 12; prefer startDate.',
+        },
+        startDate: {
+          type: ['string', 'null'],
+          description: 'Exact trip start date in YYYY-MM-DD format.',
         },
         directionPreference: {
           type: ['string', 'null'],
@@ -868,6 +909,7 @@ const plannerAgentTools = [
 function summarizeConfig(config: PlannerConfig) {
   return {
     plannerMode: config.plannerMode,
+    tripStartDate: config.tripStartDate,
     longestTripDays: config.longestTripDays,
     tripPace: config.tripPace,
     autoStays: config.autoStays,
@@ -893,6 +935,7 @@ function summarizeConfig(config: PlannerConfig) {
       })),
       keepOrder: Boolean(route.keepOrder),
       startMonth: route.startMonth,
+      startDate: route.startDate,
       directionPreference: route.directionPreference,
     })),
     longestTripTargets: config.longestTripTargets,
@@ -1025,6 +1068,15 @@ function parsePlannerSettingsArgs(args: Record<string, unknown>) {
   const ignoredFields: string[] = []
 
   Object.entries(args).forEach(([key, value]) => {
+    if (key === 'tripStartDate') {
+      if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        settings.tripStartDate = value
+        return
+      }
+      ignoredFields.push(key)
+      return
+    }
+
     if (key === 'plannerMode') {
       if (value === 'longest_trip' || value === 'most_unique_sites') {
         settings.plannerMode = value

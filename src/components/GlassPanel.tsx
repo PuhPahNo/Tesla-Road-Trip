@@ -4,6 +4,7 @@ import type { StateRouteStats } from '../domain/routeStats'
 import type { ContestStatus } from '../domain/rules'
 import { stationHighlights } from '../domain/highlights'
 import { buildTripComposition, topLandmarkLabel } from '../domain/tripComposition'
+import { badgeOpportunitiesForRoute, tripDateForDay } from '../domain/teslaBadges'
 import type { StationsResponse } from '../api/client'
 import { ProgressBar, StatTile, cx, scoreColor } from '../ui/primitives'
 import { AlertIcon, CloseIcon, InfoIcon, RefreshIcon } from '../ui/icons'
@@ -142,10 +143,11 @@ export function OverviewSection({
               {composition.signatureStops} state signatures
             </span>
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             <MiniMetric label="Big cities" value={composition.bigCities} />
             <MiniMetric label="Landmarks" value={composition.landmarks} />
-            <MiniMetric label="Tesla badges" value={composition.teslaBadges} />
+            <MiniMetric label="Iconic badges" value={composition.teslaBadges} />
+            <MiniMetric label="Badge goals" value={composition.badgeOpportunities.length} />
           </div>
           <div className="mt-3 flex flex-col gap-1.5">
             {composition.topCities.slice(0, 2).map((city) => (
@@ -170,7 +172,14 @@ export function OverviewSection({
               <CompositionRow
                 key={`badge-${badge.id}`}
                 label={badge.label}
-                meta={`Tesla badge candidate · ${badge.rating}/100`}
+                meta={`Iconic Charger · ${badge.rating}/100`}
+              />
+            ))}
+            {composition.badgeOpportunities.slice(0, 5).map((badge) => (
+              <CompositionRow
+                key={`goal-${badge.id}`}
+                label={badge.label}
+                meta={badge.day ? `day ${badge.day}` : badge.status}
               />
             ))}
           </div>
@@ -259,6 +268,7 @@ export function DaysSection({
       <div className="text-[12.5px] text-faint">No route generated yet — run Optimize.</div>
     )
   }
+  const badgeOpportunities = badgeOpportunitiesForRoute(route)
   return (
     <div className="flex flex-col gap-1.5">
       {route.days.map((day, index) => {
@@ -268,6 +278,8 @@ export function DaysSection({
           (cities.length > 3 ? ` +${cities.length - 3}` : '')
         const active = hoveredDayIndex === index
         const badgeCount = teslaBadgeCount(day)
+        const dayBadgeGoals = badgeOpportunities.filter((badge) => badge.day === day.day)
+        const calendarDate = tripDateForDay(route.tripStartDate, day.day)
         return (
           <button
             key={day.day}
@@ -302,6 +314,20 @@ export function DaysSection({
                 {cityLabel || 'Open road'}
               </span>
             </div>
+            {calendarDate ? (
+              <div className="mt-1 pl-11 font-mono text-[9.5px] text-faint">
+                {calendarDate}
+              </div>
+            ) : null}
+            {dayBadgeGoals.length > 0 ? (
+              <div className="mt-1 flex flex-wrap gap-1.5 pl-11">
+                {dayBadgeGoals.map((badge) => (
+                  <span key={badge.id} className="rounded-full border border-amber/40 bg-amber/10 px-2 py-0.5 font-mono text-[9px] text-amber">
+                    {badge.label}{badge.stationName ? ` · ${badge.stationName}` : ''}
+                  </span>
+                ))}
+              </div>
+            ) : null}
             {day.stay && (
               <div className="mt-1 flex items-center gap-2 pl-11 font-mono text-[10.5px] text-accent2">
                 <span className="truncate">

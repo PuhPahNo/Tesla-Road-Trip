@@ -71,6 +71,7 @@ export interface CreateCustomRouteRequest {
   targetDays?: number
   keepOrder?: boolean
   startMonth?: number
+  startDate?: string
   directionPreference?: SavedCustomRoute['directionPreference']
   travelPreferences?: SavedCustomRoute['travelPreferences'] | null
 }

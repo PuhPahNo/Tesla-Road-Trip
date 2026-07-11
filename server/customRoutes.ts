@@ -31,7 +31,7 @@ const waypointSchema = z.object({
     lat: z.coerce.number().min(-90).max(90),
     lon: z.coerce.number().min(-180).max(180),
   }),
-  radiusMiles: z.coerce.number().min(5).max(250),
+  radiusMiles: z.coerce.number().min(0.5).max(250),
   reason: z.string().max(240).optional(),
 })
 
@@ -66,6 +66,7 @@ const savedRouteSchema = z.object({
   targetDays: z.coerce.number().int().min(1).max(365).optional(),
   keepOrder: z.boolean().optional(),
   startMonth: z.coerce.number().int().min(1).max(12).optional(),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   directionPreference: z
     .enum(['seasonal', 'north', 'south', 'east', 'west'])
     .optional(),
@@ -81,6 +82,7 @@ const createRouteSchema = z.object({
   targetDays: z.coerce.number().int().min(1).max(365).optional(),
   keepOrder: z.boolean().optional(),
   startMonth: z.coerce.number().int().min(1).max(12).optional(),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   directionPreference: z
     .enum(['seasonal', 'north', 'south', 'east', 'west'])
     .optional(),
@@ -150,6 +152,7 @@ export function updateSavedCustomRoute(
     ...(parsed.targetDays !== undefined ? { targetDays: parsed.targetDays } : {}),
     ...(parsed.keepOrder !== undefined ? { keepOrder: parsed.keepOrder } : {}),
     ...(parsed.startMonth !== undefined ? { startMonth: parsed.startMonth } : {}),
+    ...(parsed.startDate !== undefined ? { startDate: parsed.startDate } : {}),
     ...(parsed.directionPreference !== undefined
       ? { directionPreference: parsed.directionPreference }
       : {}),
@@ -195,6 +198,7 @@ export function registerCustomRouteRoutes(app: Express) {
         ...(parsed.targetDays !== undefined ? { targetDays: parsed.targetDays } : {}),
         ...(parsed.keepOrder ? { keepOrder: true } : {}),
         ...(parsed.startMonth !== undefined ? { startMonth: parsed.startMonth } : {}),
+        ...(parsed.startDate !== undefined ? { startDate: parsed.startDate } : {}),
         ...(parsed.directionPreference !== undefined
           ? { directionPreference: parsed.directionPreference }
           : {}),

@@ -19,6 +19,7 @@ export const CHATTANOOGA_37405_START = {
 
 export const defaultPlannerConfig: PlannerConfig = {
   plannerMode: 'longest_trip',
+  tripStartDate: new Date().toISOString().slice(0, 10),
   longestTripDays: 60,
   tripPace: 'balanced',
   autoStays: true,
@@ -86,7 +87,7 @@ const routeWaypointSchema = z.object({
     lat: z.coerce.number().min(-90).max(90),
     lon: z.coerce.number().min(-180).max(180),
   }),
-  radiusMiles: z.coerce.number().min(5).max(250),
+  radiusMiles: z.coerce.number().min(0.5).max(250),
   reason: z.string().max(240).optional(),
 })
 
@@ -98,6 +99,7 @@ const savedCustomRouteSchema = z.object({
   targetDays: limitedNumber('longestTripDays').optional(),
   keepOrder: z.boolean().optional(),
   startMonth: z.coerce.number().int().min(1).max(12).optional(),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   directionPreference: z
     .enum(['seasonal', 'north', 'south', 'east', 'west'])
     .optional(),
@@ -132,6 +134,9 @@ const longestTripVisitTargetSchema = z.object({
 
 export const plannerConfigSchema = z.object({
   plannerMode: z.enum(['longest_trip', 'most_unique_sites']).default('longest_trip'),
+  tripStartDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).default(
+    defaultPlannerConfig.tripStartDate,
+  ),
   longestTripDays: limitedNumber('longestTripDays'),
   tripPace: z.enum(['sprint', 'balanced', 'savor']).default('balanced'),
   autoStays: z.boolean().default(true),
