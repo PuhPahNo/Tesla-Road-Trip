@@ -47,6 +47,8 @@ Tesla's public contest page does not specify a minimum charging duration for a s
 - Live community counts and trip status render without blocking the page when the community API is unavailable.
 - The page remains usable on mobile without fixed-background or motion dependencies.
 - Direct signed-out requests to `/planner` redirect to signup and return to the planner after successful account creation.
+- Public navigation uses the same black, white, and Tesla-red competition aesthetic as the cinematic homepage, with a prominent Join the challenge action for guests.
+- The authenticated planner route remains outside the public `SiteShell`, so opening the tool removes the marketing header and footer and gives the planner the full viewport.
 
 ### 0.5 Competition Community
 **Objective:** Turn route planning into a visible 2026 competition community instead of a generic discussion feed.

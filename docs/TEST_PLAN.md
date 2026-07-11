@@ -34,6 +34,7 @@ Required coverage:
 - The Community page uses the cinematic competition design, exposes public activity, and funnels guest interactions through signup with a community return path.
 - Homepage and Community metadata stay route-specific, and `robots.txt`, `sitemap.xml`, canonical URLs, image metadata, and `WebApplication` structured data ship in production.
 - Anthony admin separates tracker configuration, field publishing, public metrics, and meetup moderation without changing the underlying admin actions.
+- Public pages use the competition-styled navigation, guest planner links target signup, and the authenticated planner renders without the public header or footer.
 
 ## Manual Browser Certification
 

@@ -28,14 +28,14 @@ export function LandingPage() {
 
   return (
     <>
-      <section className="cq-cinematic-hero relative min-h-[calc(100vh-70px)] overflow-hidden bg-black text-white">
+      <section className="cq-cinematic-hero relative min-h-[calc(100vh-78px)] overflow-hidden bg-black text-white">
         <img
           src="/landing/desert-road.jpg"
           alt="An open highway running through the painted desert"
           className="absolute inset-0 h-full w-full object-cover"
         />
         <div className="cq-hero-shade absolute inset-0" />
-        <div className="relative mx-auto flex min-h-[calc(100vh-70px)] max-w-[1440px] flex-col justify-between px-5 py-8 lg:px-12 lg:py-12">
+        <div className="relative mx-auto flex min-h-[calc(100vh-78px)] max-w-[1440px] flex-col justify-between px-5 py-8 lg:px-12 lg:py-12">
           <div className="flex items-center justify-between gap-5 font-mono text-[9px] uppercase tracking-[0.14em] text-white/65">
             <span>Anthony · Chattanooga, TN</span>
             <span className="hidden sm:block">2026 Tesla Supercharging Competition</span>

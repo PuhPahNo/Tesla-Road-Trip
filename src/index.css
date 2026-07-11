@@ -535,12 +535,6 @@ body.modal-open {
   border-color: #fff;
 }
 
-@media (max-width: 640px) {
-  .site-nav {
-    position: relative;
-  }
-}
-
 @media (max-width: 900px) {
   .cq-photo-grid {
     display: flex;
