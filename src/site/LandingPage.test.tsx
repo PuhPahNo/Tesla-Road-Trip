@@ -45,12 +45,13 @@ describe('Charge Quest landing page', () => {
       </MemoryRouter>,
     )
 
-    expect(screen.getByRole('heading', { name: 'Think you can beat my quest?' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Build a Tesla route that can beat mine' })).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Sign up and build your route' }).getAttribute('href')).toBe('/signup?returnTo=%2Fplanner')
     expect(screen.getByRole('link', { name: 'Follow mine' }).getAttribute('href')).toBe('/track-anthony')
     expect(screen.getByText('Create a custom route')).toBeTruthy()
     expect(screen.getByText('Step 2 of 3')).toBeTruthy()
     expect(await screen.findByText('5')).toBeTruthy()
+    expect(document.title).toBe('Charge Quest | Tesla Supercharger Route Planner for 2026')
   })
 
   it('sends signed-out direct planner visits into the signup funnel', async () => {

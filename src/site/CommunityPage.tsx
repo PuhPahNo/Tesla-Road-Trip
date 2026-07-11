@@ -9,6 +9,7 @@ import {
 } from '../api/siteClient'
 import { STATE_CODE_TO_NAME } from '../domain/usStates'
 import { useAuth } from './AuthContext'
+import { usePageMetadata } from './usePageMetadata'
 
 const STATE_OPTIONS = Object.entries(STATE_CODE_TO_NAME).sort((a, b) =>
   a[1].localeCompare(b[1]),
@@ -26,6 +27,12 @@ export function CommunityPage() {
     title: '',
     body: '',
     stateCode: '',
+  })
+
+  usePageMetadata({
+    title: 'Charge Quest Community | Tesla Route Ideas and 2026 Trip Updates',
+    description: 'Join Tesla road-trip competitors sharing Supercharger route ideas, must-see stops, state votes, meetup invitations, achievements, and Anthony’s live 2026 Charge Quest updates.',
+    path: '/community',
   })
 
   const load = async () => {
@@ -82,207 +89,258 @@ export function CommunityPage() {
   }
 
   return (
-    <div className="mx-auto max-w-[1240px] px-5 py-14 lg:px-8 lg:py-20">
-      <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
-        <div>
-          <div className="site-kicker">Charge Quest community</div>
-          <h1 className="mt-3 max-w-[760px] text-[clamp(42px,6vw,72px)] font-semibold leading-[0.98] tracking-[-0.05em]">
-            Help shape the miles between the chargers.
-          </h1>
-          <p className="mt-6 max-w-[760px] text-[17px] leading-[1.65] text-dim">
-            Share the stop only a local would know, vote for Anthony to come through
-            your state, compare route ideas, and celebrate the trips people actually finish.
-          </p>
-        </div>
-        <div className="site-card p-6">
-          <div className="font-mono text-[9px] uppercase tracking-[0.12em] text-faint">Community pulse</div>
-          <div className="mt-5 grid grid-cols-2 gap-3">
-            <CommunityMetric label="State votes" value={totalStateVotes} />
-            <CommunityMetric label="Suggestions" value={community?.suggestions.length ?? 0} />
-            <CommunityMetric label="Meetups" value={community?.meetups.length ?? 0} />
-            <CommunityMetric label="Achievements" value={community?.achievements.length ?? 0} />
+    <>
+      <section className="grid min-h-[650px] bg-black text-white lg:grid-cols-[1.08fr_.92fr]">
+        <div className="flex items-center px-5 py-20 lg:px-12 xl:px-[max(5rem,calc((100vw-1440px)/2))]">
+          <div className="max-w-[760px]">
+            <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-[#23d7d1]">Charge Quest community</div>
+            <h1 className="mt-5 text-[clamp(54px,7.8vw,112px)] font-semibold leading-[0.86] tracking-[-0.07em]">
+              Make Anthony’s route harder to beat
+            </h1>
+            <p className="mt-7 max-w-[650px] text-[17px] leading-[1.7] text-white/62">
+              Vote for the states worth more time, share the stop only a local would
+              know, compare competition ideas, and follow Anthony’s 2026 Tesla
+              Supercharging run when it goes live
+            </p>
+
+            {!user ? (
+              <div className="mt-9 flex flex-wrap gap-3">
+                <Link to="/signup?returnTo=%2Fcommunity" className="rounded-full bg-[#e82127] px-6 py-3.5 text-[13px] font-semibold text-white no-underline shadow-[0_12px_35px_rgba(232,33,39,.32)] transition hover:bg-white hover:text-black">
+                  Create an account and join in
+                </Link>
+                <Link to="/login?returnTo=%2Fcommunity" className="rounded-full border border-white/30 px-6 py-3.5 text-[13px] font-semibold text-white no-underline transition hover:border-white">
+                  Sign in
+                </Link>
+              </div>
+            ) : (
+              <div className="mt-9 font-mono text-[9px] uppercase tracking-[0.12em] text-white/45">
+                Signed in as {user.username} · Your votes and suggestions count
+              </div>
+            )}
+
+            <div className="mt-12 grid grid-cols-2 border-y border-white/15 sm:grid-cols-4">
+              <PulseMetric label="State votes" value={totalStateVotes} />
+              <PulseMetric label="Suggestions" value={community?.suggestions.length ?? 0} />
+              <PulseMetric label="Meetups" value={community?.meetups.length ?? 0} />
+              <PulseMetric label="Achievements" value={community?.achievements.length ?? 0} />
+            </div>
           </div>
         </div>
+
+        <div className="relative min-h-[500px] overflow-hidden lg:min-h-full">
+          <img
+            src="/landing/yellowstone-bison.jpg"
+            alt="Bison walking along a road in Yellowstone National Park"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/15 lg:bg-gradient-to-r lg:from-black/45 lg:via-transparent lg:to-transparent" />
+          <div className="absolute bottom-6 right-6 font-mono text-[8px] uppercase tracking-[0.1em] text-white/45">
+            Yellowstone · Zac Bowling / Unsplash
+          </div>
+        </div>
+      </section>
+
+      <div className="bg-[#f1eee6] text-[#0a0b0d]">
+        {(error || notice) ? (
+          <div className="mx-auto max-w-[1320px] px-5 pt-8 lg:px-8">
+            {error ? <div className="rounded-[10px] bg-[#e82127] px-4 py-3 text-[13px] text-white">{error}</div> : null}
+            {notice ? <div className="rounded-[10px] bg-[#0a0b0d] px-4 py-3 text-[13px] text-white">{notice}</div> : null}
+          </div>
+        ) : null}
+
+        <section className="mx-auto grid max-w-[1320px] gap-16 px-5 py-28 lg:grid-cols-[1.05fr_.95fr] lg:px-8 lg:py-36">
+          <div>
+            <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-black/45">Community route pressure</div>
+            <h2 className="mt-5 max-w-[760px] text-[clamp(52px,7vw,98px)] font-semibold leading-[0.87] tracking-[-0.067em]">
+              Put your state on Anthony’s route
+            </h2>
+            <p className="mt-7 max-w-[620px] text-[16px] leading-[1.7] text-black/60">
+              Tell Anthony where the community actually wants him to show up. Pick a
+              state and add the local reason it deserves time on the 2026 route
+            </p>
+
+            {user ? (
+              <form className="mt-10 max-w-[700px] border-t border-black/15 pt-7" onSubmit={submitStateVote}>
+                <div className="grid gap-4 sm:grid-cols-[190px_1fr]">
+                  <label className="cq-light-field">
+                    State
+                    <select value={stateCode} onChange={(event) => setStateCode(event.target.value)}>
+                      {STATE_OPTIONS.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
+                    </select>
+                  </label>
+                  <label className="cq-light-field">
+                    Why should he come through
+                    <input
+                      value={stateNote}
+                      onChange={(event) => setStateNote(event.target.value)}
+                      maxLength={240}
+                      placeholder="Coffee in Denver, a route tip near Moab…"
+                    />
+                  </label>
+                </div>
+                <button className="mt-5 rounded-full bg-[#e82127] px-6 py-3.5 text-[13px] font-semibold text-white shadow-[0_12px_30px_rgba(232,33,39,.25)]" type="submit">
+                  Put my state on the map
+                </button>
+              </form>
+            ) : (
+              <CommunityJoinPrompt text="Create a free account to vote for your state and help shape the route" />
+            )}
+          </div>
+
+          <div className="lg:pt-10">
+            <div className="flex items-end justify-between border-b border-black/15 pb-5">
+              <div>
+                <div className="font-mono text-[9px] uppercase tracking-[0.13em] text-black/40">Most requested</div>
+                <h3 className="mt-2 text-[28px] font-semibold tracking-[-0.035em]">The community leaderboard</h3>
+              </div>
+              <div className="font-mono text-[9px] text-black/40">{totalStateVotes} votes</div>
+            </div>
+            <div>
+              {(community?.stateVotes ?? []).slice(0, 10).map((item, index) => (
+                <div key={item.state_code} className="grid grid-cols-[48px_1fr_auto] items-center border-b border-black/12 py-4">
+                  <div className="font-mono text-[10px] text-black/30">{String(index + 1).padStart(2, '0')}</div>
+                  <div className="text-[18px] font-semibold">{STATE_CODE_TO_NAME[item.state_code] ?? item.state_code}</div>
+                  <div className="font-mono text-[10px] text-[#e82127]">{Number(item.votes)} vote{Number(item.votes) === 1 ? '' : 's'}</div>
+                </div>
+              ))}
+              {community?.stateVotes.length === 0 ? (
+                <div className="border-b border-black/15 py-10 text-[14px] text-black/45">No state votes yet. Claim the first spot on the leaderboard</div>
+              ) : null}
+            </div>
+          </div>
+        </section>
       </div>
 
-      {error ? <div className="site-alert mt-7 text-warn">{error}</div> : null}
-      {notice ? <div className="site-alert mt-7 text-good">{notice}</div> : null}
-
-      <section className="mt-16 grid gap-5 lg:grid-cols-[.9fr_1.1fr]">
-        <div className="site-card p-6 sm:p-7">
-          <div className="site-kicker">Put your state on the map</div>
-          <h2 className="mt-3 text-[28px] font-semibold tracking-[-0.03em]">
-            Where should Anthony make time for people?
-          </h2>
-          <p className="mt-3 text-[13.5px] leading-[1.6] text-dim">
-            This is a signal, not a route demand. Vote for a state and add a short note
-            about why you’d like him to pass through.
-          </p>
-          {user ? (
-            <form className="mt-6" onSubmit={submitStateVote}>
-              <div className="grid gap-3 sm:grid-cols-[180px_1fr]">
-                <label className="site-field-label">
-                  State
-                  <select value={stateCode} onChange={(event) => setStateCode(event.target.value)} className="site-input">
-                    {STATE_OPTIONS.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
-                  </select>
-                </label>
-                <label className="site-field-label">
-                  Why this state?
-                  <input
-                    value={stateNote}
-                    onChange={(event) => setStateNote(event.target.value)}
-                    maxLength={240}
-                    placeholder="Coffee in Denver, a route tip near Moab..."
-                    className="site-input"
-                  />
-                </label>
-              </div>
-              <button className="site-primary-button mt-4" type="submit">Add my state vote</button>
-            </form>
-          ) : (
-            <SignInPrompt text="Sign in to add your state to the map." />
-          )}
-        </div>
-
-        <div className="site-card p-6 sm:p-7">
-          <div className="flex items-end justify-between gap-4">
+      <section className="bg-[#090a0c] px-5 py-24 text-white lg:px-8 lg:py-32">
+        <div className="mx-auto max-w-[1320px]">
+          <div className="grid gap-12 lg:grid-cols-[1fr_390px]">
             <div>
-              <div className="site-kicker">Most requested states</div>
-              <h2 className="mt-3 text-[28px] font-semibold tracking-[-0.03em]">The community map</h2>
+              <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-[#23d7d1]">Ideas worth rerouting for</div>
+              <h2 className="mt-5 max-w-[820px] text-[clamp(48px,6.4vw,88px)] font-semibold leading-[0.9] tracking-[-0.063em]">
+                Give the route an unfair local advantage
+              </h2>
+              <div className="mt-12 border-t border-white/15">
+                {(community?.suggestions ?? []).map((item, index) => (
+                  <article key={item.id} className="grid gap-5 border-b border-white/15 py-7 sm:grid-cols-[52px_1fr_auto]">
+                    <div className="font-mono text-[9px] text-white/25">{String(index + 1).padStart(2, '0')}</div>
+                    <div>
+                      <div className="font-mono text-[8px] uppercase tracking-[0.12em] text-[#23d7d1]">
+                        {item.category}{item.state_code ? ` · ${item.state_code}` : ''}
+                      </div>
+                      <h3 className="mt-2 text-[22px] font-semibold tracking-[-0.025em]">{item.title}</h3>
+                      <p className="mt-3 max-w-[700px] text-[13.5px] leading-[1.65] text-white/55">{item.body}</p>
+                      <div className="mt-4 font-mono text-[8px] uppercase tracking-[0.08em] text-white/25">
+                        {item.display_name} · {formatDate(item.created_at)}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={!user}
+                      onClick={() => void voteSuggestion(item.id)}
+                      aria-label={`Vote for ${item.title}`}
+                      className={`h-fit rounded-full border px-4 py-2 font-mono text-[10px] ${item.viewer_voted ? 'border-[#23d7d1] bg-[#23d7d1] text-black' : 'border-white/20 text-white/65'} disabled:cursor-not-allowed disabled:opacity-35`}
+                    >
+                      ▲ {Number(item.votes)}
+                    </button>
+                  </article>
+                ))}
+                {community?.suggestions.length === 0 ? (
+                  <div className="border-b border-white/15 py-12 text-[14px] text-white/40">No suggestions yet. Be the local who changes the route</div>
+                ) : null}
+              </div>
             </div>
-            <div className="font-mono text-[10px] text-faint">{totalStateVotes} total votes</div>
-          </div>
-          <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {(community?.stateVotes ?? []).slice(0, 12).map((item) => (
-              <div key={item.state_code} className="rounded-[12px] border border-edge bg-chip p-3">
-                <div className="text-[13px] font-semibold">{STATE_CODE_TO_NAME[item.state_code] ?? item.state_code}</div>
-                <div className="mt-1 font-mono text-[10px] text-accent2">{Number(item.votes)} vote{Number(item.votes) === 1 ? '' : 's'}</div>
-              </div>
-            ))}
-            {community?.stateVotes.length === 0 ? (
-              <div className="col-span-full rounded-[12px] border border-dashed border-edge p-6 text-center text-[13px] text-faint">
-                No state votes yet. Be the first local on the map.
-              </div>
-            ) : null}
+
+            <aside className="h-fit bg-[#e82127] p-6 sm:p-8 lg:sticky lg:top-24">
+              <div className="font-mono text-[8px] uppercase tracking-[0.14em] text-white/60">Share what Anthony would miss</div>
+              <h3 className="mt-4 text-[32px] font-semibold leading-[1] tracking-[-0.045em]">What would you tell a friend</h3>
+              {user ? (
+                <form className="cq-red-form mt-7 flex flex-col gap-4" onSubmit={submitSuggestion}>
+                  <label>
+                    Category
+                    <select value={suggestion.category} onChange={(event) => setSuggestion((current) => ({ ...current, category: event.target.value }))}>
+                      <option value="stop">Must-see stop</option>
+                      <option value="food">Food</option>
+                      <option value="scenery">Scenery</option>
+                      <option value="charging">Charging</option>
+                      <option value="route">Route idea</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </label>
+                  <label>
+                    State
+                    <select value={suggestion.stateCode} onChange={(event) => setSuggestion((current) => ({ ...current, stateCode: event.target.value }))}>
+                      <option value="">Anywhere</option>
+                      {STATE_OPTIONS.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
+                    </select>
+                  </label>
+                  <label>
+                    Title
+                    <input required minLength={3} maxLength={100} value={suggestion.title} onChange={(event) => setSuggestion((current) => ({ ...current, title: event.target.value }))} placeholder="The sunrise pullout locals use" />
+                  </label>
+                  <label>
+                    Why it is worth the time
+                    <textarea required minLength={10} maxLength={800} rows={5} value={suggestion.body} onChange={(event) => setSuggestion((current) => ({ ...current, body: event.target.value }))} />
+                  </label>
+                  <button className="rounded-full bg-black px-5 py-3.5 text-[12px] font-semibold text-white" type="submit">Publish suggestion</button>
+                </form>
+              ) : (
+                <div className="mt-7 border-t border-white/25 pt-6 text-[13px] leading-[1.6] text-white/75">
+                  Create an account to publish suggestions and vote on the ideas that should shape the route
+                  <Link to="/signup?returnTo=%2Fcommunity" className="mt-5 flex w-fit rounded-full bg-white px-5 py-3 text-[12px] font-semibold text-black no-underline">
+                    Join the community
+                  </Link>
+                </div>
+              )}
+            </aside>
           </div>
         </div>
       </section>
 
-      <section className="mt-16 grid gap-5 lg:grid-cols-[1fr_380px]">
-        <div>
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <div className="site-kicker">Trip suggestions</div>
-              <h2 className="mt-3 text-[32px] font-semibold tracking-[-0.035em]">Ideas worth rerouting for</h2>
-            </div>
+      <section className="relative overflow-hidden bg-black px-5 py-24 text-white lg:px-8 lg:py-32">
+        <img src="/landing/golden-gate.jpg" alt="Golden Gate Bridge at dusk" loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-35" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/85 to-black/35" />
+        <div className="relative mx-auto max-w-[1320px]">
+          <div className="max-w-[760px]">
+            <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-[#23d7d1]">Community achievements</div>
+            <h2 className="mt-5 text-[clamp(48px,6.5vw,92px)] font-semibold leading-[0.9] tracking-[-0.065em]">Routes worth talking about</h2>
           </div>
-          <div className="mt-6 flex flex-col gap-3">
-            {(community?.suggestions ?? []).map((item) => (
-              <article key={item.id} className="site-card p-5 sm:p-6">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="font-mono text-[9px] uppercase tracking-[0.1em] text-accent2">
-                      {item.category}{item.state_code ? ` · ${item.state_code}` : ''}
-                    </div>
-                    <h3 className="mt-2 text-[19px] font-semibold">{item.title}</h3>
-                  </div>
-                  <button
-                    type="button"
-                    disabled={!user}
-                    onClick={() => void voteSuggestion(item.id)}
-                    aria-label={`Vote for ${item.title}`}
-                    className={`cursor-pointer rounded-full border px-3 py-1.5 font-mono text-[10px] ${item.viewer_voted ? 'border-accent2 bg-good-bg text-accent2' : 'border-edge bg-chip text-dim'} disabled:cursor-not-allowed disabled:opacity-60`}
-                  >
-                    ▲ {Number(item.votes)}
-                  </button>
-                </div>
-                <p className="mt-3 text-[13.5px] leading-[1.6] text-dim">{item.body}</p>
-                <div className="mt-4 text-[10.5px] text-faint">Shared by {item.display_name} · {formatDate(item.created_at)}</div>
+          <div className="mt-12 grid gap-px overflow-hidden border border-white/15 bg-white/15 md:grid-cols-2 lg:grid-cols-3">
+            {(community?.achievements ?? []).map((item) => (
+              <article key={item.id} className="min-h-[220px] bg-black/80 p-6 backdrop-blur-md">
+                <div className="font-mono text-[9px] text-[#23d7d1]">ACHIEVEMENT</div>
+                <h3 className="mt-5 text-[21px] font-semibold">{item.title}</h3>
+                <p className="mt-3 text-[13px] leading-[1.6] text-white/55">{item.description}</p>
+                <div className="mt-6 font-mono text-[8px] uppercase text-white/30">{item.display_name}{item.route_name ? ` · ${item.route_name}` : ''}</div>
               </article>
             ))}
-            {community?.suggestions.length === 0 ? (
-              <div className="site-card p-8 text-center text-[13px] text-faint">No suggestions yet. Start the useful part of the conversation.</div>
+            {community?.achievements.length === 0 ? (
+              <div className="min-h-[220px] bg-black/80 p-7 text-[14px] leading-[1.7] text-white/45 backdrop-blur-md">
+                The first community achievements will appear here when members share them from their accounts
+              </div>
             ) : null}
           </div>
         </div>
-
-        <aside className="site-card h-fit p-6 lg:sticky lg:top-24">
-          <div className="site-kicker">Share a suggestion</div>
-          <h2 className="mt-3 text-[24px] font-semibold">What would you tell a friend?</h2>
-          {user ? (
-            <form className="mt-5 flex flex-col gap-3" onSubmit={submitSuggestion}>
-              <label className="site-field-label">
-                Category
-                <select className="site-input" value={suggestion.category} onChange={(event) => setSuggestion((current) => ({ ...current, category: event.target.value }))}>
-                  <option value="stop">Must-see stop</option>
-                  <option value="food">Food</option>
-                  <option value="scenery">Scenery</option>
-                  <option value="charging">Charging</option>
-                  <option value="route">Route idea</option>
-                  <option value="other">Other</option>
-                </select>
-              </label>
-              <label className="site-field-label">
-                State (optional)
-                <select className="site-input" value={suggestion.stateCode} onChange={(event) => setSuggestion((current) => ({ ...current, stateCode: event.target.value }))}>
-                  <option value="">Anywhere</option>
-                  {STATE_OPTIONS.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
-                </select>
-              </label>
-              <label className="site-field-label">
-                Title
-                <input required minLength={3} maxLength={100} className="site-input" value={suggestion.title} onChange={(event) => setSuggestion((current) => ({ ...current, title: event.target.value }))} placeholder="The sunrise pullout locals use" />
-              </label>
-              <label className="site-field-label">
-                Details
-                <textarea required minLength={10} maxLength={800} rows={5} className="site-input resize-y" value={suggestion.body} onChange={(event) => setSuggestion((current) => ({ ...current, body: event.target.value }))} placeholder="Why it is worth the time and what to know before going." />
-              </label>
-              <button className="site-primary-button" type="submit">Publish suggestion</button>
-            </form>
-          ) : (
-            <SignInPrompt text="Sign in to publish suggestions and vote on the best ones." />
-          )}
-        </aside>
       </section>
+    </>
+  )
+}
 
-      <section className="mt-16 border-t border-edge pt-14">
-        <div className="site-kicker">Community achievements</div>
-        <h2 className="mt-3 text-[32px] font-semibold tracking-[-0.035em]">Trips people are proud of</h2>
-        <div className="mt-6 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {(community?.achievements ?? []).map((item) => (
-            <article key={item.id} className="site-card p-5">
-              <div className="text-[22px]">⚡</div>
-              <h3 className="mt-3 text-[17px] font-semibold">{item.title}</h3>
-              <p className="mt-2 text-[13px] leading-[1.55] text-dim">{item.description}</p>
-              <div className="mt-4 text-[10.5px] text-faint">{item.display_name}{item.route_name ? ` · ${item.route_name}` : ''}</div>
-            </article>
-          ))}
-          {community?.achievements.length === 0 ? (
-            <div className="site-card p-7 text-[13px] text-faint">Achievements will show up as members share them from their account page.</div>
-          ) : null}
-        </div>
-      </section>
+function PulseMetric({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="border-r border-white/15 px-3 py-5 first:pl-0 last:border-r-0 sm:px-4">
+      <div className="text-[24px] font-semibold tracking-[-0.035em]">{value}</div>
+      <div className="mt-1 font-mono text-[7.5px] uppercase tracking-[0.09em] text-white/35">{label}</div>
     </div>
   )
 }
 
-function CommunityMetric({ label, value }: { label: string; value: number }) {
+function CommunityJoinPrompt({ text }: { text: string }) {
   return (
-    <div className="rounded-[11px] border border-edge bg-chip p-3">
-      <div className="text-[24px] font-semibold">{value}</div>
-      <div className="mt-1 font-mono text-[8.5px] uppercase tracking-[0.08em] text-faint">{label}</div>
-    </div>
-  )
-}
-
-function SignInPrompt({ text }: { text: string }) {
-  return (
-    <div className="mt-6 rounded-[12px] border border-dashed border-edge p-5 text-[13px] text-dim">
-      {text}{' '}
-      <Link to="/login" className="font-semibold text-accent no-underline">Sign in</Link>
-      {' '}or{' '}
-      <Link to="/signup" className="font-semibold text-accent no-underline">create a free account</Link>.
+    <div className="mt-9 border-t border-black/15 pt-6 text-[14px] text-black/55">
+      {text}
+      <Link to="/signup?returnTo=%2Fcommunity" className="mt-5 flex w-fit rounded-full bg-[#e82127] px-6 py-3.5 text-[12px] font-semibold text-white no-underline">
+        Create a free account
+      </Link>
     </div>
   )
 }

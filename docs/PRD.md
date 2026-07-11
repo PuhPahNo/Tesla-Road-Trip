@@ -39,6 +39,7 @@ Tesla's public contest page does not specify a minimum charging duration for a s
 - Use the same sans-serif and mono typography as the rest of Charge Quest without a separate diary or handwritten aesthetic.
 - Use full-bleed road-trip photography, oversized type, high-contrast light/dark/red canvases, and asymmetrical compositions so consecutive sections do not repeat a SaaS card-grid template.
 - Funnel signed-out visitors through account creation before opening the planner; signed-in members can enter the planner directly.
+- Use descriptive Tesla route-planner titles, page-specific meta descriptions, canonical URLs, accessible image alt text, `WebApplication` structured data, and a public sitemap without keyword stuffing.
 
 **Acceptance Criteria**
 - The first viewport clearly identifies Anthony as the person behind Charge Quest.
@@ -46,6 +47,22 @@ Tesla's public contest page does not specify a minimum charging duration for a s
 - Live community counts and trip status render without blocking the page when the community API is unavailable.
 - The page remains usable on mobile without fixed-background or motion dependencies.
 - Direct signed-out requests to `/planner` redirect to signup and return to the planner after successful account creation.
+
+### 0.5 Competition Community
+**Objective:** Turn route planning into a visible 2026 competition community instead of a generic discussion feed.
+
+**Requirements**
+- Match the homepage's cinematic photography, oversized typography, light editorial canvas, red conversion surface, and high-contrast dark sections.
+- Let visitors see community activity while reserving state votes, suggestion publishing, and suggestion voting for signed-in members.
+- Present state demand as a leaderboard, suggestions as an editorial feed, and achievements against destination photography.
+- Use signup CTAs for guests at the exact interaction they attempted instead of relying on a generic sign-in notice.
+- Remove the previous repeated `site-card` grid composition and obsolete community-only metric and sign-in components.
+
+**Acceptance Criteria**
+- No legacy `site-card` layout remains in the Community page component.
+- Guest Community CTAs preserve `/community` as the post-signup return path.
+- Existing state voting, suggestion publishing, suggestion voting, and achievement rendering behavior remains intact.
+- Community has its own descriptive title, meta description, canonical URL, and social metadata.
 
 ### 1. Station Ingestion
 **Objective:** Retrieve, normalize, and filter Supercharge.info station data.

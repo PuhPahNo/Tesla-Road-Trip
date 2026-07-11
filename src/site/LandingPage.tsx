@@ -2,10 +2,17 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchCommunity, type CommunitySnapshot } from '../api/siteClient'
 import { useAuth } from './AuthContext'
+import { usePageMetadata } from './usePageMetadata'
 
 export function LandingPage() {
   const { user } = useAuth()
   const [community, setCommunity] = useState<CommunitySnapshot>()
+
+  usePageMetadata({
+    title: 'Charge Quest | Tesla Supercharger Route Planner for 2026',
+    description: 'Build and save a Tesla Supercharger route for the 2026 competition. Plan around your Tesla, real-world range, Iconic Charger badges, landmarks, and daily driving limits.',
+    path: '/',
+  })
 
   useEffect(() => {
     void fetchCommunity().then(setCommunity).catch(() => undefined)
@@ -36,26 +43,32 @@ export function LandingPage() {
 
           <div className="max-w-[1100px] pb-5">
             <div className="mb-5 font-mono text-[10px] uppercase tracking-[0.16em] text-white/75">
-              I built the planner. You bring the route.
+              Tesla Supercharger route planning for the 2026 competition
             </div>
             <h1 className="max-w-[1080px] text-[clamp(58px,9.8vw,150px)] font-semibold leading-[0.82] tracking-[-0.072em] text-white">
-              Think you can beat my quest?
+              Build a Tesla route that can beat mine
             </h1>
             <div className="mt-8 grid max-w-[980px] gap-7 md:grid-cols-[1fr_auto] md:items-end">
               <p className="max-w-[680px] text-[17px] leading-[1.65] text-white/78 sm:text-[20px]">
-                I’m Anthony. I built Charge Quest for my own 2026 competition run,
-                and I’m giving every other competitor the same route-planning tool
-                I’m using. Build yours. Save it. Then come see how it stacks up.
+                I’m Anthony. I built Charge Quest to plan my own run at the 2026
+                Tesla Supercharging Competition. Now every competitor can use the
+                same Tesla road trip planner to build, save, and optimize a route
+                around Superchargers, landmarks, and Iconic Charger badges
               </p>
               <div className="flex flex-wrap gap-3">
-                <Link to={plannerHref} className="rounded-full bg-white px-6 py-3.5 text-[13px] font-semibold text-black no-underline transition hover:bg-accent hover:text-white">
+                <Link to={plannerHref} className="rounded-full bg-[#e82127] px-6 py-3.5 text-[13px] font-semibold text-white no-underline shadow-[0_12px_40px_rgba(232,33,39,.48)] ring-1 ring-white/20 transition hover:bg-white hover:text-black">
                   {plannerCta}
                 </Link>
-                <Link to="/track-anthony" className="rounded-full border border-white/35 bg-black/20 px-6 py-3.5 text-[13px] font-semibold text-white no-underline backdrop-blur-md transition hover:border-white">
+                <Link to="/track-anthony" className="rounded-full border border-white/45 bg-black/65 px-6 py-3.5 text-[13px] font-semibold text-white no-underline backdrop-blur-md transition hover:border-white">
                   Follow mine
                 </Link>
               </div>
             </div>
+            {!user ? (
+              <div className="mt-5 font-mono text-[8.5px] uppercase tracking-[0.11em] text-white/55">
+                Free account · No email required · Save unlimited route ideas
+              </div>
+            ) : null}
           </div>
 
           <div className="flex items-end justify-between gap-5 font-mono text-[8px] uppercase tracking-[0.13em] text-white/45">
@@ -69,7 +82,7 @@ export function LandingPage() {
         <div className="mx-auto max-w-[1320px]">
           <div className="grid gap-10 lg:grid-cols-[1.35fr_.65fr] lg:items-end">
             <h2 className="max-w-[1040px] text-[clamp(56px,9vw,132px)] font-semibold leading-[0.86] tracking-[-0.072em]">
-              The charger is not the destination.
+              The charger is not the destination
             </h2>
             <div className="max-w-[430px] pb-2">
               <div className="mb-5 h-1 w-16 bg-[#e82127]" />
@@ -85,6 +98,17 @@ export function LandingPage() {
             <EditorialFact number="3" label="Steps from idea to optimized route" />
             <EditorialFact number="1" label="Planner shared with the competition" />
           </div>
+          {!user ? (
+            <div className="mt-16 flex flex-col justify-between gap-6 border-t border-black/15 pt-8 sm:flex-row sm:items-center">
+              <div>
+                <div className="text-[22px] font-semibold tracking-[-0.03em]">Your competition plan starts with a free account</div>
+                <div className="mt-2 text-[13px] text-black/50">Choose a username, set your Tesla, and start building in under a minute</div>
+              </div>
+              <Link to="/signup?returnTo=%2Fplanner" className="flex-none rounded-full bg-[#e82127] px-7 py-4 text-[13px] font-semibold text-white no-underline shadow-[0_12px_30px_rgba(232,33,39,.22)]">
+                Create my Charge Quest account
+              </Link>
+            </div>
+          ) : null}
         </div>
       </section>
 
@@ -94,7 +118,7 @@ export function LandingPage() {
             <div>
               <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-[#23d7d1]">Build around the places that matter</div>
               <h2 className="mt-4 max-w-[820px] text-[clamp(44px,6.4vw,92px)] font-semibold leading-[0.91] tracking-[-0.06em]">
-                One route. A whole country worth stopping for.
+                One route. A whole country worth stopping for
               </h2>
             </div>
             <p className="max-w-[390px] text-[14px] leading-[1.7] text-white/55">
@@ -124,7 +148,7 @@ export function LandingPage() {
               <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-white/60">The route is yours</div>
               <div>
                 <div className="text-[clamp(52px,7vw,94px)] font-semibold leading-[.82] tracking-[-0.07em]">48</div>
-                <div className="mt-3 max-w-[260px] text-[16px] font-semibold leading-[1.2]">contiguous states competing for a place in your plan.</div>
+                <div className="mt-3 max-w-[260px] text-[16px] font-semibold leading-[1.2]">contiguous states competing for a place in your plan</div>
               </div>
             </div>
             <PhotoFigure
@@ -145,15 +169,17 @@ export function LandingPage() {
             <div className="max-w-[540px]">
               <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-white/65">The actual advantage</div>
               <h2 className="mt-5 text-[clamp(48px,6.4vw,88px)] font-semibold leading-[0.9] tracking-[-0.062em]">
-                The tool I’m using is yours.
+                The tool I’m using is yours
               </h2>
               <p className="mt-7 text-[16px] leading-[1.7] text-white/78">
-                This is not a visitor demo. Set your vehicle and real-world range,
-                choose your pace, add the places and badges you care about, then
-                optimize a route you can save and keep refining.
+                Set your Tesla model and real-world range, choose your pace, add the
+                places and badges you care about, then optimize a route you can save
+                and keep refining. I’m sharing the full tool because without it you’d
+                be stitching together chargers and spreadsheets—and honestly, you’d
+                have no chance
               </p>
               <Link to={plannerHref} className="mt-8 inline-flex rounded-full bg-black px-6 py-3.5 text-[13px] font-semibold text-white no-underline transition hover:bg-white hover:text-black">
-                {user ? 'Open the full planner' : 'Create your free account'}
+                {user ? 'Open the full planner' : 'Unlock the planner for free'}
               </Link>
             </div>
 
@@ -179,7 +205,7 @@ export function LandingPage() {
           <div className="w-full max-w-[620px]">
             <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-[#23d7d1]">Compete. Compare. Follow along.</div>
             <h2 className="mt-5 text-[clamp(46px,6vw,82px)] font-semibold leading-[0.9] tracking-[-0.062em]">
-              Build yours. Challenge mine.
+              Build yours. Challenge mine
             </h2>
             <p className="mt-7 max-w-[560px] text-[16px] leading-[1.7] text-white/60">
               Vote for where I should go, submit the stop I’m overlooking, or invite
@@ -206,15 +232,30 @@ export function LandingPage() {
         <div className="mx-auto max-w-[1120px]">
           <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-black/45">Your move</div>
           <h2 className="mt-5 text-[clamp(60px,10vw,148px)] font-semibold leading-[0.82] tracking-[-0.075em]">
-            Plan a route worth beating.
+            Plan a route worth beating
           </h2>
           <p className="mx-auto mt-9 max-w-[620px] text-[17px] leading-[1.7] text-black/60">
-            Use the planner for free. Create an account when you want to save routes,
-            join the community, and keep refining your competition plan.
+            Create a free Charge Quest account to unlock the Tesla Supercharger route
+            planner, save your competition routes, and join the community following
+            Anthony’s 2026 run
           </p>
           <Link to={plannerHref} className="mt-9 inline-flex rounded-full bg-black px-8 py-4 text-[14px] font-semibold text-white no-underline transition hover:bg-[#e82127]">
             {user ? 'Start your Charge Quest' : 'Sign up and challenge Anthony'}
           </Link>
+          <div className="mx-auto mt-20 max-w-[820px] border-t border-black/15 text-left">
+            <FaqItem
+              question="Is Charge Quest a Tesla Supercharger route planner"
+              answer="Yes. Charge Quest builds multi-day Tesla road trips around Supercharger stops while accounting for your vehicle, practical range, daily driving limits, trip pace, landmarks, and Iconic Charger targets."
+            />
+            <FaqItem
+              question="Do I need an account to use the planner"
+              answer="Yes. A free username-based account unlocks the planner and keeps your vehicle preferences and custom routes private to you. No email address or third-party login is required."
+            />
+            <FaqItem
+              question="Can I use Charge Quest for the 2026 Tesla Supercharging Competition"
+              answer="That is exactly why Anthony built it. The planner is designed to help competitors compare route ideas, target unique Supercharger sites, account for Iconic Charger badges, and build a trip they can actually sustain."
+            />
+          </div>
         </div>
       </section>
     </>
@@ -332,5 +373,17 @@ function DarkMetric({ label, value }: { label: string; value: string | number })
       <div className="font-mono text-[7.5px] uppercase tracking-[0.1em] text-white/35">{label}</div>
       <div className="mt-2 text-[20px] font-semibold tracking-[-0.03em]">{value}</div>
     </div>
+  )
+}
+
+function FaqItem({ question, answer }: { question: string; answer: string }) {
+  return (
+    <details className="group border-b border-black/15 py-6">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-5 text-[18px] font-semibold tracking-[-0.02em]">
+        {question}
+        <span className="text-[24px] font-normal text-black/35 transition group-open:rotate-45">+</span>
+      </summary>
+      <p className="mt-4 max-w-[700px] text-[14px] leading-[1.7] text-black/55">{answer}</p>
+    </details>
   )
 }

@@ -455,6 +455,69 @@ body.modal-open {
   color: #fff;
 }
 
+.cq-light-field,
+.cq-red-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.cq-light-field {
+  color: rgba(10, 11, 13, 0.55);
+}
+
+.cq-light-field input,
+.cq-light-field select {
+  min-height: 48px;
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid rgba(10, 11, 13, 0.22);
+  border-radius: 0;
+  background: transparent;
+  color: #0a0b0d;
+  padding: 10px 0;
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+}
+
+.cq-light-field input:focus,
+.cq-light-field select:focus {
+  border-bottom-color: #e82127;
+}
+
+.cq-red-form label {
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.cq-red-form input,
+.cq-red-form select,
+.cq-red-form textarea {
+  box-sizing: border-box;
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 9px;
+  background: rgba(0, 0, 0, 0.13);
+  color: #fff;
+  padding: 11px 12px;
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+}
+
+.cq-red-form input::placeholder,
+.cq-red-form textarea::placeholder {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.cq-red-form input:focus,
+.cq-red-form select:focus,
+.cq-red-form textarea:focus {
+  border-color: #fff;
+}
+
 @media (max-width: 640px) {
   .site-nav {
     position: relative;

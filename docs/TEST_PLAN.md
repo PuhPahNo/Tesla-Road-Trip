@@ -31,6 +31,8 @@ Required coverage:
 - Anthony admin can activate/deactivate the tracker and publish field updates.
 - The homepage leads with Anthony's competition challenge, uses distinct cinematic/editorial/gallery/product compositions, and maps live trip/community data into the public experience.
 - Signed-out users cannot render the planner and are redirected to signup with a planner return path.
+- The Community page uses the cinematic competition design, exposes public activity, and funnels guest interactions through signup with a community return path.
+- Homepage and Community metadata stay route-specific, and `robots.txt`, `sitemap.xml`, canonical URLs, image metadata, and `WebApplication` structured data ship in production.
 
 ## Manual Browser Certification
 
