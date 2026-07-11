@@ -3,7 +3,6 @@ import { useTheme } from '../theme/theme'
 import { cx } from '../ui/primitives'
 import {
   BarsIcon,
-  BoltIcon,
   CalendarIcon,
   ChevronDownIcon,
   CompassIcon,
@@ -43,9 +42,12 @@ export function BrandIsland({
     // Below sm the island yields to the actions island (~148px + gap) so the
     // two never overlap; the route chip shrinks and truncates instead.
     <div className="glass fixed left-4 top-4 z-40 flex h-12 max-w-[calc(100vw-172px)] items-center gap-2.5 rounded-[13px] py-0 pl-3 pr-1.5 sm:max-w-none">
-      <div className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-[9px] bg-accent text-on-accent">
-        <BoltIcon size={15} />
-      </div>
+      <img
+        src="/brand-mark.svg"
+        alt=""
+        aria-hidden="true"
+        className="h-[30px] w-[30px] flex-none rounded-[9px]"
+      />
       <div className="hidden flex-none pr-1 leading-[1.05] sm:block">
         <div className="whitespace-nowrap font-mono text-[8.5px] uppercase tracking-[0.14em] text-faint">
           2026 · Americas
