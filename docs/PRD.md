@@ -21,10 +21,29 @@ The app encodes the following contest rules from Tesla's support page:
 
 Tesla's public contest page does not specify a minimum charging duration for a site to count. The planner therefore exposes stop-time assumptions instead of hard-coding an unverified minimum.
 
-## Primary User
-A single Tesla Model Y owner planning an 8-10 week road trip from the Chattanooga, TN 37405 area with a practical highway range setting below rated range.
+## Primary Users
+- Anthony, a 26-year-old Chattanooga-based competitor building and sharing his own 2026 Tesla quest.
+- Other Supercharging competitors who want to challenge, compare, and save their own routes.
+- Tesla owners planning ambitious charger-aware road trips around places they actually want to visit.
 
 ## Feature PRDs
+
+### 0. Public Quest Homepage
+**Objective:** Introduce Charge Quest as Anthony's real 2026 competition project, not a generic trip-planning SaaS product.
+
+**Requirements**
+- Lead in Anthony's first-person voice with his age, Chattanooga starting point, and 2026 competition goal.
+- Show a working quest board populated from live trip/community data when available.
+- Explain why the planner exists through a personal letter and concrete trip-planning tradeoffs.
+- Publish an honest build log alongside the eventual live field log.
+- Invite visitors to challenge Anthony's route, vote for states, suggest stops, arrange meetups, or build a competing route.
+- Use restrained road-journal motion and texture that respects reduced-motion preferences and avoids stock or invented personal imagery.
+
+**Acceptance Criteria**
+- The first viewport clearly identifies Anthony as the person behind Charge Quest.
+- Primary actions are Build your quest and Challenge my route.
+- Live community counts and trip status render without blocking the page when the community API is unavailable.
+- The page remains usable on mobile without fixed-background or motion dependencies.
 
 ### 1. Station Ingestion
 **Objective:** Retrieve, normalize, and filter Supercharge.info station data.

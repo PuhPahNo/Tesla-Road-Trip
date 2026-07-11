@@ -21,7 +21,7 @@ export function SiteShell() {
             <img src="/brand-mark.svg?v=2" alt="" className="h-9 w-9 rounded-[10px]" />
             <div>
               <div className="font-mono text-[8px] uppercase tracking-[0.16em] text-faint">
-                Built by Anthony
+                Anthony’s 2026 run
               </div>
               <div className="text-[15px] font-semibold text-ink">Charge Quest</div>
             </div>
@@ -111,7 +111,7 @@ export function SiteShell() {
       </main>
       <footer className="border-t border-edge px-5 py-10">
         <div className="mx-auto flex max-w-[1240px] flex-col gap-4 text-[11.5px] text-faint sm:flex-row sm:items-center sm:justify-between">
-          <div>Charge Quest · Built by Anthony for ambitious Tesla road trips.</div>
+          <div>Charge Quest · Built in Chattanooga by Anthony, age 26, for the trip he’s actually going to drive.</div>
           <div className="flex gap-4">
             <NavLink to="/planner" className="text-faint no-underline hover:text-ink">Planner</NavLink>
             <NavLink to="/community" className="text-faint no-underline hover:text-ink">Community</NavLink>
