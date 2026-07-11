@@ -64,6 +64,12 @@ Tesla's public contest page does not specify a minimum charging duration for a s
 - Existing state voting, suggestion publishing, suggestion voting, and achievement rendering behavior remains intact.
 - Community has its own descriptive title, meta description, canonical URL, and social metadata.
 
+**Anthony admin workspace**
+- Group tracker identity, live progress, and public status into clearly separated form sections.
+- Keep field-update publishing visible in a dedicated desktop side panel and stacked naturally on mobile.
+- Surface tracker status, published-update count, and pending moderation count before the forms.
+- Present meetup moderation as readable full-width rows with clear Approve and Decline actions.
+
 ### 1. Station Ingestion
 **Objective:** Retrieve, normalize, and filter Supercharge.info station data.
 

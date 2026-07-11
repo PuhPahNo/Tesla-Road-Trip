@@ -33,6 +33,7 @@ Required coverage:
 - Signed-out users cannot render the planner and are redirected to signup with a planner return path.
 - The Community page uses the cinematic competition design, exposes public activity, and funnels guest interactions through signup with a community return path.
 - Homepage and Community metadata stay route-specific, and `robots.txt`, `sitemap.xml`, canonical URLs, image metadata, and `WebApplication` structured data ship in production.
+- Anthony admin separates tracker configuration, field publishing, public metrics, and meetup moderation without changing the underlying admin actions.
 
 ## Manual Browser Certification
 

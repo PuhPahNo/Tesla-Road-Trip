@@ -46,7 +46,7 @@ export function LandingPage() {
               Tesla Supercharger route planning for the 2026 competition
             </div>
             <h1 className="max-w-[1080px] text-[clamp(58px,9.8vw,150px)] font-semibold leading-[0.82] tracking-[-0.072em] text-white">
-              Build a Tesla route that can beat mine
+              Think you can beat my quest?
             </h1>
             <div className="mt-8 grid max-w-[980px] gap-7 md:grid-cols-[1fr_auto] md:items-end">
               <p className="max-w-[680px] text-[17px] leading-[1.65] text-white/78 sm:text-[20px]">
