@@ -22,7 +22,7 @@ import {
 } from '../src/domain/placeCatalog'
 import { buildStateRouteStats } from '../src/domain/routeStats'
 import { buildTripComposition } from '../src/domain/tripComposition'
-import { readSavedCustomRoutes } from './customRoutes'
+import { readSavedCustomRoutes, updateSavedCustomRoute } from './customRoutes'
 import type {
   OptimizeResponse,
   PlannerConfig,
@@ -37,6 +37,7 @@ const DEFAULT_DAILY_LIMIT_USD = 5
 const DEFAULT_MAX_REQUEST_USD = 0.35
 const DEFAULT_MAX_OUTPUT_TOKENS = 900
 const DEFAULT_AGENT_RATE_LIMIT_PER_MINUTE = 6
+const MAX_AGENT_TOOL_TURNS = 8
 const DEFAULT_INPUT_COST_PER_1M_USD = 1.25
 const DEFAULT_OUTPUT_COST_PER_1M_USD = 10
 
@@ -120,6 +121,29 @@ const customRouteArgsSchema = z.object({
     .min(1)
     .max(12),
 })
+
+const savedRouteUpdateArgsSchema = z
+  .object({
+    routeId: z.string().min(1).max(96).optional().nullable(),
+    name: z.string().min(1).max(80).optional().nullable(),
+    targetDays: z.number().int().min(1).max(365).optional().nullable(),
+    waypointIdsToAdd: z
+      .array(z.string().min(1).max(96))
+      .max(16)
+      .optional()
+      .nullable(),
+    waypointIdsToRemove: z
+      .array(z.string().min(1).max(96))
+      .max(16)
+      .optional()
+      .nullable(),
+    keepOrder: z.boolean().optional().nullable(),
+  })
+  .refine(
+    ({ routeId: _routeId, ...changes }) =>
+      Object.values(changes).some((value) => value !== undefined && value !== null),
+    'At least one saved-route change is required.',
+  )
 
 let agentRequestTimestamps: number[] = []
 
@@ -267,8 +291,12 @@ async function runPlannerAgent({
   let usage: OpenAiResponse['usage']
   let estimatedRequestSpendUsd = 0
 
-  for (let turn = 0; turn < 6; turn += 1) {
-    const response = await createOpenAiResponse(apiKey, input)
+  for (let turn = 0; turn <= MAX_AGENT_TOOL_TURNS; turn += 1) {
+    const response = await createOpenAiResponse(
+      apiKey,
+      input,
+      turn < MAX_AGENT_TOOL_TURNS,
+    )
     usage = mergeUsage(usage, response.usage)
     estimatedRequestSpendUsd += estimateOpenAiCost(
       response.usage,
@@ -298,10 +326,14 @@ async function runPlannerAgent({
     input = [...input, ...(response.output ?? []), ...toolOutputs]
   }
 
-  throw new AgentHttpError(502, 'Trip agent exceeded the allowed tool-call loop.')
+  throw new AgentHttpError(502, 'Trip agent could not finish the route update.')
 }
 
-async function createOpenAiResponse(apiKey: string, input: unknown[]) {
+async function createOpenAiResponse(
+  apiKey: string,
+  input: unknown[],
+  allowTools: boolean,
+) {
   const openAiResponse = await fetch(OPENAI_RESPONSES_URL, {
     method: 'POST',
     headers: {
@@ -311,10 +343,10 @@ async function createOpenAiResponse(apiKey: string, input: unknown[]) {
     body: JSON.stringify({
       model: process.env.OPENAI_MODEL ?? FALLBACK_MODEL,
       instructions:
-        `You are a route-planning assistant inside a local Tesla Supercharger Quest Planner app. Use tools when you need route data or when the user asks to change settings, require a stop, create a temporary custom ordered route, or reoptimize. The app has ${PLACE_CATALOG.length} curated city and landmark stops across categories such as national parks, history, civil rights, sports, music, entertainment, science, coasts, scenic stops, and roadside attractions. Longest Trip routes automatically give top-rated places multi-night basecamp stays (a new unique Supercharger each day keeps the streak alive); the tripPace setting (sprint/balanced/savor) and autoStays toggle control this, favoriteCategories/mutedCategories bias which places qualify, and suggest_stays shows current stays plus candidates before pacing advice. Use search_catalog_locations to find exact waypoint IDs before adding requested stops or creating custom routes. For exact-order custom-route requests through catalog waypoints, call create_custom_route with only the intermediate waypoint IDs in order; omit Chattanooga/start/end. Persistent named saved routes are created by the app UI, not this OpenAI tool. Keep final answers short and name the concrete changes made. You cannot execute arbitrary code, browse the web, or spend money outside this API call. Treat Tesla badge and landmark data as the app curated catalog, not official proof.`,
+        `You are a route-planning assistant inside a local Tesla Supercharger Quest Planner app. Use tools when you need route data or when the user asks to change settings, require a stop, create a temporary custom ordered route, edit the selected saved route, or reoptimize. The app has ${PLACE_CATALOG.length} curated city and landmark stops across categories such as national parks, history, civil rights, sports, music, entertainment, science, coasts, scenic stops, and roadside attractions. Longest Trip routes automatically give top-rated places multi-night basecamp stays (a new unique Supercharger each day keeps the streak alive); the tripPace setting (sprint/balanced/savor) and autoStays toggle control this, favoriteCategories/mutedCategories bias which places qualify, and suggest_stays shows current stays plus candidates before pacing advice. Use search_catalog_locations to find exact waypoint IDs before adding requested stops or creating custom routes. For exact-order temporary custom-route requests through catalog waypoints, call create_custom_route with only the intermediate waypoint IDs in order; omit Chattanooga/start/end. When the selected route is a persistent saved route, use update_saved_custom_route once with all requested additions, removals, renaming, day-target, and order changes batched together; that tool saves and reoptimizes the route. Avoid repeating a tool call after it succeeds. Keep final answers short and name the concrete changes made. You cannot execute arbitrary code, browse the web, or spend money outside this API call. Treat Tesla badge and landmark data as the app curated catalog, not official proof.${allowTools ? '' : ' Do not request more tools; summarize the completed changes and any unfinished request now.'}`,
       input,
       tools: plannerAgentTools,
-      tool_choice: 'auto',
+      tool_choice: allowTools ? 'auto' : 'none',
       parallel_tool_calls: false,
       max_output_tokens: getNumberEnv(
         'OPENAI_AGENT_MAX_OUTPUT_TOKENS',
@@ -471,6 +503,72 @@ async function runAgentTool(
       config: summarizeConfig(context.workingConfig),
       selectedRouteId: customRoute.id,
       route: summarizeRoute(customRoute),
+    }
+  }
+
+  if (name === 'update_saved_custom_route') {
+    const parsed = savedRouteUpdateArgsSchema.parse(args)
+    const routeId = parsed.routeId ?? context.selectedRouteId
+    const savedRoute = context.workingConfig.savedCustomRoutes.find(
+      (route) => route.id === routeId,
+    )
+    if (!savedRoute) {
+      throw new Error('Select a saved custom route before asking the copilot to edit it.')
+    }
+
+    const removeIds = new Set(parsed.waypointIdsToRemove ?? [])
+    const waypoints = savedRoute.waypoints.filter(
+      (waypoint) => !removeIds.has(waypoint.id),
+    )
+    for (const waypointId of parsed.waypointIdsToAdd ?? []) {
+      const waypoint = getKnownWaypoint(waypointId)
+      if (!waypoint) throw new Error(`Unknown waypoint: ${waypointId}`)
+      if (!waypoints.some((current) => current.id === waypoint.id)) {
+        waypoints.push(waypoint)
+      }
+    }
+    if (waypoints.length === 0) {
+      throw new Error('A saved route must keep at least one waypoint.')
+    }
+    if (waypoints.length > 16) {
+      throw new Error('A saved route can contain at most 16 waypoints.')
+    }
+
+    const updated = await updateSavedCustomRoute(savedRoute.id, {
+      ...(parsed.name !== undefined && parsed.name !== null
+        ? { name: parsed.name }
+        : {}),
+      ...(parsed.targetDays !== undefined && parsed.targetDays !== null
+        ? { targetDays: parsed.targetDays }
+        : {}),
+      ...(parsed.keepOrder !== undefined && parsed.keepOrder !== null
+        ? { keepOrder: parsed.keepOrder }
+        : {}),
+      waypoints,
+    })
+    if (!updated) throw new Error('Saved route not found.')
+
+    context.workingConfig = sanitizePlannerConfig({
+      ...context.workingConfig,
+      savedCustomRoutes: updated.routes,
+    })
+    context.selectedRouteId = updated.route.id
+    const result = await context.ensureOptimized()
+    const route = getSelectedRoute(result, updated.route.id)
+    context.actions.push(`Updated saved route: ${updated.route.name}`)
+    return {
+      selectedRouteId: route.id,
+      savedRoute: {
+        id: updated.route.id,
+        name: updated.route.name,
+        targetDays: updated.route.targetDays,
+        waypoints: updated.route.waypoints.map((waypoint) => ({
+          id: waypoint.id,
+          label: waypoint.label,
+        })),
+        keepOrder: Boolean(updated.route.keepOrder),
+      },
+      route: summarizeRoute(route),
     }
   }
 
@@ -674,6 +772,39 @@ const plannerAgentTools = [
   },
   {
     type: 'function',
+    name: 'update_saved_custom_route',
+    description:
+      'Persist and reoptimize one saved custom route. Batch every requested rename, route-specific day target, waypoint addition/removal, and order change into one call. Use catalog waypoint IDs.',
+    parameters: {
+      type: 'object',
+      properties: {
+        routeId: {
+          type: ['string', 'null'],
+          description: 'Saved route ID. Omit to edit the currently selected saved route.',
+        },
+        name: { type: ['string', 'null'] },
+        targetDays: {
+          type: ['number', 'null'],
+          description:
+            'Streak-day target for this saved route only. Does not change the global trip configuration.',
+        },
+        waypointIdsToAdd: {
+          type: ['array', 'null'],
+          maxItems: 16,
+          items: { type: 'string' },
+        },
+        waypointIdsToRemove: {
+          type: ['array', 'null'],
+          maxItems: 16,
+          items: { type: 'string' },
+        },
+        keepOrder: { type: ['boolean', 'null'] },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    type: 'function',
     name: 'clear_required_waypoints',
     description: 'Remove all required waypoint preferences from the planner config.',
     parameters: {
@@ -725,7 +856,13 @@ function summarizeConfig(config: PlannerConfig) {
     savedCustomRoutes: config.savedCustomRoutes.map((route) => ({
       id: route.id,
       name: route.name,
+      targetDays: route.targetDays ?? config.longestTripDays,
       waypointCount: route.waypoints.length,
+      waypoints: route.waypoints.map((waypoint) => ({
+        id: waypoint.id,
+        label: waypoint.label,
+      })),
+      keepOrder: Boolean(route.keepOrder),
     })),
     longestTripTargets: config.longestTripTargets,
   }

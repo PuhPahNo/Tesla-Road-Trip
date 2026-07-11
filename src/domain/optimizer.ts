@@ -45,6 +45,7 @@ interface RouteVariant {
   corridorMiles: number
   anchors: Coordinate[]
   forcedWaypoints: RouteWaypoint[]
+  targetDays?: number
   stationFilter?: (station: Station) => boolean
 }
 
@@ -1503,6 +1504,7 @@ function buildSavedCustomRouteVariants(
         : `Saved custom ${strategyNoun} that optimizes ${route.waypoints.length} selected stop${route.waypoints.length === 1 ? '' : 's'} (${selectedLabels.join(', ')}) against the current trip settings and Supercharger coverage.`,
       color: route.color,
       corridorMiles: 150,
+      targetDays: route.targetDays,
       anchors: insertRequiredWaypoints(
         closeAnchorsToStart(anchors, start),
         requiredWaypoints,
@@ -3552,7 +3554,7 @@ export function optimizeRoutes(
           config.customRouteWaypoints,
           config.savedCustomRoutes,
         )
-  const routeTarget =
+  const defaultRouteTarget =
     config.plannerMode === 'longest_trip'
       ? config.longestTripDays
       : config.targetStations
@@ -3560,6 +3562,10 @@ export function optimizeRoutes(
   const stationRatingBonus = buildStationRatingBonus(stations, config)
 
   const routes: RoutePlan[] = variants.map((variant) => {
+    const routeTarget =
+      config.plannerMode === 'longest_trip'
+        ? variant.targetDays ?? defaultRouteTarget
+        : defaultRouteTarget
     const autoStayTargets =
       config.plannerMode === 'longest_trip'
         ? planAutoStays(variant.anchors, variant.corridorMiles, config)

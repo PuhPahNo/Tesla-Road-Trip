@@ -13,7 +13,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "certify:ui": "node scripts/certify-ui.mjs"
+    "certify:ui": "node scripts/certify-ui.mjs",
+    "certify:custom-routes": "node scripts/certify-custom-routes.mjs"
   },
   "dependencies": {
     "concurrently": "^10.0.3",

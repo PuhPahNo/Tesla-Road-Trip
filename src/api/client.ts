@@ -68,6 +68,7 @@ export interface CreateCustomRouteRequest {
   name: string
   color?: string
   waypoints: RouteWaypoint[]
+  targetDays?: number
   keepOrder?: boolean
 }
 
@@ -127,6 +128,23 @@ export async function createCustomRoute(request: CreateCustomRouteRequest) {
   })
 
   return parseJsonResponse<CreateCustomRouteResponse>(response)
+}
+
+export async function updateCustomRoute(
+  id: string,
+  request: Partial<CreateCustomRouteRequest>,
+) {
+  const response = await fetch(`/api/custom-routes/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  })
+
+  return parseJsonResponse<CreateCustomRouteResponse & { routes: SavedCustomRoute[] }>(
+    response,
+  )
 }
 
 export async function deleteCustomRoute(id: string) {

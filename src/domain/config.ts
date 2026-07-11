@@ -88,6 +88,7 @@ const savedCustomRouteSchema = z.object({
   name: z.string().min(1).max(80),
   color: z.string().min(1).max(32),
   waypoints: z.array(routeWaypointSchema).min(1).max(16),
+  targetDays: limitedNumber('longestTripDays').optional(),
   keepOrder: z.boolean().optional(),
   createdAt: z.string().min(1).max(48),
   updatedAt: z.string().min(1).max(48),

@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useState } from 'react'
-import type { RouteWaypoint } from '../domain/types'
+import type { RouteWaypoint, SavedCustomRoute } from '../domain/types'
 import { detailForCatalogPlace } from '../domain/placeDetails'
 import {
   PLACE_CATALOG,
@@ -27,14 +27,17 @@ interface CatalogLocation {
 export interface CustomRouteDraft {
   name: string
   waypoints: RouteWaypoint[]
+  targetDays: number
   keepOrder: boolean
 }
 
 export interface CustomRouteModalProps {
   open: boolean
   isSaving: boolean
+  route?: SavedCustomRoute
+  defaultTargetDays: number
   onClose: () => void
-  onCreate: (draft: CustomRouteDraft) => void
+  onSave: (draft: CustomRouteDraft) => void
 }
 
 const CATALOG: CatalogLocation[] = buildCatalog()
@@ -42,11 +45,14 @@ const CATALOG: CatalogLocation[] = buildCatalog()
 export function CustomRouteModal({
   open,
   isSaving,
+  route,
+  defaultTargetDays,
   onClose,
-  onCreate,
+  onSave,
 }: CustomRouteModalProps) {
   const titleId = useId()
   const [name, setName] = useState('')
+  const [targetDays, setTargetDays] = useState(String(defaultTargetDays))
   const [query, setQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState<'all' | CatalogPlaceType>('all')
   const [categoryFilter, setCategoryFilter] = useState<'all' | PlaceCategory>('all')
@@ -58,18 +64,19 @@ export function CustomRouteModal({
   const [manualLon, setManualLon] = useState('')
 
   useEffect(() => {
-    if (open || isSaving) return
-    setName('')
+    if (!open) return
+    setName(route?.name ?? '')
+    setTargetDays(String(route?.targetDays ?? defaultTargetDays))
     setQuery('')
     setTypeFilter('all')
     setCategoryFilter('all')
-    setWaypoints([])
-    setKeepOrder(false)
+    setWaypoints(route?.waypoints ?? [])
+    setKeepOrder(Boolean(route?.keepOrder))
     setDragIndex(null)
     setManualLabel('')
     setManualLat('')
     setManualLon('')
-  }, [open, isSaving])
+  }, [defaultTargetDays, open, route])
 
   const filteredCatalog = useMemo(() => {
     const normalized = query.trim().toLowerCase()
@@ -138,32 +145,64 @@ export function CustomRouteModal({
 
   const submit = () => {
     const trimmedName = name.trim()
-    if (!trimmedName || waypoints.length === 0 || isSaving) return
-    onCreate({ name: trimmedName, waypoints, keepOrder })
+    const parsedTargetDays = Number(targetDays)
+    if (
+      !trimmedName ||
+      waypoints.length === 0 ||
+      !Number.isInteger(parsedTargetDays) ||
+      parsedTargetDays < 1 ||
+      parsedTargetDays > 365 ||
+      isSaving
+    ) return
+    onSave({ name: trimmedName, waypoints, targetDays: parsedTargetDays, keepOrder })
   }
+
+  const validTargetDays =
+    Number.isInteger(Number(targetDays)) && Number(targetDays) >= 1 && Number(targetDays) <= 365
 
   return (
     <Overlay open={open} onClose={onClose} size="wide" labelledBy={titleId}>
       <OverlayHeader
         titleId={titleId}
         kicker="Custom route"
-        title="Create saved route"
-        meta="Pick landmark/city stops; the optimizer picks the stop order and Supercharger sequence unless you lock the order below."
+        title={route ? 'Edit saved route' : 'Create saved route'}
+        meta="This route keeps its own name, trip length, stops, and stop-order preference. Your regular trip configuration stays unchanged."
         onClose={onClose}
       />
 
       <div className="grid min-h-0 flex-1 gap-0 overflow-hidden md:grid-cols-[minmax(0,1fr)_360px]">
         <div className="min-h-0 overflow-y-auto p-4">
-          <label className="mb-2 block text-[12px] font-medium text-dim" htmlFor="custom-route-name">
-            Route name
-          </label>
-          <input
-            id="custom-route-name"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            placeholder="Southwest Parks Run"
-            className="h-11 w-full rounded-[10px] border border-edge bg-panel2 px-3 text-[13px] text-ink outline-none placeholder:text-faint"
-          />
+          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_150px]">
+            <label className="block text-[12px] font-medium text-dim" htmlFor="custom-route-name">
+              Route name
+              <input
+                id="custom-route-name"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="Southwest Parks Run"
+                className="mt-2 h-11 w-full rounded-[10px] border border-edge bg-panel2 px-3 text-[13px] text-ink outline-none placeholder:text-faint"
+              />
+            </label>
+            <label className="block text-[12px] font-medium text-dim" htmlFor="custom-route-days">
+              Trip length
+              <div className="relative mt-2">
+                <input
+                  id="custom-route-days"
+                  value={targetDays}
+                  onChange={(event) => setTargetDays(event.target.value)}
+                  type="number"
+                  min={1}
+                  max={365}
+                  step={1}
+                  aria-label="Custom route trip days"
+                  className="h-11 w-full rounded-[10px] border border-edge bg-panel2 px-3 pr-12 text-[13px] text-ink outline-none"
+                />
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 font-mono text-[10px] uppercase text-faint">
+                  days
+                </span>
+              </div>
+            </label>
+          </div>
 
           <div className="mt-4">
             <label className="mb-2 block text-[12px] font-medium text-dim" htmlFor="custom-route-search">
@@ -216,6 +255,7 @@ export function CustomRouteModal({
                 key={item.id}
                 type="button"
                 onClick={() => addCatalogItem(item)}
+                aria-label={`Add ${item.label} to custom route`}
                 className="min-h-[108px] cursor-pointer rounded-[11px] border border-edge bg-chip p-3 text-left transition hover:brightness-110"
               >
                 <div className="flex items-start justify-between gap-2">
@@ -382,10 +422,10 @@ export function CustomRouteModal({
             <Button
               variant="primary"
               className="flex-1"
-              disabled={isSaving || !name.trim() || waypoints.length === 0}
+              disabled={isSaving || !name.trim() || waypoints.length === 0 || !validTargetDays}
               onClick={submit}
             >
-              {isSaving ? 'Saving...' : 'Save and optimize'}
+              {isSaving ? 'Saving...' : route ? 'Update and optimize' : 'Save and optimize'}
             </Button>
           </div>
         </aside>

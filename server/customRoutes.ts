@@ -33,6 +33,7 @@ const savedRouteSchema = z.object({
   name: z.string().min(1).max(80),
   color: z.string().min(1).max(32),
   waypoints: z.array(waypointSchema).min(1).max(16),
+  targetDays: z.coerce.number().int().min(1).max(365).optional(),
   keepOrder: z.boolean().optional(),
   createdAt: z.string().min(1).max(48),
   updatedAt: z.string().min(1).max(48),
@@ -42,8 +43,13 @@ const createRouteSchema = z.object({
   name: z.string().min(1).max(80),
   color: z.string().min(1).max(32).optional(),
   waypoints: z.array(waypointSchema).min(1).max(16),
+  targetDays: z.coerce.number().int().min(1).max(365).optional(),
   keepOrder: z.boolean().optional(),
 })
+
+const updateRouteSchema = createRouteSchema
+  .partial()
+  .refine((value) => Object.keys(value).length > 0, 'At least one route field is required.')
 
 const routeListSchema = z.array(savedRouteSchema).max(100)
 
@@ -62,6 +68,33 @@ export async function writeSavedCustomRoutes(routes: SavedCustomRoute[]) {
   const tempPath = `${CUSTOM_ROUTES_PATH}.${process.pid}.tmp`
   await writeFile(tempPath, `${JSON.stringify(routeListSchema.parse(routes), null, 2)}\n`)
   await rename(tempPath, CUSTOM_ROUTES_PATH)
+}
+
+export async function updateSavedCustomRoute(
+  id: string,
+  changes: z.input<typeof updateRouteSchema>,
+) {
+  const parsed = updateRouteSchema.parse(changes)
+  const existing = await readSavedCustomRoutes()
+  const routeIndex = existing.findIndex((route) => route.id === id)
+  if (routeIndex < 0) return undefined
+
+  const current = existing[routeIndex]
+  const route: SavedCustomRoute = {
+    ...current,
+    ...(parsed.name !== undefined ? { name: parsed.name.trim() } : {}),
+    ...(parsed.color !== undefined ? { color: parsed.color } : {}),
+    ...(parsed.waypoints !== undefined
+      ? { waypoints: normalizeWaypoints(parsed.waypoints) }
+      : {}),
+    ...(parsed.targetDays !== undefined ? { targetDays: parsed.targetDays } : {}),
+    ...(parsed.keepOrder !== undefined ? { keepOrder: parsed.keepOrder } : {}),
+    updatedAt: new Date().toISOString(),
+  }
+  const routes = existing.slice()
+  routes[routeIndex] = route
+  await writeSavedCustomRoutes(routes)
+  return { route, routes }
 }
 
 export function registerCustomRouteRoutes(app: Express) {
@@ -90,6 +123,7 @@ export function registerCustomRouteRoutes(app: Express) {
         name: parsed.name.trim(),
         color: parsed.color ?? COLORS[existing.length % COLORS.length],
         waypoints: normalizeWaypoints(parsed.waypoints),
+        ...(parsed.targetDays !== undefined ? { targetDays: parsed.targetDays } : {}),
         ...(parsed.keepOrder ? { keepOrder: true } : {}),
         createdAt: now,
         updatedAt: now,
@@ -102,6 +136,31 @@ export function registerCustomRouteRoutes(app: Express) {
         error: 'custom_route_create_failed',
         message:
           error instanceof Error ? error.message : 'Unable to save the custom route.',
+      })
+    }
+  })
+
+  app.patch('/api/custom-routes/:id', async (request, response) => {
+    try {
+      const updated = await updateSavedCustomRoute(request.params.id, request.body)
+      if (!updated) {
+        response.status(404).json({
+          error: 'custom_route_not_found',
+          message: 'Saved route not found.',
+        })
+        return
+      }
+
+      response.json({
+        route: updated.route,
+        routes: updated.routes,
+        storagePath: CUSTOM_ROUTES_PATH,
+      })
+    } catch (error) {
+      response.status(error instanceof z.ZodError ? 400 : 500).json({
+        error: 'custom_route_update_failed',
+        message:
+          error instanceof Error ? error.message : 'Unable to update the custom route.',
       })
     }
   })

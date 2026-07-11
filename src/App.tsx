@@ -3,8 +3,10 @@ import {
   fetchHealth,
   fetchStations,
   createCustomRoute,
+  deleteCustomRoute,
   optimizeRoutes,
   refineRoute,
+  updateCustomRoute,
   type PlannerAgentResponse,
   type StationsResponse,
 } from './api/client'
@@ -19,6 +21,7 @@ import type {
   OptimizeResponse,
   PlannerConfig,
   RoutePlan,
+  SavedCustomRoute,
   Station,
   DayPlan,
 } from './domain/types'
@@ -112,7 +115,9 @@ function App() {
   const [configOpen, setConfigOpen] = useState(false)
   const [routePickerOpen, setRoutePickerOpen] = useState(false)
   const [customRouteOpen, setCustomRouteOpen] = useState(false)
+  const [editingCustomRoute, setEditingCustomRoute] = useState<SavedCustomRoute>()
   const [isSavingCustomRoute, setIsSavingCustomRoute] = useState(false)
+  const [deletingCustomRouteId, setDeletingCustomRouteId] = useState<string>()
   const [hoveredDayIndex, setHoveredDayIndex] = useState<number>()
   const [hoveredState, setHoveredState] = useState<string>()
   const [curDay, setCurDay] = useState(0)
@@ -151,6 +156,7 @@ function App() {
     response: OptimizeResponse,
     routeId = response.routes[0]?.id,
   ) => {
+    setConfig(sanitizePlannerConfig(response.config))
     setResult(response)
     setStationStatus({
       source: response.source,
@@ -406,28 +412,61 @@ function App() {
   }
 
   const handleOpenCustomRoute = () => {
+    setEditingCustomRoute(undefined)
     setRoutePickerOpen(false)
     setCopilotOpen(false)
     setMobileTab(null)
     setCustomRouteOpen(true)
   }
 
-  const handleCreateCustomRoute = async (draft: CustomRouteDraft) => {
+  const handleEditCustomRoute = (route: SavedCustomRoute) => {
+    setEditingCustomRoute(route)
+    setRoutePickerOpen(false)
+    setCopilotOpen(false)
+    setMobileTab(null)
+    setCustomRouteOpen(true)
+  }
+
+  const handleSaveCustomRoute = async (draft: CustomRouteDraft) => {
     setIsSavingCustomRoute(true)
     setError(undefined)
     try {
-      const saved = await createCustomRoute(draft)
+      const saved = editingCustomRoute
+        ? await updateCustomRoute(editingCustomRoute.id, draft)
+        : await createCustomRoute(draft)
       const response = await optimizeRoutes(sanitizePlannerConfig(config))
       applyOptimizationResult(response, saved.route.id)
       setCustomRouteOpen(false)
+      setEditingCustomRoute(undefined)
       setRoutePickerOpen(true)
-      showToast(`Saved ${saved.route.name} · stored at ${saved.storagePath}`)
+      showToast(`${editingCustomRoute ? 'Updated' : 'Saved'} ${saved.route.name}`)
     } catch (requestError) {
       setError(
         requestError instanceof Error ? requestError.message : 'Custom route save failed.',
       )
     } finally {
       setIsSavingCustomRoute(false)
+    }
+  }
+
+  const handleDeleteCustomRoute = async (route: SavedCustomRoute) => {
+    setDeletingCustomRouteId(route.id)
+    setError(undefined)
+    try {
+      await deleteCustomRoute(route.id)
+      const response = await optimizeRoutes(sanitizePlannerConfig(config))
+      applyOptimizationResult(
+        response,
+        selectedRoute?.id === route.id ? response.routes[0]?.id : selectedRoute?.id,
+      )
+      setRoutePickerOpen(true)
+      showToast(`Deleted ${route.name}`)
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error ? requestError.message : 'Custom route delete failed.',
+      )
+    } finally {
+      setDeletingCustomRouteId(undefined)
     }
   }
 
@@ -657,6 +696,10 @@ function App() {
         onClose={() => setRoutePickerOpen(false)}
         onSelect={handleSelectRoute}
         onCreateCustomRoute={handleOpenCustomRoute}
+        savedCustomRoutes={config.savedCustomRoutes}
+        onEditCustomRoute={handleEditCustomRoute}
+        onDeleteCustomRoute={handleDeleteCustomRoute}
+        deletingRouteId={deletingCustomRouteId}
       />
       <CalendarModal
         route={displayRoute}
@@ -680,8 +723,13 @@ function App() {
       <CustomRouteModal
         open={customRouteOpen}
         isSaving={isSavingCustomRoute}
-        onClose={() => setCustomRouteOpen(false)}
-        onCreate={handleCreateCustomRoute}
+        route={editingCustomRoute}
+        defaultTargetDays={config.longestTripDays}
+        onClose={() => {
+          setCustomRouteOpen(false)
+          setEditingCustomRoute(undefined)
+        }}
+        onSave={handleSaveCustomRoute}
       />
 
       {/* Overlays */}

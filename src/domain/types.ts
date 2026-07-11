@@ -80,6 +80,8 @@ export interface SavedCustomRoute {
   name: string
   color: string
   waypoints: RouteWaypoint[]
+  /** Streak-day target for this route only; does not change the global planner setting. */
+  targetDays?: number
   /** Visit stops exactly in the saved order instead of letting the optimizer reorder them. */
   keepOrder?: boolean
   createdAt: string

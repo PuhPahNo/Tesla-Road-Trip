@@ -330,6 +330,36 @@ describe('route optimizer', () => {
     expect(firstCaliforniaIndex).toBeLessThan(firstGeorgiaIndex)
   })
 
+  it('uses a saved custom route day target without changing prebuilt route targets', () => {
+    const customRoute: SavedCustomRoute = {
+      id: 'saved-extended-trip',
+      name: 'Extended Custom Trip',
+      color: '#7c3aed',
+      targetDays: 16,
+      waypoints: [
+        {
+          id: 'city-atlanta',
+          label: 'Atlanta',
+          position: { lat: 33.749, lon: -84.388 },
+          radiusMiles: 50,
+        },
+      ],
+      createdAt: '2026-07-11T00:00:00.000Z',
+      updatedAt: '2026-07-11T00:00:00.000Z',
+    }
+    const result = optimizeRoutes(buildStationGrid(), {
+      ...defaultPlannerConfig,
+      longestTripDays: 12,
+      savedCustomRoutes: [customRoute],
+    })
+
+    expect(result.config.longestTripDays).toBe(12)
+    expect(result.routes.find((route) => route.id === customRoute.id)?.totalDays).toBe(16)
+    expect(
+      result.routes.find((route) => route.id !== customRoute.id)?.totalDays,
+    ).toBe(12)
+  })
+
   it('guarantees a state signature stop for states the streak drives through', () => {
     const sedona = { lat: 34.8697, lon: -111.7609 }
     const grandCanyon = { lat: 36.1069, lon: -112.1129 }
