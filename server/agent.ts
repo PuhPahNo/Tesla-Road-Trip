@@ -23,6 +23,7 @@ import {
 import { buildStateRouteStats } from '../src/domain/routeStats'
 import { buildTripComposition } from '../src/domain/tripComposition'
 import { readSavedCustomRoutes, updateSavedCustomRoute } from './customRoutes'
+import { getRequestUser } from './auth'
 import type {
   OptimizeResponse,
   PlannerConfig,
@@ -188,9 +189,10 @@ export function registerAgentRoutes(
       await assertDailyBudget(dailyLimitUsd, maxRequestUsd)
 
       const parsed = agentRequestSchema.parse(request.body)
+      const user = getRequestUser(request)
       let workingConfig = sanitizePlannerConfig({
         ...parsed.config,
-        savedCustomRoutes: await readSavedCustomRoutes(),
+        savedCustomRoutes: readSavedCustomRoutes(user?.id),
       })
       let selectedRouteId = parsed.selectedRouteId
       let workingResult: OptimizeResponse | undefined
@@ -223,6 +225,7 @@ export function registerAgentRoutes(
           selectedRouteId = nextRouteId
         },
         actions,
+        userId: user?.id,
         ensureOptimized,
       }
 
@@ -270,6 +273,7 @@ interface AgentToolContext {
   workingConfig: PlannerConfig
   selectedRouteId?: string
   actions: string[]
+  userId?: string
   ensureOptimized: () => Promise<OptimizeResponse>
 }
 
@@ -512,6 +516,9 @@ async function runAgentTool(
   }
 
   if (name === 'update_saved_custom_route') {
+    if (!context.userId) {
+      throw new Error('Sign in before asking the copilot to edit a saved route.')
+    }
     const parsed = savedRouteUpdateArgsSchema.parse(args)
     const routeId = parsed.routeId ?? context.selectedRouteId
     const savedRoute = context.workingConfig.savedCustomRoutes.find(
@@ -556,7 +563,7 @@ async function runAgentTool(
         ? { directionPreference: parsed.directionPreference }
         : {}),
       waypoints,
-    })
+    }, context.userId)
     if (!updated) throw new Error('Saved route not found.')
 
     context.workingConfig = sanitizePlannerConfig({

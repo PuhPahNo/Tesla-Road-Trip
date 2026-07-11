@@ -60,7 +60,7 @@ export interface HealthResponse {
 }
 
 export interface SavedCustomRoutesResponse {
-  storagePath: string
+  storage?: string
   routes: SavedCustomRoute[]
 }
 
@@ -76,7 +76,7 @@ export interface CreateCustomRouteRequest {
 }
 
 export interface CreateCustomRouteResponse {
-  storagePath: string
+  storage?: string
   route: SavedCustomRoute
 }
 

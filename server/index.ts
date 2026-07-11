@@ -1,14 +1,21 @@
 import 'dotenv/config'
-import cors from 'cors'
 import { createHash } from 'node:crypto'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import express from 'express'
 import { registerAgentRoutes } from './agent'
 import {
+  migrateLegacyCustomRoutesToUser,
   readSavedCustomRoutes,
   registerCustomRouteRoutes,
 } from './customRoutes'
+import {
+  ensureAnthonyAdmin,
+  getRequestUser,
+  registerAuthRoutes,
+} from './auth'
+import { registerCommunityRoutes } from './community'
+import { databasePath } from './database'
 import {
   defaultPlannerConfig,
   plannerConfigSchema,
@@ -173,8 +180,15 @@ async function loadStations(force = false): Promise<StationCache> {
 }
 
 const app = express()
-app.use(cors())
+app.set('trust proxy', 1)
 app.use(express.json({ limit: '1mb' }))
+app.use((_request, response, next) => {
+  response.setHeader('X-Content-Type-Options', 'nosniff')
+  response.setHeader('X-Frame-Options', 'SAMEORIGIN')
+  response.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
+  response.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+  next()
+})
 
 app.get('/api/health', async (_request, response) => {
   const enabled = await isRoadRoutingHealthy()
@@ -183,6 +197,7 @@ app.get('/api/health', async (_request, response) => {
     service: 'tesla-supercharger-quest',
     time: new Date().toISOString(),
     roadRouting: { enabled, provider: ROAD_PROVIDER },
+    accounts: { enabled: true },
   })
 })
 
@@ -222,7 +237,8 @@ app.get('/api/stations', async (request, response) => {
 app.post('/api/optimize', async (request, response) => {
   try {
     const cache = await loadStations()
-    const savedCustomRoutes = await readSavedCustomRoutes()
+    const user = getRequestUser(request)
+    const savedCustomRoutes = readSavedCustomRoutes(user?.id)
     const config = plannerConfigSchema.parse({
       ...defaultPlannerConfig,
       ...request.body,
@@ -353,6 +369,8 @@ function demoWarning(): string[] {
     : []
 }
 
+registerAuthRoutes(app)
+registerCommunityRoutes(app)
 registerCustomRouteRoutes(app)
 registerAgentRoutes(app, () => loadStations())
 
@@ -675,8 +693,17 @@ if (process.env.SERVE_CLIENT) {
   })
 }
 
+const anthonyAdmin = await ensureAnthonyAdmin()
+if (anthonyAdmin) {
+  const migratedRoutes = await migrateLegacyCustomRoutesToUser(anthonyAdmin.id)
+  console.log(
+    `Anthony admin ready${migratedRoutes ? ` · migrated ${migratedRoutes} saved routes` : ''}`,
+  )
+}
+
 app.listen(PORT, () => {
   console.log(`Charge Quest API listening on http://localhost:${PORT}`)
+  console.log(`Charge Quest data: ${databasePath()}`)
   // Warm the ORS health cache so the first /api/health reflects key validity
   // immediately (and the UI shows estimate mode right away if the key is bad).
   if (ROAD_PROVIDER === 'ors') void probeOrsKey()

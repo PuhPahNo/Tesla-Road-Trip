@@ -1,16 +1,20 @@
 # Architecture
 
-## Current Local Architecture
+## Current Architecture
 
 ```text
-React UI
+React site + planner
+  -> public landing / community / Track Anthony
+  -> first-party account + Anthony admin surfaces
   -> /api/stations
   -> /api/optimize
   -> /api/road-route
-Local Express API
+  -> /api/auth / account / custom-routes / community / admin
+Express API
   -> Supercharge.info allSites feed
-  -> OSRM road geometry endpoint
+  -> ORS or OSRM road geometry endpoint
   -> Domain optimizer
+  -> SQLite account/community repository
 Domain Modules
   -> station normalization
   -> geographic math
@@ -18,7 +22,7 @@ Domain Modules
   -> route planning and day partitioning
 ```
 
-The local API owns external data retrieval, caching, validation, and optimization. The browser only renders the planner and sends configuration.
+The API owns external data retrieval, caching, validation, optimization, authentication, authorization, and durable community state. The browser renders public pages and the planner; every user-owned write is authorized again on the server.
 
 ## Why This Shape
 
@@ -62,14 +66,25 @@ Recommended path:
 3. Replace the distance estimator with a `RoutingProvider`.
 4. Cache leg distances in SQLite keyed by station pair and routing profile.
 
+## Persistence and Account Model
+
+- `users` and `sessions` implement first-party username/password authentication with case-insensitive unique usernames.
+- Passwords are scrypt hashes. Raw session tokens are never stored; only SHA-256 token hashes are persisted.
+- `user_preferences` and `custom_routes` are keyed by user ownership.
+- `anthony_trip` and `trip_updates` drive the public tracker.
+- `state_votes`, `meetup_invites`, `suggestions`, `suggestion_votes`, and `achievements` drive community participation.
+- Meetup invitations are private until Anthony approves them.
+- The production database defaults to the existing Render persistent disk. A repository migration to PostgreSQL is the horizontal-scaling path; route ownership and API contracts should not change.
+
 ## Scaling Plan
 
-### Phase 1: Local Planner
-- In-memory feed cache.
-- Fast deterministic route estimates.
-- Browser map review.
+### Phase 1: Single-Service Community (current)
+- One Render web instance with SQLite/WAL on persistent disk.
+- First-party accounts, per-user preferences/routes, public community reads, and moderated writes.
+- In-memory station and road-route caches remain disposable.
 
-### Phase 2: Local Routing Engine
+### Phase 2: Database and Routing Scale
+- Move structured account/community tables behind the same repository contract to managed PostgreSQL before running multiple web instances.
 - OSRM/Valhalla service running locally.
 - Persist station snapshots and route results.
 - Accurate road distances and drive times inside the optimizer, not only display geometry.
@@ -86,10 +101,13 @@ Recommended path:
 
 ## Security and Privacy
 
-- The app is local-first and does not send route plans to a hosted backend.
-- The default start point is approximate to the user-provided ZIP area, not a precise home coordinate.
-- External calls are limited to station data and map tiles.
-- Future hosted deployment should move precise start locations to authenticated user-owned storage only.
+- Authentication is app-owned; there is no external OAuth provider.
+- Passwords are never stored or returned in plaintext.
+- Sessions use HTTP-only, SameSite cookies and expire after 30 days.
+- Sign-in/signup endpoints are rate limited; community posting has per-account limits.
+- All route, preference, meetup, and admin writes enforce ownership or role checks server-side.
+- First launch seeds the `anthony` admin with a temporary password; server-side authorization blocks protected actions until that password is changed.
+- The default start point remains approximate to the user-provided ZIP area, not a precise home coordinate.
 
 ## Reliability Boundaries
 

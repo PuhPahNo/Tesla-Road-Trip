@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=22.5.0"
+  },
   "scripts": {
     "dev": "concurrently -k -n api,web -c cyan,green \"npm:dev:api\" \"npm:dev:web\"",
     "dev:api": "PORT=4177 tsx watch server/index.ts",
@@ -15,11 +18,11 @@
     "test:watch": "vitest",
     "brand:assets": "node scripts/generate-brand-assets.mjs",
     "certify:ui": "node scripts/certify-ui.mjs",
-    "certify:custom-routes": "node scripts/certify-custom-routes.mjs"
+    "certify:custom-routes": "node scripts/certify-custom-routes.mjs",
+    "certify:community": "node scripts/certify-community.mjs"
   },
   "dependencies": {
     "concurrently": "^10.0.3",
-    "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "leaflet": "^1.9.4",
@@ -27,6 +30,7 @@
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-leaflet": "^5.0.0",
+    "react-router-dom": "^7.18.1",
     "tsx": "^4.22.4",
     "zod": "^4.4.3"
   },
@@ -35,7 +39,6 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
-    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/leaflet": "^1.9.21",
     "@types/node": "^24.13.2",

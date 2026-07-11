@@ -3,7 +3,7 @@ import puppeteer from 'puppeteer-core'
 const chromePath =
   process.env.CHROME_PATH ??
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
-const appUrl = process.env.APP_URL ?? 'http://localhost:5173'
+const appUrl = process.env.APP_URL ?? 'http://localhost:5173/planner'
 const originalName = 'UI Certification Route'
 const updatedName = 'UI Certification Route Updated'
 
@@ -17,6 +17,21 @@ try {
   const page = await browser.newPage()
   await page.setViewport({ width: 1440, height: 960, deviceScaleFactor: 1 })
   await page.goto(appUrl, { waitUntil: 'networkidle2', timeout: 60_000 })
+  const authResult = await page.evaluate(async () => {
+    const response = await fetch('/api/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: `routecert${Date.now()}`,
+        password: 'RouteCert-2026!',
+      }),
+    })
+    return { ok: response.ok, body: await response.json() }
+  })
+  if (!authResult.ok) {
+    throw new Error(`Unable to create route certification account: ${JSON.stringify(authResult.body)}`)
+  }
+  await page.reload({ waitUntil: 'networkidle2', timeout: 60_000 })
   await page.waitForSelector('button[aria-label="Choose route"]', { timeout: 90_000 })
   await page.waitForFunction(
     () => {

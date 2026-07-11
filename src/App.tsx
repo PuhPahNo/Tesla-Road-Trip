@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   fetchHealth,
   fetchStations,
@@ -60,6 +61,8 @@ import {
 } from './ui/Overlay'
 import { AlertIcon } from './ui/icons'
 import { Eyebrow } from './ui/primitives'
+import { fetchPreferences, savePreferences } from './api/siteClient'
+import { useAuth } from './site/AuthContext'
 
 const EMPTY_STATIONS: Station[] = []
 
@@ -90,6 +93,8 @@ type RoadRouteState =
 function App() {
   const isMobile = useIsMobile()
   const contestStatus = useContestStatus()
+  const navigate = useNavigate()
+  const { user, loading: authLoading } = useAuth()
 
   // ---- planner data state (preserved from the original app) ----
   const [config, setConfig] = useState<PlannerConfig>(defaultPlannerConfig)
@@ -141,11 +146,11 @@ function App() {
   }
 
   // ---- data loaders ----
-  const loadStations = async () => {
+  const loadStations = async (activeConfig = config) => {
     setIsLoadingStations(true)
     setError(undefined)
     try {
-      setStationStatus(await fetchStations(config))
+      setStationStatus(await fetchStations(activeConfig))
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Station feed failed.')
     } finally {
@@ -176,16 +181,21 @@ function App() {
     setHoveredDayIndex(undefined)
   }
 
-  const runOptimize = async () => {
+  const runOptimize = async (
+    activeConfig = config,
+    persistPreferences = true,
+  ) => {
     setIsOptimizing(true)
     setError(undefined)
     setOptimizeStep(OPTIMIZE_STEPS[0])
     setConfigOpen(false)
     try {
-      const response = await optimizeRoutes(sanitizePlannerConfig(config))
+      const sanitized = sanitizePlannerConfig(activeConfig)
+      if (user && persistPreferences) await savePreferences(sanitized)
+      const response = await optimizeRoutes(sanitized)
       applyOptimizationResult(response)
       showToast(
-        config.plannerMode === 'longest_trip'
+        sanitized.plannerMode === 'longest_trip'
           ? `Longest Trip planned · ${response.routes[0]?.totalDays.toLocaleString() ?? 0} streak days`
           : `Route optimized · ${response.routes[0]?.uniqueStations.toLocaleString() ?? 0} unique sites`,
       )
@@ -205,15 +215,26 @@ function App() {
   }
 
   // ---- effects ----
-  // first load: fetch stations + auto-optimize so the map is populated.
+  // First load (and account switch): hydrate that user's saved preferences,
+  // then optimize with their account-owned routes.
   useEffect(() => {
-    void loadStations()
-    void runOptimize()
+    if (authLoading) return
+    void fetchPreferences()
+      .then(({ config: savedConfig }) => {
+        const next = sanitizePlannerConfig(savedConfig)
+        setConfig(next)
+        void loadStations(next)
+        void runOptimize(next, false)
+      })
+      .catch(() => {
+        void loadStations(defaultPlannerConfig)
+        void runOptimize(defaultPlannerConfig, false)
+      })
     void fetchHealth()
       .then((health) => setRoadRoutingEnabled(Boolean(health.roadRouting?.enabled)))
       .catch(() => setRoadRoutingEnabled(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [authLoading, user?.id])
 
   // rotate the optimize-overlay step text while optimizing.
   useEffect(() => {
@@ -413,6 +434,10 @@ function App() {
   }
 
   const handleOpenCustomRoute = () => {
+    if (!user) {
+      navigate('/signup?returnTo=/planner')
+      return
+    }
     setEditingCustomRoute(undefined)
     setRoutePickerOpen(false)
     setCopilotOpen(false)
@@ -720,7 +745,7 @@ function App() {
         roadRoutingEnabled={roadRoutingEnabled}
         onClose={() => setConfigOpen(false)}
         onChange={(next) => setConfig(sanitizePlannerConfig(next))}
-        onApply={runOptimize}
+        onApply={() => void runOptimize()}
       />
       <CustomRouteModal
         open={customRouteOpen}

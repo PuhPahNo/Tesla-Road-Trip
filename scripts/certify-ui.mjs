@@ -5,7 +5,7 @@ import puppeteer from 'puppeteer-core'
 const chromePath =
   process.env.CHROME_PATH ??
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
-const appUrl = process.env.APP_URL ?? 'http://localhost:5173'
+const appUrl = process.env.APP_URL ?? 'http://localhost:5173/planner'
 const screenshotDir = path.resolve('docs/screenshots')
 
 await fs.mkdir(screenshotDir, { recursive: true })

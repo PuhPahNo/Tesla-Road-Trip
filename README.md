@@ -1,6 +1,6 @@
 # Charge Quest
 
-Planning app for the 2026 Tesla Free Supercharging Competition, focused on the Americas region and the Most Unique Sites / Longest Trip categories.
+Multi-user Tesla road-trip planner and community built around Anthony's 2026 Free Supercharging Competition quest, with landmark-first routing, configurable travel preferences, saved routes, and a public trip tracker.
 
 ## Run Locally
 
@@ -9,11 +9,16 @@ npm install
 npm run dev
 ```
 
-Open:
+Open the public site:
 
 ```text
 http://localhost:5173
 ```
+
+The planner lives at `http://localhost:5173/planner`. On first launch, Charge
+Quest seeds the `anthony` admin account with temporary password `admin123` and
+migrates the legacy saved routes into it. The account must replace that password
+before protected planner, community, or admin actions unlock.
 
 The Vite app proxies `/api/*` to the local Express API on port `4177`. For single-service hosting (e.g. Render), `npm run build && npm start` serves the built client from the API server.
 
@@ -24,9 +29,17 @@ npm test
 npm run build
 npm run lint
 npm run certify:ui
+npm run certify:community
 ```
 
 ## What It Does
+
+- Public first-person landing page explaining why Anthony built Charge Quest.
+- First-party username/password accounts with unique usernames of at least three characters, secure password hashes, and HTTP-only sessions—no email, OAuth, or external identity provider.
+- Account-owned route libraries and planner preferences; users cannot read or mutate another member's routes.
+- Community suggestions, votes, achievements, state-interest signals, and moderated meetup invitations.
+- Public **Track Anthony** page that stays parked until Anthony activates a trip, then shows day, location, progress, field updates, and approved meetups.
+- Anthony-only admin page for trip publishing and meetup moderation.
 
 - Fetches live Supercharger site data from Supercharge.info (Canada and Mexico via config toggles).
 - Plans both contest categories:
@@ -38,7 +51,7 @@ npm run certify:ui
 
 ## Interface
 
-Fullscreen "cockpit" UI (from the Claude Design redesign in `design/redesign/`):
+The public site wraps the fullscreen "cockpit" planner UI:
 
 - No-key Leaflet map (CARTO tiles) with the route line, station stops, and a clickable state-coverage choropleth as the entire background.
 - Floating glass chrome: route picker, icon rail with Overview / Daily plan / Coverage / Trip stats / Guardrails panels, and a ⌘K copilot panel.
@@ -46,6 +59,14 @@ Fullscreen "cockpit" UI (from the Claude Design redesign in `design/redesign/`):
 - **Trip calendar** — the whole route as week-by-week, rating-tinted day tiles; tiles open full day details.
 - Config slide-over with all planner assumptions (targets, daily limits, stop model, region toggles).
 - Dark ("dash", default) and light ("tesla") themes, persisted; dedicated mobile layout with bottom tab bar and sheets.
+
+## Accounts and Persistence
+
+- Structured community/account data lives in SQLite at `.data/charge-quest.sqlite` locally and `/data/charge-quest.sqlite` on Render by default.
+- Passwords are scrypt-hashed; session tokens are random, stored as hashes, and sent only in HTTP-only, SameSite cookies.
+- Accounts do not collect email addresses and there is intentionally no automated password-reset workflow. Anthony can handle recovery manually.
+- The seeded Anthony password is temporary and must be changed at first sign-in before any protected action is allowed.
+- SQLite is the first-community-release backend for the existing single Render web instance. The data-access boundary keeps a later PostgreSQL migration reversible when horizontal scaling is justified.
 
 ## Routing Model
 

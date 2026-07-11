@@ -1,14 +1,19 @@
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import type { Express } from 'express'
 import { z } from 'zod'
+import { PLANNER_NUMERIC_LIMITS } from '../src/domain/config'
 import type { RouteWaypoint, SavedCustomRoute } from '../src/domain/types'
 import { VEHICLE_PROFILE_IDS } from '../src/domain/vehicleProfiles'
-import { PLANNER_NUMERIC_LIMITS } from '../src/domain/config'
+import { requireUser } from './auth'
+import { db, transaction } from './database'
 
-const DATA_DIR = process.env.DATA_DIR ?? (process.env.RENDER ? '/data' : path.resolve(process.cwd(), '.data'))
-const CUSTOM_ROUTES_PATH =
+const DATA_DIR =
+  process.env.DATA_DIR ??
+  (process.env.RENDER ? '/data' : path.resolve(process.cwd(), '.data'))
+const LEGACY_CUSTOM_ROUTES_PATH =
   process.env.CUSTOM_ROUTES_PATH ?? path.join(DATA_DIR, 'custom-routes.json')
+
 const COLORS = [
   '#7c3aed',
   '#0891b2',
@@ -84,33 +89,53 @@ const createRouteSchema = z.object({
 
 const updateRouteSchema = createRouteSchema
   .partial()
-  .refine((value) => Object.keys(value).length > 0, 'At least one route field is required.')
+  .refine(
+    (value) => Object.keys(value).length > 0,
+    'At least one route field is required.',
+  )
 
-const routeListSchema = z.array(savedRouteSchema).max(100)
+const routeListSchema = z.array(savedRouteSchema).max(24)
 
-export async function readSavedCustomRoutes(): Promise<SavedCustomRoute[]> {
-  try {
-    const raw = await readFile(CUSTOM_ROUTES_PATH, 'utf8')
-    return routeListSchema.parse(JSON.parse(raw))
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return []
-    throw error
-  }
+export function readSavedCustomRoutes(userId?: string): SavedCustomRoute[] {
+  if (!userId) return []
+  const rows = db.prepare(`
+    SELECT route_json FROM custom_routes
+    WHERE user_id = ? ORDER BY updated_at ASC
+  `).all(userId) as unknown as Array<{ route_json: string }>
+  return routeListSchema.parse(rows.map((row) => JSON.parse(row.route_json)))
 }
 
-export async function writeSavedCustomRoutes(routes: SavedCustomRoute[]) {
-  await mkdir(path.dirname(CUSTOM_ROUTES_PATH), { recursive: true })
-  const tempPath = `${CUSTOM_ROUTES_PATH}.${process.pid}.tmp`
-  await writeFile(tempPath, `${JSON.stringify(routeListSchema.parse(routes), null, 2)}\n`)
-  await rename(tempPath, CUSTOM_ROUTES_PATH)
+export function writeSavedCustomRoutes(
+  userId: string,
+  routes: SavedCustomRoute[],
+) {
+  const parsed = routeListSchema.parse(routes)
+  transaction(() => {
+    db.prepare('DELETE FROM custom_routes WHERE user_id = ?').run(userId)
+    const insert = db.prepare(`
+      INSERT INTO custom_routes (
+        id, user_id, route_json, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?)
+    `)
+    parsed.forEach((route) => {
+      insert.run(
+        route.id,
+        userId,
+        JSON.stringify(route),
+        route.createdAt,
+        route.updatedAt,
+      )
+    })
+  })
 }
 
-export async function updateSavedCustomRoute(
+export function updateSavedCustomRoute(
   id: string,
   changes: z.input<typeof updateRouteSchema>,
+  userId: string,
 ) {
   const parsed = updateRouteSchema.parse(changes)
-  const existing = await readSavedCustomRoutes()
+  const existing = readSavedCustomRoutes(userId)
   const routeIndex = existing.findIndex((route) => route.id === id)
   if (routeIndex < 0) return undefined
 
@@ -136,17 +161,16 @@ export async function updateSavedCustomRoute(
   if (parsed.travelPreferences === null) delete route.travelPreferences
   const routes = existing.slice()
   routes[routeIndex] = route
-  await writeSavedCustomRoutes(routes)
+  writeSavedCustomRoutes(userId, routes)
   return { route, routes }
 }
 
 export function registerCustomRouteRoutes(app: Express) {
-  app.get('/api/custom-routes', async (_request, response) => {
+  app.get('/api/custom-routes', (request, response) => {
     try {
-      response.json({
-        storagePath: CUSTOM_ROUTES_PATH,
-        routes: await readSavedCustomRoutes(),
-      })
+      const user = requireUser(request, response)
+      if (!user) return
+      response.json({ storage: 'account', routes: readSavedCustomRoutes(user.id) })
     } catch (error) {
       response.status(500).json({
         error: 'custom_routes_read_failed',
@@ -156,10 +180,12 @@ export function registerCustomRouteRoutes(app: Express) {
     }
   })
 
-  app.post('/api/custom-routes', async (request, response) => {
+  app.post('/api/custom-routes', (request, response) => {
     try {
+      const user = requireUser(request, response)
+      if (!user) return
       const parsed = createRouteSchema.parse(request.body)
-      const existing = await readSavedCustomRoutes()
+      const existing = readSavedCustomRoutes(user.id)
       const now = new Date().toISOString()
       const route: SavedCustomRoute = {
         id: uniqueRouteId(parsed.name, existing),
@@ -179,8 +205,8 @@ export function registerCustomRouteRoutes(app: Express) {
         updatedAt: now,
       }
 
-      await writeSavedCustomRoutes([...existing, route])
-      response.status(201).json({ route, storagePath: CUSTOM_ROUTES_PATH })
+      writeSavedCustomRoutes(user.id, [...existing, route])
+      response.status(201).json({ route, storage: 'account' })
     } catch (error) {
       response.status(error instanceof z.ZodError ? 400 : 500).json({
         error: 'custom_route_create_failed',
@@ -190,9 +216,11 @@ export function registerCustomRouteRoutes(app: Express) {
     }
   })
 
-  app.patch('/api/custom-routes/:id', async (request, response) => {
+  app.patch('/api/custom-routes/:id', (request, response) => {
     try {
-      const updated = await updateSavedCustomRoute(request.params.id, request.body)
+      const user = requireUser(request, response)
+      if (!user) return
+      const updated = updateSavedCustomRoute(request.params.id, request.body, user.id)
       if (!updated) {
         response.status(404).json({
           error: 'custom_route_not_found',
@@ -204,7 +232,7 @@ export function registerCustomRouteRoutes(app: Express) {
       response.json({
         route: updated.route,
         routes: updated.routes,
-        storagePath: CUSTOM_ROUTES_PATH,
+        storage: 'account',
       })
     } catch (error) {
       response.status(error instanceof z.ZodError ? 400 : 500).json({
@@ -215,9 +243,11 @@ export function registerCustomRouteRoutes(app: Express) {
     }
   })
 
-  app.delete('/api/custom-routes/:id', async (request, response) => {
+  app.delete('/api/custom-routes/:id', (request, response) => {
     try {
-      const existing = await readSavedCustomRoutes()
+      const user = requireUser(request, response)
+      if (!user) return
+      const existing = readSavedCustomRoutes(user.id)
       const next = existing.filter((route) => route.id !== request.params.id)
       if (next.length === existing.length) {
         response.status(404).json({
@@ -227,7 +257,7 @@ export function registerCustomRouteRoutes(app: Express) {
         return
       }
 
-      await writeSavedCustomRoutes(next)
+      writeSavedCustomRoutes(user.id, next)
       response.json({ ok: true, routes: next })
     } catch (error) {
       response.status(500).json({
@@ -237,6 +267,26 @@ export function registerCustomRouteRoutes(app: Express) {
       })
     }
   })
+}
+
+export async function migrateLegacyCustomRoutesToUser(userId: string) {
+  const existingCount = (
+    db.prepare(`
+      SELECT COUNT(*) AS count FROM custom_routes WHERE user_id = ?
+    `).get(userId) as unknown as { count: number }
+  ).count
+  if (existingCount > 0) return 0
+
+  try {
+    const raw = await readFile(LEGACY_CUSTOM_ROUTES_PATH, 'utf8')
+    const routes = routeListSchema.parse(JSON.parse(raw))
+    if (routes.length === 0) return 0
+    writeSavedCustomRoutes(userId, routes)
+    return routes.length
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return 0
+    throw error
+  }
 }
 
 function normalizeWaypoints(waypoints: RouteWaypoint[]): RouteWaypoint[] {

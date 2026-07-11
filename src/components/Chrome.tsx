@@ -44,12 +44,14 @@ export function BrandIsland({
     // Below sm the island yields to the actions island (~148px + gap) so the
     // two never overlap; the route chip shrinks and truncates instead.
     <div className="glass fixed left-4 top-4 z-40 flex h-12 max-w-[calc(100vw-172px)] items-center gap-2.5 rounded-[13px] py-0 pl-3 pr-1.5 sm:max-w-none">
-      <img
-        src="/brand-mark.svg?v=2"
-        alt=""
-        aria-hidden="true"
-        className="h-[30px] w-[30px] flex-none rounded-[9px]"
-      />
+      <a href="/" aria-label="Return to Charge Quest home" className="flex flex-none">
+        <img
+          src="/brand-mark.svg?v=2"
+          alt=""
+          aria-hidden="true"
+          className="h-[30px] w-[30px] rounded-[9px]"
+        />
+      </a>
       <div className="hidden flex-none pr-1 leading-[1.05] sm:block">
         <div className="whitespace-nowrap font-mono text-[8.5px] uppercase tracking-[0.14em] text-faint">
           {contestLabel}
