@@ -45,7 +45,7 @@ export function BrandIsland({
     // two never overlap; the route chip shrinks and truncates instead.
     <div className="glass fixed left-4 top-4 z-40 flex h-12 max-w-[calc(100vw-172px)] items-center gap-2.5 rounded-[13px] py-0 pl-3 pr-1.5 sm:max-w-none">
       <img
-        src="/brand-mark.svg"
+        src="/brand-mark.svg?v=2"
         alt=""
         aria-hidden="true"
         className="h-[30px] w-[30px] flex-none rounded-[9px]"

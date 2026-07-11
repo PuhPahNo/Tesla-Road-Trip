@@ -13,6 +13,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "brand:assets": "node scripts/generate-brand-assets.mjs",
     "certify:ui": "node scripts/certify-ui.mjs",
     "certify:custom-routes": "node scripts/certify-custom-routes.mjs"
   },
