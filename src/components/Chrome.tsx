@@ -55,7 +55,7 @@ export function BrandIsland({
           {contestLabel}
         </div>
         <div className="whitespace-nowrap text-[13px] font-semibold tracking-[-0.01em] text-ink">
-          Quest Planner
+          Charge Quest
         </div>
       </div>
       <button
@@ -76,7 +76,7 @@ export function BrandIsland({
 }
 
 /* ------------------------------------------------------------------ */
-/* Top-right island — ask / refresh / theme / configure                */
+/* Top-right island — ask / refresh / theme / travel preferences       */
 /* ------------------------------------------------------------------ */
 export function ActionsIsland({
   onOpenCopilot,
@@ -131,11 +131,11 @@ export function ActionsIsland({
       <button
         type="button"
         onClick={onOpenConfig}
-        aria-label="Configure"
+        aria-label="Travel preferences"
         className="flex h-[34px] cursor-pointer items-center gap-[7px] rounded-[9px] border border-glass-bd bg-chip px-3 text-ink transition hover:brightness-110"
       >
         <SlidersIcon size={14} />
-        <span className="hidden text-[12px] font-medium sm:inline">Configure</span>
+        <span className="hidden text-[12px] font-medium sm:inline">Preferences</span>
       </button>
     </div>
   )

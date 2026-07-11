@@ -30,15 +30,16 @@ Required checks:
 1. Load the local app.
 2. Confirm the map is visible on first screen.
 3. Confirm station feed status and source timestamp are visible.
-4. Open the configuration modal.
-5. Change target stations and trip weeks.
-6. Toggle Canada and Mexico.
-7. Toggle long-day optimization.
-8. Run Optimize.
-9. Confirm OSRM road geometry reaches ready state or reports a visible routing error.
-10. Switch through several route candidates, including at least one regional/deadhead-heavy route.
-11. Confirm per-day route stats, long-day explanations, and advisory badges are readable.
-12. Check desktop and mobile screenshots for overlapping text, clipped buttons, broken map, or confusing hierarchy.
+4. Open Travel Preferences and confirm vehicle/range, trip pace, daily-drive limits, generated-route defaults, coverage, and advanced assumptions are present.
+5. Confirm Travel Preferences does not expose a must-see location editor.
+6. Change generated-route defaults, toggle Canada and Mexico, and toggle long-day optimization.
+7. Save preferences and confirm the routes reoptimize.
+8. Open Create Custom Route and confirm trip length, must-see stops, and stop order are route-specific.
+9. Confirm the custom route builder shows the inherited vehicle, range, pace, and daily-drive preferences.
+10. Confirm OSRM road geometry reaches ready state or reports a visible routing error.
+11. Switch through several route candidates, including at least one regional/deadhead-heavy route.
+12. Confirm per-day route stats, long-day explanations, and advisory badges are readable.
+13. Check desktop and mobile screenshots for overlapping text, clipped buttons, broken map, or confusing hierarchy.
 
 ## Known Model Limitations
 

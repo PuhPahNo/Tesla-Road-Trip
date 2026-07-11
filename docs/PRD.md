@@ -1,4 +1,4 @@
-# Tesla Supercharger Quest Planner PRD
+# Charge Quest PRD
 
 ## Product Goal
 Build a local planning website for a Tesla owner in Chattanooga, TN who wants to compete in the 2026 Tesla Free Supercharging Competition for:
@@ -43,16 +43,15 @@ A single Tesla Model Y owner planning an 8-10 week road trip from the Chattanoog
 - Canada and Mexico toggles change the station universe without code changes.
 - UI displays data source and fetch time.
 
-### 2. Configuration Modal
-**Objective:** Let the user control assumptions without editing code.
+### 2. Travel Preferences and Custom Route Builder
+**Objective:** Separate reusable travel assumptions from decisions that belong to one route.
 
-**Inputs**
-- Target unique station count.
-- Trip length in weeks.
+**Travel preference inputs**
+- Fixed Tesla Model Y Long Range vehicle profile and practical highway range.
 - Daily drive target hours.
 - Normal-day maximum drive hours.
+- Default trip pace and rating-based stay behavior.
 - Average moving speed.
-- Practical range miles.
 - Close-site / cluster radius in miles.
 - Close-site stop minutes.
 - Distance-charge stop minutes.
@@ -62,11 +61,22 @@ A single Tesla Model Y owner planning an 8-10 week road trip from the Chattanoog
 - Include Canada toggle.
 - Include Mexico toggle.
 - Show all stations on map toggle.
+- Default planner goal and target for generated route candidates.
+- Favorite and muted place categories used across routes.
+
+**Custom route inputs**
+- Route name and route-specific trip length.
+- Must-see cities, landmarks, and manual locations.
+- Optimized or exact saved stop order.
+- A visible summary of the inherited vehicle, range, pace, and daily-drive preferences.
 
 **Acceptance Criteria**
 - Invalid values are constrained before optimization.
-- The modal has clear labels, helper text, and does not overflow on mobile.
-- Optimize runs from the modal and from the main toolbar.
+- Must-see locations are edited only in the custom route builder, never in Travel Preferences.
+- Travel Preferences explains that generated-route targets are defaults and saved custom routes keep their own duration and stops.
+- The custom route builder explains which travel preferences it inherits.
+- Both surfaces have clear labels, helper text, and usable desktop and mobile layouts.
+- Saving preferences reoptimizes all routes; saving a custom route persists and selects that route.
 
 ### 3. Route Optimization
 **Objective:** Generate many plausible route candidates for a round trip from Chattanooga.

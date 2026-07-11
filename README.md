@@ -1,4 +1,4 @@
-# Tesla Supercharger Quest Planner
+# Charge Quest
 
 Planning app for the 2026 Tesla Free Supercharging Competition, focused on the Americas region and the Most Unique Sites / Longest Trip categories.
 

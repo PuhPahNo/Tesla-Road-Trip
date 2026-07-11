@@ -200,7 +200,7 @@ export function SplashScreen({ subtitle }: { subtitle: string }) {
       </div>
       <div className="text-center">
         <div className="text-[15px] font-semibold tracking-[-0.01em] text-ink">
-          Supercharger Quest Planner
+          Charge Quest
         </div>
         <div className="mt-1.5 font-mono text-[11px] text-faint">
           {subtitle}

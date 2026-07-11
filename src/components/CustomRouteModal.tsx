@@ -1,5 +1,6 @@
 import { useEffect, useId, useMemo, useState } from 'react'
-import type { RouteWaypoint, SavedCustomRoute } from '../domain/types'
+import type { PlannerConfig, RouteWaypoint, SavedCustomRoute } from '../domain/types'
+import { TRIP_PACE_LABELS } from '../domain/stays'
 import { detailForCatalogPlace } from '../domain/placeDetails'
 import {
   PLACE_CATALOG,
@@ -36,6 +37,13 @@ export interface CustomRouteModalProps {
   isSaving: boolean
   route?: SavedCustomRoute
   defaultTargetDays: number
+  preferences: Pick<
+    PlannerConfig,
+    | 'tripPace'
+    | 'dailyDriveTargetHours'
+    | 'dailyDriveMaxHours'
+    | 'practicalRangeMiles'
+  >
   onClose: () => void
   onSave: (draft: CustomRouteDraft) => void
 }
@@ -47,6 +55,7 @@ export function CustomRouteModal({
   isSaving,
   route,
   defaultTargetDays,
+  preferences,
   onClose,
   onSave,
 }: CustomRouteModalProps) {
@@ -164,11 +173,35 @@ export function CustomRouteModal({
     <Overlay open={open} onClose={onClose} size="wide" labelledBy={titleId}>
       <OverlayHeader
         titleId={titleId}
-        kicker="Custom route"
-        title={route ? 'Edit saved route' : 'Create saved route'}
-        meta="This route keeps its own name, trip length, stops, and stop-order preference. Your regular trip configuration stays unchanged."
+        kicker="Route builder"
+        title={route ? 'Edit custom route' : 'Create custom route'}
+        meta="Trip length, must-see stops, and stop order belong to this route. Travel preferences are inherited automatically."
         onClose={onClose}
       />
+
+      <div className="flex flex-none flex-col gap-2 border-b border-edge bg-chip px-4 py-3">
+        <div className="flex items-baseline justify-between gap-3">
+          <div className="font-mono text-[9px] uppercase tracking-[0.1em] text-faint">
+            Inherited travel preferences
+          </div>
+          <div className="font-mono text-[9.5px] text-faint">Tesla Model Y LR</div>
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <PreferenceSummary label="Pace" value={TRIP_PACE_LABELS[preferences.tripPace]} />
+          <PreferenceSummary
+            label="Comfortable day"
+            value={`${preferences.dailyDriveTargetHours}h`}
+          />
+          <PreferenceSummary
+            label="Daily maximum"
+            value={`${preferences.dailyDriveMaxHours}h`}
+          />
+          <PreferenceSummary
+            label="Practical range"
+            value={`${preferences.practicalRangeMiles} mi`}
+          />
+        </div>
+      </div>
 
       <div className="grid min-h-0 flex-1 gap-0 overflow-hidden md:grid-cols-[minmax(0,1fr)_360px]">
         <div className="min-h-0 overflow-y-auto p-4">
@@ -206,7 +239,7 @@ export function CustomRouteModal({
 
           <div className="mt-4">
             <label className="mb-2 block text-[12px] font-medium text-dim" htmlFor="custom-route-search">
-              Add from loaded landmarks and cities
+              Choose must-see stops
             </label>
             <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_130px_160px]">
               <input
@@ -319,7 +352,7 @@ export function CustomRouteModal({
         <aside className="flex min-h-0 flex-col border-t border-edge bg-panel2 p-4 md:border-l md:border-t-0">
           <div className="flex items-baseline justify-between gap-3">
             <div className="font-mono text-[9px] uppercase tracking-[0.1em] text-faint">
-              Selected stops
+              Must-see stops
             </div>
             <div className="font-mono text-[10.5px] text-faint">
               {waypoints.length} stops
@@ -329,9 +362,9 @@ export function CustomRouteModal({
           <div className="mt-3 min-h-0 flex-1 overflow-y-auto">
             {waypoints.length === 0 ? (
               <div className="rounded-[11px] border border-dashed border-edge bg-chip p-5 text-center text-[12.5px] leading-[1.5] text-dim">
-                Add at least one stop. The optimizer will choose the stop order,
-                Supercharger sequence, day plan, and return leg from your configured
-                trip settings.
+                Add at least one must-see stop. The optimizer will build the
+                Supercharger sequence and day plan around this route using your
+                inherited travel preferences.
               </div>
             ) : (
               <div className="flex flex-col gap-2">
@@ -431,6 +464,17 @@ export function CustomRouteModal({
         </aside>
       </div>
     </Overlay>
+  )
+}
+
+function PreferenceSummary({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-[9px] border border-edge bg-panel2 px-2.5 py-2">
+      <div className="font-mono text-[8.5px] uppercase tracking-[0.08em] text-faint">
+        {label}
+      </div>
+      <div className="mt-1 text-[12px] font-semibold text-ink">{value}</div>
+    </div>
   )
 }
 

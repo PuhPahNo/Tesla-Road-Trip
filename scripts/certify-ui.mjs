@@ -21,12 +21,12 @@ try {
   await page.setViewport({ width: 1440, height: 960, deviceScaleFactor: 1 })
   await page.goto(appUrl, { waitUntil: 'networkidle2', timeout: 60_000 })
 
-  // Cockpit chrome ready: brand island + Configure action.
+  // Cockpit chrome ready: brand island + Travel Preferences action.
   await page.waitForFunction(
     () =>
-      document.body.textContent?.includes('Quest Planner') &&
+      document.body.textContent?.includes('Charge Quest') &&
       Array.from(document.querySelectorAll('button')).some((button) =>
-        button.getAttribute('aria-label') === 'Configure',
+        button.getAttribute('aria-label') === 'Travel preferences',
       ),
     { timeout: 30_000 },
   )
@@ -46,11 +46,11 @@ try {
   )
 
   // Open the config slide-over and adjust the plan.
-  await page.click('button[aria-label="Configure"]')
+  await page.click('button[aria-label="Travel preferences"]')
   await page.waitForFunction(
     () =>
       Array.from(document.querySelectorAll('[role="dialog"]')).some((dialog) =>
-        dialog.textContent?.includes('Tune the optimizer'),
+        dialog.textContent?.includes('Set defaults for every route'),
       ),
     { timeout: 30_000 },
   )
@@ -89,14 +89,22 @@ try {
       }
     }
 
-    setRangeByLabel('Target streak days', 60)
-    setSwitchByLabel('Long-day optimization', true)
+    setRangeByLabel('Default streak length', 60)
+
+    const advanced = Array.from(document.querySelectorAll('details')).find((item) =>
+      item.textContent?.includes('Advanced planning assumptions'),
+    )
+    if (!(advanced instanceof HTMLDetailsElement)) {
+      throw new Error('Advanced planning assumptions were not found.')
+    }
+    advanced.open = true
+    setSwitchByLabel('Allow occasional long days', true)
 
     const button = Array.from(document.querySelectorAll('button')).find((item) =>
-      item.textContent?.includes('Optimize route'),
+      item.textContent?.includes('Save & reoptimize'),
     )
     if (!(button instanceof HTMLButtonElement)) {
-      throw new Error('Optimize route button was not found.')
+      throw new Error('Save & reoptimize button was not found.')
     }
     button.click()
   })

@@ -152,7 +152,7 @@ async function loadStations(force = false): Promise<StationCache> {
   const response = await fetch(SUPERCHARGE_INFO_URL, {
     headers: {
       'User-Agent':
-        'TeslaSuperchargerQuestPlanner/1.0 (+local route planning app)',
+        'ChargeQuest/1.0 (+local route planning app)',
       Accept: 'application/json',
     },
   })
@@ -580,7 +580,7 @@ async function requestOsrmChunk(
   const routeResponse = await fetch(routeUrl, {
     headers: {
       'User-Agent':
-        'TeslaSuperchargerQuestPlanner/1.0 (+local route planning app)',
+        'ChargeQuest/1.0 (+local route planning app)',
       Accept: 'application/json',
     },
   })
@@ -676,7 +676,7 @@ if (process.env.SERVE_CLIENT) {
 }
 
 app.listen(PORT, () => {
-  console.log(`Tesla Supercharger Quest API listening on http://localhost:${PORT}`)
+  console.log(`Charge Quest API listening on http://localhost:${PORT}`)
   // Warm the ORS health cache so the first /api/health reflects key validity
   // immediately (and the UI shows estimate mode right away if the key is bad).
   if (ROAD_PROVIDER === 'ors') void probeOrsKey()

@@ -1,20 +1,12 @@
-import { useEffect, useId, useMemo, useState, type ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 import type {
-  LongestTripVisitTarget,
   PlannerConfig,
   PlannerMode,
   TripPace,
 } from '../domain/types'
 import { TRIP_PACE_DESCRIPTIONS, TRIP_PACE_LABELS } from '../domain/stays'
 import {
-  LONGEST_TRIP_DESTINATIONS,
-  LONGEST_TRIP_STATE_TARGETS,
-  type LongestTripDestination,
-  type LongestTripStateTarget,
-} from '../domain/visitTargets'
-import {
   PLACE_CATEGORY_OPTIONS,
-  type CatalogPlaceType,
   type PlaceCategory,
 } from '../domain/placeCatalog'
 import { Overlay } from '../ui/Overlay'
@@ -146,20 +138,23 @@ function CategoryPreferencesSection({
   )
 }
 
-const LONGEST_TRIP_TARGETS: SliderSpec[] = [
+const LONGEST_TRIP_DEFAULTS: SliderSpec[] = [
   {
     key: 'longestTripDays',
-    label: 'Target streak days',
-    hint: 'Consecutive unique-Supercharger days to chase.',
+    label: 'Default streak length',
+    hint: 'Used for generated routes. Saved custom routes keep their own trip length.',
     min: 1,
     max: 365,
     step: 1,
     unit: 'days',
   },
+]
+
+const VEHICLE_MODEL: SliderSpec[] = [
   {
     key: 'practicalRangeMiles',
     label: 'Practical range',
-    hint: 'Below this, legs avoid range warnings.',
+    hint: 'Conservative real-world range used to plan charging legs.',
     min: 80,
     max: 350,
     step: 5,
@@ -176,45 +171,27 @@ const LONGEST_TRIP_TARGETS: SliderSpec[] = [
   },
 ]
 
-const UNIQUE_SITE_TARGETS: SliderSpec[] = [
+const UNIQUE_SITE_DEFAULTS: SliderSpec[] = [
   {
     key: 'targetStations',
-    label: 'Target unique sites',
-    hint: 'How many unique Superchargers to bag.',
+    label: 'Default site target',
+    hint: 'Used for generated Most Unique Sites candidates.',
     min: 25,
     max: 5000,
     step: 25,
   },
   {
     key: 'tripWeeks',
-    label: 'Trip length',
-    hint: 'Total weeks on the road.',
+    label: 'Default trip length',
+    hint: 'Used for generated routes, not saved custom routes.',
     min: 1,
     max: 52,
     step: 0.5,
     unit: 'wks',
   },
-  {
-    key: 'averageMph',
-    label: 'Average speed',
-    hint: 'Used to estimate leg drive time.',
-    min: 25,
-    max: 85,
-    step: 1,
-    unit: 'mph',
-  },
-  {
-    key: 'practicalRangeMiles',
-    label: 'Practical range',
-    hint: 'Below this, legs avoid range warnings.',
-    min: 80,
-    max: 350,
-    step: 5,
-    unit: 'mi',
-  },
 ]
 
-const DAILY_LIMITS: SliderSpec[] = [
+const DRIVING_DAY: SliderSpec[] = [
   {
     key: 'dailyDriveTargetHours',
     label: 'Daily drive target',
@@ -226,13 +203,16 @@ const DAILY_LIMITS: SliderSpec[] = [
   },
   {
     key: 'dailyDriveMaxHours',
-    label: 'Daily drive max',
-    hint: 'Hard cap before a day is split.',
+    label: 'Maximum drive time',
+    hint: 'Hard cap for a normal driving day before the route is split.',
     min: 1,
     max: 16,
     step: 0.25,
     unit: 'h',
   },
+]
+
+const LONG_DAY_LIMITS: SliderSpec[] = [
   {
     key: 'longDayMaxHours',
     label: 'Long-day cap',
@@ -292,12 +272,7 @@ const STOP_MODEL: SliderSpec[] = [
   },
 ]
 
-const OPTIONS: ToggleSpec[] = [
-  {
-    key: 'longDayOptimization',
-    label: 'Long-day optimization',
-    hint: 'Allow 8–9h days when they add enough sites.',
-  },
+const COVERAGE_OPTIONS: ToggleSpec[] = [
   {
     key: 'includeCanada',
     label: 'Include Canada',
@@ -314,6 +289,12 @@ const OPTIONS: ToggleSpec[] = [
     hint: 'Plot the full filtered station universe.',
   },
 ]
+
+const LONG_DAY_TOGGLE: ToggleSpec = {
+  key: 'longDayOptimization',
+  label: 'Allow occasional long days',
+  hint: 'Exceed the normal-day maximum only when the route gains enough sites.',
+}
 
 /** Format a numeric value compactly for the mono readout. */
 function formatValue(value: number, step: number): string {
@@ -430,319 +411,6 @@ function InfoRow({ label, hint, badge }: { label: string; hint: string; badge: s
 }
 
 /* ------------------------------------------------------------------ */
-/* Must-visit targets (Longest Trip)                                   */
-/* ------------------------------------------------------------------ */
-function destinationTarget(
-  destination: LongestTripDestination,
-): LongestTripVisitTarget {
-  return {
-    id: destination.id,
-    type: destination.type,
-    label: destination.label,
-    state: destination.state,
-    position: destination.position,
-    radiusMiles: destination.radiusMiles,
-    stayDays: 1,
-  }
-}
-
-function stateTarget(target: LongestTripStateTarget): LongestTripVisitTarget {
-  return {
-    id: target.id,
-    type: 'state',
-    label: target.label,
-    state: target.state,
-    position: target.position,
-    stayDays: 1,
-  }
-}
-
-function TargetSelect({
-  label,
-  value,
-  options,
-  disabled,
-  onChange,
-  onAdd,
-}: {
-  label: string
-  value: string
-  options: Array<{ value: string; label: string }>
-  disabled: boolean
-  onChange: (value: string) => void
-  onAdd: () => void
-}) {
-  const selectId = useId()
-  return (
-    <div className="min-w-0">
-      <label htmlFor={selectId} className="mb-1.5 block text-[11.5px] font-medium text-dim">
-        {label}
-      </label>
-      <div className="flex min-w-0 gap-2">
-        <select
-          id={selectId}
-          value={value}
-          disabled={disabled}
-          onChange={(event) => onChange(event.target.value)}
-          className="min-h-10 min-w-0 flex-1 rounded-[9px] border border-edge bg-panel2 px-2.5 text-[12.5px] text-ink disabled:opacity-60"
-        >
-          {options.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <Button variant="secondary" className="min-h-10 flex-none" onClick={onAdd} disabled={disabled}>
-          Add
-        </Button>
-      </div>
-    </div>
-  )
-}
-
-function TargetStayRow({
-  target,
-  unit,
-  onStayDaysChange,
-  onRemove,
-}: {
-  target: LongestTripVisitTarget
-  unit: string
-  onStayDaysChange: (stayDays: number) => void
-  onRemove: () => void
-}) {
-  const inputId = useId()
-  const targetType =
-    target.type === 'state'
-      ? target.state ?? 'State'
-      : target.type === 'city'
-        ? 'City'
-        : 'Landmark'
-
-  return (
-    <div className="flex items-center gap-2.5 rounded-[11px] border border-edge bg-panel2 px-3 py-2.5">
-      <div className="min-w-0 flex-1">
-        <div className="truncate text-[12.5px] font-medium text-ink">{target.label}</div>
-        <div className="mt-0.5 font-mono text-[9.5px] uppercase tracking-[0.08em] text-faint">
-          {targetType}
-        </div>
-      </div>
-      <label htmlFor={inputId} className="sr-only">
-        Days in {target.label}
-      </label>
-      <input
-        id={inputId}
-        type="number"
-        min={1}
-        max={21}
-        step={1}
-        value={target.stayDays}
-        onChange={(event) => onStayDaysChange(Number(event.target.value))}
-        className="h-9 w-16 rounded-[9px] border border-edge bg-chip px-1 text-center font-mono text-[12.5px] text-ink"
-      />
-      <span className="flex-none text-[11px] text-faint">{unit}</span>
-      <button
-        type="button"
-        onClick={onRemove}
-        aria-label={`Remove ${target.label}`}
-        className="flex h-7 w-7 flex-none cursor-pointer items-center justify-center rounded-lg border border-edge bg-transparent text-dim transition hover:text-ink"
-      >
-        <CloseIcon size={12} />
-      </button>
-    </div>
-  )
-}
-
-function LongestTripTargetsSection({
-  config,
-  onChange,
-}: {
-  config: PlannerConfig
-  onChange: (config: PlannerConfig) => void
-}) {
-  const [destinationQuery, setDestinationQuery] = useState('')
-  const [destinationType, setDestinationType] = useState<'all' | CatalogPlaceType>('all')
-  const [destinationCategory, setDestinationCategory] = useState<'all' | PlaceCategory>('all')
-  const selectedIds = useMemo(
-    () => new Set(config.longestTripTargets.map((target) => target.id)),
-    [config.longestTripTargets],
-  )
-  const availableStates = useMemo(
-    () => LONGEST_TRIP_STATE_TARGETS.filter((target) => !selectedIds.has(target.id)),
-    [selectedIds],
-  )
-  const availableDestinations = useMemo(
-    () => LONGEST_TRIP_DESTINATIONS.filter((target) => !selectedIds.has(target.id)),
-    [selectedIds],
-  )
-  const filteredDestinations = useMemo(() => {
-    const normalized = destinationQuery.trim().toLowerCase()
-    return availableDestinations
-      .filter((target) =>
-        destinationType === 'all' ? true : target.type === destinationType,
-      )
-      .filter((target) =>
-        destinationCategory === 'all'
-          ? true
-          : target.categories.includes(destinationCategory),
-      )
-      .filter((target) =>
-        normalized
-          ? `${target.label} ${target.state} ${target.type} ${target.categories.join(' ')}`.toLowerCase().includes(normalized)
-          : true,
-      )
-      .slice(0, 160)
-  }, [availableDestinations, destinationCategory, destinationQuery, destinationType])
-  const [selectedStateId, setSelectedStateId] = useState(availableStates[0]?.id ?? '')
-  const [selectedDestinationId, setSelectedDestinationId] = useState(
-    filteredDestinations[0]?.id ?? '',
-  )
-  useEffect(() => {
-    if (availableStates.some((target) => target.id === selectedStateId)) return
-    setSelectedStateId(availableStates[0]?.id ?? '')
-  }, [availableStates, selectedStateId])
-  useEffect(() => {
-    if (filteredDestinations.some((target) => target.id === selectedDestinationId)) return
-    setSelectedDestinationId(filteredDestinations[0]?.id ?? '')
-  }, [filteredDestinations, selectedDestinationId])
-
-  const isLongestTrip = config.plannerMode === 'longest_trip'
-  const targetDays = config.longestTripTargets.reduce(
-    (sum, target) => sum + target.stayDays,
-    0,
-  )
-  const exceedsTarget = isLongestTrip
-    ? targetDays > config.longestTripDays
-    : targetDays > config.targetStations
-
-  const setTargets = (longestTripTargets: LongestTripVisitTarget[]) =>
-    onChange({ ...config, longestTripTargets })
-
-  const addTarget = (target: LongestTripVisitTarget) => {
-    if (selectedIds.has(target.id)) return
-    setTargets([...config.longestTripTargets, target])
-  }
-
-  const updateStayDays = (id: string, stayDays: number) => {
-    setTargets(
-      config.longestTripTargets.map((target) =>
-        target.id === id
-          ? { ...target, stayDays: Math.max(1, Math.min(21, Math.round(stayDays))) }
-          : target,
-      ),
-    )
-  }
-
-  const removeTarget = (id: string) => {
-    setTargets(config.longestTripTargets.filter((target) => target.id !== id))
-  }
-
-  const addSelectedState = () => {
-    const target =
-      LONGEST_TRIP_STATE_TARGETS.find((item) => item.id === selectedStateId) ??
-      availableStates[0]
-    if (!target) return
-    addTarget(stateTarget(target))
-    const nextAvailable = availableStates.find((item) => item.id !== target.id)
-    setSelectedStateId(nextAvailable?.id ?? '')
-  }
-
-  const addSelectedDestination = () => {
-    const target =
-      LONGEST_TRIP_DESTINATIONS.find((item) => item.id === selectedDestinationId) ??
-      filteredDestinations[0]
-    if (!target) return
-    addTarget(destinationTarget(target))
-    const nextAvailable = filteredDestinations.find((item) => item.id !== target.id)
-    setSelectedDestinationId(nextAvailable?.id ?? '')
-  }
-
-  return (
-    <div className="flex flex-col gap-3">
-      <SectionLabel>Must-visit targets</SectionLabel>
-      <TargetSelect
-        label="State"
-        value={selectedStateId}
-        options={availableStates.map((target) => ({ value: target.id, label: target.label }))}
-        onChange={setSelectedStateId}
-        onAdd={addSelectedState}
-        disabled={availableStates.length === 0}
-      />
-      <div className="grid gap-2">
-        <input
-          value={destinationQuery}
-          onChange={(event) => setDestinationQuery(event.target.value)}
-          placeholder="Search Canton, Hollywood, civil rights..."
-          aria-label="Search city or landmark targets"
-          className="min-h-10 min-w-0 rounded-[9px] border border-edge bg-panel2 px-2.5 text-[12.5px] text-ink placeholder:text-faint"
-        />
-        <div className="grid gap-2 sm:grid-cols-2">
-          <select
-            value={destinationType}
-            onChange={(event) =>
-              setDestinationType(event.target.value as 'all' | CatalogPlaceType)
-            }
-            aria-label="Filter target type"
-            className="min-h-10 rounded-[9px] border border-edge bg-panel2 px-2.5 text-[12.5px] text-ink"
-          >
-            <option value="all">All types</option>
-            <option value="city">Cities</option>
-            <option value="landmark">Landmarks</option>
-          </select>
-          <select
-            value={destinationCategory}
-            onChange={(event) =>
-              setDestinationCategory(event.target.value as 'all' | PlaceCategory)
-            }
-            aria-label="Filter target category"
-            className="min-h-10 rounded-[9px] border border-edge bg-panel2 px-2.5 text-[12.5px] text-ink"
-          >
-            <option value="all">All categories</option>
-            {PLACE_CATEGORY_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-      <TargetSelect
-        label="City or landmark"
-        value={selectedDestinationId}
-        options={filteredDestinations.map((target) => ({
-          value: target.id,
-          label: target.label,
-        }))}
-        onChange={setSelectedDestinationId}
-        onAdd={addSelectedDestination}
-        disabled={filteredDestinations.length === 0}
-      />
-      <div
-        className={cx(
-          'rounded-[9px] border px-3 py-2 text-[11.5px]',
-          exceedsTarget
-            ? 'border-warn-bd bg-warn-bg text-warn'
-            : 'border-edge bg-panel2 text-faint',
-        )}
-      >
-        {isLongestTrip
-          ? `${targetDays.toLocaleString()} of ${config.longestTripDays.toLocaleString()} streak days reserved for selected targets.`
-          : `${targetDays.toLocaleString()} Supercharger stop${targetDays === 1 ? '' : 's'} reserved near selected targets.`}
-      </div>
-      {config.longestTripTargets.map((target) => (
-        <TargetStayRow
-          key={target.id}
-          target={target}
-          unit={isLongestTrip ? 'days' : 'stops'}
-          onStayDaysChange={(stayDays) => updateStayDays(target.id, stayDays)}
-          onRemove={() => removeTarget(target.id)}
-        />
-      ))}
-    </div>
-  )
-}
-
-/* ------------------------------------------------------------------ */
 /* Config slide-over                                                   */
 /* ------------------------------------------------------------------ */
 export function ConfigModal({
@@ -759,8 +427,10 @@ export function ConfigModal({
   const setNumber = (key: SliderKey, value: number) => onChange({ ...config, [key]: value })
   const setBool = (key: ToggleKey, value: boolean) => onChange({ ...config, [key]: value })
   const setMode = (plannerMode: PlannerMode) => onChange({ ...config, plannerMode })
-  const tripTargetSpecs =
-    config.plannerMode === 'longest_trip' ? LONGEST_TRIP_TARGETS : UNIQUE_SITE_TARGETS
+  const routeDefaultSpecs =
+    config.plannerMode === 'longest_trip'
+      ? LONGEST_TRIP_DEFAULTS
+      : UNIQUE_SITE_DEFAULTS
 
   const renderSliders = (specs: SliderSpec[]) =>
     specs.map((spec) =>
@@ -784,13 +454,17 @@ export function ConfigModal({
   return (
     <Overlay open={open} onClose={onClose} variant="slideover" labelledBy={titleId}>
       {/* Header */}
-      <div className="flex flex-none items-center justify-between gap-4 border-b border-edge px-[18px] py-4">
-        <div>
+      <div className="flex flex-none items-start justify-between gap-4 border-b border-edge px-[18px] py-4">
+        <div className="min-w-0">
           <div className="font-mono text-[9px] uppercase tracking-[0.12em] text-faint">
-            Planner config
+            Travel preferences
           </div>
           <div id={titleId} className="mt-[3px] text-[16px] font-semibold text-ink">
-            Tune the optimizer
+            Set defaults for every route
+          </div>
+          <div className="mt-1.5 text-[11px] leading-[1.45] text-faint">
+            Vehicle, comfort, and charging assumptions live here. Custom route
+            length and must-see stops are set in the route builder.
           </div>
         </div>
         <button
@@ -805,68 +479,67 @@ export function ConfigModal({
 
       {/* Body */}
       <div className="flex min-h-0 flex-1 flex-col gap-[18px] overflow-y-auto p-[18px]">
-        <div className="flex flex-col gap-[9px]">
-          <SectionLabel>Planner mode</SectionLabel>
-          <SegmentedControl<PlannerMode>
-            options={PLANNER_MODE_OPTIONS}
-            value={config.plannerMode}
-            onChange={setMode}
-            ariaLabel="Planner mode"
-          />
-        </div>
-
-        <div className="flex items-center justify-between gap-3 rounded-[11px] border border-edge bg-panel2 px-[13px] py-3">
-          <div className="min-w-0">
-            <div className="text-[12.5px] font-medium text-ink">Vehicle</div>
-            <div className="mt-0.5 text-[11px] text-faint">Range model used for legs</div>
+        <div className="flex flex-col gap-4">
+          <SectionLabel>Vehicle & range</SectionLabel>
+          <div className="flex items-center justify-between gap-3 rounded-[11px] border border-edge bg-panel2 px-[13px] py-3">
+            <div className="min-w-0">
+              <div className="text-[12.5px] font-medium text-ink">Vehicle profile</div>
+              <div className="mt-0.5 text-[11px] text-faint">
+                Charge Quest is calibrated for the owner’s car.
+              </div>
+            </div>
+            <span className="flex-none whitespace-nowrap rounded-[9px] border border-edge bg-chip px-3 py-1.5 font-mono text-[12px] text-ink">
+              Tesla Model Y LR
+            </span>
           </div>
-          <span className="flex-none whitespace-nowrap rounded-[9px] border border-edge bg-chip px-3 py-1.5 font-mono text-[12px] text-ink">
-            Tesla Model Y LR
-          </span>
+          {renderSliders(VEHICLE_MODEL)}
         </div>
 
         <div className="flex flex-col gap-4">
-          <SectionLabel>Trip targets</SectionLabel>
-          {renderSliders(tripTargetSpecs)}
-        </div>
-
-        {config.plannerMode === 'longest_trip' ? (
+          <SectionLabel>Driving preferences</SectionLabel>
           <div className="flex flex-col gap-[9px]">
-            <SectionLabel>Trip pace</SectionLabel>
             <SegmentedControl<TripPace>
               options={TRIP_PACE_OPTIONS}
               value={config.tripPace}
               onChange={(tripPace) => onChange({ ...config, tripPace })}
-              ariaLabel="Trip pace"
+              ariaLabel="Default trip pace"
             />
             <div className="text-[11px] leading-[1.5] text-faint">
               {TRIP_PACE_DESCRIPTIONS[config.tripPace]}
             </div>
+          </div>
+          {renderSliders(DRIVING_DAY)}
+          {config.plannerMode === 'longest_trip' ? (
             <ToggleRow
               spec={AUTO_STAYS_TOGGLE}
               checked={config.autoStays}
               onChange={(next) => setBool('autoStays', next)}
             />
+          ) : null}
+        </div>
+
+        <div className="flex flex-col gap-[9px]">
+          <SectionLabel>Generated route defaults</SectionLabel>
+          <div className="text-[11px] leading-[1.5] text-faint">
+            These controls shape the built-in route candidates. A saved custom
+            route keeps its own duration and must-see stops.
           </div>
-        ) : null}
+          <SegmentedControl<PlannerMode>
+            options={PLANNER_MODE_OPTIONS}
+            value={config.plannerMode}
+            onChange={setMode}
+            ariaLabel="Generated route goal"
+          />
+          <div className="mt-1 flex flex-col gap-4">
+            {renderSliders(routeDefaultSpecs)}
+          </div>
+        </div>
 
         <CategoryPreferencesSection config={config} onChange={onChange} />
 
-        <LongestTripTargetsSection config={config} onChange={onChange} />
-
-        <div className="flex flex-col gap-4">
-          <SectionLabel>Daily limits</SectionLabel>
-          {renderSliders(DAILY_LIMITS)}
-        </div>
-
-        <div className="flex flex-col gap-4">
-          <SectionLabel>Stop model</SectionLabel>
-          {renderSliders(STOP_MODEL)}
-        </div>
-
         <div className="flex flex-col gap-2.5">
-          <SectionLabel>Options</SectionLabel>
-          {OPTIONS.map((spec) => (
+          <SectionLabel>Route coverage</SectionLabel>
+          {COVERAGE_OPTIONS.map((spec) => (
             <ToggleRow
               key={spec.key}
               spec={spec}
@@ -875,15 +548,37 @@ export function ConfigModal({
             />
           ))}
         </div>
+
+        <details className="group rounded-[11px] border border-edge bg-panel2">
+          <summary className="cursor-pointer list-none px-[13px] py-3 text-[12.5px] font-medium text-ink">
+            Advanced planning assumptions
+            <span className="float-right font-mono text-[10px] text-faint group-open:hidden">
+              Show
+            </span>
+            <span className="float-right hidden font-mono text-[10px] text-faint group-open:inline">
+              Hide
+            </span>
+          </summary>
+          <div className="flex flex-col gap-4 border-t border-edge px-[13px] py-4">
+            <ToggleRow
+              spec={LONG_DAY_TOGGLE}
+              checked={config.longDayOptimization}
+              onChange={(next) => setBool('longDayOptimization', next)}
+            />
+            {config.longDayOptimization ? renderSliders(LONG_DAY_LIMITS) : null}
+            <SectionLabel>Charging & stop model</SectionLabel>
+            {renderSliders(STOP_MODEL)}
+          </div>
+        </details>
       </div>
 
       {/* Footer */}
       <div className="flex flex-none items-center gap-2.5 border-t border-edge px-[18px] py-3.5">
         <div className="min-w-0 flex-1 font-mono text-[10.5px] leading-[1.4] text-faint">
-          Start · Chattanooga, TN 37405
+          Applies to generated and custom routes · Start: Chattanooga, TN
         </div>
         <Button variant="primary" size="lg" onClick={onApply} disabled={isOptimizing}>
-          {isOptimizing ? 'Optimizing…' : 'Optimize route'}
+          {isOptimizing ? 'Reoptimizing…' : 'Save & reoptimize'}
         </Button>
       </div>
     </Overlay>
