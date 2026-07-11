@@ -9,7 +9,7 @@ afterEach(() => {
 })
 
 describe('Charge Quest landing page', () => {
-  it('leads with Anthony and turns live community data into a quest board', async () => {
+  it('challenges competitors, previews the real planner flow, and uses live community data', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
@@ -40,13 +40,13 @@ describe('Charge Quest landing page', () => {
       </MemoryRouter>,
     )
 
-    expect(screen.getByText('Anthony’s 2026 Quest HQ')).toBeTruthy()
-    expect(screen.getByRole('heading', { name: 'I’m building my Tesla quest in public.' })).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'Build your quest' }).getAttribute('href')).toBe('/planner')
-    expect(screen.getByRole('link', { name: 'Challenge my route' }).getAttribute('href')).toBe('/community')
-    expect(await screen.findByText('The Long Way Home')).toBeTruthy()
-    expect(screen.getByText('64 days')).toBeTruthy()
-    expect(screen.getByText('5')).toBeTruthy()
-    expect(screen.getByText('Still building in public')).toBeTruthy()
+    expect(screen.getByText('Built for the 2026 Tesla Supercharging Competition')).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Think you can build a better quest than mine?' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Build your competition route' }).getAttribute('href')).toBe('/planner')
+    expect(screen.getByRole('link', { name: 'Follow my quest' }).getAttribute('href')).toBe('/track-anthony')
+    expect(screen.getByText('Create a custom route')).toBeTruthy()
+    expect(screen.getByText('Step 2 of 3')).toBeTruthy()
+    expect(await screen.findByText('5')).toBeTruthy()
+    expect(screen.getByText('Planning the 2026 run')).toBeTruthy()
   })
 })

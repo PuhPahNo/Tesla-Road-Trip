@@ -35,7 +35,7 @@ Required coverage:
 
 Required checks:
 
-1. Load the homepage and confirm Anthony's personal quest story, working route board, build log, and community challenge are visible and readable on desktop and mobile.
+1. Load the homepage and confirm Anthony's competition challenge, accurate custom-route workflow preview, community invitation, and live status metrics are visible and readable on desktop and mobile.
 2. Open the planner and confirm the map is visible on first screen.
 3. Confirm station feed status and source timestamp are visible.
 4. Open Travel Preferences and confirm vehicle/range, trip pace, daily-drive limits, generated-route defaults, coverage, and advanced assumptions are present.

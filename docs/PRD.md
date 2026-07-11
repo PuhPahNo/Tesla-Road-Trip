@@ -33,15 +33,14 @@ Tesla's public contest page does not specify a minimum charging duration for a s
 
 **Requirements**
 - Lead in Anthony's first-person voice with his age, Chattanooga starting point, and 2026 competition goal.
-- Show a working quest board populated from live trip/community data when available.
-- Explain why the planner exists through a personal letter and concrete trip-planning tradeoffs.
-- Publish an honest build log alongside the eventual live field log.
+- Show an accurate preview of the three-step custom-route workflow instead of a decorative route illustration.
+- Explain why the planner exists through concise, competition-focused trip-planning tradeoffs.
 - Invite visitors to challenge Anthony's route, vote for states, suggest stops, arrange meetups, or build a competing route.
-- Use restrained road-journal motion and texture that respects reduced-motion preferences and avoids stock or invented personal imagery.
+- Use the same sans-serif and mono typography as the rest of Charge Quest without a separate diary or handwritten aesthetic.
 
 **Acceptance Criteria**
 - The first viewport clearly identifies Anthony as the person behind Charge Quest.
-- Primary actions are Build your quest and Challenge my route.
+- Primary actions are Build your competition route and Follow my quest.
 - Live community counts and trip status render without blocking the page when the community API is unavailable.
 - The page remains usable on mobile without fixed-background or motion dependencies.
 
