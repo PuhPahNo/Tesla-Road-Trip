@@ -2,7 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import App from '../App'
 import { AccountPage, ProtectedRoute } from './AccountPage'
 import { AdminPage } from './AdminPage'
-import { AuthProvider } from './AuthContext'
+import { AuthProvider, useAuth } from './AuthContext'
 import { AuthPage } from './AuthPage'
 import { CommunityPage } from './CommunityPage'
 import { LandingPage } from './LandingPage'
@@ -16,7 +16,7 @@ export function ChargeQuestRouter() {
       <AuthProvider>
         <Routes>
           <Route element={<SiteShell />}>
-            <Route index element={<LandingPage />} />
+            <Route index element={<HomeRoute />} />
             <Route path="community" element={<CommunityPage />} />
             <Route path="track-anthony" element={<TrackAnthonyPage />} />
             <Route path="login" element={<AuthPage mode="login" />} />
@@ -52,4 +52,11 @@ export function ChargeQuestRouter() {
       </AuthProvider>
     </BrowserRouter>
   )
+}
+
+export function HomeRoute() {
+  const { user, loading } = useAuth()
+  if (loading) return <div className="min-h-[60vh] p-10 text-faint">Checking your account…</div>
+  if (user) return <Navigate to="/planner" replace />
+  return <LandingPage />
 }

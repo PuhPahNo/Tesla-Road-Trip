@@ -10,19 +10,25 @@ const NAV_ITEMS = [
 ]
 
 export function SiteShell() {
-  const { user, logout } = useAuth()
+  const { user, loading, logout } = useAuth()
   const navigate = useNavigate()
-  const navItems = NAV_ITEMS.map((item) =>
-    item.to === '/planner' && !user
-      ? { to: '/signup?returnTo=%2Fplanner', label: 'Get the planner' }
-      : item,
-  )
+  const navItems = NAV_ITEMS
+    .filter((item) => !user || item.to !== '/')
+    .map((item) =>
+      item.to === '/planner' && !user
+        ? { to: '/signup?returnTo=%2Fplanner', label: 'Get the planner' }
+        : item,
+    )
+
+  if (loading) {
+    return <div className="min-h-screen bg-app p-10 text-faint">Checking your account…</div>
+  }
 
   return (
     <div className="site-page min-h-screen bg-app text-ink">
       <header className="site-nav sticky top-0 z-50 border-b border-white/10 bg-[#090a0c]/95 text-white backdrop-blur-2xl">
         <div className="mx-auto flex h-[68px] max-w-[1440px] items-center gap-2 px-3 sm:h-[78px] sm:gap-6 sm:px-5 lg:px-12">
-          <NavLink to="/" className="group flex min-w-0 items-center gap-2 no-underline sm:gap-3">
+          <NavLink to={user ? '/planner' : '/'} className="group flex min-w-0 items-center gap-2 no-underline sm:gap-3">
             <img src="/brand-mark.svg?v=2" alt="" className="h-9 w-9 flex-none rounded-[10px] ring-1 ring-white/10 sm:h-10 sm:w-10 sm:rounded-[11px]" />
             <div className="min-w-0">
               <div className="hidden font-mono text-[7.5px] uppercase tracking-[0.17em] text-white/40 transition group-hover:text-white/60 sm:block">
@@ -95,7 +101,7 @@ export function SiteShell() {
             )}
           </div>
         </div>
-        <nav className="grid grid-cols-4 gap-1 border-t border-white/10 bg-black/35 px-2 py-2 md:hidden" aria-label="Mobile navigation">
+        <nav className={cx('grid gap-1 border-t border-white/10 bg-black/35 px-2 py-2 md:hidden', user ? 'grid-cols-3' : 'grid-cols-4')} aria-label="Mobile navigation">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
