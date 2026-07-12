@@ -57,7 +57,7 @@ export function LandingPage() {
               <div className="mt-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-5">
                 <Link
                   to={plannerHref}
-                  className="group flex min-h-[60px] w-full max-w-[320px] flex-none items-center justify-between rounded-full bg-[#f4f0e8] py-2 pl-7 pr-2 text-[15px] font-semibold text-black no-underline shadow-[0_18px_55px_rgba(0,0,0,.38)] ring-1 ring-white/70 transition hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_22px_65px_rgba(0,0,0,.48)]"
+                  className="group flex min-h-[60px] w-full max-w-[320px] flex-none items-center justify-between rounded-full bg-[#f4f0e8] py-2 pl-7 pr-2 text-[15px] font-semibold text-black no-underline shadow-[0_18px_55px_rgba(0,0,0,.38)] ring-2 ring-[#e82127] transition hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_22px_65px_rgba(0,0,0,.48)]"
                 >
                   <span>{plannerCta}</span>
                   <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#e82127] text-white transition group-hover:translate-x-0.5">
