@@ -646,11 +646,11 @@ export function ConfigModal({
       </div>
 
       {/* Footer */}
-      <div className="flex flex-none items-center gap-2.5 border-t border-edge px-[18px] py-3.5">
-        <div className="min-w-0 flex-1 font-mono text-[10.5px] leading-[1.4] text-faint">
+      <div className="grid flex-none gap-2.5 border-t border-edge px-4 py-3.5 sm:flex sm:items-center sm:px-[18px]">
+        <div className="min-w-0 flex-1 text-center font-mono text-[10px] leading-[1.4] text-faint sm:text-left sm:text-[10.5px]">
           Applies to generated and custom routes · Start: Chattanooga, TN
         </div>
-        <Button variant="primary" size="lg" onClick={onApply} disabled={isOptimizing}>
+        <Button className="w-full sm:w-auto" variant="primary" size="lg" onClick={onApply} disabled={isOptimizing}>
           {isOptimizing ? 'Reoptimizing…' : 'Save & reoptimize'}
         </Button>
       </div>

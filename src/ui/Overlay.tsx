@@ -87,7 +87,7 @@ export function Overlay({
         className={cx(
           'relative flex max-h-full flex-col overflow-hidden bg-panel outline-none',
           isMobile
-            ? 'anim-sheet max-h-[92vh] w-full rounded-t-2xl border border-edge2 shadow-card'
+            ? 'anim-sheet max-h-[calc(100dvh_-_env(safe-area-inset-top)_-_8px)] w-full rounded-t-[18px] border border-edge2 pb-[env(safe-area-inset-bottom)] shadow-card'
             : slideover
               ? 'anim-slideover h-full w-[min(420px,94vw)] border-l border-edge2 shadow-card'
               : cx(
@@ -124,7 +124,7 @@ export function OverlayHeader({
   onClose: () => void
 }) {
   return (
-    <div className="flex flex-none items-start justify-between gap-4 border-b border-edge px-[18px] py-4">
+    <div className="flex flex-none items-start justify-between gap-3 border-b border-edge px-4 py-3.5 sm:gap-4 sm:px-[18px] sm:py-4">
       <div className="min-w-0 flex-1">
         {kicker ? (
           <div className="font-mono text-[9px] uppercase tracking-[0.12em] text-faint">
@@ -200,7 +200,7 @@ export function SplashScreen({ subtitle }: { subtitle: string }) {
       </div>
       <div className="text-center">
         <div className="text-[15px] font-semibold tracking-[-0.01em] text-ink">
-          Charge Quest
+          ChargeQuest
         </div>
         <div className="mt-1.5 font-mono text-[11px] text-faint">
           {subtitle}

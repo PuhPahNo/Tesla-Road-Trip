@@ -87,7 +87,7 @@ export function Button({
     <button
       type={type}
       className={cx(
-        'inline-flex items-center justify-center border font-medium leading-none transition select-none cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed',
+        'inline-flex items-center justify-center border font-medium leading-none transition select-none cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed max-md:min-h-11',
         SIZE[size],
         VARIANT[variant],
         className,

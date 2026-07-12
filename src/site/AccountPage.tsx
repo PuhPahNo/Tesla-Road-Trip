@@ -57,7 +57,7 @@ export function AccountPage() {
         routeName: achievement.routeName || undefined,
       })
       setAchievement({ title: '', description: '', routeName: '' })
-      setNotice('Achievement shared with the Charge Quest community.')
+      setNotice('Achievement shared with the ChargeQuest community.')
       await load()
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Unable to share achievement.')
@@ -65,16 +65,16 @@ export function AccountPage() {
   }
 
   return (
-    <div className="mx-auto max-w-[1120px] px-5 py-14 lg:px-8 lg:py-20">
+    <div className="mx-auto max-w-[1120px] px-4 py-10 sm:px-5 sm:py-14 lg:px-8 lg:py-20">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <div className="site-kicker">Your Charge Quest account</div>
+          <div className="site-kicker">Your ChargeQuest account</div>
           <h1 className="mt-3 text-[clamp(38px,6vw,64px)] font-semibold leading-[1] tracking-[-0.05em]">
             Welcome back, {user?.username}.
           </h1>
           <p className="mt-4 text-[14px] text-dim">@{user?.username}</p>
         </div>
-        <Link to="/planner" className="site-primary-button no-underline">Open your planner</Link>
+        <Link to="/planner" className="site-primary-button w-full no-underline sm:w-auto">Open your planner</Link>
       </div>
 
       {error ? <div className="site-alert mt-7 text-warn">{error}</div> : null}
@@ -88,19 +88,19 @@ export function AccountPage() {
       </div>
 
       <section className="mt-12 grid gap-5 lg:grid-cols-2">
-        <div className="site-card p-6 sm:p-7">
+        <div className="site-card p-5 sm:p-7">
           <div className="site-kicker">Planner profile</div>
           <h2 className="mt-3 text-[26px] font-semibold">Routes and travel preferences</h2>
           <p className="mt-3 text-[13.5px] leading-[1.6] text-dim">
             Your vehicle, practical range, pace, drive-time caps, category preferences,
             and saved custom routes are now tied to this account.
           </p>
-          <Link to="/planner" className="site-secondary-button mt-6 inline-flex no-underline">
+          <Link to="/planner" className="site-secondary-button mt-6 flex w-full no-underline sm:inline-flex sm:w-auto">
             Manage routes and preferences
           </Link>
         </div>
 
-        <div className="site-card p-6 sm:p-7">
+        <div className="site-card p-5 sm:p-7">
           <div className="site-kicker">Account security</div>
           <h2 className="mt-3 text-[26px] font-semibold">Change password</h2>
           <form className="mt-5 flex flex-col gap-3" onSubmit={submitPassword}>
@@ -112,13 +112,13 @@ export function AccountPage() {
               New password
               <input required type="password" minLength={8} maxLength={128} className="site-input" value={passwords.newPassword} onChange={(event) => setPasswords((current) => ({ ...current, newPassword: event.target.value }))} autoComplete="new-password" placeholder="At least 8 characters" />
             </label>
-            <button className="site-secondary-button" type="submit">Update password</button>
+            <button className="site-secondary-button w-full" type="submit">Update password</button>
           </form>
         </div>
       </section>
 
       <section className="mt-12 grid gap-5 lg:grid-cols-[380px_1fr]">
-        <div className="site-card p-6">
+        <div className="site-card p-5 sm:p-6">
           <div className="site-kicker">Share an achievement</div>
           <h2 className="mt-3 text-[24px] font-semibold">Add to the community wall</h2>
           <form className="mt-5 flex flex-col gap-3" onSubmit={submitAchievement}>
@@ -134,7 +134,7 @@ export function AccountPage() {
               What made it count?
               <textarea required minLength={5} maxLength={500} rows={4} className="site-input resize-y" value={achievement.description} onChange={(event) => setAchievement((current) => ({ ...current, description: event.target.value }))} />
             </label>
-            <button className="site-primary-button" type="submit">Share achievement</button>
+            <button className="site-primary-button w-full" type="submit">Share achievement</button>
           </form>
         </div>
 

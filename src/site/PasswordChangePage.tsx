@@ -32,10 +32,10 @@ export function PasswordChangePage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-[calc(100vh-170px)] max-w-[720px] items-center px-5 py-14 lg:px-8">
-      <div className="site-card w-full p-6 sm:p-9">
+    <div className="mx-auto flex min-h-[calc(100svh-117px)] max-w-[720px] items-center px-4 py-8 sm:min-h-[calc(100vh-170px)] sm:px-5 sm:py-14 lg:px-8">
+      <div className="site-card w-full p-5 sm:p-9">
         <div className="site-kicker">Account security</div>
-        <h1 className="mt-3 text-[clamp(34px,6vw,52px)] font-semibold leading-[1] tracking-[-0.05em]">
+        <h1 className="mt-3 text-[clamp(30px,9vw,52px)] font-semibold leading-[1] tracking-[-0.05em]">
           {user.mustChangePassword ? 'Replace your temporary password.' : 'Choose a new password.'}
         </h1>
         <p className="mt-5 max-w-[580px] text-[14px] leading-[1.65] text-dim">
@@ -73,7 +73,7 @@ export function PasswordChangePage() {
               placeholder="At least 8 characters"
             />
           </label>
-          <button type="submit" disabled={busy} className="site-primary-button disabled:opacity-60">
+          <button type="submit" disabled={busy} className="site-primary-button w-full disabled:opacity-60">
             {busy ? 'Updating…' : 'Save new password'}
           </button>
         </form>

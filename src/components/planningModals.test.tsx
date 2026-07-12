@@ -10,7 +10,7 @@ import { RoutePicker } from './RoutePicker'
 afterEach(cleanup)
 
 describe('planning modal responsibilities', () => {
-  it('uses Charge Quest as the visible product brand', () => {
+  it('uses ChargeQuest as the visible product brand', () => {
     render(
       <BrandIsland
         routeName="No route yet"
@@ -19,7 +19,7 @@ describe('planning modal responsibilities', () => {
       />,
     )
 
-    expect(screen.getByText('Charge Quest')).toBeTruthy()
+    expect(screen.getByText('ChargeQuest')).toBeTruthy()
     expect(screen.queryByText('Quest Planner')).toBeNull()
   })
 

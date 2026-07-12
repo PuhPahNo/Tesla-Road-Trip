@@ -20,7 +20,7 @@ interface PendingMeetup {
 
 const EMPTY_TRIP: Omit<AnthonyTrip, 'updatedAt'> = {
   active: false,
-  title: "Anthony's Charge Quest",
+  title: "Anthony's ChargeQuest",
   routeName: '',
   dayNumber: null,
   totalDays: 60,
@@ -115,7 +115,7 @@ export function AdminPage() {
   }
 
   return (
-    <div className="mx-auto max-w-[1320px] px-5 py-10 sm:px-7 sm:py-14 lg:px-10 lg:py-16">
+    <div className="mx-auto max-w-[1320px] px-4 py-8 sm:px-7 sm:py-14 lg:px-10 lg:py-16">
       <header className="flex flex-col justify-between gap-7 border-b border-edge pb-8 lg:flex-row lg:items-end">
         <div>
           <div className="site-kicker">Anthony admin</div>
@@ -127,7 +127,7 @@ export function AdminPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-3 overflow-hidden rounded-[14px] border border-edge bg-panel2">
+        <div className="grid w-full grid-cols-3 overflow-hidden rounded-[14px] border border-edge bg-panel2 lg:w-auto">
           <AdminStat label="Tracker" value={trip.active ? 'Live' : 'Parked'} accent={trip.active} />
           <AdminStat label="Updates" value={community?.updates.length ?? 0} />
           <AdminStat label="Waiting" value={pendingMeetups.length} />

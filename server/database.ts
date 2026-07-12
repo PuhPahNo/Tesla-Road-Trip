@@ -56,7 +56,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS anthony_trip (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     active INTEGER NOT NULL DEFAULT 0,
-    title TEXT NOT NULL DEFAULT 'Anthony''s Charge Quest',
+    title TEXT NOT NULL DEFAULT 'Anthony''s ChargeQuest',
     route_name TEXT,
     day_number INTEGER,
     total_days INTEGER,
@@ -144,6 +144,15 @@ db.prepare(`
   VALUES (1, 0, ?)
   ON CONFLICT(id) DO NOTHING
 `).run(new Date().toISOString())
+
+// Keep the persisted public trip title aligned with the one-word brand after
+// deployment without overwriting any other custom title text Anthony entered.
+const legacyBrand = ['Charge', 'Quest'].join(' ')
+db.prepare(`
+  UPDATE anthony_trip
+  SET title = replace(title, ?, ?)
+  WHERE instr(title, ?) > 0
+`).run(legacyBrand, 'ChargeQuest', legacyBrand)
 
 export function transaction<T>(operation: () => T): T {
   db.exec('BEGIN IMMEDIATE')

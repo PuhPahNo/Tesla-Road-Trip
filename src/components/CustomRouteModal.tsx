@@ -266,7 +266,7 @@ export function CustomRouteModal({
       />
 
       <div className={`grid min-h-0 flex-1 gap-0 overflow-hidden ${step === 1 ? '' : 'md:grid-cols-[minmax(0,1fr)_360px]'}`}>
-        <div className={`min-h-0 overflow-y-auto p-4 ${step === 1 ? 'mx-auto w-full max-w-5xl' : ''}`}>
+        <div className={`min-h-0 overflow-y-auto p-3.5 sm:p-4 ${step === 1 ? 'mx-auto w-full max-w-5xl' : ''}`}>
           {step === 1 ? <>
           <div className="mb-4">
             <div className="font-mono text-[9px] uppercase tracking-[0.1em] text-accent2">Step 1</div>
@@ -409,7 +409,7 @@ export function CustomRouteModal({
             <div className="font-mono text-[9px] uppercase tracking-[0.1em] text-accent2">Step 2</div>
             <h2 className="mt-1 text-[18px] font-semibold text-ink">Add the places that matter</h2>
             <p className="mt-1 max-w-2xl text-[12px] leading-[1.5] text-dim">
-              Choose cities, landmarks, or Tesla Iconic Charger targets. Charge Quest will fill in charging stops between these anchors.
+              Choose cities, landmarks, or Tesla Iconic Charger targets. ChargeQuest will fill in charging stops between these anchors.
             </p>
           </div>
           <div>
@@ -683,20 +683,21 @@ export function CustomRouteModal({
         </aside> : null}
       </div>
 
-      <div className="flex flex-none items-center justify-between gap-3 border-t border-edge bg-panel2 px-4 py-3">
-        <Button variant="secondary" onClick={step === 1 ? onClose : () => setStep((step - 1) as RouteWizardStep)}>
+      <div className="grid flex-none grid-cols-[minmax(82px,0.7fr)_minmax(0,1.3fr)] items-center gap-2.5 border-t border-edge bg-panel2 px-3.5 py-3 sm:flex sm:justify-between sm:gap-3 sm:px-4">
+        <Button className="w-full sm:w-auto" variant="secondary" onClick={step === 1 ? onClose : () => setStep((step - 1) as RouteWizardStep)}>
           {step === 1 ? 'Cancel' : 'Back'}
         </Button>
         {step === 1 ? (
-          <Button variant="primary" disabled={!setupValid} onClick={() => setStep(2)}>
+          <Button className="w-full sm:w-auto" variant="primary" disabled={!setupValid} onClick={() => setStep(2)}>
             Continue to destinations
           </Button>
         ) : step === 2 ? (
-          <Button variant="primary" disabled={!destinationsValid} onClick={() => setStep(3)}>
+          <Button className="w-full sm:w-auto" variant="primary" disabled={!destinationsValid} onClick={() => setStep(3)}>
             Review route
           </Button>
         ) : (
           <Button
+            className="w-full sm:w-auto"
             variant="primary"
             disabled={isSaving || !setupValid || !destinationsValid}
             onClick={submit}
@@ -729,7 +730,7 @@ function RouteWizardStepper({
   return (
     <nav
       aria-label="Custom route steps"
-      className="grid flex-none grid-cols-3 border-b border-edge bg-panel2 px-3 py-2"
+      className="grid flex-none grid-cols-3 border-b border-edge bg-panel2 px-1.5 py-1.5 sm:px-3 sm:py-2"
     >
       {steps.map((item) => {
         const enabled = item.id === 1 || (item.id === 2 ? canOpenDestinations : canOpenReview)
@@ -741,7 +742,7 @@ function RouteWizardStepper({
             disabled={!enabled}
             aria-current={active ? 'step' : undefined}
             onClick={() => onStepChange(item.id)}
-            className={`flex min-w-0 items-center gap-2 rounded-[9px] px-2 py-2 text-left transition ${
+            className={`flex min-w-0 items-center gap-1.5 rounded-[9px] px-1.5 py-2 text-left transition sm:gap-2 sm:px-2 ${
               active ? 'bg-chip text-ink' : 'text-faint hover:bg-chip/60 hover:text-dim'
             } disabled:cursor-not-allowed disabled:opacity-35`}
           >

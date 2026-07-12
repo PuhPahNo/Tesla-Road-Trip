@@ -1,16 +1,16 @@
 # Tesla Charging Badge Research
 
-Charge Quest separates Tesla charging badges into three product concepts:
+ChargeQuest separates Tesla charging badges into three product concepts:
 
 - **Iconic Chargers** are tied to one or more specific Supercharger sites. Route detection uses exact Tesla location IDs with a sub-mile coordinate fallback instead of broad attraction radii.
 - **Special Events** are limited-time charging events. They are flagged only when the configured trip dates include the announced event date.
-- **Charging Milestones** depend on actual charging behavior. Charge Quest can identify a promising route or charging stop, but it cannot guarantee the Tesla app will award the badge.
+- **Charging Milestones** depend on actual charging behavior. ChargeQuest can identify a promising route or charging stop, but it cannot guarantee the Tesla app will award the badge.
 
 Tesla's app remains the final source of truth because the eligible site list and event instructions can change. Tesla says Iconic Charger detail screens show the qualifying addresses and badges can take up to 24 hours to appear.
 
 ## North American Iconic Charger targets
 
-| Badge | Charge Quest target | Region note |
+| Badge | ChargeQuest target | Region note |
 |---|---|---|
 | Arches | Moab, UT Superchargers | Mainland routeable |
 | Bryce Canyon | Bryce Canyon City, UT | Mainland routeable |
@@ -32,9 +32,9 @@ Tesla's app remains the final source of truth because the eligible site list and
 
 ## Date and performance badges modeled
 
-- **Earth Day 2026:** charge on April 22, 2026. Modeled as a one-time announced event; Charge Quest does not assume Tesla will repeat it in a future year.
+- **Earth Day 2026:** charge on April 22, 2026. Modeled as a one-time announced event; ChargeQuest does not assume Tesla will repeat it in a future year.
 - **America 250:** Supercharge on July 4, 2026. This one-time event has passed, but a historical trip window containing that date is still labeled correctly.
-- **Pit Stop:** add more than 80 miles and manually end the session before 10 minutes. Charge Quest flags an early 250 kW or faster site as a candidate and clearly avoids promising the result.
+- **Pit Stop:** add more than 80 miles and manually end the session before 10 minutes. ChargeQuest flags an early 250 kW or faster site as a candidate and clearly avoids promising the result.
 - **Explorer:** the first documented 2026 threshold is 10 unique Supercharger sites.
 - **Charging Streak:** Supercharge in four consecutive weeks. Routes spanning at least 22 days are marked on track, with the actual weekly sessions left to the driver.
 

@@ -702,8 +702,8 @@ if (anthonyAdmin) {
 }
 
 app.listen(PORT, () => {
-  console.log(`Charge Quest API listening on http://localhost:${PORT}`)
-  console.log(`Charge Quest data: ${databasePath()}`)
+  console.log(`ChargeQuest API listening on http://localhost:${PORT}`)
+  console.log(`ChargeQuest data: ${databasePath()}`)
   // Warm the ORS health cache so the first /api/health reflects key validity
   // immediately (and the UI shows estimate mode right away if the key is bad).
   if (ROAD_PROVIDER === 'ors') void probeOrsKey()

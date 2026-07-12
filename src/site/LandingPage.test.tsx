@@ -10,12 +10,12 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-describe('Charge Quest landing page', () => {
+describe('ChargeQuest landing page', () => {
   it('challenges competitors, previews the real planner flow, and uses live community data', async () => {
     const community = {
       trip: {
         active: false,
-        title: "Anthony's Charge Quest",
+        title: "Anthony's ChargeQuest",
         routeName: 'The Long Way Home',
         totalDays: 64,
         updatedAt: '2026-07-11T00:00:00.000Z',
@@ -51,7 +51,7 @@ describe('Charge Quest landing page', () => {
     expect(screen.getByText('Create a custom route')).toBeTruthy()
     expect(screen.getByText('Step 2 of 3')).toBeTruthy()
     expect(await screen.findByText('5')).toBeTruthy()
-    expect(document.title).toBe('Charge Quest | Tesla Supercharger Route Planner for 2026')
+    expect(document.title).toBe('ChargeQuest | Tesla Supercharger Route Planner for 2026')
   })
 
   it('sends signed-out direct planner visits into the signup funnel', async () => {
@@ -72,13 +72,13 @@ describe('Charge Quest landing page', () => {
                 </ProtectedRoute>
               }
             />
-            <Route path="signup" element={<div>Create your Charge Quest account</div>} />
+            <Route path="signup" element={<div>Create your ChargeQuest account</div>} />
           </Routes>
         </AuthProvider>
       </MemoryRouter>,
     )
 
-    expect(await screen.findByText('Create your Charge Quest account')).toBeTruthy()
+    expect(await screen.findByText('Create your ChargeQuest account')).toBeTruthy()
     expect(screen.queryByText('Private planner')).toBeNull()
   })
 })

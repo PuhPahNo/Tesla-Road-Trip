@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 /* =====================================================================
-   THEME TOKENS — Charge Quest "Cockpit" redesign (Claude Design).
+   THEME TOKENS — ChargeQuest "Cockpit" redesign (Claude Design).
    Dark ("dash") is the default (:root). The no-flash script in index.html
    and the ThemeProvider toggle [data-theme] on <html>.
    ===================================================================== */
@@ -555,6 +555,78 @@ body.modal-open {
   }
 }
 
+@media (max-width: 640px) {
+  .site-page {
+    font-size: 16px;
+  }
+
+  .site-card,
+  .admin-surface {
+    border-radius: 14px;
+    box-shadow: 0 12px 32px color-mix(in srgb, #000 18%, transparent);
+  }
+
+  .site-input {
+    min-height: 48px;
+    font-size: 16px;
+  }
+
+  textarea.site-input {
+    min-height: 120px;
+  }
+
+  .site-primary-button,
+  .site-secondary-button {
+    min-height: 48px;
+    font-size: 13px;
+  }
+
+  .cq-photo-grid figure {
+    min-height: 310px;
+  }
+
+  .cq-gallery-statement {
+    min-height: 260px;
+  }
+
+  .cq-cinematic-hero > img {
+    object-position: 52% 58%;
+  }
+
+  .cq-hero-shade {
+    background:
+      linear-gradient(180deg, rgba(0, 0, 0, 0.48) 0%, rgba(0, 0, 0, 0.2) 28%, rgba(0, 0, 0, 0.9) 100%),
+      linear-gradient(90deg, rgba(0, 0, 0, 0.5), transparent 86%);
+  }
+
+  .cq-preview-step {
+    gap: 5px;
+    padding: 7px 5px;
+    font-size: 8px;
+  }
+
+  .cq-preview-step span {
+    width: 18px;
+    height: 18px;
+  }
+
+  .cq-red-form input,
+  .cq-red-form select,
+  .cq-red-form textarea,
+  .cq-light-field input,
+  .cq-light-field select {
+    font-size: 16px;
+  }
+
+  .cq-mobile-metric:nth-child(2) {
+    border-right: 0;
+  }
+
+  .cq-mobile-metric:nth-child(-n + 2) {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -632,6 +704,12 @@ body.modal-open {
    tab bar + focus bar so it stays readable instead of sitting behind
    the bottom chrome. */
 @media (max-width: 767px), (pointer: coarse) and (max-height: 480px) {
+  .planner-shell input:not([type='checkbox']):not([type='radio']),
+  .planner-shell select,
+  .planner-shell textarea {
+    font-size: 16px;
+  }
+
   .leaflet-control-attribution {
     margin-bottom: calc(env(safe-area-inset-bottom) + 148px) !important;
     margin-right: 6px !important;

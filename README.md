@@ -1,4 +1,4 @@
-# Charge Quest
+# ChargeQuest
 
 Multi-user Tesla road-trip planner and community built around Anthony's 2026 Free Supercharging Competition quest, with landmark-first routing, configurable travel preferences, saved routes, and a public trip tracker.
 
@@ -35,7 +35,7 @@ npm run certify:badges
 
 ## What It Does
 
-- Public first-person landing page explaining why Anthony built Charge Quest.
+- Public first-person landing page explaining why Anthony built ChargeQuest.
 - First-party username/password accounts with unique usernames of at least three characters, secure password hashes, and HTTP-only sessions—no email, OAuth, or external identity provider.
 - Account-owned route libraries and planner preferences; users cannot read or mutate another member's routes.
 - Community suggestions, votes, achievements, state-interest signals, and moderated meetup invitations.

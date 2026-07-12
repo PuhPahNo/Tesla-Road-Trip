@@ -21,14 +21,14 @@ export function SiteShell() {
   return (
     <div className="site-page min-h-screen bg-app text-ink">
       <header className="site-nav sticky top-0 z-50 border-b border-white/10 bg-[#090a0c]/95 text-white backdrop-blur-2xl">
-        <div className="mx-auto flex h-[78px] max-w-[1440px] items-center gap-6 px-5 lg:px-12">
-          <NavLink to="/" className="group flex min-w-0 items-center gap-3 no-underline">
-            <img src="/brand-mark.svg?v=2" alt="" className="h-10 w-10 rounded-[11px] ring-1 ring-white/10" />
+        <div className="mx-auto flex h-[68px] max-w-[1440px] items-center gap-2 px-3 sm:h-[78px] sm:gap-6 sm:px-5 lg:px-12">
+          <NavLink to="/" className="group flex min-w-0 items-center gap-2 no-underline sm:gap-3">
+            <img src="/brand-mark.svg?v=2" alt="" className="h-9 w-9 flex-none rounded-[10px] ring-1 ring-white/10 sm:h-10 sm:w-10 sm:rounded-[11px]" />
             <div className="min-w-0">
-              <div className="font-mono text-[7.5px] uppercase tracking-[0.17em] text-white/40 transition group-hover:text-white/60">
+              <div className="hidden font-mono text-[7.5px] uppercase tracking-[0.17em] text-white/40 transition group-hover:text-white/60 sm:block">
                 2026 competition
               </div>
-              <div className="mt-0.5 text-[16px] font-semibold tracking-[-0.02em] text-white">Charge Quest</div>
+              <div className="truncate text-[14px] font-semibold tracking-[-0.02em] text-white sm:mt-0.5 sm:text-[16px]">ChargeQuest</div>
             </div>
           </NavLink>
 
@@ -52,7 +52,7 @@ export function SiteShell() {
             ))}
           </nav>
 
-          <div className="flex items-center gap-2.5 border-l border-white/10 pl-4 md:ml-2">
+          <div className="ml-auto flex min-w-0 items-center gap-1.5 border-l border-white/10 pl-2 sm:gap-2.5 sm:pl-4 md:ml-2">
             {user ? (
               <>
                 {user.role === 'admin' ? (
@@ -65,7 +65,7 @@ export function SiteShell() {
                 ) : null}
                 <NavLink
                   to={user.mustChangePassword ? '/change-password' : '/account'}
-                  className="rounded-full border border-white/18 bg-white/[.06] px-4 py-2.5 text-[10.5px] font-semibold text-white no-underline transition hover:border-white/40"
+                  className="max-w-[116px] truncate rounded-full border border-white/18 bg-white/[.06] px-3 py-2.5 text-[10px] font-semibold text-white no-underline transition hover:border-white/40 sm:max-w-none sm:px-4 sm:text-[10.5px]"
                 >
                   {user.username}
                 </NavLink>
@@ -87,7 +87,7 @@ export function SiteShell() {
                 </NavLink>
                 <NavLink
                   to="/signup"
-                  className="rounded-full bg-[#e82127] px-5 py-3 text-[11px] font-semibold text-white no-underline shadow-[0_8px_28px_rgba(232,33,39,.3)] transition hover:bg-white hover:text-black"
+                  className="whitespace-nowrap rounded-full bg-[#e82127] px-3.5 py-2.5 text-[10px] font-semibold text-white no-underline shadow-[0_8px_28px_rgba(232,33,39,.3)] transition hover:bg-white hover:text-black sm:px-5 sm:py-3 sm:text-[11px]"
                 >
                   Join the challenge
                 </NavLink>
@@ -95,7 +95,7 @@ export function SiteShell() {
             )}
           </div>
         </div>
-        <nav className="flex gap-1 overflow-x-auto border-t border-white/10 bg-black/35 px-3 py-2 md:hidden" aria-label="Mobile navigation">
+        <nav className="grid grid-cols-4 gap-1 border-t border-white/10 bg-black/35 px-2 py-2 md:hidden" aria-label="Mobile navigation">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
@@ -103,7 +103,7 @@ export function SiteShell() {
               end={item.to === '/'}
               className={({ isActive }) =>
                 cx(
-                  'flex-none rounded-full px-3.5 py-2 font-mono text-[8.5px] font-semibold uppercase tracking-[0.08em] no-underline',
+                  'min-w-0 truncate rounded-full px-1.5 py-2 text-center font-mono text-[7.5px] font-semibold uppercase tracking-[0.04em] no-underline sm:px-3.5 sm:text-[8.5px] sm:tracking-[0.08em]',
                   isActive ? 'bg-white text-black' : 'text-white/50',
                 )
               }
@@ -118,8 +118,8 @@ export function SiteShell() {
       </main>
       <footer className="border-t border-white/10 bg-[#090a0c] px-5 py-10 text-white">
         <div className="mx-auto flex max-w-[1320px] flex-col gap-4 text-[11.5px] text-white/35 sm:flex-row sm:items-center sm:justify-between">
-          <div>Charge Quest · Built by Anthony for the 2026 Tesla Supercharging Competition</div>
-          <div className="flex gap-4">
+          <div>ChargeQuest · Built by Anthony for the 2026 Tesla Supercharging Competition</div>
+          <div className="flex flex-wrap gap-x-4 gap-y-2">
             <NavLink to={user ? '/planner' : '/signup?returnTo=%2Fplanner'} className="text-white/35 no-underline hover:text-white">
               {user ? 'Planner' : 'Get the planner'}
             </NavLink>

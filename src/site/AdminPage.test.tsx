@@ -17,7 +17,7 @@ describe('Anthony admin workspace', () => {
           community: {
             trip: {
               active: false,
-              title: "Anthony's Charge Quest",
+              title: "Anthony's ChargeQuest",
               totalDays: 60,
               updatedAt: '2026-07-11T00:00:00.000Z',
             },

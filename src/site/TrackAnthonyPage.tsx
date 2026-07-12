@@ -54,19 +54,19 @@ export function TrackAnthonyPage() {
   }
 
   if (!community && !error) {
-    return <div className="mx-auto min-h-[65vh] max-w-[1240px] px-5 py-20 text-faint">Loading Anthony’s quest…</div>
+    return <div className="mx-auto min-h-[65vh] max-w-[1240px] px-4 py-16 text-faint sm:px-5 sm:py-20">Loading Anthony’s quest…</div>
   }
 
   return (
-    <div className="mx-auto max-w-[1240px] px-5 py-14 lg:px-8 lg:py-20">
+    <div className="mx-auto max-w-[1240px] px-4 py-10 sm:px-5 sm:py-14 lg:px-8 lg:py-20">
       {error ? <div className="site-alert mb-6 text-warn">{error}</div> : null}
       {notice ? <div className="site-alert mb-6 text-good">{notice}</div> : null}
 
       {!trip?.active ? (
-        <section className="mx-auto flex min-h-[58vh] max-w-[760px] flex-col items-center justify-center text-center">
+        <section className="mx-auto flex min-h-[52vh] max-w-[760px] flex-col items-center justify-center py-8 text-center sm:min-h-[58vh] sm:py-0">
           <div className="flex h-16 w-16 items-center justify-center rounded-[20px] border border-edge bg-chip text-[30px]">⚡</div>
           <div className="site-kicker mt-7">Track Anthony</div>
-          <h1 className="mt-4 text-[clamp(42px,7vw,76px)] font-semibold leading-[.98] tracking-[-0.05em]">
+          <h1 className="mt-4 text-[clamp(36px,10vw,76px)] font-semibold leading-[.98] tracking-[-0.05em]">
             The live quest hasn’t started yet.
           </h1>
           <p className="mt-6 max-w-[640px] text-[16px] leading-[1.65] text-dim">
@@ -74,15 +74,15 @@ export function TrackAnthonyPage() {
             latest stop, progress, and community meetups. For now, you can build your
             own route or help shape the community map.
           </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Link to="/planner" className="site-primary-button no-underline">Plan your trip</Link>
-            <Link to="/community" className="site-secondary-button no-underline">Visit the community</Link>
+          <div className="mt-8 flex w-full flex-col justify-center gap-3 sm:w-auto sm:flex-row sm:flex-wrap">
+            <Link to="/planner" className="site-primary-button w-full no-underline sm:w-auto">Plan your trip</Link>
+            <Link to="/community" className="site-secondary-button w-full no-underline sm:w-auto">Visit the community</Link>
           </div>
         </section>
       ) : (
         <>
           <section className="grid gap-6 lg:grid-cols-[1.15fr_.85fr]">
-            <div className="site-card overflow-hidden p-6 sm:p-8">
+            <div className="site-card overflow-hidden p-5 sm:p-8">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.1em] text-good">
                   <span className="h-2 w-2 animate-pulse rounded-full bg-good" /> Live quest
@@ -100,7 +100,7 @@ export function TrackAnthonyPage() {
               <div className="mt-9 grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <TrackerMetric label="Day" value={`${trip.dayNumber ?? '—'} / ${trip.totalDays ?? '—'}`} />
                 <TrackerMetric label="Current location" value={trip.currentLocation || 'En route'} />
-                <TrackerMetric label="Route" value={trip.routeName || 'Charge Quest'} />
+                <TrackerMetric label="Route" value={trip.routeName || 'ChargeQuest'} />
                 <TrackerMetric label="Progress" value={`${Math.round(progress)}%`} />
               </div>
               <div className="mt-7 h-2 overflow-hidden rounded-full bg-chip">
@@ -108,7 +108,7 @@ export function TrackAnthonyPage() {
               </div>
             </div>
 
-            <div className="site-card p-6 sm:p-7">
+            <div className="site-card p-5 sm:p-7">
               <div className="site-kicker">Meet along the route</div>
               <h2 className="mt-3 text-[26px] font-semibold">“Coffee on me when you hit Colorado.”</h2>
               <p className="mt-3 text-[13.5px] leading-[1.6] text-dim">
@@ -117,7 +117,7 @@ export function TrackAnthonyPage() {
               </p>
               {user ? (
                 <form className="mt-5 flex flex-col gap-3" onSubmit={submitInvite}>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid gap-3 sm:grid-cols-2">
                     <label className="site-field-label">
                       State
                       <select className="site-input" value={invite.stateCode} onChange={(event) => setInvite((current) => ({ ...current, stateCode: event.target.value }))}>
@@ -137,7 +137,7 @@ export function TrackAnthonyPage() {
                     Message
                     <textarea required minLength={10} maxLength={600} rows={4} className="site-input resize-y" value={invite.message} onChange={(event) => setInvite((current) => ({ ...current, message: event.target.value }))} placeholder="I’m local and know a coffee shop right off your route…" />
                   </label>
-                  <button type="submit" className="site-primary-button">Send invite to Anthony</button>
+                  <button type="submit" className="site-primary-button w-full">Send invite to Anthony</button>
                 </form>
               ) : (
                 <div className="mt-5 rounded-[12px] border border-dashed border-edge p-5 text-[13px] text-dim">

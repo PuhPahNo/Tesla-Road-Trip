@@ -9,10 +9,10 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-describe('Charge Quest community page', () => {
+describe('ChargeQuest community page', () => {
   it('uses the cinematic community funnel and asks guests to create an account', async () => {
     const community = {
-      trip: { active: false, title: "Anthony's Charge Quest", updatedAt: '2026-07-11T00:00:00.000Z' },
+      trip: { active: false, title: "Anthony's ChargeQuest", updatedAt: '2026-07-11T00:00:00.000Z' },
       updates: [],
       stateVotes: [{ state_code: 'CO', votes: 4 }],
       meetups: [],
@@ -52,6 +52,6 @@ describe('Charge Quest community page', () => {
     expect((await screen.findAllByText('Colorado')).length).toBeGreaterThan(0)
     expect(screen.getByText('Take the Million Dollar Highway')).toBeTruthy()
     expect(screen.getByRole('heading', { name: 'Routes worth talking about' })).toBeTruthy()
-    expect(document.title).toBe('Charge Quest Community | Tesla Route Ideas and 2026 Trip Updates')
+    expect(document.title).toBe('ChargeQuest Community | Tesla Route Ideas and 2026 Trip Updates')
   })
 })

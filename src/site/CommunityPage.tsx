@@ -30,8 +30,8 @@ export function CommunityPage() {
   })
 
   usePageMetadata({
-    title: 'Charge Quest Community | Tesla Route Ideas and 2026 Trip Updates',
-    description: 'Join Tesla road-trip competitors sharing Supercharger route ideas, must-see stops, state votes, meetup invitations, achievements, and Anthony’s live 2026 Charge Quest updates.',
+    title: 'ChargeQuest Community | Tesla Route Ideas and 2026 Trip Updates',
+    description: 'Join Tesla road-trip competitors sharing Supercharger route ideas, must-see stops, state votes, meetup invitations, achievements, and Anthony’s live 2026 ChargeQuest updates.',
     path: '/community',
   })
 
@@ -91,10 +91,10 @@ export function CommunityPage() {
   return (
     <>
       <section className="grid min-h-[650px] bg-black text-white lg:grid-cols-[1.08fr_.92fr]">
-        <div className="flex items-center px-5 py-20 lg:px-12 xl:px-[max(5rem,calc((100vw-1440px)/2))]">
+        <div className="flex items-center px-4 py-16 sm:px-5 sm:py-20 lg:px-12 xl:px-[max(5rem,calc((100vw-1440px)/2))]">
           <div className="max-w-[760px]">
-            <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-[#23d7d1]">Charge Quest community</div>
-            <h1 className="mt-5 text-[clamp(54px,7.8vw,112px)] font-semibold leading-[0.86] tracking-[-0.07em]">
+            <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-[#23d7d1]">ChargeQuest community</div>
+            <h1 className="mt-5 text-[clamp(42px,12vw,112px)] font-semibold leading-[0.9] tracking-[-0.06em] sm:leading-[0.86] sm:tracking-[-0.07em]">
               Make Anthony’s route harder to beat
             </h1>
             <p className="mt-7 max-w-[650px] text-[17px] leading-[1.7] text-white/62">
@@ -104,11 +104,11 @@ export function CommunityPage() {
             </p>
 
             {!user ? (
-              <div className="mt-9 flex flex-wrap gap-3">
-                <Link to="/signup?returnTo=%2Fcommunity" className="rounded-full bg-[#e82127] px-6 py-3.5 text-[13px] font-semibold text-white no-underline shadow-[0_12px_35px_rgba(232,33,39,.32)] transition hover:bg-white hover:text-black">
+              <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <Link to="/signup?returnTo=%2Fcommunity" className="flex min-h-12 w-full items-center justify-center rounded-full bg-[#e82127] px-6 py-3.5 text-center text-[13px] font-semibold text-white no-underline shadow-[0_12px_35px_rgba(232,33,39,.32)] transition hover:bg-white hover:text-black sm:w-auto">
                   Create an account and join in
                 </Link>
-                <Link to="/login?returnTo=%2Fcommunity" className="rounded-full border border-white/30 px-6 py-3.5 text-[13px] font-semibold text-white no-underline transition hover:border-white">
+                <Link to="/login?returnTo=%2Fcommunity" className="flex min-h-12 w-full items-center justify-center rounded-full border border-white/40 bg-black/35 px-6 py-3.5 text-center text-[13px] font-semibold text-white no-underline transition hover:border-white sm:w-auto">
                   Sign in
                 </Link>
               </div>
@@ -127,7 +127,7 @@ export function CommunityPage() {
           </div>
         </div>
 
-        <div className="relative min-h-[500px] overflow-hidden lg:min-h-full">
+        <div className="relative min-h-[360px] overflow-hidden sm:min-h-[500px] lg:min-h-full">
           <img
             src="/landing/yellowstone-bison.jpg"
             alt="Bison walking along a road in Yellowstone National Park"
@@ -148,10 +148,10 @@ export function CommunityPage() {
           </div>
         ) : null}
 
-        <section className="mx-auto grid max-w-[1320px] gap-16 px-5 py-28 lg:grid-cols-[1.05fr_.95fr] lg:px-8 lg:py-36">
+        <section className="mx-auto grid max-w-[1320px] gap-12 px-4 py-20 sm:gap-16 sm:px-5 sm:py-28 lg:grid-cols-[1.05fr_.95fr] lg:px-8 lg:py-36">
           <div>
             <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-black/45">Community route pressure</div>
-            <h2 className="mt-5 max-w-[760px] text-[clamp(52px,7vw,98px)] font-semibold leading-[0.87] tracking-[-0.067em]">
+            <h2 className="mt-5 max-w-[760px] text-[clamp(40px,11vw,98px)] font-semibold leading-[0.92] tracking-[-0.055em] sm:leading-[0.87] sm:tracking-[-0.067em]">
               Put your state on Anthony’s route
             </h2>
             <p className="mt-7 max-w-[620px] text-[16px] leading-[1.7] text-black/60">
@@ -178,7 +178,7 @@ export function CommunityPage() {
                     />
                   </label>
                 </div>
-                <button className="mt-5 rounded-full bg-[#e82127] px-6 py-3.5 text-[13px] font-semibold text-white shadow-[0_12px_30px_rgba(232,33,39,.25)]" type="submit">
+                <button className="mt-5 min-h-12 w-full rounded-full bg-[#e82127] px-6 py-3.5 text-center text-[13px] font-semibold text-white shadow-[0_12px_30px_rgba(232,33,39,.25)] sm:w-auto" type="submit">
                   Put my state on the map
                 </button>
               </form>
@@ -197,10 +197,10 @@ export function CommunityPage() {
             </div>
             <div>
               {(community?.stateVotes ?? []).slice(0, 10).map((item, index) => (
-                <div key={item.state_code} className="grid grid-cols-[48px_1fr_auto] items-center border-b border-black/12 py-4">
+                <div key={item.state_code} className="grid min-w-0 grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-2 border-b border-black/12 py-4 sm:grid-cols-[48px_minmax(0,1fr)_auto] sm:gap-0">
                   <div className="font-mono text-[10px] text-black/30">{String(index + 1).padStart(2, '0')}</div>
-                  <div className="text-[18px] font-semibold">{STATE_CODE_TO_NAME[item.state_code] ?? item.state_code}</div>
-                  <div className="font-mono text-[10px] text-[#e82127]">{Number(item.votes)} vote{Number(item.votes) === 1 ? '' : 's'}</div>
+                  <div className="min-w-0 truncate text-[16px] font-semibold sm:text-[18px]">{STATE_CODE_TO_NAME[item.state_code] ?? item.state_code}</div>
+                  <div className="whitespace-nowrap font-mono text-[9px] text-[#e82127] sm:text-[10px]">{Number(item.votes)} vote{Number(item.votes) === 1 ? '' : 's'}</div>
                 </div>
               ))}
               {community?.stateVotes.length === 0 ? (
@@ -211,12 +211,12 @@ export function CommunityPage() {
         </section>
       </div>
 
-      <section className="bg-[#090a0c] px-5 py-24 text-white lg:px-8 lg:py-32">
+      <section className="bg-[#090a0c] px-4 py-20 text-white sm:px-5 sm:py-24 lg:px-8 lg:py-32">
         <div className="mx-auto max-w-[1320px]">
           <div className="grid gap-12 lg:grid-cols-[1fr_390px]">
             <div>
               <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-[#23d7d1]">Ideas worth rerouting for</div>
-              <h2 className="mt-5 max-w-[820px] text-[clamp(48px,6.4vw,88px)] font-semibold leading-[0.9] tracking-[-0.063em]">
+              <h2 className="mt-5 max-w-[820px] text-[clamp(40px,11vw,88px)] font-semibold leading-[0.93] tracking-[-0.055em] sm:leading-[0.9] sm:tracking-[-0.063em]">
                 Give the route an unfair local advantage
               </h2>
               <div className="mt-12 border-t border-white/15">
@@ -238,7 +238,7 @@ export function CommunityPage() {
                       disabled={!user}
                       onClick={() => void voteSuggestion(item.id)}
                       aria-label={`Vote for ${item.title}`}
-                      className={`h-fit rounded-full border px-4 py-2 font-mono text-[10px] ${item.viewer_voted ? 'border-[#23d7d1] bg-[#23d7d1] text-black' : 'border-white/20 text-white/65'} disabled:cursor-not-allowed disabled:opacity-35`}
+                      className={`h-11 w-full rounded-full border px-4 py-2 font-mono text-[10px] sm:h-fit sm:w-auto ${item.viewer_voted ? 'border-[#23d7d1] bg-[#23d7d1] text-black' : 'border-white/30 bg-black/30 text-white/75'} disabled:cursor-not-allowed disabled:opacity-35`}
                     >
                       ▲ {Number(item.votes)}
                     </button>
@@ -281,12 +281,12 @@ export function CommunityPage() {
                     Why it is worth the time
                     <textarea required minLength={10} maxLength={800} rows={5} value={suggestion.body} onChange={(event) => setSuggestion((current) => ({ ...current, body: event.target.value }))} />
                   </label>
-                  <button className="rounded-full bg-black px-5 py-3.5 text-[12px] font-semibold text-white" type="submit">Publish suggestion</button>
+                  <button className="min-h-12 w-full rounded-full bg-black px-5 py-3.5 text-center text-[12px] font-semibold text-white" type="submit">Publish suggestion</button>
                 </form>
               ) : (
                 <div className="mt-7 border-t border-white/25 pt-6 text-[13px] leading-[1.6] text-white/75">
                   Create an account to publish suggestions and vote on the ideas that should shape the route
-                  <Link to="/signup?returnTo=%2Fcommunity" className="mt-5 flex w-fit rounded-full bg-white px-5 py-3 text-[12px] font-semibold text-black no-underline">
+                  <Link to="/signup?returnTo=%2Fcommunity" className="mt-5 flex min-h-12 w-full items-center justify-center rounded-full bg-white px-5 py-3 text-center text-[12px] font-semibold text-black no-underline sm:w-fit">
                     Join the community
                   </Link>
                 </div>
@@ -296,13 +296,13 @@ export function CommunityPage() {
         </div>
       </section>
 
-      <section className="relative overflow-hidden bg-black px-5 py-24 text-white lg:px-8 lg:py-32">
+      <section className="relative overflow-hidden bg-black px-4 py-20 text-white sm:px-5 sm:py-24 lg:px-8 lg:py-32">
         <img src="/landing/golden-gate.jpg" alt="Golden Gate Bridge at dusk" loading="lazy" className="absolute inset-0 h-full w-full object-cover opacity-35" />
         <div className="absolute inset-0 bg-gradient-to-r from-black via-black/85 to-black/35" />
         <div className="relative mx-auto max-w-[1320px]">
           <div className="max-w-[760px]">
             <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-[#23d7d1]">Community achievements</div>
-            <h2 className="mt-5 text-[clamp(48px,6.5vw,92px)] font-semibold leading-[0.9] tracking-[-0.065em]">Routes worth talking about</h2>
+            <h2 className="mt-5 text-[clamp(40px,11vw,92px)] font-semibold leading-[0.93] tracking-[-0.055em] sm:leading-[0.9] sm:tracking-[-0.065em]">Routes worth talking about</h2>
           </div>
           <div className="mt-12 grid gap-px overflow-hidden border border-white/15 bg-white/15 md:grid-cols-2 lg:grid-cols-3">
             {(community?.achievements ?? []).map((item) => (
@@ -327,7 +327,7 @@ export function CommunityPage() {
 
 function PulseMetric({ label, value }: { label: string; value: number }) {
   return (
-    <div className="border-r border-white/15 px-3 py-5 first:pl-0 last:border-r-0 sm:px-4">
+    <div className="cq-mobile-metric border-r border-white/15 px-3 py-5 first:pl-0 last:border-r-0 sm:px-4">
       <div className="text-[24px] font-semibold tracking-[-0.035em]">{value}</div>
       <div className="mt-1 font-mono text-[7.5px] uppercase tracking-[0.09em] text-white/35">{label}</div>
     </div>
@@ -338,7 +338,7 @@ function CommunityJoinPrompt({ text }: { text: string }) {
   return (
     <div className="mt-9 border-t border-black/15 pt-6 text-[14px] text-black/55">
       {text}
-      <Link to="/signup?returnTo=%2Fcommunity" className="mt-5 flex w-fit rounded-full bg-[#e82127] px-6 py-3.5 text-[12px] font-semibold text-white no-underline">
+      <Link to="/signup?returnTo=%2Fcommunity" className="mt-5 flex min-h-12 w-full items-center justify-center rounded-full bg-[#e82127] px-6 py-3.5 text-center text-[12px] font-semibold text-white no-underline sm:w-fit">
         Create a free account
       </Link>
     </div>

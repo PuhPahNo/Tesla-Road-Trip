@@ -137,7 +137,7 @@ await admin.request('/api/admin/trip', {
   method: 'PUT',
   body: {
     active: true,
-    title: "Anthony's Charge Quest",
+    title: "Anthony's ChargeQuest",
     routeName: 'Great American Icons',
     dayNumber: 1,
     totalDays: 60,

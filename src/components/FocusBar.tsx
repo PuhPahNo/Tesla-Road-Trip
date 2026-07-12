@@ -47,7 +47,7 @@ export function FocusBar({
     <div
       className={cx(
         'fixed left-1/2 z-[36] flex -translate-x-1/2 flex-col items-center gap-[9px]',
-        isMobile ? 'bottom-[calc(env(safe-area-inset-bottom)+86px)]' : 'bottom-4',
+        isMobile ? 'bottom-[calc(env(safe-area-inset-bottom)_+_86px)]' : 'bottom-4',
       )}
     >
       {!isMobile && (
@@ -72,7 +72,7 @@ export function FocusBar({
       <div
         className={cx(
           'glass flex items-center gap-2 rounded-[15px] py-0 pl-2 pr-2',
-          isMobile ? 'h-[54px] max-w-[calc(100vw-24px)]' : 'h-[58px] gap-2.5 pl-3.5',
+          isMobile ? 'h-[52px] max-w-[calc(100vw-16px)] gap-1.5 px-1.5' : 'h-[58px] gap-2.5 pl-3.5',
         )}
       >
         <button
@@ -89,7 +89,7 @@ export function FocusBar({
           onClick={() => onOpenDay(index)}
           className={cx(
             'cursor-pointer border-none bg-transparent p-0 text-center text-ink',
-            isMobile ? 'min-w-0 max-w-[46vw]' : 'min-w-[236px]',
+            isMobile ? 'min-w-0 max-w-[48vw]' : 'min-w-[236px]',
           )}
         >
           <div className="truncate text-[14px] font-semibold">
@@ -120,16 +120,20 @@ export function FocusBar({
           <ChevronRightIcon size={15} />
         </button>
 
-        <button
-          type="button"
-          onClick={onTogglePlay}
-          aria-label={playing ? 'Pause day tour' : 'Play day tour'}
-          className="flex h-[34px] w-[34px] flex-none cursor-pointer items-center justify-center rounded-[9px] border-none bg-accent text-on-accent transition hover:brightness-95"
-        >
-          {playing ? <PauseIcon size={13} /> : <PlayIcon size={13} />}
-        </button>
+        {!isMobile && (
+          <>
+            <button
+              type="button"
+              onClick={onTogglePlay}
+              aria-label={playing ? 'Pause day tour' : 'Play day tour'}
+              className="flex h-[34px] w-[34px] flex-none cursor-pointer items-center justify-center rounded-[9px] border-none bg-accent text-on-accent transition hover:brightness-95"
+            >
+              {playing ? <PauseIcon size={13} /> : <PlayIcon size={13} />}
+            </button>
 
-        <span className="mx-[3px] h-[26px] w-px flex-none bg-edge" aria-hidden />
+            <span className="mx-[3px] h-[26px] w-px flex-none bg-edge" aria-hidden />
+          </>
+        )}
 
         <button
           type="button"

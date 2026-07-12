@@ -1,6 +1,6 @@
 {
-  "name": "Charge Quest",
-  "short_name": "Charge Quest",
+  "name": "ChargeQuest",
+  "short_name": "ChargeQuest",
   "description": "Plan a record-setting Tesla Supercharger road trip.",
   "start_url": "/",
   "display": "standalone",

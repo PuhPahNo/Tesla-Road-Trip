@@ -1,4 +1,4 @@
-# Charge Quest PRD
+# ChargeQuest PRD
 
 ## Product Goal
 Build a local planning website for a Tesla owner in Chattanooga, TN who wants to compete in the 2026 Tesla Free Supercharging Competition for:
@@ -29,20 +29,20 @@ Tesla's public contest page does not specify a minimum charging duration for a s
 ## Feature PRDs
 
 ### 0. Public Quest Homepage
-**Objective:** Introduce Charge Quest as Anthony's real 2026 competition project, not a generic trip-planning SaaS product.
+**Objective:** Introduce ChargeQuest as Anthony's real 2026 competition project, not a generic trip-planning SaaS product.
 
 **Requirements**
 - Lead in Anthony's first-person voice with his age, Chattanooga starting point, and 2026 competition goal.
 - Show an accurate preview of the three-step custom-route workflow instead of a decorative route illustration.
 - Explain why the planner exists through concise, competition-focused trip-planning tradeoffs.
 - Invite visitors to challenge Anthony's route, vote for states, suggest stops, arrange meetups, or build a competing route.
-- Use the same sans-serif and mono typography as the rest of Charge Quest without a separate diary or handwritten aesthetic.
+- Use the same sans-serif and mono typography as the rest of ChargeQuest without a separate diary or handwritten aesthetic.
 - Use full-bleed road-trip photography, oversized type, high-contrast light/dark/red canvases, and asymmetrical compositions so consecutive sections do not repeat a SaaS card-grid template.
 - Funnel signed-out visitors through account creation before opening the planner; signed-in members can enter the planner directly.
 - Use descriptive Tesla route-planner titles, page-specific meta descriptions, canonical URLs, accessible image alt text, `WebApplication` structured data, and a public sitemap without keyword stuffing.
 
 **Acceptance Criteria**
-- The first viewport clearly identifies Anthony as the person behind Charge Quest.
+- The first viewport clearly identifies Anthony as the person behind ChargeQuest.
 - Primary actions are Sign up and build your route and Follow mine for signed-out visitors.
 - Live community counts and trip status render without blocking the page when the community API is unavailable.
 - The page remains usable on mobile without fixed-background or motion dependencies.

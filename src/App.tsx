@@ -534,7 +534,7 @@ function App() {
   }
 
   return (
-    <div className="fixed inset-0 overflow-hidden bg-app text-ink">
+    <div className="planner-shell fixed inset-0 overflow-hidden bg-app text-ink">
       {/* Fullscreen map behind the floating chrome */}
       <div className="absolute inset-0 z-0">
         <MapView
@@ -569,7 +569,7 @@ function App() {
 
       {/* Error banner */}
       {error && (
-        <div className="glass fixed left-1/2 top-[76px] z-50 flex max-w-[min(560px,calc(100vw-32px))] -translate-x-1/2 items-center gap-2 rounded-[11px] px-3.5 py-2.5 text-[12.5px] text-warn">
+        <div className="glass fixed left-1/2 top-16 z-50 flex max-w-[min(560px,calc(100vw-24px))] -translate-x-1/2 items-center gap-2 rounded-[11px] px-3.5 py-2.5 text-[12.5px] text-warn sm:top-[76px] sm:max-w-[min(560px,calc(100vw-32px))]">
           <AlertIcon size={14} className="flex-none" />
           <span className="min-w-0 flex-1 truncate">{error}</span>
           <button
@@ -640,7 +640,7 @@ function App() {
               title="Overview & stats"
               onClose={() => setMobileTab(null)}
             />
-            <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-4">
+            <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-3.5 sm:p-4">
               <OverviewSection route={displayRoute} feasibility={visibleFeasibility} />
               <div className="flex flex-col gap-3">
                 <Eyebrow>Trip stats</Eyebrow>
@@ -669,7 +669,7 @@ function App() {
               title={displayRoute?.name ?? 'Daily plan'}
               onClose={() => setMobileTab(null)}
             />
-            <div className="min-h-0 flex-1 overflow-y-auto p-4">
+            <div className="min-h-0 flex-1 overflow-y-auto p-3.5 sm:p-4">
               <DaysSection
                 route={displayRoute}
                 hoveredDayIndex={hoveredDayIndex}
@@ -689,7 +689,7 @@ function App() {
               title="Stations by state"
               onClose={() => setMobileTab(null)}
             />
-            <div className="min-h-0 flex-1 overflow-y-auto p-4">
+            <div className="min-h-0 flex-1 overflow-y-auto p-3.5 sm:p-4">
               <CoverageSection
                 stats={routeStateStats}
                 onSelectState={handleSelectState}

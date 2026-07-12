@@ -114,12 +114,12 @@ export function RoutePicker({
                   ) : null}
                 </button>
                 {savedRoute ? (
-                  <div className="flex w-[78px] flex-none flex-col border-l border-edge p-1.5">
+                  <div className="flex w-[76px] flex-none flex-col border-l border-edge p-1 md:w-[78px] md:p-1.5">
                     <button
                       type="button"
                       onClick={() => onEditCustomRoute?.(savedRoute)}
                       aria-label={`Edit ${savedRoute.name}`}
-                      className="min-h-8 flex-1 cursor-pointer rounded-lg text-[11px] font-medium text-dim transition hover:bg-chip hover:text-ink"
+                      className="min-h-11 flex-1 cursor-pointer rounded-lg text-[11px] font-medium text-dim transition hover:bg-chip hover:text-ink md:min-h-8"
                     >
                       Edit
                     </button>
@@ -139,7 +139,7 @@ export function RoutePicker({
                         }
                         setConfirmDeleteId(savedRoute.id)
                       }}
-                      className="min-h-8 flex-1 cursor-pointer rounded-lg text-[10.5px] font-medium text-warn transition hover:bg-chip disabled:cursor-not-allowed disabled:opacity-60"
+                      className="min-h-11 flex-1 cursor-pointer rounded-lg text-[10.5px] font-medium text-warn transition hover:bg-chip disabled:cursor-not-allowed disabled:opacity-60 md:min-h-8"
                     >
                       {deletingRouteId === savedRoute.id
                         ? 'Deleting…'

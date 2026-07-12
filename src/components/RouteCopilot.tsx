@@ -201,7 +201,7 @@ export function RouteCopilotPanel({
               type="button"
               disabled={sending}
               onClick={() => void send(text)}
-              className="cursor-pointer rounded-full border border-edge bg-chip px-2.5 py-[5px] text-[11px] text-dim transition hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
+              className="min-h-9 cursor-pointer rounded-full border border-edge bg-chip px-2.5 py-[5px] text-[11px] text-dim transition hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
             >
               {text}
             </button>

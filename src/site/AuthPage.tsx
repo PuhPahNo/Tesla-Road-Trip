@@ -39,7 +39,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
   const signupMode = mode === 'signup'
 
   return (
-    <div className="mx-auto grid min-h-[calc(100vh-170px)] max-w-[1080px] items-center gap-10 px-5 py-14 lg:grid-cols-[.9fr_1.1fr] lg:px-8">
+    <div className="mx-auto grid min-h-[calc(100svh-117px)] max-w-[1080px] items-center gap-8 px-4 py-8 sm:min-h-[calc(100vh-170px)] sm:px-5 sm:py-14 lg:grid-cols-[.9fr_1.1fr] lg:px-8">
       <div className="hidden lg:block">
         <div className="site-kicker">Your competition starts here</div>
         <h1 className="mt-4 text-[56px] font-semibold leading-[.98] tracking-[-0.05em]">
@@ -56,15 +56,15 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
         </div>
       </div>
 
-      <div className="site-card mx-auto w-full max-w-[500px] p-6 sm:p-8">
+      <div className="site-card mx-auto w-full max-w-[500px] p-5 sm:p-8">
         <div className="site-kicker">{signupMode ? 'Create your account' : 'Welcome back'}</div>
-        <h1 className="mt-3 text-[34px] font-semibold tracking-[-0.04em]">
+        <h1 className="mt-3 text-[30px] font-semibold leading-[1.02] tracking-[-0.04em] sm:text-[34px]">
           {signupMode ? 'Build the route that beats his.' : 'Continue your quest.'}
         </h1>
         <p className="mt-3 text-[13px] leading-[1.6] text-dim">
           {signupMode
             ? 'Choose a unique username and password. No email address or external account provider is required.'
-            : 'Sign in with your Charge Quest username and password.'}
+            : 'Sign in with your ChargeQuest username and password.'}
         </p>
 
         {error ? <div className="site-alert mt-5 text-warn">{error}</div> : null}
@@ -99,19 +99,19 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
               placeholder="At least 8 characters"
             />
           </label>
-          <button type="submit" disabled={busy} className="site-primary-button mt-1 disabled:opacity-60">
+          <button type="submit" disabled={busy} className="site-primary-button mt-1 w-full disabled:opacity-60">
             {busy ? 'Working…' : signupMode ? 'Create free account' : 'Sign in'}
           </button>
         </form>
 
         <div className="mt-5 rounded-[11px] border border-edge bg-chip p-3 text-[10.5px] leading-[1.5] text-faint">
-          Charge Quest never asks for your email and has no automated password reset.
+          ChargeQuest never asks for your email and has no automated password reset.
           Keep your username and password somewhere safe; Anthony can help manually if
           an account is locked out.
         </div>
 
         <div className="mt-6 text-center text-[12px] text-dim">
-          {signupMode ? 'Already have an account?' : 'New to Charge Quest?'}{' '}
+          {signupMode ? 'Already have an account?' : 'New to ChargeQuest?'}{' '}
           <Link
             to={signupMode ? '/login' : '/signup'}
             className="font-semibold text-accent no-underline"

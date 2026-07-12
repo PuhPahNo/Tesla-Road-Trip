@@ -41,15 +41,15 @@ export function BrandIsland({
   onOpenRoutePicker: () => void
 }) {
   return (
-    // Below sm the island yields to the actions island (~148px + gap) so the
+    // Below sm the island yields to the actions island (~108px + gap) so the
     // two never overlap; the route chip shrinks and truncates instead.
-    <div className="glass fixed left-4 top-4 z-40 flex h-12 max-w-[calc(100vw-172px)] items-center gap-2.5 rounded-[13px] py-0 pl-3 pr-1.5 sm:max-w-none">
-      <a href="/" aria-label="Return to Charge Quest home" className="flex flex-none">
+    <div className="glass fixed left-3 top-3 z-40 flex h-11 max-w-[calc(100vw-152px)] items-center gap-1.5 rounded-[12px] py-0 pl-2 pr-1 sm:left-4 sm:top-4 sm:h-12 sm:max-w-none sm:gap-2.5 sm:rounded-[13px] sm:pl-3 sm:pr-1.5">
+      <a href="/" aria-label="Return to ChargeQuest home" className="flex flex-none">
         <img
           src="/brand-mark.svg?v=2"
           alt=""
           aria-hidden="true"
-          className="h-[30px] w-[30px] rounded-[9px]"
+          className="h-7 w-7 rounded-[8px] sm:h-[30px] sm:w-[30px] sm:rounded-[9px]"
         />
       </a>
       <div className="hidden flex-none pr-1 leading-[1.05] sm:block">
@@ -57,20 +57,20 @@ export function BrandIsland({
           {contestLabel}
         </div>
         <div className="whitespace-nowrap text-[13px] font-semibold tracking-[-0.01em] text-ink">
-          Charge Quest
+          ChargeQuest
         </div>
       </div>
       <button
         type="button"
         onClick={onOpenRoutePicker}
         aria-label="Choose route"
-        className="flex h-[34px] min-w-0 cursor-pointer items-center gap-2 rounded-[9px] border border-glass-bd bg-chip px-[11px] text-ink transition hover:brightness-110 sm:max-w-[210px]"
+        className="flex h-8 min-w-0 cursor-pointer items-center gap-1.5 rounded-[8px] border border-glass-bd bg-chip px-2 text-ink transition hover:brightness-110 sm:h-[34px] sm:max-w-[210px] sm:gap-2 sm:rounded-[9px] sm:px-[11px]"
       >
         <span
           className="h-2 w-2 flex-none rounded-full"
           style={{ background: routeColor ?? 'var(--accent)' }}
         />
-        <span className="min-w-0 truncate text-[12.5px] font-medium">{routeName}</span>
+        <span className="min-w-0 truncate text-[11.5px] font-medium sm:text-[12.5px]">{routeName}</span>
         <ChevronDownIcon size={11} className="flex-none opacity-50" />
       </button>
     </div>
@@ -95,7 +95,7 @@ export function ActionsIsland({
 }) {
   const { isDark, toggleTheme } = useTheme()
   return (
-    <div className="glass fixed right-4 top-4 z-40 flex h-12 items-center gap-1.5 rounded-[13px] px-[7px]">
+    <div className="glass fixed right-3 top-3 z-40 flex h-11 items-center gap-0.5 rounded-[12px] px-1 sm:right-4 sm:top-4 sm:h-12 sm:gap-1.5 sm:rounded-[13px] sm:px-[7px]">
       {showAsk && (
         <button
           type="button"
@@ -117,7 +117,7 @@ export function ActionsIsland({
         disabled={isRefreshing}
         aria-label="Refresh from Supercharge.info"
         title="Refresh from Supercharge.info"
-        className="flex h-[34px] w-[34px] cursor-pointer items-center justify-center rounded-[9px] border border-transparent bg-transparent text-dim transition hover:text-ink disabled:opacity-60"
+        className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-[8px] border border-transparent bg-transparent text-dim transition hover:text-ink disabled:opacity-60 sm:h-[34px] sm:w-[34px] sm:rounded-[9px]"
       >
         <RefreshIcon size={15} className={isRefreshing ? 'anim-spin' : ''} />
       </button>
@@ -126,7 +126,7 @@ export function ActionsIsland({
         onClick={toggleTheme}
         aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
         title="Toggle theme"
-        className="flex h-[34px] w-[34px] cursor-pointer items-center justify-center rounded-[9px] border border-transparent bg-transparent text-dim transition hover:text-ink"
+        className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-[8px] border border-transparent bg-transparent text-dim transition hover:text-ink sm:h-[34px] sm:w-[34px] sm:rounded-[9px]"
       >
         {isDark ? <SunIcon size={16} /> : <MoonIcon size={16} />}
       </button>
@@ -134,7 +134,7 @@ export function ActionsIsland({
         type="button"
         onClick={onOpenConfig}
         aria-label="Travel preferences"
-        className="flex h-[34px] cursor-pointer items-center gap-[7px] rounded-[9px] border border-glass-bd bg-chip px-3 text-ink transition hover:brightness-110"
+        className="flex h-8 w-8 cursor-pointer items-center justify-center gap-[7px] rounded-[8px] border border-glass-bd bg-chip text-ink transition hover:brightness-110 sm:h-[34px] sm:w-auto sm:justify-start sm:rounded-[9px] sm:px-3"
       >
         <SlidersIcon size={14} />
         <span className="hidden text-[12px] font-medium sm:inline">Preferences</span>
@@ -222,7 +222,7 @@ export function MobileTabBar({
   }
 
   return (
-    <nav className="glass pb-safe fixed inset-x-3 bottom-3 z-40 grid grid-cols-5 rounded-[15px] px-1.5 py-1">
+    <nav className="glass pb-safe fixed inset-x-2 bottom-2 z-40 grid grid-cols-5 rounded-[15px] px-1 py-1 sm:inset-x-3 sm:bottom-3 sm:px-1.5">
       {tab(null, 'Map', <CompassIcon size={19} />)}
       {MOBILE_TABS.map((t) => {
         const Icon = t.icon
