@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { MapPinned, Route, UsersRound, type LucideIcon } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { fetchCommunity, type CommunitySnapshot } from '../api/siteClient'
 import { useAuth } from './AuthContext'
@@ -20,7 +21,7 @@ export function LandingPage() {
 
   const trip = community?.trip
   const plannerHref = user ? '/planner' : '/signup?returnTo=%2Fplanner'
-  const plannerCta = user ? 'Build your route' : 'Sign up and build your route'
+  const plannerCta = 'Build Your Route'
   const stateVoteCount = useMemo(
     () => community?.stateVotes.reduce((total, state) => total + state.votes, 0) ?? 0,
     [community],
@@ -36,36 +37,48 @@ export function LandingPage() {
         />
         <div className="cq-hero-shade absolute inset-0" />
         <div className="relative mx-auto flex min-h-[calc(100svh-117px)] max-w-[1440px] flex-col justify-between px-4 py-6 sm:min-h-[calc(100vh-78px)] sm:px-5 sm:py-8 lg:px-12 lg:py-12">
-          <div className="flex items-center justify-between gap-5 font-mono text-[9px] uppercase tracking-[0.14em] text-white/65">
-            <span>One shared challenge · Countless possible routes</span>
-            <span className="hidden sm:block">2026 Tesla Supercharging Competition</span>
+          <div className="flex items-start justify-between gap-5 font-mono uppercase">
+            <span className="max-w-[650px] text-[11px] font-bold leading-[1.4] tracking-[0.11em] text-white/88 sm:text-[12px]">
+              One shared challenge. Countless possible journeys.
+            </span>
+            <span className="hidden pt-0.5 text-[9px] tracking-[0.14em] text-white/60 sm:block">2026 Tesla Supercharging Competition</span>
           </div>
 
-          <div className="max-w-[1100px] pb-5">
-            <div className="mb-5 font-mono text-[10px] uppercase tracking-[0.16em] text-white/75">
-              A Tesla road-trip planner built for the 2026 competition
-            </div>
-            <h1 className="max-w-[1080px] text-[clamp(43px,13vw,150px)] font-semibold leading-[0.88] tracking-[-0.06em] text-white sm:leading-[0.82] sm:tracking-[-0.072em]">
-              I’m building a route. Want to beat it?
+          <div className="max-w-[1160px] pb-5">
+            <h1 className="max-w-[1120px] text-[clamp(43px,9vw,116px)] font-semibold leading-[0.9] tracking-[-0.055em] text-white sm:leading-[0.86] sm:tracking-[-0.065em]">
+              I’m building a route. Think you can build a better one?
             </h1>
-            <div className="mt-8 grid max-w-[980px] gap-7 md:grid-cols-[1fr_auto] md:items-end">
-              <p className="max-w-[680px] text-[16px] leading-[1.6] text-white/88 sm:text-[20px] sm:leading-[1.65]">
-                ChargeQuest is a place to trade route ideas, test different strategies,
-                and plan a trip that is ambitious without forgetting why road trips
-                are fun. Build yours, compare notes, and let’s see where the road leads.
+            <div className="mt-7 flex max-w-[1040px] flex-col gap-5 md:flex-row md:items-end md:justify-between">
+              <p className="max-w-[690px] text-[16px] leading-[1.6] text-white/88 sm:text-[18px] sm:leading-[1.6]">
+                ChargeQuest began with one ambitious competition route. Now it is a
+                place to plan yours—around your Tesla, your pace, and the stops that
+                make the drive worth remembering.
               </p>
-              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                <Link to={plannerHref} className="flex min-h-12 w-full items-center justify-center rounded-full bg-[#e82127] px-6 py-3.5 text-center text-[13px] font-semibold text-white no-underline shadow-[0_12px_40px_rgba(232,33,39,.48)] ring-1 ring-white/20 transition hover:bg-white hover:text-black sm:w-auto">
-                  {plannerCta}
-                </Link>
-                <Link to="/track-anthony" className="flex min-h-12 w-full items-center justify-center rounded-full border border-white/45 bg-black/75 px-6 py-3.5 text-center text-[13px] font-semibold text-white no-underline backdrop-blur-md transition hover:border-white sm:w-auto">
-                  See the route taking shape
-                </Link>
-              </div>
+              <Link to={plannerHref} className="flex min-h-12 w-full flex-none items-center justify-center rounded-full bg-[#e82127] px-7 py-3.5 text-center text-[13px] font-semibold text-white no-underline shadow-[0_12px_40px_rgba(232,33,39,.48)] ring-1 ring-white/20 transition hover:bg-white hover:text-black sm:w-auto">
+                {plannerCta}
+              </Link>
+            </div>
+
+            <div className="mt-7 grid max-w-[1120px] border-y border-white/20 md:grid-cols-3">
+              <HeroBenefit
+                icon={MapPinned}
+                title="Map the stops that matter"
+                body="Plan through Superchargers, landmarks, cities, and badge locations."
+              />
+              <HeroBenefit
+                icon={Route}
+                title="Save multiple route ideas"
+                body="Compare different strategies without losing a promising plan."
+              />
+              <HeroBenefit
+                icon={UsersRound}
+                title="Shape the quest together"
+                body="Vote on states, suggest stops, and follow the first route."
+              />
             </div>
             {!user ? (
-              <div className="mt-5 font-mono text-[8.5px] uppercase tracking-[0.11em] text-white/55">
-                Free account · No email required · Save unlimited route ideas
+              <div className="mt-4 font-mono text-[8.5px] uppercase tracking-[0.11em] text-white/55">
+                Free account · No email required · Save and refine your route ideas
               </div>
             ) : null}
           </div>
@@ -80,31 +93,40 @@ export function LandingPage() {
       <section className="cq-editorial-light px-4 py-20 sm:px-5 sm:py-36 lg:px-8 lg:py-44">
         <div className="mx-auto max-w-[1320px]">
           <div className="grid gap-10 lg:grid-cols-[1.35fr_.65fr] lg:items-end">
-            <h2 className="max-w-[1040px] text-[clamp(42px,12vw,132px)] font-semibold leading-[0.9] tracking-[-0.06em] sm:leading-[0.86] sm:tracking-[-0.072em]">
-              Start with what makes the trip worth taking
-            </h2>
+            <div>
+              <div className="mb-5 font-mono text-[9px] uppercase tracking-[0.16em] text-black/45">How ChargeQuest began</div>
+              <h2 className="max-w-[1040px] text-[clamp(42px,12vw,112px)] font-semibold leading-[0.9] tracking-[-0.06em] sm:leading-[0.86] sm:tracking-[-0.072em]">
+                The challenge started the journey. The road became the reward.
+              </h2>
+            </div>
             <div className="max-w-[430px] pb-2">
               <div className="mb-5 h-1 w-16 bg-[#e82127]" />
               <p className="text-[17px] leading-[1.7] text-black/65">
-                Pick the parks, cities, badge locations, and local stops you would
-                hate to miss. ChargeQuest uses the Supercharger network to connect
-                those ideas into a route that fits your Tesla and your pace.
+                I built ChargeQuest to give myself the best possible shot at an
+                ambitious goal. But the more I mapped the trip, the clearer it
+                became: winning would be incredible, but it would not be the only
+                win. The places between charging stops, the unexpected detours, and
+                the people following along would become the story.
+              </p>
+              <p className="mt-5 text-[17px] leading-[1.7] text-black/65">
+                So the personal planner became something shared—a place to follow
+                the first quest, compare ideas, and build a journey of your own.
               </p>
             </div>
           </div>
           <div className="mt-16 grid gap-7 border-t border-black/15 pt-7 sm:mt-24 sm:grid-cols-3 sm:gap-8 sm:pt-8">
-            <EditorialFact number="17" label="Iconic Charger targets mapped" />
-            <EditorialFact number="3" label="Steps from first idea to a route" />
-            <EditorialFact number="∞" label="Ways to make the trip your own" />
+            <EditorialFact number="17" label="Tesla Iconic Charger badge locations mapped" />
+            <EditorialFact number="48" label="Contiguous states full of possible stories" />
+            <EditorialFact number="1st" label="Quest taking shape with the community" />
           </div>
           {!user ? (
             <div className="mt-16 flex flex-col justify-between gap-6 border-t border-black/15 pt-8 sm:flex-row sm:items-center">
               <div>
-                <div className="text-[22px] font-semibold tracking-[-0.03em]">Save a route and make it your own</div>
-                <div className="mt-2 text-[13px] text-black/50">Choose a username, add your Tesla, and start exploring ideas in under a minute</div>
+                <div className="text-[22px] font-semibold tracking-[-0.03em]">I may be taking the first ChargeQuest. I do not plan to take it alone.</div>
+                <div className="mt-2 text-[13px] text-black/50">Choose a username, add your Tesla, and start shaping a route of your own.</div>
               </div>
               <Link to="/signup?returnTo=%2Fplanner" className="flex min-h-12 w-full flex-none items-center justify-center rounded-full bg-[#e82127] px-7 py-4 text-center text-[13px] font-semibold text-white no-underline shadow-[0_12px_30px_rgba(232,33,39,.22)] sm:w-auto">
-                Create a free account
+                Start your quest
               </Link>
             </div>
           ) : null}
@@ -115,15 +137,15 @@ export function LandingPage() {
         <div className="mx-auto max-w-[1380px]">
           <div className="mb-16 flex flex-col justify-between gap-7 md:flex-row md:items-end">
             <div>
-              <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-[#23d7d1]">Build around the places that matter</div>
+              <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-[#23d7d1]">Make the route worth remembering</div>
               <h2 className="mt-4 max-w-[820px] text-[clamp(39px,11vw,92px)] font-semibold leading-[0.94] tracking-[-0.052em] sm:leading-[0.91] sm:tracking-[-0.06em]">
-                The best route is more than a line on a map
+                Your route should feel like yours
               </h2>
             </div>
             <p className="max-w-[390px] text-[14px] leading-[1.7] text-white/55">
-              Mix badge stations with national parks, city nights, and the stops
-              other drivers swear are worth the detour. Then let the planner work
-              out the charging sequence between them.
+              Start with the parks, cities, badge locations, and local stops you
+              would hate to miss. ChargeQuest connects those ideas through the
+              Supercharger network without losing what made you want to go.
             </p>
           </div>
 
@@ -167,18 +189,18 @@ export function LandingPage() {
         <div className="mx-auto max-w-[1320px]">
           <div className="grid gap-12 lg:grid-cols-[.75fr_1.25fr] lg:items-end">
             <div className="max-w-[540px]">
-              <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-white/65">Built to explore the tradeoffs</div>
+              <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-white/65">Plan the trip you would actually drive</div>
               <h2 className="mt-5 text-[clamp(40px,11vw,88px)] font-semibold leading-[0.93] tracking-[-0.055em] sm:leading-[0.9] sm:tracking-[-0.062em]">
-                One planner. Your strategy
+                A challenge is only as good as the journey
               </h2>
               <p className="mt-7 text-[16px] leading-[1.7] text-white/78">
-                Set your Tesla model and practical range. Choose a comfortable pace.
-                Add the places and badges that matter to you, then see how each choice
-                changes the route. Save promising versions and keep refining until the
-                plan feels like one you would actually want to drive.
+                Set your Tesla and practical range. Choose a pace you can sustain.
+                Add the places and Iconic Charger targets that matter to you, then
+                compare how each decision changes the trip. Save promising versions
+                and keep refining until the route feels ambitious and worth taking.
               </p>
               <Link to={plannerHref} className="mt-8 flex min-h-12 w-full items-center justify-center rounded-full bg-black px-6 py-3.5 text-center text-[13px] font-semibold text-white no-underline transition hover:bg-white hover:text-black sm:inline-flex sm:w-auto">
-                {user ? 'Open the full planner' : 'Unlock the planner for free'}
+                {user ? 'Open the planner' : 'Plan your quest for free'}
               </Link>
             </div>
 
@@ -202,15 +224,15 @@ export function LandingPage() {
 
         <div className="flex items-center px-4 py-16 sm:px-5 sm:py-20 lg:px-14 xl:px-20">
           <div className="w-full max-w-[620px]">
-            <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-[#23d7d1]">Plan together. Compare routes. Follow along.</div>
+            <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-[#23d7d1]">The first route is taking shape in public</div>
             <h2 className="mt-5 text-[clamp(40px,11vw,82px)] font-semibold leading-[0.93] tracking-[-0.055em] sm:leading-[0.9] sm:tracking-[-0.062em]">
-              Bring your best route to the table
+              Follow the quest. Help shape what comes next.
             </h2>
             <p className="mt-7 max-w-[560px] text-[16px] leading-[1.7] text-white/60">
-              Share a stop other drivers might miss, vote for the states that deserve
-              a place on the route, or offer a local meetup along the way. Once the
-              first trip begins, everyone can follow the progress and use what happens
-              on the road to improve the next plan.
+              Vote for states that deserve a place on the route, share a stop that
+              should not be missed, or offer a local meetup along the way. Then follow
+              the live tracker as the plan becomes a real trip—with the wins, setbacks,
+              detours, and discoveries included.
             </p>
 
             <div className="mt-10 grid grid-cols-2 border-y border-white/15 sm:grid-cols-4">
@@ -221,8 +243,8 @@ export function LandingPage() {
             </div>
 
             <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <Link to="/community" className="flex min-h-12 w-full items-center justify-center rounded-full bg-white px-6 py-3.5 text-center text-[13px] font-semibold text-black no-underline sm:w-auto">Explore the community</Link>
-              <Link to="/track-anthony" className="flex min-h-12 w-full items-center justify-center rounded-full border border-white/40 bg-black/40 px-6 py-3.5 text-center text-[13px] font-semibold text-white no-underline sm:w-auto">Follow the first route</Link>
+              <Link to="/track-anthony" className="flex min-h-12 w-full items-center justify-center rounded-full bg-white px-6 py-3.5 text-center text-[13px] font-semibold text-black no-underline sm:w-auto">See the latest progress</Link>
+              <Link to="/community" className="flex min-h-12 w-full items-center justify-center rounded-full border border-white/40 bg-black/40 px-6 py-3.5 text-center text-[13px] font-semibold text-white no-underline sm:w-auto">Shape the route together</Link>
             </div>
           </div>
         </div>
@@ -230,18 +252,27 @@ export function LandingPage() {
 
       <section className="cq-editorial-light px-4 py-20 text-center sm:px-5 sm:py-36 lg:px-8 lg:py-44">
         <div className="mx-auto max-w-[1120px]">
-          <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-black/45">There is more than one way across the map</div>
+          <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-black/45">What ChargeQuest is becoming</div>
           <h2 className="mt-5 text-[clamp(44px,13vw,148px)] font-semibold leading-[0.88] tracking-[-0.062em] sm:leading-[0.82] sm:tracking-[-0.075em]">
-            What route would you build?
+            The road is the reward.
           </h2>
           <p className="mx-auto mt-9 max-w-[620px] text-[17px] leading-[1.7] text-black/60">
-            Create a free ChargeQuest account to explore the planner, save different
-            competition ideas, and join a community figuring out the 2026 challenge
-            one route at a time.
+            ChargeQuest is starting with one competition route. The larger idea is a
+            home for EV adventures of every size: an ambitious national challenge, a
+            historic road, every Supercharger in your state, a first cross-country
+            trip, or simply taking the long way home.
           </p>
-          <Link to={plannerHref} className="mt-9 flex min-h-12 w-full items-center justify-center rounded-full bg-black px-8 py-4 text-center text-[14px] font-semibold text-white no-underline transition hover:bg-[#e82127] sm:inline-flex sm:w-auto">
-            {user ? 'Build another route' : 'Start building yours'}
-          </Link>
+          <p className="mx-auto mt-5 max-w-[620px] text-[17px] font-semibold leading-[1.7] text-black/72">
+            There isn’t one way to win a ChargeQuest. Start with a road worth remembering.
+          </p>
+          <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row sm:flex-wrap">
+            <Link to={plannerHref} className="flex min-h-12 w-full items-center justify-center rounded-full bg-black px-8 py-4 text-center text-[14px] font-semibold text-white no-underline transition hover:bg-[#e82127] sm:w-auto">
+              {user ? 'Build another route' : 'Start your quest'}
+            </Link>
+            <Link to="/track-anthony" className="flex min-h-12 w-full items-center justify-center rounded-full border border-black/25 bg-transparent px-8 py-4 text-center text-[14px] font-semibold text-black no-underline transition hover:border-black sm:w-auto">
+              Follow the first quest
+            </Link>
+          </div>
           <div className="mx-auto mt-14 max-w-[820px] border-t border-black/15 text-left sm:mt-20">
             <FaqItem
               question="Is ChargeQuest a Tesla Supercharger route planner"
@@ -267,6 +298,26 @@ function EditorialFact({ number, label }: { number: string; label: string }) {
     <div>
       <div className="text-[clamp(42px,5vw,70px)] font-semibold leading-none tracking-[-0.055em]">{number}</div>
       <div className="mt-3 max-w-[220px] text-[12px] font-medium uppercase tracking-[0.08em] text-black/45">{label}</div>
+    </div>
+  )
+}
+
+function HeroBenefit({
+  icon: Icon,
+  title,
+  body,
+}: {
+  icon: LucideIcon
+  title: string
+  body: string
+}) {
+  return (
+    <div className="grid grid-cols-[34px_1fr] gap-3 border-b border-white/15 py-3 last:border-b-0 md:border-b-0 md:border-l md:px-5 md:py-4 md:first:border-l-0 md:first:pl-0">
+      <Icon aria-hidden="true" className="mt-0.5 h-6 w-6 text-[#ff4c4c]" strokeWidth={1.8} />
+      <div>
+        <div className="text-[12.5px] font-semibold leading-[1.35] text-white">{title}</div>
+        <div className="mt-1 max-w-[270px] text-[11px] leading-[1.5] text-white/58">{body}</div>
+      </div>
     </div>
   )
 }

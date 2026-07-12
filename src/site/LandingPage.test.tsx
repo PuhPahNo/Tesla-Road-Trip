@@ -11,7 +11,7 @@ afterEach(() => {
 })
 
 describe('ChargeQuest landing page', () => {
-  it('challenges competitors, previews the real planner flow, and uses live community data', async () => {
+  it('invites visitors into the first quest, previews the real planner flow, and uses live community data', async () => {
     const community = {
       trip: {
         active: false,
@@ -45,9 +45,16 @@ describe('ChargeQuest landing page', () => {
       </MemoryRouter>,
     )
 
-    expect(screen.getByRole('heading', { name: 'I’m building a route. Want to beat it?' })).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'Sign up and build your route' }).getAttribute('href')).toBe('/signup?returnTo=%2Fplanner')
-    expect(screen.getByRole('link', { name: 'See the route taking shape' }).getAttribute('href')).toBe('/track-anthony')
+    expect(screen.getByRole('heading', { name: 'I’m building a route. Think you can build a better one?' })).toBeTruthy()
+    expect(screen.getByText('One shared challenge. Countless possible journeys.')).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Build Your Route' }).getAttribute('href')).toBe('/signup?returnTo=%2Fplanner')
+    expect(screen.queryByRole('link', { name: 'Follow the quest' })).toBeNull()
+    expect(screen.getByText('Map the stops that matter')).toBeTruthy()
+    expect(screen.getByText('Save multiple route ideas')).toBeTruthy()
+    expect(screen.getByText('Shape the quest together')).toBeTruthy()
+    expect(screen.getByText('Tesla Iconic Charger badge locations mapped')).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'The challenge started the journey. The road became the reward.' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'The road is the reward.' })).toBeTruthy()
     expect(screen.getByText('Create a custom route')).toBeTruthy()
     expect(screen.getByText('Step 2 of 3')).toBeTruthy()
     expect(await screen.findByText('5')).toBeTruthy()
