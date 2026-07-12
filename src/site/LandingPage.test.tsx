@@ -53,6 +53,7 @@ describe('ChargeQuest landing page', () => {
     expect(screen.getByText('Save multiple route ideas')).toBeTruthy()
     expect(screen.getByText('Shape the quest together')).toBeTruthy()
     expect(screen.getByText('Tesla Iconic Charger badge locations mapped')).toBeTruthy()
+    expect(screen.getByText('Possible routes to make your own')).toBeTruthy()
     expect(screen.getByRole('heading', { name: 'The challenge started the journey. The road became the reward.' })).toBeTruthy()
     expect(screen.getByRole('heading', { name: 'The road is the reward.' })).toBeTruthy()
     expect(screen.getByText('Create a custom route')).toBeTruthy()

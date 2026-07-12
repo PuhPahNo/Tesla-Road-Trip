@@ -117,7 +117,7 @@ export function LandingPage() {
           <div className="mt-16 grid gap-7 border-t border-black/15 pt-7 sm:mt-24 sm:grid-cols-3 sm:gap-8 sm:pt-8">
             <EditorialFact number="17" label="Tesla Iconic Charger badge locations mapped" />
             <EditorialFact number="48" label="Contiguous states full of possible stories" />
-            <EditorialFact number="1st" label="Quest taking shape with the community" />
+            <EditorialFact number="∞" label="Possible routes to make your own" />
           </div>
           {!user ? (
             <div className="mt-16 flex flex-col justify-between gap-6 border-t border-black/15 pt-8 sm:flex-row sm:items-center">
