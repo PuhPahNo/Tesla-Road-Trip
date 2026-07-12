@@ -43,11 +43,11 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
       <div className="hidden lg:block">
         <div className="site-kicker">Your competition starts here</div>
         <h1 className="mt-4 text-[56px] font-semibold leading-[.98] tracking-[-0.05em]">
-          Get the same planner Anthony built for himself.
+          Build a route around your Tesla, your pace, and the places worth the drive.
         </h1>
         <p className="mt-6 max-w-[480px] text-[16px] leading-[1.65] text-dim">
-          Build a route that can challenge his, save every version, keep your Tesla
-          and driving preferences, and join the community following the 2026 run.
+          Save different route ideas, keep your Tesla and driving preferences in one
+          place, and compare notes with a community planning for the 2026 competition.
         </p>
         <div className="mt-8 grid max-w-[480px] grid-cols-2 gap-3">
           {['Full route optimizer', 'Private route library', 'Competition community', 'No third-party login'].map((item) => (
@@ -59,7 +59,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
       <div className="site-card mx-auto w-full max-w-[500px] p-5 sm:p-8">
         <div className="site-kicker">{signupMode ? 'Create your account' : 'Welcome back'}</div>
         <h1 className="mt-3 text-[30px] font-semibold leading-[1.02] tracking-[-0.04em] sm:text-[34px]">
-          {signupMode ? 'Build the route that beats his.' : 'Continue your quest.'}
+          {signupMode ? 'See where your route could go.' : 'Continue your quest.'}
         </h1>
         <p className="mt-3 text-[13px] leading-[1.6] text-dim">
           {signupMode

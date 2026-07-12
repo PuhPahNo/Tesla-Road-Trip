@@ -45,9 +45,9 @@ describe('ChargeQuest landing page', () => {
       </MemoryRouter>,
     )
 
-    expect(screen.getByRole('heading', { name: 'Think you can beat my quest?' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'I’m building a route. Want to beat it?' })).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Sign up and build your route' }).getAttribute('href')).toBe('/signup?returnTo=%2Fplanner')
-    expect(screen.getByRole('link', { name: 'Follow mine' }).getAttribute('href')).toBe('/track-anthony')
+    expect(screen.getByRole('link', { name: 'See the route taking shape' }).getAttribute('href')).toBe('/track-anthony')
     expect(screen.getByText('Create a custom route')).toBeTruthy()
     expect(screen.getByText('Step 2 of 3')).toBeTruthy()
     expect(await screen.findByText('5')).toBeTruthy()

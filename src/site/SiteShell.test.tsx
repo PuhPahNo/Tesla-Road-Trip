@@ -30,7 +30,7 @@ describe('public site navigation', () => {
 
     expect(screen.getByText('2026 competition')).toBeTruthy()
     expect(screen.getByText('ChargeQuest')).toBeTruthy()
-    expect(await screen.findByRole('link', { name: 'Join the challenge' })).toBeTruthy()
+    expect(await screen.findByRole('link', { name: 'Start planning' })).toBeTruthy()
     const plannerLinks = screen.getAllByRole('link', { name: 'Get the planner' })
     expect(plannerLinks[0].getAttribute('href')).toBe('/signup?returnTo=%2Fplanner')
     expect(screen.getByText('Public homepage')).toBeTruthy()

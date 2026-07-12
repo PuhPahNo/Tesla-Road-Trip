@@ -89,7 +89,7 @@ export function SiteShell() {
                   to="/signup"
                   className="whitespace-nowrap rounded-full bg-[#e82127] px-3.5 py-2.5 text-[10px] font-semibold text-white no-underline shadow-[0_8px_28px_rgba(232,33,39,.3)] transition hover:bg-white hover:text-black sm:px-5 sm:py-3 sm:text-[11px]"
                 >
-                  Join the challenge
+                  Start planning
                 </NavLink>
               </>
             )}
@@ -118,7 +118,7 @@ export function SiteShell() {
       </main>
       <footer className="border-t border-white/10 bg-[#090a0c] px-5 py-10 text-white">
         <div className="mx-auto flex max-w-[1320px] flex-col gap-4 text-[11.5px] text-white/35 sm:flex-row sm:items-center sm:justify-between">
-          <div>ChargeQuest · Built by Anthony for the 2026 Tesla Supercharging Competition</div>
+          <div>ChargeQuest · Route ideas for the 2026 Tesla Supercharging Competition</div>
           <div className="flex flex-wrap gap-x-4 gap-y-2">
             <NavLink to={user ? '/planner' : '/signup?returnTo=%2Fplanner'} className="text-white/35 no-underline hover:text-white">
               {user ? 'Planner' : 'Get the planner'}
