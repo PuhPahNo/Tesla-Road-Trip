@@ -50,10 +50,9 @@ export function LandingPage() {
             </h1>
             <div className="mt-8 grid max-w-[980px] gap-7 md:grid-cols-[1fr_auto] md:items-end">
               <p className="max-w-[680px] text-[16px] leading-[1.6] text-white/88 sm:text-[20px] sm:leading-[1.65]">
-                I’m Anthony. I built ChargeQuest to plan my own run at the 2026
-                Tesla Supercharging Competition. Now every competitor can use the
-                same Tesla road trip planner to build, save, and optimize a route
-                around Superchargers, landmarks, and Iconic Charger badges
+                I built ChargeQuest to give myself the best shot at winning the
+                2026 Tesla Supercharging Competition. Now I’m giving you the same
+                planner. Build your route, chase the badges, and prove you can beat me.
               </p>
               <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <Link to={plannerHref} className="flex min-h-12 w-full items-center justify-center rounded-full bg-[#e82127] px-6 py-3.5 text-center text-[13px] font-semibold text-white no-underline shadow-[0_12px_40px_rgba(232,33,39,.48)] ring-1 ring-white/20 transition hover:bg-white hover:text-black sm:w-auto">
