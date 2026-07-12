@@ -75,7 +75,7 @@ export function TrackAnthonyPage() {
             own route or help shape the community map.
           </p>
           <div className="mt-8 flex w-full flex-col justify-center gap-3 sm:w-auto sm:flex-row sm:flex-wrap">
-            <Link to="/planner" className="site-primary-button w-full no-underline sm:w-auto">Plan your trip</Link>
+            <Link to="/planner" className="site-primary-button w-full no-underline sm:w-auto">Build your route in CORE</Link>
             <Link to="/community" className="site-secondary-button w-full no-underline sm:w-auto">Visit the community</Link>
           </div>
         </section>

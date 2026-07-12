@@ -49,6 +49,9 @@ export function BrandIsland({
           className="h-[25px] w-[112px] rounded-[7px] object-contain sm:h-[30px] sm:w-[190px] sm:rounded-[8px]"
         />
       </a>
+      <span className="flex-none rounded-[6px] border border-glass-bd bg-chip px-1.5 py-1 font-mono text-[7px] font-semibold tracking-[0.12em] text-accent2 sm:px-2 sm:text-[8px]">
+        CORE
+      </span>
       <button
         type="button"
         onClick={onOpenRoutePicker}
@@ -94,7 +97,7 @@ export function ActionsIsland({
           <span className="flex text-accent2">
             <SparkleIcon size={14} />
           </span>
-          <span className="text-[12px] font-medium">Ask</span>
+          <span className="text-[12px] font-medium">Ask CORE</span>
           <span className="rounded-[5px] border border-glass-bd px-[5px] py-[2px] font-mono text-[9.5px] text-faint">
             ⌘K
           </span>
@@ -181,7 +184,7 @@ const MOBILE_TABS: Array<{
   { key: 'trip', label: 'Trip', icon: GridIcon },
   { key: 'days', label: 'Days', icon: CalendarIcon },
   { key: 'coverage', label: 'States', icon: MapPinIcon },
-  { key: 'copilot', label: 'Copilot', icon: SparkleIcon },
+  { key: 'copilot', label: 'CORE', icon: SparkleIcon },
 ]
 
 export function MobileTabBar({

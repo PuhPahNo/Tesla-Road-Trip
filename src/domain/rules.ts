@@ -83,7 +83,7 @@ export function getTeslaContestStatus(now = new Date()): ContestStatus {
   return {
     ...shared,
     phase: 'complete',
-    brandLabel: `${TESLA_CONTEST_RULES.region} · Route planner`,
+    brandLabel: `${TESLA_CONTEST_RULES.region} · CORE`,
     headline: `${contestYear} competition complete`,
     detail: `The Passport deadline passed ${deadlineLabel}. Check Tesla’s official page for any newly announced competition before relying on these archived rules.`,
   }

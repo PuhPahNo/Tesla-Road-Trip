@@ -4,7 +4,7 @@ import { cx } from '../ui/primitives'
 
 const NAV_ITEMS = [
   { to: '/', label: 'Home' },
-  { to: '/planner', label: 'Plan a trip' },
+  { to: '/planner', label: 'CORE' },
   { to: '/community', label: 'Community' },
   { to: '/track-anthony', label: 'Track Anthony' },
 ]
@@ -16,7 +16,7 @@ export function SiteShell() {
     .filter((item) => !user || item.to !== '/')
     .map((item) =>
       item.to === '/planner' && !user
-        ? { to: '/signup?returnTo=%2Fplanner', label: 'Get the planner' }
+        ? { to: '/signup?returnTo=%2Fplanner', label: 'Build a route' }
         : item,
     )
 
@@ -93,7 +93,7 @@ export function SiteShell() {
                   to="/signup"
                   className="whitespace-nowrap rounded-full bg-[#e82127] px-3.5 py-2.5 text-[10px] font-semibold text-white no-underline shadow-[0_8px_28px_rgba(232,33,39,.3)] transition hover:bg-white hover:text-black sm:px-5 sm:py-3 sm:text-[11px]"
                 >
-                  Start planning
+                  Start building
                 </NavLink>
               </>
             )}
@@ -125,7 +125,7 @@ export function SiteShell() {
           <div>ChargeQuest · Route ideas for the 2026 Tesla Supercharging Competition</div>
           <div className="flex flex-wrap gap-x-4 gap-y-2">
             <NavLink to={user ? '/planner' : '/signup?returnTo=%2Fplanner'} className="text-white/35 no-underline hover:text-white">
-              {user ? 'Planner' : 'Get the planner'}
+              {user ? 'CORE' : 'Build a route'}
             </NavLink>
             <NavLink to="/community" className="text-white/35 no-underline hover:text-white">Community</NavLink>
             <NavLink to="/track-anthony" className="text-white/35 no-underline hover:text-white">Track Anthony</NavLink>

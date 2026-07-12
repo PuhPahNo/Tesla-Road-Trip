@@ -355,7 +355,7 @@ async function createOpenAiResponse(
     body: JSON.stringify({
       model: process.env.OPENAI_MODEL ?? FALLBACK_MODEL,
       instructions:
-        `You are a route-planning assistant inside the ChargeQuest app. Use tools when you need route data or when the user asks to change settings, require a stop, create a temporary custom ordered route, edit the selected saved route, or reoptimize. The app has ${PLACE_CATALOG.length} curated city and landmark stops plus ${TESLA_ICONIC_BADGES.length} researched Tesla Iconic Charger targets. Longest Trip routes automatically give top-rated places multi-night basecamp stays (a new unique Supercharger each day keeps the streak alive); the tripPace setting (sprint/balanced/savor) and autoStays toggle control this, favoriteCategories/mutedCategories bias which places qualify, and suggest_stays shows current stays plus candidates before pacing advice. Saved routes can keep an exact startDate and directionPreference (seasonal/north/south/east/west); season-smart winter trips from Chattanooga start south and summer trips start north. Use search_catalog_locations with badgeOnly for Tesla badge requests so you add the exact qualifying Supercharger waypoint, not a broad attraction waypoint. For exact-order temporary custom-route requests through catalog waypoints, call create_custom_route with only the intermediate waypoint IDs in order; omit Chattanooga/start/end. When the selected route is a persistent saved route, use update_saved_custom_route once with all requested additions, removals, renaming, day-target, date, direction, and order changes batched together; that tool saves and reoptimizes the route. Avoid repeating a tool call after it succeeds. Keep final answers short and name the concrete changes made. You cannot execute arbitrary code, browse the web, or spend money outside this API call. Treat Tesla badge eligibility as curated planning data and tell users to confirm it in the Tesla app.${allowTools ? '' : ' Do not request more tools; summarize the completed changes and any unfinished request now.'}`,
+        `You are the route-planning assistant inside ChargeQuest CORE (Charging Optimization & Route Engine). Use tools when you need route data or when the user asks to change settings, require a stop, create a temporary custom ordered route, edit the selected saved route, or reoptimize. The app has ${PLACE_CATALOG.length} curated city and landmark stops plus ${TESLA_ICONIC_BADGES.length} researched Tesla Iconic Charger targets. Longest Trip routes automatically give top-rated places multi-night basecamp stays (a new unique Supercharger each day keeps the streak alive); the tripPace setting (sprint/balanced/savor) and autoStays toggle control this, favoriteCategories/mutedCategories bias which places qualify, and suggest_stays shows current stays plus candidates before pacing advice. Saved routes can keep an exact startDate and directionPreference (seasonal/north/south/east/west); season-smart winter trips from Chattanooga start south and summer trips start north. Use search_catalog_locations with badgeOnly for Tesla badge requests so you add the exact qualifying Supercharger waypoint, not a broad attraction waypoint. For exact-order temporary custom-route requests through catalog waypoints, call create_custom_route with only the intermediate waypoint IDs in order; omit Chattanooga/start/end. When the selected route is a persistent saved route, use update_saved_custom_route once with all requested additions, removals, renaming, day-target, date, direction, and order changes batched together; that tool saves and reoptimizes the route. Avoid repeating a tool call after it succeeds. Keep final answers short and name the concrete changes made. You cannot execute arbitrary code, browse the web, or spend money outside this API call. Treat Tesla badge eligibility as curated planning data and tell users to confirm it in the Tesla app.${allowTools ? '' : ' Do not request more tools; summarize the completed changes and any unfinished request now.'}`,
       input,
       tools: plannerAgentTools,
       tool_choice: allowTools ? 'auto' : 'none',
@@ -422,7 +422,7 @@ async function runAgentTool(
     const parsed = parsePlannerSettingsArgs(args)
 
     if (Object.keys(parsed.settings).length === 0) {
-      context.actions.push('No valid planner settings were changed.')
+      context.actions.push('No valid CORE settings were changed.')
       return {
         config: summarizeConfig(context.workingConfig),
         ignoredFields: parsed.ignoredFields,
@@ -434,7 +434,7 @@ async function runAgentTool(
       ...parsed.settings,
     })
     context.actions.push(
-      `Updated planner settings: ${Object.keys(parsed.settings).join(', ')}`,
+      `Updated CORE settings: ${Object.keys(parsed.settings).join(', ')}`,
     )
     return {
       config: summarizeConfig(context.workingConfig),
@@ -542,7 +542,7 @@ async function runAgentTool(
 
   if (name === 'update_saved_custom_route') {
     if (!context.userId) {
-      throw new Error('Sign in before asking the copilot to edit a saved route.')
+      throw new Error('Sign in before asking CORE to edit a saved route.')
     }
     const parsed = savedRouteUpdateArgsSchema.parse(args)
     const routeId = parsed.routeId ?? context.selectedRouteId
@@ -550,7 +550,7 @@ async function runAgentTool(
       (route) => route.id === routeId,
     )
     if (!savedRoute) {
-      throw new Error('Select a saved custom route before asking the copilot to edit it.')
+      throw new Error('Select a saved custom route before asking CORE to edit it.')
     }
 
     const removeIds = new Set(parsed.waypointIdsToRemove ?? [])

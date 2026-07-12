@@ -45,7 +45,7 @@ describe('Tesla contest date messaging', () => {
     const status = getTeslaContestStatus(new Date(2027, 0, 1, 0, 0))
 
     expect(status.phase).toBe('complete')
-    expect(status.brandLabel).toBe('Americas · Route planner')
+    expect(status.brandLabel).toBe('Americas · CORE')
     expect(status.headline).toBe('2026 competition complete')
     expect(status.detail).toContain('deadline passed Jan 1, 2027')
   })

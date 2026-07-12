@@ -40,7 +40,7 @@ export function PasswordChangePage() {
         </h1>
         <p className="mt-5 max-w-[580px] text-[14px] leading-[1.65] text-dim">
           {user.mustChangePassword
-            ? 'This account was seeded with a temporary password. Planner, community, and admin actions stay locked until you replace it.'
+            ? 'This account was seeded with a temporary password. CORE, community, and admin actions stay locked until you replace it.'
             : 'Changing your password signs out every other active session on this account.'}
         </p>
 

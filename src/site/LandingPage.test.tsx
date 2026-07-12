@@ -58,7 +58,11 @@ describe('ChargeQuest landing page', () => {
     expect(screen.getByText('Create a custom route')).toBeTruthy()
     expect(screen.getByText('Step 2 of 3')).toBeTruthy()
     expect(await screen.findByText('5')).toBeTruthy()
-    expect(document.title).toBe('ChargeQuest | Tesla Supercharger Route Planner for 2026')
+    expect(screen.getByRole('heading', { name: 'Meet CORE.' })).toBeTruthy()
+    expect(screen.getByText('Charging Optimization & Route Engine')).toBeTruthy()
+    expect(screen.getByText('Tell CORE what matters')).toBeTruthy()
+    expect(screen.getByText('CORE connects the journey')).toBeTruthy()
+    expect(document.title).toBe('ChargeQuest CORE | Tesla Supercharger Route Planner for 2026')
   })
 
   it('sends signed-out direct planner visits into the signup funnel', async () => {

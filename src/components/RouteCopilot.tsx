@@ -121,7 +121,7 @@ export function RouteCopilotPanel({
           <SparkleIcon size={15} />
         </span>
         <div className="min-w-0 flex-1">
-          <div className="truncate text-[13.5px] font-semibold text-ink">Route Copilot</div>
+          <div className="truncate text-[13.5px] font-semibold text-ink">CORE Assistant</div>
           <div className="truncate font-mono text-[9.5px] text-faint">
             Optimize, explain, or build custom routes
           </div>
@@ -130,7 +130,7 @@ export function RouteCopilotPanel({
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close copilot"
+            aria-label="Close CORE assistant"
             className="flex h-7 w-7 flex-none cursor-pointer items-center justify-center rounded-lg border border-edge bg-transparent text-dim transition hover:text-ink"
           >
             <CloseIcon size={13} />
@@ -148,7 +148,7 @@ export function RouteCopilotPanel({
               <div className="mt-1 font-mono text-[10.5px] text-faint">
                 {route
                   ? `${route.totalDays} days · ${route.totalMiles.toLocaleString()} mi · ${route.uniqueStations.toLocaleString()} stops`
-                  : 'Run Optimize to give the copilot route context.'}
+                  : 'Run Optimize to give CORE route context.'}
               </div>
             </div>
             <span
@@ -186,7 +186,7 @@ export function RouteCopilotPanel({
           <div className="flex justify-start">
             <div className="flex items-center gap-2 rounded-[13px_13px_13px_4px] border border-edge bg-panel2 px-3 py-[9px] text-[12.5px] text-dim">
               <span className="anim-pulse h-[7px] w-[7px] rounded-full bg-accent2" />
-              Working with the planner…
+              CORE is refining the route…
             </div>
           </div>
         ) : null}
@@ -212,8 +212,8 @@ export function RouteCopilotPanel({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKey}
-            placeholder="Ask the copilot to reshape the route…"
-            aria-label="Message the route copilot"
+            placeholder="Ask CORE to reshape the route…"
+            aria-label="Message CORE"
             className="min-w-0 flex-1 border-none bg-transparent text-[13px] text-ink outline-none placeholder:text-faint"
           />
           <button

@@ -10,8 +10,8 @@ export function LandingPage() {
   const [community, setCommunity] = useState<CommunitySnapshot>()
 
   usePageMetadata({
-    title: 'ChargeQuest | Tesla Supercharger Route Planner for 2026',
-    description: 'Build and save a Tesla Supercharger route for the 2026 competition. Plan around your Tesla, real-world range, Iconic Charger badges, landmarks, and daily driving limits.',
+    title: 'ChargeQuest CORE | Tesla Supercharger Route Planner for 2026',
+    description: 'Meet ChargeQuest CORE, the Charging Optimization & Route Engine for building and saving Tesla Supercharger routes around your vehicle, pace, badge targets, landmarks, and daily limits.',
     path: '/',
   })
 
@@ -109,7 +109,7 @@ export function LandingPage() {
                 the people following along would become the story.
               </p>
               <p className="mt-5 text-[17px] leading-[1.7] text-black/65">
-                So the personal planner became something shared—a place to follow
+                So the personal route engine became something shared—a place to follow
                 the first quest, compare ideas, and build a journey of your own.
               </p>
             </div>
@@ -187,24 +187,33 @@ export function LandingPage() {
 
       <section className="cq-product-stage overflow-hidden bg-[#e82127] px-4 py-20 text-white sm:px-5 sm:py-24 lg:px-8 lg:py-32">
         <div className="mx-auto max-w-[1320px]">
-          <div className="grid gap-12 lg:grid-cols-[.75fr_1.25fr] lg:items-end">
+          <div className="grid gap-12 lg:grid-cols-[.82fr_1.18fr] lg:items-end">
             <div className="max-w-[540px]">
-              <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-white/65">Plan the trip you would actually drive</div>
+              <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-white/65">Under the hood</div>
               <h2 className="mt-5 text-[clamp(40px,11vw,88px)] font-semibold leading-[0.93] tracking-[-0.055em] sm:leading-[0.9] sm:tracking-[-0.062em]">
-                A challenge is only as good as the journey
+                Meet CORE.
               </h2>
+              <div className="mt-5 font-mono text-[11px] font-semibold uppercase tracking-[0.11em] text-white">
+                Charging Optimization &amp; Route Engine
+              </div>
               <p className="mt-7 text-[16px] leading-[1.7] text-white/78">
-                Set your Tesla and practical range. Choose a pace you can sustain.
-                Add the places and Iconic Charger targets that matter to you, then
-                compare how each decision changes the trip. Save promising versions
-                and keep refining until the route feels ambitious and worth taking.
+                ChargeQuest CORE turns your Tesla, practical range, preferred pace,
+                required stops, and Iconic Charger targets into a multi-day route you
+                could actually drive. It connects the places that matter through the
+                Supercharger network and helps you compare, save, and refine different
+                strategies.
               </p>
+              <div className="mt-7 border-y border-white/20">
+                <CoreStep number="01" title="Tell CORE what matters" body="Tesla, range, pace, dates, destinations, and badge targets." />
+                <CoreStep number="02" title="CORE connects the journey" body="Charging sequence, route direction, daily limits, and tradeoffs." />
+                <CoreStep number="03" title="You choose and refine" body="Compare candidates, save versions, and keep improving the trip." />
+              </div>
               <Link to={plannerHref} className="mt-8 flex min-h-12 w-full items-center justify-center rounded-full bg-black px-6 py-3.5 text-center text-[13px] font-semibold text-white no-underline transition hover:bg-white hover:text-black sm:inline-flex sm:w-auto">
-                {user ? 'Open the planner' : 'Plan your quest for free'}
+                {user ? 'Open CORE' : 'Build Your Route with CORE'}
               </Link>
             </div>
 
-            <PlannerPreview />
+            <CorePreview />
           </div>
         </div>
       </section>
@@ -276,15 +285,15 @@ export function LandingPage() {
           <div className="mx-auto mt-14 max-w-[820px] border-t border-black/15 text-left sm:mt-20">
             <FaqItem
               question="Is ChargeQuest a Tesla Supercharger route planner"
-              answer="Yes. ChargeQuest builds multi-day Tesla road trips around Supercharger stops while accounting for your vehicle, practical range, daily driving limits, trip pace, landmarks, and Iconic Charger targets."
+              answer="Yes. ChargeQuest CORE is a Tesla Supercharger route planner and optimization engine for multi-day trips. It accounts for your vehicle, practical range, daily driving limits, trip pace, landmarks, and Iconic Charger targets."
             />
             <FaqItem
-              question="Do I need an account to use the planner"
-              answer="Yes. A free username-based account unlocks the planner and keeps your vehicle preferences and custom routes private to you. No email address or third-party login is required."
+              question="Do I need an account to use CORE"
+              answer="Yes. A free username-based account unlocks CORE and keeps your vehicle preferences and custom routes private to you. No email address or third-party login is required."
             />
             <FaqItem
               question="Can I use ChargeQuest for the 2026 Tesla Supercharging Competition"
-              answer="Yes. The planner helps competitors compare route ideas, target unique Supercharger sites, account for Iconic Charger badges, and shape an ambitious trip around a pace they can actually sustain."
+              answer="Yes. CORE helps competitors compare route ideas, target unique Supercharger sites, account for Iconic Charger badges, and shape an ambitious trip around a pace they can actually sustain."
             />
           </div>
         </div>
@@ -322,6 +331,26 @@ function HeroBenefit({
   )
 }
 
+function CoreStep({
+  number,
+  title,
+  body,
+}: {
+  number: string
+  title: string
+  body: string
+}) {
+  return (
+    <div className="grid grid-cols-[32px_1fr] gap-3 border-b border-white/15 py-3.5 last:border-b-0">
+      <span className="pt-0.5 font-mono text-[8px] tracking-[0.1em] text-white/45">{number}</span>
+      <div>
+        <div className="text-[12.5px] font-semibold text-white">{title}</div>
+        <div className="mt-1 text-[11.5px] leading-[1.5] text-white/60">{body}</div>
+      </div>
+    </div>
+  )
+}
+
 function PhotoFigure({
   className,
   src,
@@ -352,12 +381,12 @@ function PhotoFigure({
   )
 }
 
-function PlannerPreview() {
+function CorePreview() {
   return (
     <div className="cq-planner-preview overflow-hidden rounded-[20px] border border-white/15 bg-[#0d1016] text-white shadow-2xl">
       <div className="flex items-center justify-between border-b border-white/10 bg-[#131821] px-5 py-4 sm:px-6">
         <div>
-          <div className="font-mono text-[8px] uppercase tracking-[0.13em] text-[#23d7d1]">ChargeQuest planner</div>
+          <div className="font-mono text-[8px] uppercase tracking-[0.13em] text-[#23d7d1]">ChargeQuest CORE</div>
           <div className="mt-1 text-[17px] font-semibold">Create a custom route</div>
         </div>
         <div className="font-mono text-[8px] uppercase tracking-[0.1em] text-white/35">Step 2 of 3</div>

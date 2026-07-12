@@ -74,7 +74,7 @@ export function AccountPage() {
           </h1>
           <p className="mt-4 text-[14px] text-dim">@{user?.username}</p>
         </div>
-        <Link to="/planner" className="site-primary-button w-full no-underline sm:w-auto">Open your planner</Link>
+        <Link to="/planner" className="site-primary-button w-full no-underline sm:w-auto">Open CORE</Link>
       </div>
 
       {error ? <div className="site-alert mt-7 text-warn">{error}</div> : null}
@@ -89,14 +89,14 @@ export function AccountPage() {
 
       <section className="mt-12 grid gap-5 lg:grid-cols-2">
         <div className="site-card p-5 sm:p-7">
-          <div className="site-kicker">Planner profile</div>
+          <div className="site-kicker">CORE profile</div>
           <h2 className="mt-3 text-[26px] font-semibold">Routes and travel preferences</h2>
           <p className="mt-3 text-[13.5px] leading-[1.6] text-dim">
             Your vehicle, practical range, pace, drive-time caps, category preferences,
             and saved custom routes are now tied to this account.
           </p>
           <Link to="/planner" className="site-secondary-button mt-6 flex w-full no-underline sm:inline-flex sm:w-auto">
-            Manage routes and preferences
+            Manage routes in CORE
           </Link>
         </div>
 
