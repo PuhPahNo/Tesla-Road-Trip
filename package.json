@@ -20,6 +20,7 @@
     "certify:ui": "node scripts/certify-ui.mjs",
     "certify:custom-routes": "node scripts/certify-custom-routes.mjs",
     "certify:community": "node scripts/certify-community.mjs",
+    "certify:accounts": "node scripts/certify-admin-accounts.mjs",
     "certify:badges": "tsx scripts/certify-tesla-badges.ts"
   },
   "dependencies": {

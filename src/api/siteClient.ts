@@ -65,6 +65,39 @@ export interface CommunitySnapshot {
   }>
 }
 
+export interface ManagedAccount {
+  id: string
+  username: string
+  role: 'member' | 'admin'
+  mustChangePassword: boolean
+  createdAt: string
+  updatedAt: string
+  lastLoginAt?: string | null
+  activeSessions: number
+  routeCount: number
+  suggestionCount: number
+  meetupCount: number
+  stateVoteCount: number
+  achievementCount: number
+}
+
+export interface AccountActivity {
+  id: string
+  actorUserId?: string | null
+  actorUsername: string
+  targetUserId?: string | null
+  targetUsername?: string | null
+  action: string
+  details?: Record<string, unknown> | null
+  createdAt: string
+}
+
+export interface AdminAccountsSnapshot {
+  viewerId: string
+  accounts: ManagedAccount[]
+  activity: AccountActivity[]
+}
+
 export async function fetchSession() {
   return request<{ user?: AuthUser }>('/api/auth/session')
 }
@@ -189,6 +222,52 @@ export async function fetchAdminCommunity() {
     community: CommunitySnapshot
     pendingMeetups: Array<Record<string, unknown>>
   }>('/api/admin/community')
+}
+
+export async function fetchAdminAccounts() {
+  return request<AdminAccountsSnapshot>('/api/admin/accounts')
+}
+
+export async function createAdminAccount(input: {
+  username: string
+  password: string
+  role: 'member' | 'admin'
+}) {
+  return request<AdminAccountsSnapshot>('/api/admin/accounts', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
+export async function updateAdminAccount(
+  id: string,
+  input: { username?: string; role?: 'member' | 'admin' },
+) {
+  return request<AdminAccountsSnapshot>(
+    `/api/admin/accounts/${encodeURIComponent(id)}`,
+    { method: 'PATCH', body: JSON.stringify(input) },
+  )
+}
+
+export async function resetAdminAccountPassword(id: string, password: string) {
+  return request<AdminAccountsSnapshot>(
+    `/api/admin/accounts/${encodeURIComponent(id)}/reset-password`,
+    { method: 'POST', body: JSON.stringify({ password }) },
+  )
+}
+
+export async function revokeAdminAccountSessions(id: string) {
+  return request<AdminAccountsSnapshot>(
+    `/api/admin/accounts/${encodeURIComponent(id)}/revoke-sessions`,
+    { method: 'POST' },
+  )
+}
+
+export async function deleteAdminAccount(id: string) {
+  return request<AdminAccountsSnapshot>(
+    `/api/admin/accounts/${encodeURIComponent(id)}`,
+    { method: 'DELETE' },
+  )
 }
 
 export async function saveAnthonyTrip(input: Omit<AnthonyTrip, 'updatedAt'>) {

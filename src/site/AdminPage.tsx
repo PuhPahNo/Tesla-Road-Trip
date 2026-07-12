@@ -7,6 +7,7 @@ import {
   type AnthonyTrip,
   type CommunitySnapshot,
 } from '../api/siteClient'
+import { AdminAccountsSection } from './AdminAccountsSection'
 
 interface PendingMeetup {
   id: string
@@ -120,10 +121,10 @@ export function AdminPage() {
         <div>
           <div className="site-kicker">Anthony admin</div>
           <h1 className="mt-3 max-w-[780px] text-[clamp(38px,5.6vw,66px)] font-semibold leading-[.98] tracking-[-0.05em]">
-            Run the public quest from one place
+            Run the entire site from one place
           </h1>
           <p className="mt-4 max-w-[680px] text-[14px] leading-[1.65] text-dim">
-            Control the live tracker, publish field updates, and review meetup invites before they appear publicly
+            Manage every account and permission, control the live tracker, publish field updates, and review meetup invites before they appear publicly.
           </p>
         </div>
 
@@ -136,6 +137,8 @@ export function AdminPage() {
 
       {error ? <div className="mt-6 rounded-[11px] border border-warn-bd bg-warn-bg px-4 py-3 text-[13px] text-warn">{error}</div> : null}
       {notice ? <div className="mt-6 rounded-[11px] border border-good-bd bg-good-bg px-4 py-3 text-[13px] text-good">{notice}</div> : null}
+
+      <AdminAccountsSection />
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(350px,.85fr)] lg:items-start">
         <form className="admin-surface overflow-hidden" onSubmit={saveTrip}>

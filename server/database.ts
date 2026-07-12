@@ -36,6 +36,21 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS sessions_user_idx ON sessions(user_id);
   CREATE INDEX IF NOT EXISTS sessions_expiry_idx ON sessions(expires_at);
 
+  CREATE TABLE IF NOT EXISTS account_activity (
+    id TEXT PRIMARY KEY,
+    actor_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+    actor_username TEXT NOT NULL,
+    target_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+    target_username TEXT,
+    action TEXT NOT NULL,
+    details_json TEXT,
+    created_at TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS account_activity_created_idx
+    ON account_activity(created_at DESC);
+  CREATE INDEX IF NOT EXISTS account_activity_target_idx
+    ON account_activity(target_user_id, created_at DESC);
+
   CREATE TABLE IF NOT EXISTS user_preferences (
     user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     config_json TEXT NOT NULL,

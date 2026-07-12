@@ -8,6 +8,7 @@ import {
 import { promisify } from 'node:util'
 import type { Express, Request, Response } from 'express'
 import { z } from 'zod'
+import { logAccountActivity } from './accountActivity'
 import { db } from './database'
 
 const SESSION_COOKIE = 'cq_session'
@@ -22,7 +23,7 @@ const scryptAsync = promisify(scrypt) as (
   length: number,
 ) => Promise<Buffer>
 
-type UserRole = 'member' | 'admin'
+export type UserRole = 'member' | 'admin'
 
 export interface AuthUser {
   id: string
@@ -86,6 +87,11 @@ export function registerAuthRoutes(app: Express) {
 
       const user = findUserById(userId)
       if (!user) throw new Error('Unable to create account.')
+      logAccountActivity({
+        actor: user,
+        target: user,
+        action: 'auth.signup',
+      })
       createSession(response, user.id)
       response.status(201).json({ user: toAuthUser(user) })
     } catch (error) {
@@ -103,6 +109,7 @@ export function registerAuthRoutes(app: Express) {
         return
       }
 
+      logAccountActivity({ actor: user, target: user, action: 'auth.login' })
       createSession(response, user.id)
       response.json({ user: toAuthUser(user) })
     } catch (error) {
@@ -111,9 +118,13 @@ export function registerAuthRoutes(app: Express) {
   })
 
   app.post('/api/auth/logout', (request, response) => {
+    const user = getRequestUser(request)
     const token = readCookie(request, SESSION_COOKIE)
     if (token) {
       db.prepare('DELETE FROM sessions WHERE token_hash = ?').run(hashToken(token))
+    }
+    if (user) {
+      logAccountActivity({ actor: user, target: user, action: 'auth.logout' })
     }
     clearSessionCookie(response)
     response.json({ ok: true })
@@ -144,6 +155,11 @@ export function registerAuthRoutes(app: Express) {
       createSession(response, user.id)
       const updated = findUserById(user.id)
       if (!updated) throw new Error('Unable to reload account.')
+      logAccountActivity({
+        actor: updated,
+        target: updated,
+        action: 'auth.password_changed',
+      })
       response.json({ ok: true, user: toAuthUser(updated) })
     } catch (error) {
       sendAuthError(response, error, 'Unable to change password.')
@@ -161,6 +177,18 @@ export async function ensureAnthonyAdmin() {
     )
     return toAuthUser({ ...existing, role: 'admin' })
   }
+
+  // Once an installation already has an administrator, treat that account as
+  // the durable owner even if its username was changed in account management.
+  // The well-known Anthony login is only a bootstrap for a brand-new database.
+  const existingAdmin = db.prepare(`
+    SELECT id, username, password_hash, role, must_change_password, created_at
+    FROM users
+    WHERE role = 'admin'
+    ORDER BY created_at ASC
+    LIMIT 1
+  `).get() as unknown as UserRow | undefined
+  if (existingAdmin) return toAuthUser(existingAdmin)
 
   const userId = randomUUID()
   db.prepare(`
@@ -227,7 +255,7 @@ export function requireAdmin(request: Request, response: Response) {
   return user
 }
 
-async function hashPassword(password: string) {
+export async function hashPassword(password: string) {
   const salt = randomBytes(16).toString('hex')
   const hash = await scryptAsync(password, salt, 64)
   return `scrypt$${salt}$${hash.toString('hex')}`
@@ -315,7 +343,7 @@ function toAuthUser(row: UserRow): AuthUser {
   }
 }
 
-function normalizeUsername(value: string) {
+export function normalizeUsername(value: string) {
   return value.trim().toLowerCase()
 }
 
