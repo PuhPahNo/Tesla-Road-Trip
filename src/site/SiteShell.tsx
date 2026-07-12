@@ -30,7 +30,7 @@ export function SiteShell() {
         <div className="mx-auto flex h-[68px] max-w-[1440px] items-center gap-2 px-3 sm:h-[78px] sm:gap-6 sm:px-5 lg:px-12">
           <NavLink to={user ? '/planner' : '/'} className="group flex min-w-0 items-center gap-2 no-underline sm:gap-3">
             <img
-              src="/chargequest-logo.png?v=3"
+              src="/chargequest-logo.png?v=4"
               alt="ChargeQuest"
               className="h-[29px] w-auto max-w-[184px] flex-none object-contain transition-opacity group-hover:opacity-85 sm:h-[36px] sm:max-w-[228px] lg:h-[40px] lg:max-w-[253px]"
             />

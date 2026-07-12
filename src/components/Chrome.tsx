@@ -42,9 +42,9 @@ export function BrandIsland({
     // Below sm the island yields to the actions island (~108px + gap) so the
     // two never overlap; the route chip shrinks and truncates instead.
     <div className="glass fixed left-3 top-3 z-40 flex h-11 max-w-[calc(100vw-152px)] items-center gap-1.5 rounded-[12px] py-0 pl-2 pr-1 sm:left-4 sm:top-4 sm:h-12 sm:max-w-none sm:gap-2.5 sm:rounded-[13px] sm:pl-3 sm:pr-1.5">
-      <a href="/account" aria-label="Open ChargeQuest account and navigation" className="flex flex-none rounded-[8px] bg-black">
+      <a href="/account" aria-label="Open ChargeQuest account and navigation" className="flex flex-none rounded-[8px]">
         <img
-          src="/chargequest-logo.png?v=3"
+          src="/chargequest-logo.png?v=4"
           alt="ChargeQuest"
           className="h-[25px] w-[112px] rounded-[7px] object-contain sm:h-[30px] sm:w-[190px] sm:rounded-[8px]"
         />
