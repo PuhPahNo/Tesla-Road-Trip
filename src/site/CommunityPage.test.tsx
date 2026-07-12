@@ -47,10 +47,11 @@ describe('ChargeQuest community page', () => {
       </MemoryRouter>,
     )
 
-    expect(screen.getByRole('heading', { name: 'Make Anthony’s route harder to beat' })).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'Create an account and join in' }).getAttribute('href')).toBe('/signup?returnTo=%2Fcommunity')
+    expect(screen.getByRole('heading', { name: 'Better routes start with local knowledge' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Create an account and share an idea' }).getAttribute('href')).toBe('/signup?returnTo=%2Fcommunity')
     expect((await screen.findAllByText('Colorado')).length).toBeGreaterThan(0)
     expect(screen.getByText('Take the Million Dollar Highway')).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Put your state on the community map' })).toBeTruthy()
     expect(screen.getByRole('heading', { name: 'Routes worth talking about' })).toBeTruthy()
     expect(document.title).toBe('ChargeQuest Community | Tesla Route Ideas and 2026 Trip Updates')
   })

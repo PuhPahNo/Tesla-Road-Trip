@@ -31,7 +31,7 @@ export function CommunityPage() {
 
   usePageMetadata({
     title: 'ChargeQuest Community | Tesla Route Ideas and 2026 Trip Updates',
-    description: 'Join Tesla road-trip competitors sharing Supercharger route ideas, must-see stops, state votes, meetup invitations, achievements, and Anthony’s live 2026 ChargeQuest updates.',
+    description: 'Join Tesla road-trip competitors sharing Supercharger route ideas, must-see stops, state votes, meetup invitations, achievements, and live 2026 ChargeQuest updates.',
     path: '/community',
   })
 
@@ -59,7 +59,7 @@ export function CommunityPage() {
       const result = await saveStateVote({ stateCode, note: stateNote || undefined })
       setCommunity(result.community)
       setStateNote('')
-      setNotice(`You put ${STATE_CODE_TO_NAME[stateCode]} on Anthony’s community map.`)
+      setNotice(`You put ${STATE_CODE_TO_NAME[stateCode]} on the community map.`)
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Unable to save vote.')
     }
@@ -93,20 +93,20 @@ export function CommunityPage() {
       <section className="grid min-h-[650px] bg-black text-white lg:grid-cols-[1.08fr_.92fr]">
         <div className="flex items-center px-4 py-16 sm:px-5 sm:py-20 lg:px-12 xl:px-[max(5rem,calc((100vw-1440px)/2))]">
           <div className="max-w-[760px]">
-            <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-[#23d7d1]">ChargeQuest community</div>
+            <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-[#23d7d1]">A route-planning community</div>
             <h1 className="mt-5 text-[clamp(42px,12vw,112px)] font-semibold leading-[0.9] tracking-[-0.06em] sm:leading-[0.86] sm:tracking-[-0.07em]">
-              Make Anthony’s route harder to beat
+              Better routes start with local knowledge
             </h1>
             <p className="mt-7 max-w-[650px] text-[17px] leading-[1.7] text-white/62">
-              Vote for the states worth more time, share the stop only a local would
-              know, compare competition ideas, and follow Anthony’s 2026 Tesla
-              Supercharging run when it goes live
+              Bring the stop only a local would know, make the case for a state worth
+              more time, and compare strategies with other 2026 competitors. Every
+              good idea can strengthen the first live route—or inspire your own.
             </p>
 
             {!user ? (
               <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <Link to="/signup?returnTo=%2Fcommunity" className="flex min-h-12 w-full items-center justify-center rounded-full bg-[#e82127] px-6 py-3.5 text-center text-[13px] font-semibold text-white no-underline shadow-[0_12px_35px_rgba(232,33,39,.32)] transition hover:bg-white hover:text-black sm:w-auto">
-                  Create an account and join in
+                  Create an account and share an idea
                 </Link>
                 <Link to="/login?returnTo=%2Fcommunity" className="flex min-h-12 w-full items-center justify-center rounded-full border border-white/40 bg-black/35 px-6 py-3.5 text-center text-[13px] font-semibold text-white no-underline transition hover:border-white sm:w-auto">
                   Sign in
@@ -114,7 +114,7 @@ export function CommunityPage() {
               </div>
             ) : (
               <div className="mt-9 font-mono text-[9px] uppercase tracking-[0.12em] text-white/45">
-                Signed in as {user.username} · Your votes and suggestions count
+                Signed in as {user.username} · Your ideas help everyone plan
               </div>
             )}
 
@@ -150,13 +150,13 @@ export function CommunityPage() {
 
         <section className="mx-auto grid max-w-[1320px] gap-12 px-4 py-20 sm:gap-16 sm:px-5 sm:py-28 lg:grid-cols-[1.05fr_.95fr] lg:px-8 lg:py-36">
           <div>
-            <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-black/45">Community route pressure</div>
+            <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-black/45">Where should a great route lead?</div>
             <h2 className="mt-5 max-w-[760px] text-[clamp(40px,11vw,98px)] font-semibold leading-[0.92] tracking-[-0.055em] sm:leading-[0.87] sm:tracking-[-0.067em]">
-              Put your state on Anthony’s route
+              Put your state on the community map
             </h2>
             <p className="mt-7 max-w-[620px] text-[16px] leading-[1.7] text-black/60">
-              Tell Anthony where the community actually wants him to show up. Pick a
-              state and add the local reason it deserves time on the 2026 route
+              Pick a state and make the local case for it. The leaderboard shows where
+              the community sees the strongest reasons to stop, explore, and reroute.
             </p>
 
             {user ? (
@@ -169,7 +169,7 @@ export function CommunityPage() {
                     </select>
                   </label>
                   <label className="cq-light-field">
-                    Why should he come through
+                    What makes it worth the drive
                     <input
                       value={stateNote}
                       onChange={(event) => setStateNote(event.target.value)}
@@ -179,11 +179,11 @@ export function CommunityPage() {
                   </label>
                 </div>
                 <button className="mt-5 min-h-12 w-full rounded-full bg-[#e82127] px-6 py-3.5 text-center text-[13px] font-semibold text-white shadow-[0_12px_30px_rgba(232,33,39,.25)] sm:w-auto" type="submit">
-                  Put my state on the map
+                  Add my state to the map
                 </button>
               </form>
             ) : (
-              <CommunityJoinPrompt text="Create a free account to vote for your state and help shape the route" />
+              <CommunityJoinPrompt text="Create a free account to vote for your state and help the community find its next detour" />
             )}
           </div>
 
@@ -191,7 +191,7 @@ export function CommunityPage() {
             <div className="flex items-end justify-between border-b border-black/15 pb-5">
               <div>
                 <div className="font-mono text-[9px] uppercase tracking-[0.13em] text-black/40">Most requested</div>
-                <h3 className="mt-2 text-[28px] font-semibold tracking-[-0.035em]">The community leaderboard</h3>
+                <h3 className="mt-2 text-[28px] font-semibold tracking-[-0.035em]">States making a case</h3>
               </div>
               <div className="font-mono text-[9px] text-black/40">{totalStateVotes} votes</div>
             </div>
@@ -217,7 +217,7 @@ export function CommunityPage() {
             <div>
               <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-[#23d7d1]">Ideas worth rerouting for</div>
               <h2 className="mt-5 max-w-[820px] text-[clamp(40px,11vw,88px)] font-semibold leading-[0.93] tracking-[-0.055em] sm:leading-[0.9] sm:tracking-[-0.063em]">
-                Give the route an unfair local advantage
+                Give every route a local advantage
               </h2>
               <div className="mt-12 border-t border-white/15">
                 {(community?.suggestions ?? []).map((item, index) => (
@@ -245,14 +245,14 @@ export function CommunityPage() {
                   </article>
                 ))}
                 {community?.suggestions.length === 0 ? (
-                  <div className="border-b border-white/15 py-12 text-[14px] text-white/40">No suggestions yet. Be the local who changes the route</div>
+                  <div className="border-b border-white/15 py-12 text-[14px] text-white/40">No suggestions yet. Be the local who changes someone’s route</div>
                 ) : null}
               </div>
             </div>
 
             <aside className="h-fit bg-[#e82127] p-6 sm:p-8 lg:sticky lg:top-24">
-              <div className="font-mono text-[8px] uppercase tracking-[0.14em] text-white/60">Share what Anthony would miss</div>
-              <h3 className="mt-4 text-[32px] font-semibold leading-[1] tracking-[-0.045em]">What would you tell a friend</h3>
+              <div className="font-mono text-[8px] uppercase tracking-[0.14em] text-white/60">Share what another driver would miss</div>
+              <h3 className="mt-4 text-[32px] font-semibold leading-[1] tracking-[-0.045em]">What would you tell a friend?</h3>
               {user ? (
                 <form className="cq-red-form mt-7 flex flex-col gap-4" onSubmit={submitSuggestion}>
                   <label>
@@ -285,7 +285,7 @@ export function CommunityPage() {
                 </form>
               ) : (
                 <div className="mt-7 border-t border-white/25 pt-6 text-[13px] leading-[1.6] text-white/75">
-                  Create an account to publish suggestions and vote on the ideas that should shape the route
+                  Create an account to publish suggestions and vote on the ideas that could make any route better.
                   <Link to="/signup?returnTo=%2Fcommunity" className="mt-5 flex min-h-12 w-full items-center justify-center rounded-full bg-white px-5 py-3 text-center text-[12px] font-semibold text-black no-underline sm:w-fit">
                     Join the community
                   </Link>
