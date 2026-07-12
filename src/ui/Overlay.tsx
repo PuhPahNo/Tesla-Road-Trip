@@ -190,14 +190,12 @@ export function OptimizeOverlay({ step }: { step: string }) {
 export function SplashScreen({ subtitle }: { subtitle: string }) {
   return (
     <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center gap-5 bg-app">
-      <div
-        className="anim-pulse flex h-14 w-14 items-center justify-center rounded-2xl bg-accent text-on-accent"
-        style={{ boxShadow: '0 0 40px color-mix(in srgb, var(--accent) 55%, transparent)' }}
-      >
-        <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor">
-          <path d="M13 2 4 14h6l-1 8 9-12h-6z" />
-        </svg>
-      </div>
+      <img
+        src="/favicon-master.png?v=3"
+        alt=""
+        className="anim-pulse h-16 w-16 rounded-2xl object-cover"
+        style={{ boxShadow: '0 0 40px color-mix(in srgb, var(--accent) 40%, transparent)' }}
+      />
       <div className="text-center">
         <div className="text-[15px] font-semibold tracking-[-0.01em] text-ink">
           ChargeQuest

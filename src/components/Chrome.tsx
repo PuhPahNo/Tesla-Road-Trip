@@ -32,34 +32,23 @@ export const RAIL_ITEMS: Array<{ key: PanelKey; label: string; icon: typeof Grid
 export function BrandIsland({
   routeName,
   routeColor,
-  contestLabel,
   onOpenRoutePicker,
 }: {
   routeName: string
   routeColor?: string
-  contestLabel: string
   onOpenRoutePicker: () => void
 }) {
   return (
     // Below sm the island yields to the actions island (~108px + gap) so the
     // two never overlap; the route chip shrinks and truncates instead.
     <div className="glass fixed left-3 top-3 z-40 flex h-11 max-w-[calc(100vw-152px)] items-center gap-1.5 rounded-[12px] py-0 pl-2 pr-1 sm:left-4 sm:top-4 sm:h-12 sm:max-w-none sm:gap-2.5 sm:rounded-[13px] sm:pl-3 sm:pr-1.5">
-      <a href="/" aria-label="Return to ChargeQuest home" className="flex flex-none">
+      <a href="/account" aria-label="Open ChargeQuest account and navigation" className="flex flex-none rounded-[8px] bg-black">
         <img
-          src="/brand-mark.svg?v=2"
-          alt=""
-          aria-hidden="true"
-          className="h-7 w-7 rounded-[8px] sm:h-[30px] sm:w-[30px] sm:rounded-[9px]"
+          src="/chargequest-logo.png?v=3"
+          alt="ChargeQuest"
+          className="h-[25px] w-[112px] rounded-[7px] object-contain sm:h-[30px] sm:w-[190px] sm:rounded-[8px]"
         />
       </a>
-      <div className="hidden flex-none pr-1 leading-[1.05] sm:block">
-        <div className="whitespace-nowrap font-mono text-[8.5px] uppercase tracking-[0.14em] text-faint">
-          {contestLabel}
-        </div>
-        <div className="whitespace-nowrap text-[13px] font-semibold tracking-[-0.01em] text-ink">
-          ChargeQuest
-        </div>
-      </div>
       <button
         type="button"
         onClick={onOpenRoutePicker}

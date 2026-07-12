@@ -10,16 +10,16 @@ import { RoutePicker } from './RoutePicker'
 afterEach(cleanup)
 
 describe('planning modal responsibilities', () => {
-  it('uses ChargeQuest as the visible product brand', () => {
+  it('uses the ChargeQuest image lockup as the visible product brand', () => {
     render(
       <BrandIsland
         routeName="No route yet"
-        contestLabel="2026 · Americas"
         onOpenRoutePicker={vi.fn()}
       />,
     )
 
-    expect(screen.getByText('ChargeQuest')).toBeTruthy()
+    expect(screen.getByRole('img', { name: 'ChargeQuest' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Open ChargeQuest account and navigation' }).getAttribute('href')).toBe('/account')
     expect(screen.queryByText('Quest Planner')).toBeNull()
   })
 

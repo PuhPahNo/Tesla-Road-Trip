@@ -556,7 +556,6 @@ function App() {
       <BrandIsland
         routeName={selectedRoute?.name ?? 'No route yet'}
         routeColor={selectedRoute?.color}
-        contestLabel={contestStatus.brandLabel}
         onOpenRoutePicker={() => setRoutePickerOpen(true)}
       />
       <ActionsIsland

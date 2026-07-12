@@ -24,7 +24,7 @@ try {
   // Cockpit chrome ready: brand island + Travel Preferences action.
   await page.waitForFunction(
     () =>
-      document.body.textContent?.includes('ChargeQuest') &&
+      Boolean(document.querySelector('img[alt="ChargeQuest"]')) &&
       Array.from(document.querySelectorAll('button')).some((button) =>
         button.getAttribute('aria-label') === 'Travel preferences',
       ),

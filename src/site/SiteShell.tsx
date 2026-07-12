@@ -26,16 +26,14 @@ export function SiteShell() {
 
   return (
     <div className="site-page min-h-screen bg-app text-ink">
-      <header className="site-nav sticky top-0 z-50 border-b border-white/10 bg-[#090a0c]/95 text-white backdrop-blur-2xl">
+      <header className="site-nav sticky top-0 z-50 border-b border-white/10 bg-black text-white">
         <div className="mx-auto flex h-[68px] max-w-[1440px] items-center gap-2 px-3 sm:h-[78px] sm:gap-6 sm:px-5 lg:px-12">
           <NavLink to={user ? '/planner' : '/'} className="group flex min-w-0 items-center gap-2 no-underline sm:gap-3">
-            <img src="/brand-mark.svg?v=2" alt="" className="h-9 w-9 flex-none rounded-[10px] ring-1 ring-white/10 sm:h-10 sm:w-10 sm:rounded-[11px]" />
-            <div className="min-w-0">
-              <div className="hidden font-mono text-[7.5px] uppercase tracking-[0.17em] text-white/40 transition group-hover:text-white/60 sm:block">
-                2026 competition
-              </div>
-              <div className="truncate text-[14px] font-semibold tracking-[-0.02em] text-white sm:mt-0.5 sm:text-[16px]">ChargeQuest</div>
-            </div>
+            <img
+              src="/chargequest-logo.png?v=3"
+              alt="ChargeQuest"
+              className="h-[29px] w-auto max-w-[184px] flex-none object-contain transition-opacity group-hover:opacity-85 sm:h-[36px] sm:max-w-[228px] lg:h-[40px] lg:max-w-[253px]"
+            />
           </NavLink>
 
           <nav className="ml-auto hidden items-center gap-6 md:flex" aria-label="Main navigation">
