@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { MapPinned, Route, UsersRound, type LucideIcon } from 'lucide-react'
+import { ArrowRight, MapPinned, Route, UsersRound, type LucideIcon } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { fetchCommunity, type CommunitySnapshot } from '../api/siteClient'
 import { useAuth } from './AuthContext'
@@ -48,15 +48,29 @@ export function LandingPage() {
             <h1 className="max-w-[1120px] text-[clamp(43px,9vw,116px)] font-semibold leading-[0.9] tracking-[-0.055em] text-white sm:leading-[0.86] sm:tracking-[-0.065em]">
               I’m building a route. Think you can build a better one?
             </h1>
-            <div className="mt-7 flex max-w-[1040px] flex-col gap-5 md:flex-row md:items-end md:justify-between">
+            <div className="mt-7 max-w-[760px]">
               <p className="max-w-[690px] text-[16px] leading-[1.6] text-white/88 sm:text-[18px] sm:leading-[1.6]">
                 ChargeQuest began with one ambitious competition route. Now it is a
                 place to plan yours—around your Tesla, your pace, and the stops that
                 make the drive worth remembering.
               </p>
-              <Link to={plannerHref} className="flex min-h-12 w-full flex-none items-center justify-center rounded-full bg-[#e82127] px-7 py-3.5 text-center text-[13px] font-semibold text-white no-underline shadow-[0_12px_40px_rgba(232,33,39,.48)] ring-1 ring-white/20 transition hover:bg-white hover:text-black sm:w-auto">
-                {plannerCta}
-              </Link>
+              <div className="mt-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-5">
+                <Link
+                  to={plannerHref}
+                  className="group flex min-h-[60px] w-full max-w-[320px] flex-none items-center justify-between rounded-full bg-[#f4f0e8] py-2 pl-7 pr-2 text-[15px] font-semibold text-black no-underline shadow-[0_18px_55px_rgba(0,0,0,.38)] ring-1 ring-white/70 transition hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_22px_65px_rgba(0,0,0,.48)]"
+                >
+                  <span>{plannerCta}</span>
+                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#e82127] text-white transition group-hover:translate-x-0.5">
+                    <ArrowRight aria-hidden="true" size={19} strokeWidth={2.2} />
+                  </span>
+                </Link>
+                {!user ? (
+                  <div className="font-mono text-[8.5px] uppercase leading-[1.7] tracking-[0.11em] text-white/58">
+                    <div>Free account · No email required</div>
+                    <div className="text-white/38">Save and refine multiple routes</div>
+                  </div>
+                ) : null}
+              </div>
             </div>
 
             <div className="mt-7 grid max-w-[1120px] border-y border-white/20 md:grid-cols-3">
@@ -76,11 +90,6 @@ export function LandingPage() {
                 body="Vote on states, suggest stops, and follow the first route."
               />
             </div>
-            {!user ? (
-              <div className="mt-4 font-mono text-[8.5px] uppercase tracking-[0.11em] text-white/55">
-                Free account · No email required · Save and refine your route ideas
-              </div>
-            ) : null}
           </div>
 
           <div className="flex items-end justify-between gap-5 font-mono text-[8px] uppercase tracking-[0.13em] text-white/45">
