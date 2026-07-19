@@ -59,6 +59,23 @@ await member.request('/api/auth/change-password', {
 await member.request('/api/account')
 await member.request('/api/admin/accounts', { expectedStatus: 403 })
 
+await member.request('/api/custom-routes', {
+  method: 'POST',
+  expectedStatus: 201,
+  body: {
+    name: 'Admin visibility route',
+    waypoints: [{
+      id: 'waypoint-denver',
+      label: 'Denver',
+      position: { lat: 39.7392, lon: -104.9903 },
+      radiusMiles: 40,
+    }],
+  },
+})
+const memberDetail = await admin.request(`/api/admin/accounts/${roadtripper.id}`)
+assert(memberDetail.routes.length === 1, 'Admin could not see the member’s saved route.')
+assert(memberDetail.routes[0].name === 'Admin visibility route', 'Admin route details were incomplete.')
+
 snapshot = await admin.request(`/api/admin/accounts/${roadtripper.id}`, {
   method: 'PATCH',
   body: { username: 'routebuilder', role: 'admin' },
@@ -134,6 +151,7 @@ console.log(JSON.stringify({
   resetRevokedSessions: true,
   sessionsRevoked: true,
   accountDeleted: true,
+  memberRoutesVisibleToAdmin: true,
   selfProtectionEnforced: true,
   activeAdminRenamed: true,
   activityAuditRetained: true,

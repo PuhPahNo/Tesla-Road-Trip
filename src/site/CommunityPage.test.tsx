@@ -10,33 +10,10 @@ afterEach(() => {
 })
 
 describe('ChargeQuest community page', () => {
-  it('uses the cinematic community funnel and asks guests to create an account', async () => {
-    const community = {
-      trip: { active: false, title: "Anthony's ChargeQuest", updatedAt: '2026-07-11T00:00:00.000Z' },
-      updates: [],
-      stateVotes: [{ state_code: 'CO', votes: 4 }],
-      meetups: [],
-      suggestions: [
-        {
-          id: 'suggestion-1',
-          category: 'scenery',
-          title: 'Take the Million Dollar Highway',
-          body: 'The San Juan mountain views are worth the extra time.',
-          state_code: 'CO',
-          display_name: 'mountainlocal',
-          votes: 3,
-          viewer_voted: 0,
-          created_at: '2026-07-11T00:00:00.000Z',
-        },
-      ],
-      achievements: [],
-    }
+  it('asks guests for private route ideas without pretending a public feed exists', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockImplementation(async (input: string) => ({
-        ok: true,
-        json: async () => input === '/api/auth/session' ? {} : community,
-      })),
+      vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) }),
     )
 
     render(
@@ -47,12 +24,13 @@ describe('ChargeQuest community page', () => {
       </MemoryRouter>,
     )
 
-    expect(screen.getByRole('heading', { name: 'Better routes start with local knowledge' })).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'Create an account and share an idea' }).getAttribute('href')).toBe('/signup?returnTo=%2Fcommunity')
-    expect((await screen.findAllByText('Colorado')).length).toBeGreaterThan(0)
-    expect(screen.getByText('Take the Million Dollar Highway')).toBeTruthy()
-    expect(screen.getByRole('heading', { name: 'Put your state on the community map' })).toBeTruthy()
-    expect(screen.getByRole('heading', { name: 'Routes worth talking about' })).toBeTruthy()
-    expect(document.title).toBe('ChargeQuest Community | Tesla Route Ideas and 2026 Trip Updates')
+    expect(screen.getByRole('heading', { name: 'Tell me what the map is missing' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Create an account and send an idea' }).getAttribute('href')).toBe('/signup?returnTo=%2Fcommunity')
+    expect(screen.getByRole('heading', { name: 'Three ways you can genuinely change the trip' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Make the case' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Email me' }).getAttribute('href')).toBe('mailto:anthony@antelligentprojects.dev')
+    expect(screen.queryByText('Take the Million Dollar Highway')).toBeNull()
+    expect(screen.getByText(/Suggestions go to a private admin inbox/)).toBeTruthy()
+    expect(document.title).toBe('Send Anthony a Route Idea | ChargeQuest Community')
   })
 })

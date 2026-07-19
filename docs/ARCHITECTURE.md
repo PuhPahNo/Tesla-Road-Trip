@@ -71,16 +71,16 @@ Recommended path:
 - `users` and `sessions` implement first-party username/password authentication with case-insensitive unique usernames.
 - Passwords are scrypt hashes. Raw session tokens are never stored; only SHA-256 token hashes are persisted.
 - `user_preferences` and `custom_routes` are keyed by user ownership.
-- `anthony_trip` and `trip_updates` drive the public tracker.
-- `state_votes`, `meetup_invites`, `suggestions`, `suggestion_votes`, and `achievements` drive community participation.
-- Meetup invitations are private until Anthony approves them.
+- `anthony_trip` drives live-trip state; `trip_updates` is the public chronological story before and during the trip.
+- `suggestions` is Anthony's private route-idea inbox. Legacy vote and achievement tables remain for reversibility but are not presented as an active public community.
+- Meetup invitations are private until Anthony approves them and are only solicited while the trip is live.
 - The production database defaults to the existing Render persistent disk. A repository migration to PostgreSQL is the horizontal-scaling path; route ownership and API contracts should not change.
 
 ## Scaling Plan
 
-### Phase 1: Single-Service Community (current)
+### Phase 1: Single-Service Journey and Inbox (current)
 - One Render web instance with SQLite/WAL on persistent disk.
-- First-party accounts, per-user preferences/routes, public community reads, and moderated writes.
+- First-party accounts, per-user preferences/routes, Anthony's public journey, private suggestion intake, and moderated meetup writes.
 - In-memory station and road-route caches remain disposable.
 
 ### Phase 2: Database and Routing Scale

@@ -55,16 +55,20 @@ Priority order:
 3. **California Iconic Charger road trip** — Tesla Diner, Santa Monica, Golden Gate Bridge, Yosemite, Oasis, and the choices that keep it from becoming a checklist.
 4. **2026 competition route-planning checklist** — vehicle, pace, category, backup sites, session logging, weather, and official-rule verification.
 5. **What changed after I ran my route through CORE** — before-and-after decisions using real planner output, with no invented performance claims.
-6. **A monthly route-build note** — what moved, what was cut, and why.
+6. **The route I almost chose** — a real rejected route, why it was tempting, and the one constraint that killed it.
+7. **Can CORE beat my hand-built route?** — a recurring head-to-head series using the same vehicle, dates, and trip limits.
+8. **The stops worth losing the competition for** — Anthony’s personal non-negotiables and the competitive cost of keeping them.
+9. **My pre-trip failure drill** — one realistic charger, weather, sleep, range, or timing failure and how the route recovers.
+10. **What I still do not trust about this plan** — a candid checkpoint on assumptions that remain unresolved.
 
-The monthly route note matters because it creates something competitors cannot copy from a generic keyword brief: Anthony’s actual process.
+These are not mini paragraphs or a generic weekly diary. Each is a real story with a question, stakes, evidence, a decision, and a useful takeaway. A short Track Anthony update can document the moment; when the subject earns search demand and enough original evidence, it can become a full evergreen article.
 
-Raw notes are enough. Use `docs/ANTHONY_FIELD_NOTE_TEMPLATE.md` to capture the decision and evidence without trying to write a finished article. The editorial pass can happen after the facts are recorded.
+Use the Track Anthony publisher as the working timeline. A good entry can be a route-comparison map, a short screen recording, a candid vlog, a CORE experiment, or a decision note. Use `docs/ANTHONY_FIELD_NOTE_TEMPLATE.md` only when a decision has enough moving parts that the evidence would otherwise get lost; it is an optional source-capture tool, not Anthony’s editorial calendar.
 
 ### Weeks 6–12: turn product evidence into an acquisition loop
 
 - Add public, shareable route summaries only after the privacy and canonical model is designed. Do not expose private planner routes by default.
-- Publish a small number of curated community routes after moderation and permission, each with a clear author and a reason the route is useful.
+- Keep route suggestions private while the audience is small. If a submitted idea later deserves a public story, ask the sender for permission and publish Anthony’s investigation of it—not an empty community-ranking surface.
 - After the trip begins, convert live updates into durable field notes: charger changes, park timing, recovery decisions, and route assumptions that did or did not survive the road.
 - Link those field notes back into the evergreen guide that benefits from the evidence.
 - Build a simple Search Console review every two weeks: queries gaining impressions, pages with impressions but weak clicks, indexed-versus-submitted URLs, and signups by organic landing page.

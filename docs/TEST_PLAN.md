@@ -27,13 +27,13 @@ Required coverage:
 - First-party username signup/login/logout and password-protected account access work without collecting email or using an external auth provider.
 - Usernames are case-insensitively unique, accept a minimum of three characters, and the seeded Anthony admin cannot use protected actions until changing the temporary password.
 - Preferences persist per account and saved routes are isolated between members.
-- Community state votes, suggestions, votes, achievements, and moderated meetup invitations survive across sessions.
-- Anthony admin can activate/deactivate the tracker and publish field updates.
-- The homepage leads with Anthony's competition challenge, uses distinct cinematic/editorial/gallery/product compositions, and maps live trip/community data into the public experience.
+- Private route suggestions and moderated meetup invitations survive across sessions without exposing an empty public feed.
+- Anthony admin can inspect account-owned routes and activity, review private suggestions, activate/deactivate the tracker, and publish or edit journey updates.
+- The homepage leads with Anthony's competition challenge, uses distinct cinematic/editorial/gallery/product compositions, and maps real trip progress into the public experience without invented community momentum.
 - Signed-out users cannot render the planner and are redirected to signup with a planner return path.
-- The Community page uses the cinematic competition design, exposes public activity, and funnels guest interactions through signup with a community return path.
+- The Community page uses the cinematic competition design as a private idea inbox, states that submissions are not automatically public, and funnels guest interactions through signup with a community return path.
 - Homepage and Community metadata stay route-specific, and `robots.txt`, `sitemap.xml`, canonical URLs, image metadata, and `WebApplication` structured data ship in production.
-- Anthony admin separates tracker configuration, field publishing, public metrics, and meetup moderation without changing the underlying admin actions.
+- Anthony admin separates account management, tracker configuration, journey publishing, private suggestion review, and meetup moderation.
 - Public pages use the competition-styled navigation, guest planner links target signup, and the authenticated planner renders without the public header or footer.
 
 ## Manual Browser Certification
@@ -58,8 +58,10 @@ Required checks:
 16. Confirm per-day route stats, long-day explanations, Iconic Charger hits, and achievement opportunities are readable.
 17. Check desktop and mobile screenshots for overlapping text, clipped buttons, broken map, or confusing hierarchy.
 18. Create two accounts and confirm neither can see the other account's routes.
-19. Submit a meetup invitation as a member, approve it as Anthony admin, and confirm it appears publicly only after approval.
-20. Turn Anthony's trip off and confirm Track Anthony shows the pre-trip state; turn it on and publish an update to confirm live progress appears.
+19. Submit a route idea as a member, confirm it never appears in a public suggestion feed, and review or archive it in Anthony admin.
+20. Open a member from Anthony admin and confirm saved route details and activity are visible without exposing passwords or session tokens.
+21. Publish a planning update while Anthony's trip is off and confirm it appears in the pre-trip timeline without activating the live tracker.
+22. Turn Anthony's trip on and publish an on-the-road update; confirm live progress and the approved-meetup flow appear.
 
 ## Known Model Limitations
 

@@ -97,18 +97,6 @@ const suggestion = await member.request('/api/community/suggestions', {
     body: 'Go before the crowds and use the west overlook before heading into Denver.',
   },
 })
-await member.request(`/api/community/suggestions/${suggestion.id}/vote`, {
-  method: 'POST',
-})
-await member.request('/api/community/achievements', {
-  method: 'POST',
-  expectedStatus: 201,
-  body: {
-    title: 'First custom quest saved',
-    description: 'Built and saved a landmark-first route with account preferences.',
-    routeName: 'Community Certification Route',
-  },
-})
 await member.request('/api/community/meetups', {
   method: 'POST',
   expectedStatus: 201,
@@ -133,6 +121,47 @@ const passwordChange = await admin.request('/api/auth/change-password', {
   },
 })
 assert(passwordChange.user.mustChangePassword === false, 'Admin password-change requirement did not clear.')
+
+await admin.request('/api/admin/trip', {
+  method: 'PUT',
+  body: {
+    active: false,
+    title: "Anthony's ChargeQuest",
+    routeName: 'Three routes remain',
+    totalDays: 60,
+    departureDate: '2026-09-01',
+    headline: 'The route is still being built',
+    body: 'The tracker is in pre-trip mode while route decisions are published.',
+  },
+})
+const planningUpdate = await admin.request('/api/admin/trip-updates', {
+  method: 'POST',
+  expectedStatus: 201,
+  body: {
+    phase: 'route-decision',
+    title: 'Route 66 made the final three',
+    body: 'The route survived the first comparison and now needs a full CORE stress test.',
+    artifactUrl: 'https://example.com/route-map',
+    artifactLabel: 'Open the route comparison',
+    artifactType: 'link',
+  },
+})
+const preTripCommunity = await anonymousRequest('/api/community')
+assert(preTripCommunity.trip.active === false, 'Publishing a planning entry incorrectly activated the live trip.')
+assert(preTripCommunity.updates[0].phase === 'route-decision', 'Planning entry phase was not public.')
+
+await admin.request(`/api/admin/trip-updates/${planningUpdate.id}`, {
+  method: 'PATCH',
+  body: {
+    phase: 'route-decision',
+    title: 'Route 66 stayed in the final three',
+    body: 'The route survived the first comparison and now needs a full CORE stress test.',
+    artifactUrl: 'https://example.com/route-map',
+    artifactLabel: 'Open the route comparison',
+    artifactType: 'link',
+  },
+})
+
 await admin.request('/api/admin/trip', {
   method: 'PUT',
   body: {
@@ -150,6 +179,7 @@ await admin.request('/api/admin/trip-updates', {
   method: 'POST',
   expectedStatus: 201,
   body: {
+    phase: 'on-the-road',
     dayNumber: 1,
     location: 'Chattanooga, Tennessee',
     title: 'Rolling out',
@@ -159,6 +189,11 @@ await admin.request('/api/admin/trip-updates', {
 })
 const adminCommunity = await admin.request('/api/admin/community')
 assert(adminCommunity.pendingMeetups.length === 1, 'Pending meetup did not reach admin moderation.')
+assert(adminCommunity.suggestionInbox.some((item) => item.id === suggestion.id && item.review_status === 'pending'), 'Private suggestion did not reach the admin inbox.')
+await admin.request(`/api/admin/suggestions/${suggestion.id}`, {
+  method: 'PATCH',
+  body: { status: 'reviewed' },
+})
 await admin.request(`/api/admin/meetups/${adminCommunity.pendingMeetups[0].id}`, {
   method: 'PATCH',
   body: { status: 'approved' },
@@ -166,10 +201,9 @@ await admin.request(`/api/admin/meetups/${adminCommunity.pendingMeetups[0].id}`,
 
 const publicCommunity = await anonymousRequest('/api/community')
 assert(publicCommunity.trip.active === true, 'Public tracker was not activated.')
-assert(publicCommunity.updates.length === 1, 'Trip update was not published.')
+assert(publicCommunity.updates.length === 2, 'Planning and on-road updates were not published.')
 assert(publicCommunity.stateVotes.some((item) => item.state_code === 'CO'), 'State vote was not aggregated.')
-assert(publicCommunity.suggestions.some((item) => item.id === suggestion.id && Number(item.votes) === 1), 'Suggestion or vote was not public.')
-assert(publicCommunity.achievements.length === 1, 'Achievement was not public.')
+assert(publicCommunity.suggestions.length === 0, 'Private suggestions leaked into the public response.')
 assert(publicCommunity.meetups.length === 1, 'Approved meetup was not public.')
 
 await member.request(`/api/custom-routes/${createdRoute.route.id}`, { method: 'DELETE' })
@@ -188,9 +222,11 @@ console.log(
     preferencesPersisted: true,
     routeOwnershipIsolated: true,
     stateVoteAggregated: true,
-    suggestionPublishedAndVoted: true,
-    achievementShared: true,
+    suggestionDeliveredPrivately: true,
+    suggestionReviewedByAdmin: true,
     meetupModerated: true,
+    preTripPublishingDoesNotActivateLiveTracker: true,
+    journeyEntryUpdated: true,
     anthonyTrackerPublished: true,
     logoutProtectedAccount: true,
   }),

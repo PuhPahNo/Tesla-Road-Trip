@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ArrowRight, MapPinned, Route, UsersRound, type LucideIcon } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { fetchCommunity, type CommunitySnapshot } from '../api/siteClient'
@@ -22,10 +22,6 @@ export function LandingPage() {
   const trip = community?.trip
   const plannerHref = user ? '/planner' : '/signup?returnTo=%2Fplanner'
   const plannerCta = 'Build Your Route'
-  const stateVoteCount = useMemo(
-    () => community?.stateVotes.reduce((total, state) => total + state.votes, 0) ?? 0,
-    [community],
-  )
 
   return (
     <>
@@ -87,7 +83,7 @@ export function LandingPage() {
               <HeroBenefit
                 icon={UsersRound}
                 title="Shape the quest together"
-                body="Vote on states, suggest stops, and follow the first route."
+                body="Follow the build log, challenge my route, and send a stop I should consider."
               />
             </div>
           </div>
@@ -247,22 +243,21 @@ export function LandingPage() {
               Follow the quest. Help shape what comes next.
             </h2>
             <p className="mt-7 max-w-[560px] text-[16px] leading-[1.7] text-white/60">
-              Vote for states that deserve a place on the route, share a stop that
-              should not be missed, or offer a local meetup along the way. Then follow
-              the live tracker as the plan becomes a real trip—with the wins, setbacks,
-              detours, and discoveries included.
+              Follow the decisions behind CORE and my route, then send a stop, warning,
+              or better idea directly to me. When the trip begins, the same timeline becomes
+              the live field log—with the wins, setbacks, detours, and evidence included.
             </p>
 
             <div className="mt-10 grid grid-cols-2 border-y border-white/15 sm:grid-cols-4">
-              <DarkMetric label="State votes" value={stateVoteCount} />
-              <DarkMetric label="Suggestions" value={community?.suggestions.length ?? 0} />
-              <DarkMetric label="Meetups" value={community?.meetups.length ?? 0} />
-              <DarkMetric label="Status" value={trip?.active ? `Day ${trip.dayNumber ?? '—'}` : 'Pre-trip'} />
+              <DarkMetric label="Journey entries" value={community?.updates.length ?? 0} />
+              <DarkMetric label="Route stage" value={trip?.routeName || 'Building'} />
+              <DarkMetric label="Suggestions" value="Private" />
+              <DarkMetric label="Trip status" value={trip?.active ? `Day ${trip.dayNumber ?? '—'}` : 'Pre-trip'} />
             </div>
 
             <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <Link to="/track-anthony" className="flex min-h-12 w-full items-center justify-center rounded-full bg-white px-6 py-3.5 text-center text-[13px] font-semibold text-black no-underline sm:w-auto">See the latest progress</Link>
-              <Link to="/community" className="flex min-h-12 w-full items-center justify-center rounded-full border border-white/40 bg-black/40 px-6 py-3.5 text-center text-[13px] font-semibold text-white no-underline sm:w-auto">Shape the route together</Link>
+              <Link to="/community" className="flex min-h-12 w-full items-center justify-center rounded-full border border-white/40 bg-black/40 px-6 py-3.5 text-center text-[13px] font-semibold text-white no-underline sm:w-auto">Send me a route idea</Link>
             </div>
           </div>
         </div>

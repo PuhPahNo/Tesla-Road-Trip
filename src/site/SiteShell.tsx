@@ -1,11 +1,13 @@
+import type { ReactNode } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from './AuthContext'
 import { cx } from '../ui/primitives'
+import { ANTHONY_EMAIL, ANTHONY_EMAIL_HREF } from './contact'
 
 const NAV_ITEMS = [
   { to: '/', label: 'Home' },
   { to: '/planner', label: 'CORE' },
-  { to: '/community', label: 'Community' },
+  { to: '/community', label: 'Send an idea' },
   { to: '/track-anthony', label: 'Track Anthony' },
 ]
 
@@ -120,22 +122,59 @@ export function SiteShell() {
       <main>
         <Outlet />
       </main>
-      <footer className="border-t border-white/10 bg-[#090a0c] px-5 py-10 text-white">
-        <div className="mx-auto flex max-w-[1320px] flex-col gap-4 text-[11.5px] text-white/35 sm:flex-row sm:items-center sm:justify-between">
-          <div>ChargeQuest · Route ideas for the 2026 Tesla Supercharging Competition</div>
-          <div className="flex flex-wrap gap-x-4 gap-y-2">
-            <NavLink to={user ? '/planner' : '/signup?returnTo=%2Fplanner'} className="text-white/35 no-underline hover:text-white">
-              {user ? 'CORE' : 'Build a route'}
-            </NavLink>
-            <NavLink to="/community" className="text-white/35 no-underline hover:text-white">Community</NavLink>
-            <NavLink to="/track-anthony" className="text-white/35 no-underline hover:text-white">Track Anthony</NavLink>
-            <NavLink to="/2026-tesla-supercharging-competition" className="text-white/35 no-underline hover:text-white">Competition guide</NavLink>
-            <NavLink to="/tesla-iconic-charger-badges" className="text-white/35 no-underline hover:text-white">Iconic badges</NavLink>
-            <NavLink to="/tesla-road-trip-routes" className="text-white/35 no-underline hover:text-white">Route library</NavLink>
-            <NavLink to="/about-anthony" className="text-white/35 no-underline hover:text-white">About Anthony</NavLink>
+      <footer className="border-t border-white/10 bg-[#090a0c] px-5 py-14 text-white sm:py-16">
+        <div className="mx-auto max-w-[1320px]">
+          <div className="grid gap-10 border-b border-white/10 pb-12 md:grid-cols-[1.4fr_repeat(3,1fr)] md:gap-8">
+            <div className="max-w-[360px]">
+              <img src="/chargequest-logo.png?v=4" alt="ChargeQuest" className="h-8 w-auto object-contain" />
+              <p className="mt-5 text-[12px] leading-[1.7] text-white/42">
+                Competition-aware Tesla road trips built around places worth visiting.
+                Independent from and not endorsed by Tesla.
+              </p>
+              <a href={ANTHONY_EMAIL_HREF} className="mt-5 inline-block text-[11.5px] font-semibold text-white/72 no-underline hover:text-white">
+                {ANTHONY_EMAIL}
+              </a>
+            </div>
+
+            <FooterGroup title="Explore">
+              <FooterLink to={user ? '/planner' : '/signup?returnTo=%2Fplanner'}>{user ? 'CORE planner' : 'Build a route'}</FooterLink>
+              <FooterLink to="/track-anthony">Track Anthony</FooterLink>
+              <FooterLink to="/community">Send a route idea</FooterLink>
+            </FooterGroup>
+
+            <FooterGroup title="Field guides">
+              <FooterLink to="/2026-tesla-supercharging-competition">2026 competition</FooterLink>
+              <FooterLink to="/tesla-iconic-charger-badges">Iconic Charger badges</FooterLink>
+              <FooterLink to="/tesla-road-trip-routes">Road-trip routes</FooterLink>
+            </FooterGroup>
+
+            <FooterGroup title="ChargeQuest">
+              <FooterLink to="/about-anthony">About Anthony</FooterLink>
+              <a href={ANTHONY_EMAIL_HREF} className="text-[11.5px] text-white/42 no-underline hover:text-white">Contact Anthony</a>
+              {user ? <FooterLink to="/account">Your account</FooterLink> : <FooterLink to="/login">Sign in</FooterLink>}
+              {user?.role === 'admin' ? <FooterLink to="/admin">Admin</FooterLink> : null}
+            </FooterGroup>
+          </div>
+
+          <div className="flex flex-col gap-2 pt-6 font-mono text-[8px] uppercase tracking-[0.09em] text-white/25 sm:flex-row sm:items-center sm:justify-between">
+            <div>© {new Date().getFullYear()} ChargeQuest · Built by Anthony Pappano</div>
+            <div>Route estimates require current road, weather, and charging verification</div>
           </div>
         </div>
       </footer>
     </div>
   )
+}
+
+function FooterGroup({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div>
+      <div className="font-mono text-[8px] font-semibold uppercase tracking-[0.14em] text-white/28">{title}</div>
+      <div className="mt-4 flex flex-col items-start gap-3">{children}</div>
+    </div>
+  )
+}
+
+function FooterLink({ to, children }: { to: string; children: ReactNode }) {
+  return <NavLink to={to} className="text-[11.5px] text-white/42 no-underline hover:text-white">{children}</NavLink>
 }

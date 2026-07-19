@@ -161,10 +161,17 @@ export function SeoPage({ page }: { page: SeoPageContent }) {
                 <div className="font-mono text-[8px] uppercase tracking-[0.13em] text-white/65">ChargeQuest CORE</div>
                 <h2 className="mt-3 text-[25px] font-semibold leading-[1] tracking-[-0.04em]">{page.cta.title}</h2>
                 <p className="mt-4 text-[13px] leading-[1.65] text-white/75">{page.cta.body}</p>
-                <Link to={page.cta.path} className="mt-6 flex min-h-11 items-center justify-between rounded-full bg-black px-5 py-3 text-[12px] font-semibold text-white no-underline">
-                  {page.cta.label}
-                  <ArrowRight aria-hidden="true" size={16} />
-                </Link>
+                {page.cta.path.startsWith('mailto:') ? (
+                  <a href={page.cta.path} className="mt-6 flex min-h-11 items-center justify-between rounded-full bg-black px-5 py-3 text-[12px] font-semibold text-white no-underline">
+                    {page.cta.label}
+                    <ArrowRight aria-hidden="true" size={16} />
+                  </a>
+                ) : (
+                  <Link to={page.cta.path} className="mt-6 flex min-h-11 items-center justify-between rounded-full bg-black px-5 py-3 text-[12px] font-semibold text-white no-underline">
+                    {page.cta.label}
+                    <ArrowRight aria-hidden="true" size={16} />
+                  </Link>
+                )}
               </div>
             </div>
           </aside>

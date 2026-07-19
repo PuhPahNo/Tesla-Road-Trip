@@ -2,11 +2,13 @@ import { useEffect, useState, type FormEvent } from 'react'
 import {
   createAdminAccount,
   deleteAdminAccount,
+  fetchAdminAccountDetail,
   fetchAdminAccounts,
   resetAdminAccountPassword,
   revokeAdminAccountSessions,
   updateAdminAccount,
   type AccountActivity,
+  type AdminAccountDetail,
   type AdminAccountsSnapshot,
   type ManagedAccount,
 } from '../api/siteClient'
@@ -21,6 +23,7 @@ export function AdminAccountsSection() {
     role: 'member' as 'member' | 'admin',
   })
   const [busy, setBusy] = useState<string>()
+  const [query, setQuery] = useState('')
   const [notice, setNotice] = useState<string>()
   const [error, setError] = useState<string>()
 
@@ -69,6 +72,9 @@ export function AdminAccountsSection() {
   const accounts = snapshot?.accounts ?? []
   const adminCount = accounts.filter((account) => account.role === 'admin').length
   const activeSessions = accounts.reduce((total, account) => total + account.activeSessions, 0)
+  const visibleAccounts = accounts.filter((account) =>
+    account.username.toLowerCase().includes(query.trim().toLowerCase()),
+  )
 
   return (
     <section className="mt-10 border-t border-edge pt-10">
@@ -114,8 +120,18 @@ export function AdminAccountsSection() {
         </p>
       </form>
 
-      <div className="mt-6 grid gap-4">
-        {accounts.map((account) => (
+      <div className="mt-7 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+        <label className="site-field-label w-full sm:max-w-[380px]">
+          Find a user
+          <input className="site-input" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by username" />
+        </label>
+        <div className="font-mono text-[8px] uppercase tracking-[0.1em] text-faint">
+          {visibleAccounts.length} of {accounts.length} accounts
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-4">
+        {visibleAccounts.map((account) => (
           <AccountEditor
             key={account.id}
             account={account}
@@ -135,7 +151,7 @@ export function AdminAccountsSection() {
             onDelete={() => run(`delete:${account.id}`, () => deleteAdminAccount(account.id), `Deleted @${account.username} and their account-owned data.`)}
           />
         ))}
-        {snapshot && accounts.length === 0 ? <div className="admin-surface p-6 text-[13px] text-faint">No accounts found.</div> : null}
+        {snapshot && visibleAccounts.length === 0 ? <div className="admin-surface p-6 text-[13px] text-faint">No accounts match that search.</div> : null}
       </div>
 
       <div className="mt-10">
@@ -176,12 +192,34 @@ function AccountEditor({
   const [role, setRole] = useState(account.role)
   const [password, setPassword] = useState('')
   const [deleteArmed, setDeleteArmed] = useState(false)
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  const [detail, setDetail] = useState<AdminAccountDetail>()
+  const [detailError, setDetailError] = useState<string>()
+  const [detailLoading, setDetailLoading] = useState(false)
   const working = busy?.endsWith(account.id)
 
   useEffect(() => {
     setUsername(account.username)
     setRole(account.role)
   }, [account.role, account.username])
+
+  const toggleDetails = async () => {
+    if (detailsOpen) {
+      setDetailsOpen(false)
+      return
+    }
+    setDetailsOpen(true)
+    if (detail) return
+    setDetailLoading(true)
+    try {
+      setDetail(await fetchAdminAccountDetail(account.id))
+      setDetailError(undefined)
+    } catch (requestError) {
+      setDetailError(requestError instanceof Error ? requestError.message : 'Unable to load user details.')
+    } finally {
+      setDetailLoading(false)
+    }
+  }
 
   return (
     <article className="admin-surface overflow-hidden">
@@ -217,6 +255,9 @@ function AccountEditor({
           <span>{account.lastLoginAt ? `Last sign-in ${formatDate(account.lastLoginAt)}` : 'No recorded sign-in'}</span>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end lg:justify-end">
+          <button type="button" onClick={() => void toggleDetails()} className="site-secondary-button min-h-12">
+            {detailsOpen ? 'Hide details' : 'View routes & activity'}
+          </button>
           <label className="site-field-label min-w-[220px]">
             New temporary password
             <input type="password" minLength={8} maxLength={128} className="site-input" disabled={isSelf} value={password} onChange={(event) => setPassword(event.target.value)} placeholder={isSelf ? 'Use your account page' : 'At least 8 characters'} aria-label={`New temporary password for ${account.username}`} autoComplete="new-password" />
@@ -234,7 +275,114 @@ function AccountEditor({
           </button>
         </div>
       </div>
+      {detailsOpen ? (
+        <div className="border-t border-edge p-5 sm:p-6">
+          {detailLoading ? <div className="text-[13px] text-faint">Loading this user’s routes and activity…</div> : null}
+          {detailError ? <div className="rounded-[10px] border border-warn-bd bg-warn-bg p-4 text-[12px] text-warn">{detailError}</div> : null}
+          {detail ? <AccountDetailPanel detail={detail} /> : null}
+        </div>
+      ) : null}
     </article>
+  )
+}
+
+function AccountDetailPanel({ detail }: { detail: AdminAccountDetail }) {
+  const preferences = detail.preferences?.config
+  return (
+    <div className="grid gap-7 xl:grid-cols-[minmax(0,1.35fr)_minmax(300px,.65fr)]">
+      <div>
+        <div className="flex items-end justify-between border-b border-edge pb-3">
+          <div>
+            <div className="site-kicker">Private route library</div>
+            <h4 className="mt-1 text-[22px] font-semibold">{detail.routes.length} saved route{detail.routes.length === 1 ? '' : 's'}</h4>
+          </div>
+          <div className="font-mono text-[8px] uppercase tracking-[0.08em] text-faint">Admin read access</div>
+        </div>
+        <div className="mt-4 grid gap-3">
+          {detail.routes.map((route) => (
+            <article key={route.id} className="rounded-[12px] border border-edge bg-chip/45 p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h5 className="text-[16px] font-semibold">{route.name}</h5>
+                  <div className="mt-1 font-mono text-[7.5px] uppercase tracking-[0.08em] text-faint">
+                    Updated {formatDate(route.updatedAt, true)} · {route.waypoints.length} waypoint{route.waypoints.length === 1 ? '' : 's'}
+                  </div>
+                </div>
+                <div className="h-4 w-4 rounded-full border border-black/15" style={{ backgroundColor: route.color }} aria-label={`Route color ${route.color}`} />
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2 font-mono text-[7.5px] uppercase tracking-[0.06em] text-dim">
+                {route.targetDays ? <span className="rounded-full border border-edge px-2.5 py-1">{route.targetDays} days</span> : null}
+                <span className="rounded-full border border-edge px-2.5 py-1">{route.keepOrder ? 'Fixed order' : 'Optimized order'}</span>
+                {route.startDate ? <span className="rounded-full border border-edge px-2.5 py-1">Starts {route.startDate}</span> : null}
+                {route.directionPreference ? <span className="rounded-full border border-edge px-2.5 py-1">Heads {route.directionPreference}</span> : null}
+              </div>
+              <ol className="mt-4 grid gap-2 sm:grid-cols-2">
+                {route.waypoints.map((waypoint, index) => (
+                  <li key={waypoint.id} className="list-none text-[11.5px] text-dim">
+                    <span className="mr-2 font-mono text-[8px] text-accent2">{String(index + 1).padStart(2, '0')}</span>
+                    {waypoint.label} <span className="text-faint">· {waypoint.radiusMiles} mi radius</span>
+                  </li>
+                ))}
+              </ol>
+              {route.travelPreferences ? (
+                <div className="mt-4 border-t border-edge pt-3 text-[10px] leading-[1.6] text-faint">
+                  {route.travelPreferences.vehicleProfileId} · {route.travelPreferences.practicalRangeMiles} practical miles · {route.travelPreferences.tripPace} pace · {route.travelPreferences.dailyDriveTargetHours}–{route.travelPreferences.dailyDriveMaxHours} drive hours
+                </div>
+              ) : null}
+            </article>
+          ))}
+          {detail.routes.length === 0 ? <div className="rounded-[12px] border border-dashed border-edge p-5 text-[12.5px] text-faint">This user has not saved a custom route yet.</div> : null}
+        </div>
+      </div>
+
+      <aside className="space-y-5">
+        <div className="rounded-[12px] border border-edge bg-chip/45 p-4">
+          <div className="site-kicker">Planner preferences</div>
+          {preferences ? (
+            <dl className="mt-4 grid grid-cols-2 gap-3 text-[11px]">
+              <DetailFact label="Vehicle" value={String(preferences.vehicleProfileId ?? 'Default')} />
+              <DetailFact label="Range" value={preferences.practicalRangeMiles ? `${preferences.practicalRangeMiles} mi` : 'Default'} />
+              <DetailFact label="Pace" value={String(preferences.tripPace ?? 'Default')} />
+              <DetailFact label="Trip mode" value={String(preferences.plannerMode ?? 'Default')} />
+            </dl>
+          ) : <div className="mt-3 text-[12px] text-faint">No saved planner preferences.</div>}
+        </div>
+
+        <div className="rounded-[12px] border border-edge bg-chip/45 p-4">
+          <div className="site-kicker">Site activity</div>
+          <dl className="mt-4 grid grid-cols-2 gap-3 text-[11px]">
+            <DetailFact label="Suggestions" value={detail.suggestions.length} />
+            <DetailFact label="Meetups" value={detail.meetups.length} />
+            <DetailFact label="State votes" value={detail.stateVotes.length} />
+            <DetailFact label="Achievements" value={detail.achievements.length} />
+          </dl>
+          {detail.suggestions.length ? (
+            <div className="mt-4 border-t border-edge pt-3">
+              {detail.suggestions.slice(0, 3).map((suggestion) => (
+                <div key={suggestion.id} className="border-b border-edge py-2 last:border-0">
+                  <div className="text-[11.5px] font-semibold">{suggestion.title}</div>
+                  <div className="mt-1 font-mono text-[7px] uppercase text-faint">{suggestion.category} · {suggestion.review_status}</div>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
+
+        <div className="rounded-[12px] border border-edge bg-chip/45 p-4">
+          <div className="site-kicker">Account events</div>
+          <div className="mt-3 text-[12px] text-dim">{detail.activity.length} recent event{detail.activity.length === 1 ? '' : 's'} involving this account.</div>
+        </div>
+      </aside>
+    </div>
+  )
+}
+
+function DetailFact({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div>
+      <dt className="font-mono text-[7px] uppercase tracking-[0.08em] text-faint">{label}</dt>
+      <dd className="mt-1 font-semibold text-ink">{value}</dd>
+    </div>
   )
 }
 

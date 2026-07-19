@@ -1,4 +1,5 @@
 import { TESLA_ICONIC_BADGES } from '../domain/teslaBadges'
+import { ANTHONY_EMAIL_HREF } from '../site/contact'
 
 export const SITE_ORIGIN = 'https://www.teslachargequest.com'
 export const SEO_UPDATED_AT = '2026-07-19'
@@ -849,7 +850,12 @@ export const SEO_PAGES: SeoPage[] = [
       '/tesla-iconic-charger-badges',
       '/tesla-road-trip-routes',
     ],
-    cta: buildRouteCta,
+    cta: {
+      title: 'Have a question or something I should see?',
+      body: 'Send me a route idea, a correction, a partnership thought, or a ChargeQuest account question directly.',
+      label: 'Email Anthony',
+      path: ANTHONY_EMAIL_HREF,
+    },
   },
 ]
 

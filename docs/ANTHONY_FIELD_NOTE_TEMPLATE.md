@@ -1,6 +1,10 @@
 # Anthony Field Note Template
 
-Do not try to write an article. Short answers, rough notes, screenshots, and voice memos are better than polishing away the useful details.
+This is an optional evidence worksheet, not a content assignment and not something to duplicate for every update. Use it only when a route decision, experiment, or road event is complicated enough that the facts may be hard to reconstruct later.
+
+For normal publishing, use the Track Anthony admin publisher and tell the story in the format that fits it: a route-comparison map, a short screen recording, a candid vlog, an artifact with a few sentences, or a fuller decision note.
+
+When this worksheet is useful, do not try to write an article. Short answers, rough notes, screenshots, and voice memos are better than polishing away the useful details.
 
 Copy this template for any meaningful route decision, CORE comparison, badge attempt, charging surprise, or day on the road.
 

@@ -2,17 +2,14 @@ import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, Navigate, useLocation } from 'react-router-dom'
 import {
   changePassword,
-  createAchievement,
   fetchAccount,
 } from '../api/siteClient'
 import { useAuth } from './AuthContext'
 
 interface AccountData {
   routeCount: number
-  achievements: Array<Record<string, unknown>>
   suggestions: Array<Record<string, unknown>>
   meetups: Array<Record<string, unknown>>
-  stateVotes: Array<Record<string, unknown>>
 }
 
 export function AccountPage() {
@@ -21,7 +18,6 @@ export function AccountPage() {
   const [error, setError] = useState<string>()
   const [notice, setNotice] = useState<string>()
   const [passwords, setPasswords] = useState({ currentPassword: '', newPassword: '' })
-  const [achievement, setAchievement] = useState({ title: '', description: '', routeName: '' })
 
   const load = async () => {
     try {
@@ -49,21 +45,6 @@ export function AccountPage() {
     }
   }
 
-  const submitAchievement = async (event: FormEvent) => {
-    event.preventDefault()
-    try {
-      await createAchievement({
-        ...achievement,
-        routeName: achievement.routeName || undefined,
-      })
-      setAchievement({ title: '', description: '', routeName: '' })
-      setNotice('Achievement shared with the ChargeQuest community.')
-      await load()
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : 'Unable to share achievement.')
-    }
-  }
-
   return (
     <div className="mx-auto max-w-[1120px] px-4 py-10 sm:px-5 sm:py-14 lg:px-8 lg:py-20">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
@@ -80,11 +61,10 @@ export function AccountPage() {
       {error ? <div className="site-alert mt-7 text-warn">{error}</div> : null}
       {notice ? <div className="site-alert mt-7 text-good">{notice}</div> : null}
 
-      <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-10 grid gap-3 sm:grid-cols-3">
         <AccountMetric label="Saved routes" value={data?.routeCount ?? 0} />
-        <AccountMetric label="State votes" value={data?.stateVotes.length ?? 0} />
         <AccountMetric label="Suggestions" value={data?.suggestions.length ?? 0} />
-        <AccountMetric label="Achievements" value={data?.achievements.length ?? 0} />
+        <AccountMetric label="Meetup invites" value={data?.meetups.length ?? 0} />
       </div>
 
       <section className="mt-12 grid gap-5 lg:grid-cols-2">
@@ -119,28 +99,15 @@ export function AccountPage() {
 
       <section className="mt-12 grid gap-5 lg:grid-cols-[380px_1fr]">
         <div className="site-card p-5 sm:p-6">
-          <div className="site-kicker">Share an achievement</div>
-          <h2 className="mt-3 text-[24px] font-semibold">Add to the community wall</h2>
-          <form className="mt-5 flex flex-col gap-3" onSubmit={submitAchievement}>
-            <label className="site-field-label">
-              Achievement
-              <input required minLength={3} maxLength={100} className="site-input" value={achievement.title} onChange={(event) => setAchievement((current) => ({ ...current, title: event.target.value }))} placeholder="48-state loop completed" />
-            </label>
-            <label className="site-field-label">
-              Route name (optional)
-              <input maxLength={100} className="site-input" value={achievement.routeName} onChange={(event) => setAchievement((current) => ({ ...current, routeName: event.target.value }))} />
-            </label>
-            <label className="site-field-label">
-              What made it count?
-              <textarea required minLength={5} maxLength={500} rows={4} className="site-input resize-y" value={achievement.description} onChange={(event) => setAchievement((current) => ({ ...current, description: event.target.value }))} />
-            </label>
-            <button className="site-primary-button w-full" type="submit">Share achievement</button>
-          </form>
+          <div className="site-kicker">Help shape the first quest</div>
+          <h2 className="mt-3 text-[24px] font-semibold">Send Anthony a route idea</h2>
+          <p className="mt-3 text-[13px] leading-[1.65] text-dim">Suggestions go to a private review inbox. They are never posted publicly by default.</p>
+          <Link to="/community" className="site-primary-button mt-6 flex w-full no-underline">Open the suggestion form</Link>
         </div>
 
         <div>
           <div className="site-kicker">Your activity</div>
-          <h2 className="mt-3 text-[30px] font-semibold tracking-[-0.035em]">Community contributions</h2>
+          <h2 className="mt-3 text-[30px] font-semibold tracking-[-0.035em]">Ideas and invitations</h2>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             <ActivityCard label="Meetup invites" items={data?.meetups ?? []} empty="No meetup invites sent yet." />
             <ActivityCard label="Suggestions" items={data?.suggestions ?? []} empty="No trip suggestions shared yet." />

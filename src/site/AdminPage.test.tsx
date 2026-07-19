@@ -87,6 +87,19 @@ describe('Anthony admin workspace', () => {
                   created_at: '2026-07-11T00:00:00.000Z',
                 },
               ],
+              suggestionInbox: [
+                {
+                  id: 'suggestion-1',
+                  category: 'route',
+                  title: 'Compare the northern route',
+                  body: 'The northern option may create a better summer drive.',
+                  state_code: 'MT',
+                  review_status: 'pending',
+                  display_name: 'roadtripper',
+                  created_at: '2026-07-11T00:00:00.000Z',
+                  updated_at: '2026-07-11T00:00:00.000Z',
+                },
+              ],
             },
       })),
     )
@@ -104,7 +117,10 @@ describe('Anthony admin workspace', () => {
     expect(screen.getByRole('button', { name: 'Create account' })).toBeTruthy()
     expect(screen.getByRole('heading', { name: 'Recent account activity' })).toBeTruthy()
     expect(await screen.findByRole('heading', { name: 'Public trip profile' })).toBeTruthy()
-    expect(screen.getByRole('heading', { name: 'Publish what’s happening now' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Publish progress' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Manage the Track Anthony timeline' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Route ideas sent to you' })).toBeTruthy()
+    expect(screen.getByText('Compare the northern route')).toBeTruthy()
     expect(screen.getByRole('heading', { name: 'Pending coffee invites' })).toBeTruthy()
     expect(screen.getByText('Denver, CO')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Approve' })).toBeTruthy()

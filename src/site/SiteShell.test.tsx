@@ -33,6 +33,7 @@ describe('public site navigation', () => {
     expect(screen.getByRole('link', { name: 'Start building' })).toBeTruthy()
     const plannerLinks = screen.getAllByRole('link', { name: 'Build a route' })
     expect(plannerLinks[0].getAttribute('href')).toBe('/signup?returnTo=%2Fplanner')
+    expect(screen.getByRole('link', { name: 'Contact Anthony' }).getAttribute('href')).toBe('mailto:anthony@antelligentprojects.dev')
     expect(screen.getByText('Public homepage')).toBeTruthy()
   })
 
@@ -67,7 +68,7 @@ describe('public site navigation', () => {
     expect(await screen.findByRole('link', { name: 'roadtripper' })).toBeTruthy()
     expect(screen.queryByRole('link', { name: 'Home' })).toBeNull()
     expect(screen.getByRole('link', { name: 'ChargeQuest' }).getAttribute('href')).toBe('/planner')
-    expect(screen.getAllByRole('link', { name: 'CORE' })).toHaveLength(3)
+    expect(screen.getAllByRole('link', { name: 'CORE' })).toHaveLength(2)
     expect(screen.getByRole('navigation', { name: 'Mobile navigation' }).className).toContain('grid-cols-3')
   })
 })

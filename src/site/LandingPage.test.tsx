@@ -11,7 +11,7 @@ afterEach(() => {
 })
 
 describe('ChargeQuest landing page', () => {
-  it('invites visitors into the first quest, previews the real planner flow, and uses live community data', async () => {
+  it('invites visitors into the first quest, previews CORE, and shows the honest pre-trip status', async () => {
     const community = {
       trip: {
         active: false,
@@ -58,7 +58,8 @@ describe('ChargeQuest landing page', () => {
     expect(screen.getByRole('heading', { name: 'The road is the reward.' })).toBeTruthy()
     expect(screen.getByText('Create a custom route')).toBeTruthy()
     expect(screen.getByText('Step 2 of 3')).toBeTruthy()
-    expect(await screen.findByText('5')).toBeTruthy()
+    expect(await screen.findByText('The Long Way Home')).toBeTruthy()
+    expect(screen.getByText('Private')).toBeTruthy()
     expect(screen.getByRole('heading', { name: 'Meet CORE.' })).toBeTruthy()
     expect(screen.getByText('Charging Optimization & Route Engine')).toBeTruthy()
     expect(screen.getByText('Tell CORE what matters')).toBeTruthy()

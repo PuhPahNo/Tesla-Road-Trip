@@ -1,4 +1,4 @@
-import type { PlannerConfig } from '../domain/types'
+import type { PlannerConfig, SavedCustomRoute } from '../domain/types'
 
 export interface AuthUser {
   id: string
@@ -20,20 +20,35 @@ export interface AnthonyTrip {
   latitude?: number | null
   longitude?: number | null
   startedAt?: string | null
+  departureDate?: string | null
   updatedAt: string
+}
+
+export type AnthonyUpdatePhase =
+  | 'planning'
+  | 'route-decision'
+  | 'build-note'
+  | 'milestone'
+  | 'on-the-road'
+
+export interface AnthonyUpdate {
+  id: string
+  phase: AnthonyUpdatePhase
+  day_number?: number | null
+  location: string
+  title: string
+  body: string
+  visiting?: string | null
+  artifact_url?: string | null
+  artifact_label?: string | null
+  artifact_type?: 'image' | 'video' | 'link' | null
+  created_at: string
+  updated_at?: string | null
 }
 
 export interface CommunitySnapshot {
   trip: AnthonyTrip
-  updates: Array<{
-    id: string
-    day_number?: number | null
-    location: string
-    title: string
-    body: string
-    visiting?: string | null
-    created_at: string
-  }>
+  updates: AnthonyUpdate[]
   stateVotes: Array<{ state_code: string; votes: number }>
   meetups: Array<{
     id: string
@@ -96,6 +111,41 @@ export interface AdminAccountsSnapshot {
   viewerId: string
   accounts: ManagedAccount[]
   activity: AccountActivity[]
+}
+
+export interface AdminAccountDetail {
+  account: ManagedAccount
+  routes: SavedCustomRoute[]
+  preferences: {
+    config: Partial<PlannerConfig>
+    updatedAt: string
+  } | null
+  suggestions: Array<{
+    id: string
+    category: string
+    title: string
+    body: string
+    state_code?: string | null
+    review_status: 'pending' | 'reviewed' | 'archived'
+    created_at: string
+    updated_at: string
+  }>
+  meetups: Array<Record<string, unknown>>
+  stateVotes: Array<Record<string, unknown>>
+  achievements: Array<Record<string, unknown>>
+  activity: AccountActivity[]
+}
+
+export interface SuggestionInboxItem {
+  id: string
+  category: string
+  title: string
+  body: string
+  state_code?: string | null
+  review_status: 'pending' | 'reviewed' | 'archived'
+  display_name: string
+  created_at: string
+  updated_at: string
 }
 
 export async function fetchSession() {
@@ -221,11 +271,16 @@ export async function fetchAdminCommunity() {
   return request<{
     community: CommunitySnapshot
     pendingMeetups: Array<Record<string, unknown>>
+    suggestionInbox: SuggestionInboxItem[]
   }>('/api/admin/community')
 }
 
 export async function fetchAdminAccounts() {
   return request<AdminAccountsSnapshot>('/api/admin/accounts')
+}
+
+export async function fetchAdminAccountDetail(id: string) {
+  return request<AdminAccountDetail>(`/api/admin/accounts/${encodeURIComponent(id)}`)
 }
 
 export async function createAdminAccount(input: {
@@ -278,16 +333,63 @@ export async function saveAnthonyTrip(input: Omit<AnthonyTrip, 'updatedAt'>) {
 }
 
 export async function publishAnthonyUpdate(input: {
+  phase: AnthonyUpdatePhase
   dayNumber?: number
-  location: string
+  location?: string
   title: string
   body: string
   visiting?: string
+  artifactUrl?: string
+  artifactLabel?: string
+  artifactType?: 'image' | 'video' | 'link'
 }) {
   return request<{ ok: true; community: CommunitySnapshot }>(
     '/api/admin/trip-updates',
     { method: 'POST', body: JSON.stringify(input) },
   )
+}
+
+export async function updateAnthonyUpdate(
+  id: string,
+  input: {
+    phase: AnthonyUpdatePhase
+    dayNumber?: number
+    location?: string
+    title: string
+    body: string
+    visiting?: string
+    artifactUrl?: string
+    artifactLabel?: string
+    artifactType?: 'image' | 'video' | 'link'
+  },
+) {
+  return request<{ ok: true; community: CommunitySnapshot }>(
+    `/api/admin/trip-updates/${encodeURIComponent(id)}`,
+    { method: 'PATCH', body: JSON.stringify(input) },
+  )
+}
+
+export async function deleteAnthonyUpdate(id: string) {
+  return request<{ ok: true; community: CommunitySnapshot }>(
+    `/api/admin/trip-updates/${encodeURIComponent(id)}`,
+    { method: 'DELETE' },
+  )
+}
+
+export async function reviewSuggestion(
+  id: string,
+  status: 'pending' | 'reviewed' | 'archived',
+) {
+  return request<{ ok: true }>(`/api/admin/suggestions/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  })
+}
+
+export async function deleteSuggestion(id: string) {
+  return request<{ ok: true }>(`/api/admin/suggestions/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  })
 }
 
 export async function moderateMeetup(id: string, status: 'approved' | 'declined') {

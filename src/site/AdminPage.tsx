@@ -1,11 +1,18 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import {
+  deleteAnthonyUpdate,
+  deleteSuggestion,
   fetchAdminCommunity,
   moderateMeetup,
   publishAnthonyUpdate,
+  reviewSuggestion,
   saveAnthonyTrip,
+  updateAnthonyUpdate,
+  type AnthonyUpdate,
+  type AnthonyUpdatePhase,
   type AnthonyTrip,
   type CommunitySnapshot,
+  type SuggestionInboxItem,
 } from '../api/siteClient'
 import { AdminAccountsSection } from './AdminAccountsSection'
 
@@ -31,19 +38,28 @@ const EMPTY_TRIP: Omit<AnthonyTrip, 'updatedAt'> = {
   latitude: null,
   longitude: null,
   startedAt: null,
+  departureDate: null,
+}
+
+const EMPTY_UPDATE = {
+  phase: 'planning' as AnthonyUpdatePhase,
+  dayNumber: '',
+  location: '',
+  title: '',
+  body: '',
+  visiting: '',
+  artifactUrl: '',
+  artifactLabel: '',
+  artifactType: 'link' as 'image' | 'video' | 'link',
 }
 
 export function AdminPage() {
   const [community, setCommunity] = useState<CommunitySnapshot>()
   const [pendingMeetups, setPendingMeetups] = useState<PendingMeetup[]>([])
+  const [suggestionInbox, setSuggestionInbox] = useState<SuggestionInboxItem[]>([])
   const [trip, setTrip] = useState(EMPTY_TRIP)
-  const [update, setUpdate] = useState({
-    dayNumber: '',
-    location: '',
-    title: '',
-    body: '',
-    visiting: '',
-  })
+  const [update, setUpdate] = useState(EMPTY_UPDATE)
+  const [editingUpdateId, setEditingUpdateId] = useState<string>()
   const [notice, setNotice] = useState<string>()
   const [error, setError] = useState<string>()
 
@@ -52,6 +68,7 @@ export function AdminPage() {
       const result = await fetchAdminCommunity()
       setCommunity(result.community)
       setPendingMeetups(result.pendingMeetups as unknown as PendingMeetup[])
+      setSuggestionInbox(result.suggestionInbox ?? [])
       const current = result.community.trip
       setTrip({
         active: current.active,
@@ -65,6 +82,7 @@ export function AdminPage() {
         latitude: current.latitude ?? null,
         longitude: current.longitude ?? null,
         startedAt: current.startedAt ?? null,
+        departureDate: current.departureDate ?? null,
       })
       setError(undefined)
     } catch (requestError) {
@@ -91,17 +109,77 @@ export function AdminPage() {
   const publishUpdate = async (event: FormEvent) => {
     event.preventDefault()
     try {
-      const result = await publishAnthonyUpdate({
-        ...update,
+      const input = {
+        phase: update.phase,
         dayNumber: update.dayNumber ? Number(update.dayNumber) : undefined,
+        location: update.location || undefined,
+        title: update.title,
+        body: update.body,
         visiting: update.visiting || undefined,
-      })
+        artifactUrl: update.artifactUrl || undefined,
+        artifactLabel: update.artifactLabel || undefined,
+        artifactType: update.artifactUrl ? update.artifactType : undefined,
+      }
+      const result = editingUpdateId
+        ? await updateAnthonyUpdate(editingUpdateId, input)
+        : await publishAnthonyUpdate(input)
       setCommunity(result.community)
-      setUpdate({ dayNumber: '', location: '', title: '', body: '', visiting: '' })
-      setNotice('Trip update published and the tracker is live.')
+      setUpdate(EMPTY_UPDATE)
+      setEditingUpdateId(undefined)
+      setNotice(editingUpdateId ? 'Journey entry updated.' : 'Journey entry published.')
       await load()
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Unable to publish update.')
+    }
+  }
+
+  const editUpdate = (entry: AnthonyUpdate) => {
+    setEditingUpdateId(entry.id)
+    setUpdate({
+      phase: entry.phase,
+      dayNumber: entry.day_number ? String(entry.day_number) : '',
+      location: entry.location === 'Pre-trip' ? '' : entry.location,
+      title: entry.title,
+      body: entry.body,
+      visiting: entry.visiting ?? '',
+      artifactUrl: entry.artifact_url ?? '',
+      artifactLabel: entry.artifact_label ?? '',
+      artifactType: entry.artifact_type ?? 'link',
+    })
+    window.setTimeout(() => document.getElementById('journey-publisher')?.scrollIntoView({ behavior: 'smooth' }), 0)
+  }
+
+  const removeUpdate = async (id: string) => {
+    try {
+      const result = await deleteAnthonyUpdate(id)
+      setCommunity(result.community)
+      if (editingUpdateId === id) {
+        setEditingUpdateId(undefined)
+        setUpdate(EMPTY_UPDATE)
+      }
+      setNotice('Journey entry deleted.')
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'Unable to delete the entry.')
+    }
+  }
+
+  const updateSuggestionStatus = async (id: string, status: 'pending' | 'reviewed' | 'archived') => {
+    try {
+      await reviewSuggestion(id, status)
+      setSuggestionInbox((current) => current.map((item) => item.id === id ? { ...item, review_status: status } : item))
+      setNotice(`Suggestion marked ${status}.`)
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'Unable to update the suggestion.')
+    }
+  }
+
+  const removeSuggestion = async (id: string) => {
+    try {
+      await deleteSuggestion(id)
+      setSuggestionInbox((current) => current.filter((item) => item.id !== id))
+      setNotice('Suggestion deleted.')
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'Unable to delete the suggestion.')
     }
   }
 
@@ -124,14 +202,15 @@ export function AdminPage() {
             Run the entire site from one place
           </h1>
           <p className="mt-4 max-w-[680px] text-[14px] leading-[1.65] text-dim">
-            Manage every account and permission, control the live tracker, publish field updates, and review meetup invites before they appear publicly.
+            Manage users and their route activity, publish the full ChargeQuest journey,
+            review private suggestions, and switch the tracker into live-trip mode when you leave.
           </p>
         </div>
 
         <div className="grid w-full grid-cols-3 overflow-hidden rounded-[14px] border border-edge bg-panel2 lg:w-auto">
           <AdminStat label="Tracker" value={trip.active ? 'Live' : 'Parked'} accent={trip.active} />
           <AdminStat label="Updates" value={community?.updates.length ?? 0} />
-          <AdminStat label="Waiting" value={pendingMeetups.length} />
+          <AdminStat label="Inbox" value={suggestionInbox.filter((item) => item.review_status === 'pending').length + pendingMeetups.length} />
         </div>
       </header>
 
@@ -168,6 +247,10 @@ export function AdminPage() {
                 <label className="site-field-label sm:col-span-2">
                   Route name
                   <input className="site-input" value={trip.routeName ?? ''} onChange={(event) => setTrip((current) => ({ ...current, routeName: event.target.value }))} placeholder="The Long Way Home" />
+                </label>
+                <label className="site-field-label sm:col-span-2">
+                  Planned departure date
+                  <input type="date" className="site-input" value={trip.departureDate ?? ''} onChange={(event) => setTrip((current) => ({ ...current, departureDate: event.target.value || null }))} />
                 </label>
               </div>
             </fieldset>
@@ -209,19 +292,29 @@ export function AdminPage() {
         </form>
 
         <div className="space-y-6 lg:sticky lg:top-24">
-          <form className="admin-surface overflow-hidden" onSubmit={publishUpdate}>
+          <form id="journey-publisher" className="admin-surface overflow-hidden" onSubmit={publishUpdate}>
             <div className="border-b border-edge px-5 py-5 sm:px-6">
-              <AdminSectionTitle number="02" kicker="Field update" title="Publish what’s happening now" />
+              <AdminSectionTitle number="02" kicker="Journey publisher" title={editingUpdateId ? 'Edit timeline entry' : 'Publish progress'} />
             </div>
             <div className="space-y-4 p-5 sm:p-6">
+              <label className="site-field-label">
+                Entry type
+                <select className="site-input" value={update.phase} onChange={(event) => setUpdate((current) => ({ ...current, phase: event.target.value as AnthonyUpdatePhase }))}>
+                  <option value="planning">Planning the quest</option>
+                  <option value="route-decision">Route decision</option>
+                  <option value="build-note">Building CORE</option>
+                  <option value="milestone">Milestone</option>
+                  <option value="on-the-road">On the road</option>
+                </select>
+              </label>
               <div className="grid gap-4 sm:grid-cols-[110px_1fr]">
                 <label className="site-field-label">
                   Day
                   <input type="number" min={1} max={365} className="site-input" value={update.dayNumber} onChange={(event) => setUpdate((current) => ({ ...current, dayNumber: event.target.value }))} />
                 </label>
                 <label className="site-field-label">
-                  Location
-                  <input required className="site-input" value={update.location} onChange={(event) => setUpdate((current) => ({ ...current, location: event.target.value }))} placeholder="Boulder, Colorado" />
+                  Location or context
+                  <input className="site-input" value={update.location} onChange={(event) => setUpdate((current) => ({ ...current, location: event.target.value }))} placeholder="Optional before the trip" />
                 </label>
               </div>
               <label className="site-field-label">
@@ -230,13 +323,34 @@ export function AdminPage() {
               </label>
               <label className="site-field-label">
                 Update
-                <textarea required minLength={10} maxLength={1200} rows={6} className="site-input resize-y" value={update.body} onChange={(event) => setUpdate((current) => ({ ...current, body: event.target.value }))} placeholder="What happened today?" />
+                <textarea required minLength={10} maxLength={4000} rows={7} className="site-input resize-y" value={update.body} onChange={(event) => setUpdate((current) => ({ ...current, body: event.target.value }))} placeholder="What changed, what did you decide, or what should people see?" />
               </label>
               <label className="site-field-label">
                 Visiting
                 <input maxLength={240} className="site-input" value={update.visiting} onChange={(event) => setUpdate((current) => ({ ...current, visiting: event.target.value }))} placeholder="Red Rocks, downtown Denver, two Iconic Chargers" />
               </label>
-              <button type="submit" className="site-primary-button min-h-12 w-full">Publish field update</button>
+              <fieldset className="grid gap-4 border-0 border-t border-edge p-0 pt-4 sm:grid-cols-[130px_1fr]">
+                <label className="site-field-label">
+                  Artifact type
+                  <select className="site-input" value={update.artifactType} onChange={(event) => setUpdate((current) => ({ ...current, artifactType: event.target.value as 'image' | 'video' | 'link' }))}>
+                    <option value="link">Link</option>
+                    <option value="image">Image</option>
+                    <option value="video">Video / vlog</option>
+                  </select>
+                </label>
+                <label className="site-field-label">
+                  Artifact URL
+                  <input type="url" maxLength={500} className="site-input" value={update.artifactUrl} onChange={(event) => setUpdate((current) => ({ ...current, artifactUrl: event.target.value }))} placeholder="https://…" />
+                </label>
+                <label className="site-field-label sm:col-span-2">
+                  Artifact label
+                  <input maxLength={120} className="site-input" value={update.artifactLabel} onChange={(event) => setUpdate((current) => ({ ...current, artifactLabel: event.target.value }))} placeholder="Open the route comparison map" />
+                </label>
+              </fieldset>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <button type="submit" className="site-primary-button min-h-12 flex-1">{editingUpdateId ? 'Save timeline entry' : 'Publish to Track Anthony'}</button>
+                {editingUpdateId ? <button type="button" onClick={() => { setEditingUpdateId(undefined); setUpdate(EMPTY_UPDATE) }} className="site-secondary-button min-h-12">Cancel edit</button> : null}
+              </div>
             </div>
           </form>
 
@@ -244,8 +358,8 @@ export function AdminPage() {
             <div className="admin-surface p-5 sm:p-6">
               <div className="font-mono text-[8.5px] uppercase tracking-[0.12em] text-faint">Public snapshot</div>
               <div className="mt-4 grid grid-cols-3 divide-x divide-edge">
-                <SnapshotStat label="States" value={community.stateVotes.length} />
-                <SnapshotStat label="Ideas" value={community.suggestions.length} />
+                <SnapshotStat label="Inbox" value={suggestionInbox.filter((item) => item.review_status === 'pending').length} />
+                <SnapshotStat label="Meetups" value={pendingMeetups.length} />
                 <SnapshotStat label="Updates" value={community.updates.length} />
               </div>
             </div>
@@ -255,7 +369,36 @@ export function AdminPage() {
 
       <section className="mt-12 border-t border-edge pt-10">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-          <AdminSectionTitle number="03" kicker="Meetup moderation" title="Pending coffee invites" />
+          <AdminSectionTitle number="03" kicker="Published journey" title="Manage the Track Anthony timeline" />
+          <div className="rounded-full border border-edge bg-chip px-4 py-2 font-mono text-[9px] text-faint">{community?.updates.length ?? 0} entries</div>
+        </div>
+        <div className="mt-6 border-t border-edge">
+          {(community?.updates ?? []).map((entry) => (
+            <JourneyAdminRow key={entry.id} entry={entry} onEdit={() => editUpdate(entry)} onDelete={() => removeUpdate(entry.id)} />
+          ))}
+          {community?.updates.length === 0 ? <div className="border-b border-edge py-10 text-[13px] text-faint">No public journey entries yet.</div> : null}
+        </div>
+      </section>
+
+      <section className="mt-12 border-t border-edge pt-10">
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <AdminSectionTitle number="04" kicker="Private community inbox" title="Route ideas sent to you" />
+          <div className="rounded-full border border-edge bg-chip px-4 py-2 font-mono text-[9px] text-faint">
+            {suggestionInbox.filter((item) => item.review_status === 'pending').length} unread
+          </div>
+        </div>
+        <p className="mt-4 max-w-[720px] text-[13px] leading-[1.65] text-dim">Suggestions are private by default. Reviewing one does not publish it or promise that it will change the route.</p>
+        <div className="mt-6 grid gap-4">
+          {suggestionInbox.map((suggestion) => (
+            <SuggestionAdminCard key={suggestion.id} suggestion={suggestion} onStatus={(status) => updateSuggestionStatus(suggestion.id, status)} onDelete={() => removeSuggestion(suggestion.id)} />
+          ))}
+          {suggestionInbox.length === 0 ? <div className="admin-surface p-6 text-[13px] text-faint">No route suggestions have arrived yet.</div> : null}
+        </div>
+      </section>
+
+      <section className="mt-12 border-t border-edge pt-10">
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <AdminSectionTitle number="05" kicker="Meetup moderation" title="Pending coffee invites" />
           <div className="rounded-full border border-edge bg-chip px-4 py-2 font-mono text-[9px] text-faint">
             {pendingMeetups.length} waiting
           </div>
@@ -316,4 +459,59 @@ function SnapshotStat({ label, value }: { label: string; value: number }) {
       <div className="mt-1 font-mono text-[7.5px] uppercase tracking-[0.1em] text-faint">{label}</div>
     </div>
   )
+}
+
+function JourneyAdminRow({ entry, onEdit, onDelete }: { entry: AnthonyUpdate; onEdit: () => void; onDelete: () => Promise<void> }) {
+  const [deleteArmed, setDeleteArmed] = useState(false)
+  return (
+    <article className="grid gap-5 border-b border-edge py-6 lg:grid-cols-[190px_minmax(0,1fr)_230px] lg:items-center">
+      <div>
+        <div className="font-mono text-[8px] uppercase tracking-[0.1em] text-accent2">{entry.phase.replaceAll('-', ' ')}</div>
+        <div className="mt-2 text-[10px] text-faint">{formatAdminDate(entry.created_at)}{entry.day_number ? ` · Day ${entry.day_number}` : ''}</div>
+      </div>
+      <div>
+        <h3 className="text-[16px] font-semibold">{entry.title}</h3>
+        <p className="mt-2 line-clamp-2 text-[12.5px] leading-[1.6] text-dim">{entry.body}</p>
+        {entry.artifact_url ? <div className="mt-2 font-mono text-[7px] uppercase text-faint">Attached {entry.artifact_type ?? 'link'}</div> : null}
+      </div>
+      <div className="flex gap-2 lg:justify-end">
+        <button type="button" onClick={onEdit} className="site-secondary-button flex-1 lg:flex-none">Edit</button>
+        <button type="button" onClick={() => deleteArmed ? void onDelete() : setDeleteArmed(true)} onBlur={() => setDeleteArmed(false)} className={`min-h-11 flex-1 rounded-full border px-4 text-[11px] font-semibold lg:flex-none ${deleteArmed ? 'border-warn-bd bg-warn-bg text-warn' : 'border-edge text-faint'}`}>{deleteArmed ? 'Confirm delete' : 'Delete'}</button>
+      </div>
+    </article>
+  )
+}
+
+function SuggestionAdminCard({ suggestion, onStatus, onDelete }: { suggestion: SuggestionInboxItem; onStatus: (status: 'pending' | 'reviewed' | 'archived') => Promise<void>; onDelete: () => Promise<void> }) {
+  const [deleteArmed, setDeleteArmed] = useState(false)
+  return (
+    <article className={`admin-surface overflow-hidden ${suggestion.review_status === 'pending' ? 'ring-1 ring-accent2/35' : ''}`}>
+      <div className="grid gap-5 p-5 sm:p-6 lg:grid-cols-[180px_minmax(0,1fr)_220px] lg:items-start">
+        <div>
+          <div className="font-mono text-[8px] uppercase tracking-[0.1em] text-accent2">{suggestion.category}{suggestion.state_code ? ` · ${suggestion.state_code}` : ''}</div>
+          <div className="mt-2 text-[11px] text-faint">@{suggestion.display_name}</div>
+          <div className="mt-1 text-[10px] text-faint">{formatAdminDate(suggestion.created_at)}</div>
+        </div>
+        <div>
+          <h3 className="text-[18px] font-semibold">{suggestion.title}</h3>
+          <p className="mt-3 whitespace-pre-line text-[13px] leading-[1.65] text-dim">{suggestion.body}</p>
+        </div>
+        <div className="flex flex-col gap-2">
+          <label className="site-field-label">
+            Review status
+            <select className="site-input" value={suggestion.review_status} onChange={(event) => void onStatus(event.target.value as 'pending' | 'reviewed' | 'archived')}>
+              <option value="pending">Pending</option>
+              <option value="reviewed">Reviewed</option>
+              <option value="archived">Archived</option>
+            </select>
+          </label>
+          <button type="button" onClick={() => deleteArmed ? void onDelete() : setDeleteArmed(true)} onBlur={() => setDeleteArmed(false)} className={`min-h-11 rounded-full border px-4 text-[11px] font-semibold ${deleteArmed ? 'border-warn-bd bg-warn-bg text-warn' : 'border-edge text-faint'}`}>{deleteArmed ? 'Confirm delete' : 'Delete suggestion'}</button>
+        </div>
+      </div>
+    </article>
+  )
+}
+
+function formatAdminDate(value: string) {
+  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(value))
 }

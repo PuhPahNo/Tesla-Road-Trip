@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from './AuthContext'
+import { ANTHONY_EMAIL_HREF } from './contact'
 
 export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
   const { user, login, signup } = useAuth()
@@ -10,9 +11,10 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string>()
   const [busy, setBusy] = useState(false)
+  const requested = safeReturnTo(params.get('returnTo'))
 
   if (user) {
-    return <Navigate to={user.mustChangePassword ? '/change-password' : '/account'} replace />
+    return <Navigate to={user.mustChangePassword ? '/change-password' : requested} replace />
   }
 
   const submit = async (event: FormEvent) => {
@@ -27,8 +29,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
         navigate('/change-password', { replace: true })
         return
       }
-      const requested = params.get('returnTo')
-      navigate(requested?.startsWith('/') ? requested : '/account', { replace: true })
+      navigate(requested, { replace: true })
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Unable to continue.')
     } finally {
@@ -47,10 +48,10 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
         </h1>
         <p className="mt-6 max-w-[480px] text-[16px] leading-[1.65] text-dim">
           Save different route ideas, keep your Tesla and driving preferences in one
-          place, and compare notes with a community planning for the 2026 competition.
+          place, follow the first quest, and send Anthony a route idea worth testing.
         </p>
         <div className="mt-8 grid max-w-[480px] grid-cols-2 gap-3">
-          {['Full route optimizer', 'Private route library', 'Competition community', 'No third-party login'].map((item) => (
+          {['Full route optimizer', 'Private route library', 'Route suggestion inbox', 'No third-party login'].map((item) => (
             <div key={item} className="rounded-[12px] border border-edge bg-chip p-4 text-[12px] font-medium text-dim">{item}</div>
           ))}
         </div>
@@ -106,8 +107,11 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
 
         <div className="mt-5 rounded-[11px] border border-edge bg-chip p-3 text-[10.5px] leading-[1.5] text-faint">
           ChargeQuest never asks for your email and has no automated password reset.
-          Keep your username and password somewhere safe; Anthony can help manually if
-          an account is locked out.
+          Keep your username and password somewhere safe;{' '}
+          <a href={`${ANTHONY_EMAIL_HREF}?subject=ChargeQuest%20account%20help`} className="font-semibold text-accent no-underline">
+            contact Anthony
+          </a>{' '}
+          if an account is locked out.
         </div>
 
         <div className="mt-6 text-center text-[12px] text-dim">
@@ -122,4 +126,8 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
       </div>
     </div>
   )
+}
+
+function safeReturnTo(value: string | null) {
+  return value?.startsWith('/') && !value.startsWith('//') ? value : '/account'
 }

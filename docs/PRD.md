@@ -35,7 +35,7 @@ Tesla's public contest page does not specify a minimum charging duration for a s
 - Lead in Anthony's first-person voice with his age, Chattanooga starting point, and 2026 competition goal.
 - Show an accurate preview of the three-step custom-route workflow instead of a decorative route illustration.
 - Explain why the planner exists through concise, competition-focused trip-planning tradeoffs.
-- Invite visitors to challenge Anthony's route, vote for states, suggest stops, arrange meetups, or build a competing route.
+- Invite visitors to follow Anthony's route build, privately challenge a route decision or suggest a stop, and build their own route.
 - Use the same sans-serif and mono typography as the rest of ChargeQuest without a separate diary or handwritten aesthetic.
 - Use full-bleed road-trip photography, oversized type, high-contrast light/dark/red canvases, and asymmetrical compositions so consecutive sections do not repeat a SaaS card-grid template.
 - Funnel signed-out visitors through account creation before opening the planner; signed-in members can enter the planner directly.
@@ -44,32 +44,36 @@ Tesla's public contest page does not specify a minimum charging duration for a s
 **Acceptance Criteria**
 - The first viewport clearly identifies Anthony as the person behind ChargeQuest.
 - Primary actions are Sign up and build your route and Follow mine for signed-out visitors.
-- Live community counts and trip status render without blocking the page when the community API is unavailable.
+- Real trip progress renders without blocking the page when the public trip API is unavailable; the page does not manufacture community momentum from empty counts.
 - The page remains usable on mobile without fixed-background or motion dependencies.
 - Direct signed-out requests to `/planner` redirect to signup and return to the planner after successful account creation.
 - Public navigation uses the same black, white, and Tesla-red competition aesthetic as the cinematic homepage, with a prominent Join the challenge action for guests.
 - The authenticated planner route remains outside the public `SiteShell`, so opening the tool removes the marketing header and footer and gives the planner the full viewport.
 
-### 0.5 Competition Community
-**Objective:** Turn route planning into a visible 2026 competition community instead of a generic discussion feed.
+### 0.5 Route Idea Inbox and Public Journey
+**Objective:** Give early visitors a useful way to contribute without pretending an active community already exists, while making Anthony's real route-building process the public story.
 
 **Requirements**
 - Match the homepage's cinematic photography, oversized typography, light editorial canvas, red conversion surface, and high-contrast dark sections.
-- Let visitors see community activity while reserving state votes, suggestion publishing, and suggestion voting for signed-in members.
-- Present state demand as a leaderboard, suggestions as an editorial feed, and achievements against destination photography.
+- Let visitors privately send Anthony local knowledge, a route challenge, or a CORE test after signing in.
+- Keep submissions private by default; Anthony can review or archive them without publishing them.
+- Use Track Anthony as the chronological public timeline for planning decisions, CORE experiments, artifacts, preparation, and live road updates.
 - Use signup CTAs for guests at the exact interaction they attempted instead of relying on a generic sign-in notice.
 - Remove the previous repeated `site-card` grid composition and obsolete community-only metric and sign-in components.
 
 **Acceptance Criteria**
 - No legacy `site-card` layout remains in the Community page component.
 - Guest Community CTAs preserve `/community` as the post-signup return path.
-- Existing state voting, suggestion publishing, suggestion voting, and achievement rendering behavior remains intact.
+- No public state-vote, suggestion-vote, or achievement feed appears while participation is too small to be useful.
 - Community has its own descriptive title, meta description, canonical URL, and social metadata.
 
 **Anthony admin workspace**
 - Group tracker identity, live progress, and public status into clearly separated form sections.
 - Keep field-update publishing visible in a dedicated desktop side panel and stacked naturally on mobile.
 - Surface tracker status, published-update count, and pending moderation count before the forms.
+- Let Anthony inspect every account's saved routes and activity while keeping credentials and session tokens private.
+- Provide a typed journey publisher with optional artifacts, plus edit and delete controls for published entries.
+- Provide a private route-idea inbox with review and archive controls.
 - Present meetup moderation as readable full-width rows with clear Approve and Decline actions.
 
 ### 1. Station Ingestion

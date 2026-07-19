@@ -42,21 +42,21 @@ const publicPages = new Map<string, PageMetadata>([
     ),
   }],
   ['/community', {
-    title: 'ChargeQuest Community | Tesla Route Ideas and 2026 Trip Updates',
-    description: 'Vote on states, suggest meaningful stops, offer meetup ideas, and help shape Anthony’s 2026 Tesla Supercharging Competition route.',
+    title: 'Send Anthony a Tesla Route Idea | ChargeQuest',
+    description: 'Privately send Anthony local knowledge, route challenges, meaningful stops, and tests ChargeQuest CORE should run before the 2026 trip.',
     path: '/community',
     fallback: renderBasicFallback(
-      'Help shape the first ChargeQuest',
-      'Vote for states, suggest stops worth taking, and share meetup ideas for Anthony’s 2026 route.',
+      'Tell me what the map is missing',
+      'Send Anthony a stop worth the detour, a route problem to solve, or a useful test for ChargeQuest CORE. Suggestions stay private unless Anthony asks to share them.',
     ),
   }],
   ['/track-anthony', {
-    title: 'Track Anthony’s ChargeQuest | Live Tesla Road Trip Updates',
-    description: 'Follow Anthony’s ChargeQuest route, latest location, road notes, competition progress, and community-supported Tesla road trip updates.',
+    title: 'Track Anthony’s ChargeQuest | Route Build and Trip Updates',
+    description: 'Follow Anthony’s route decisions, ChargeQuest CORE experiments, trip preparation, artifacts, and live Tesla road-trip progress in one chronological story.',
     path: '/track-anthony',
     fallback: renderBasicFallback(
-      'Follow Anthony’s ChargeQuest',
-      'The live trip tracker will carry the route, road notes, detours, and competition progress when the journey begins.',
+      'I’m building the route in public',
+      'Follow the decisions, route comparisons, CORE build notes, and trip preparation now. When Anthony leaves, the same timeline becomes the live road story.',
     ),
   }],
 ])

@@ -1,6 +1,6 @@
 # ChargeQuest
 
-Multi-user Tesla road-trip planner and community for the 2026 Free Supercharging Competition, with landmark-first routing, configurable travel preferences, saved routes, and a public trip tracker.
+Multi-user Tesla road-trip planner for the 2026 Free Supercharging Competition, with landmark-first routing, configurable travel preferences, saved routes, a private suggestion channel, and Anthony’s public journey timeline.
 
 ## Run Locally
 
@@ -38,10 +38,10 @@ npm run certify:badges
 - Public editorial landing page inviting competitors to build, compare, and share route ideas.
 - First-party username/password accounts with unique usernames of at least three characters, secure password hashes, and HTTP-only sessions—no email, OAuth, or external identity provider.
 - Account-owned route libraries and planner preferences; users cannot read or mutate another member's routes.
-- Community suggestions, votes, achievements, state-interest signals, and moderated meetup invitations.
+- A private route-suggestion inbox for Anthony. Member ideas are never published automatically.
 - Researched Tesla charging-badge planning: exact Iconic Charger targets, trip-date Special Events, and realistic milestone opportunities such as Pit Stop, Explorer, and Charging Streak.
-- Public **Track Anthony** page that stays parked until Anthony activates a trip, then shows day, location, progress, field updates, and approved meetups.
-- Anthony-only admin page for trip publishing and meetup moderation.
+- Public **Track Anthony** timeline that carries CORE build notes, route decisions, artifacts, milestones, and later live-trip progress in one chronological story.
+- Anthony-only admin workspace for full account CRUD, user route/activity inspection, timeline publishing/editing, suggestion review, tracker control, and meetup moderation.
 
 - Fetches live Supercharger site data from Supercharge.info (Canada and Mexico via config toggles).
 - Plans both contest categories:
@@ -64,9 +64,9 @@ The public site wraps the fullscreen "cockpit" planner UI:
 
 ## Accounts and Persistence
 
-- Structured community/account data lives in SQLite at `.data/charge-quest.sqlite` locally and `/data/charge-quest.sqlite` on Render by default.
+- Structured account, suggestion, and journey data lives in SQLite at `.data/charge-quest.sqlite` locally and `/data/charge-quest.sqlite` on Render by default.
 - Passwords are scrypt-hashed; session tokens are random, stored as hashes, and sent only in HTTP-only, SameSite cookies.
-- Accounts do not collect email addresses and there is intentionally no automated password-reset workflow. Anthony can handle recovery manually.
+- Accounts do not collect email addresses and there is intentionally no automated password-reset workflow. Recovery links users directly to `anthony@antelligentprojects.dev` for manual help.
 - The seeded Anthony password is temporary and must be changed at first sign-in before any protected action is allowed.
 - SQLite is the first-community-release backend for the existing single Render web instance. The data-access boundary keeps a later PostgreSQL migration reversible when horizontal scaling is justified.
 

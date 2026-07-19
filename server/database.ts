@@ -81,6 +81,7 @@ db.exec(`
     latitude REAL,
     longitude REAL,
     started_at TEXT,
+    departure_date TEXT,
     updated_at TEXT NOT NULL
   );
 
@@ -91,7 +92,12 @@ db.exec(`
     title TEXT NOT NULL,
     body TEXT NOT NULL,
     visiting TEXT,
-    created_at TEXT NOT NULL
+    phase TEXT NOT NULL DEFAULT 'planning',
+    artifact_url TEXT,
+    artifact_label TEXT,
+    artifact_type TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
   );
   CREATE INDEX IF NOT EXISTS trip_updates_created_idx
     ON trip_updates(created_at DESC);
@@ -129,6 +135,7 @@ db.exec(`
     state_code TEXT,
     status TEXT NOT NULL DEFAULT 'published'
       CHECK (status IN ('published', 'hidden')),
+    review_status TEXT NOT NULL DEFAULT 'pending',
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   );
@@ -152,6 +159,18 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS achievements_user_idx
     ON achievements(user_id, created_at DESC);
+`)
+
+ensureColumn('anthony_trip', 'departure_date', 'TEXT')
+ensureColumn('trip_updates', 'phase', "TEXT NOT NULL DEFAULT 'planning'")
+ensureColumn('trip_updates', 'artifact_url', 'TEXT')
+ensureColumn('trip_updates', 'artifact_label', 'TEXT')
+ensureColumn('trip_updates', 'artifact_type', 'TEXT')
+ensureColumn('trip_updates', 'updated_at', 'TEXT')
+ensureColumn('suggestions', 'review_status', "TEXT NOT NULL DEFAULT 'pending'")
+
+db.exec(`
+  UPDATE trip_updates SET updated_at = created_at WHERE updated_at IS NULL;
 `)
 
 db.prepare(`
@@ -179,6 +198,14 @@ export function transaction<T>(operation: () => T): T {
     db.exec('ROLLBACK')
     throw error
   }
+}
+
+function ensureColumn(table: string, column: string, definition: string) {
+  const columns = db.prepare(`PRAGMA table_info(${table})`).all() as unknown as Array<{
+    name: string
+  }>
+  if (columns.some((item) => item.name === column)) return
+  db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`)
 }
 
 export function databasePath() {

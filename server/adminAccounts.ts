@@ -10,6 +10,7 @@ import {
   type UserRole,
 } from './auth'
 import { db, transaction } from './database'
+import { readSavedCustomRoutes } from './customRoutes'
 
 interface AccountRow {
   id: string
@@ -54,6 +55,20 @@ export function registerAdminAccountRoutes(app: Express) {
     const admin = requireAdmin(request, response)
     if (!admin) return
     response.json(readAdminAccounts(admin))
+  })
+
+  app.get('/api/admin/accounts/:id', (request, response) => {
+    try {
+      const admin = requireAdmin(request, response)
+      if (!admin) return
+      if (!findAccountById(request.params.id)) {
+        response.status(404).json({ message: 'Account not found.' })
+        return
+      }
+      response.json(readAdminAccountDetail(request.params.id, admin))
+    } catch (error) {
+      sendAdminError(response, error, 'Unable to load the account details.')
+    }
   })
 
   app.post('/api/admin/accounts', async (request, response) => {
@@ -297,6 +312,62 @@ function readAdminAccounts(viewer: AuthUser) {
       stateVoteCount: Number(account.state_vote_count),
       achievementCount: Number(account.achievement_count),
     })),
+    activity,
+  }
+}
+
+function readAdminAccountDetail(id: string, viewer: AuthUser) {
+  const account = readAdminAccounts(viewer).accounts.find((item) => item.id === id)
+  if (!account) throw new Error('Account not found.')
+
+  const preferences = db.prepare(`
+    SELECT config_json, updated_at FROM user_preferences WHERE user_id = ?
+  `).get(id) as unknown as { config_json: string; updated_at: string } | undefined
+
+  const activity = (db.prepare(`
+    SELECT
+      id, actor_user_id, actor_username, target_user_id, target_username,
+      action, details_json, created_at
+    FROM account_activity
+    WHERE target_user_id = ? OR actor_user_id = ?
+    ORDER BY created_at DESC
+    LIMIT 50
+  `).all(id, id) as unknown as Array<Record<string, unknown>>).map((item) => ({
+    id: String(item.id),
+    actorUserId: item.actor_user_id ? String(item.actor_user_id) : null,
+    actorUsername: String(item.actor_username),
+    targetUserId: item.target_user_id ? String(item.target_user_id) : null,
+    targetUsername: item.target_username ? String(item.target_username) : null,
+    action: String(item.action),
+    details: parseDetails(item.details_json),
+    createdAt: String(item.created_at),
+  }))
+
+  return {
+    account,
+    routes: readSavedCustomRoutes(id),
+    preferences: preferences
+      ? {
+          config: JSON.parse(preferences.config_json) as Record<string, unknown>,
+          updatedAt: preferences.updated_at,
+        }
+      : null,
+    suggestions: db.prepare(`
+      SELECT id, category, title, body, state_code, review_status, created_at, updated_at
+      FROM suggestions WHERE user_id = ? ORDER BY created_at DESC
+    `).all(id),
+    meetups: db.prepare(`
+      SELECT id, state_code, city, proposed_day, message, status, created_at, updated_at
+      FROM meetup_invites WHERE user_id = ? ORDER BY created_at DESC
+    `).all(id),
+    stateVotes: db.prepare(`
+      SELECT state_code, note, updated_at
+      FROM state_votes WHERE user_id = ? ORDER BY updated_at DESC
+    `).all(id),
+    achievements: db.prepare(`
+      SELECT id, title, description, route_name, created_at
+      FROM achievements WHERE user_id = ? ORDER BY created_at DESC
+    `).all(id),
     activity,
   }
 }

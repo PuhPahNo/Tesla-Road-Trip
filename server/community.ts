@@ -51,24 +51,32 @@ const tripSchema = z.object({
   latitude: z.coerce.number().min(-90).max(90).optional().nullable(),
   longitude: z.coerce.number().min(-180).max(180).optional().nullable(),
   startedAt: z.string().datetime().optional().nullable(),
+  departureDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
 })
 
 const updateSchema = z.object({
+  phase: z.enum(['planning', 'route-decision', 'build-note', 'milestone', 'on-the-road']),
   dayNumber: z.coerce.number().int().min(1).max(365).optional(),
-  location: z.string().trim().min(2).max(120),
+  location: z.string().trim().max(120).optional(),
   title: z.string().trim().min(3).max(140),
-  body: z.string().trim().min(10).max(1200),
+  body: z.string().trim().min(10).max(4000),
   visiting: z.string().trim().max(240).optional(),
+  artifactUrl: z.string().trim().url().max(500).optional(),
+  artifactLabel: z.string().trim().max(120).optional(),
+  artifactType: z.enum(['image', 'video', 'link']).optional(),
 })
 
 const moderationSchema = z.object({
   status: z.enum(['approved', 'declined']),
 })
 
+const suggestionReviewSchema = z.object({
+  status: z.enum(['pending', 'reviewed', 'archived']),
+})
+
 export function registerCommunityRoutes(app: Express) {
-  app.get('/api/community', (request, response) => {
-    const viewer = getRequestUser(request)
-    response.json(readCommunity(viewer?.id))
+  app.get('/api/community', (_request, response) => {
+    response.json(readCommunity())
   })
 
   app.get('/api/account', (request, response) => {
@@ -147,7 +155,7 @@ export function registerCommunityRoutes(app: Express) {
           note = excluded.note,
           updated_at = excluded.updated_at
       `).run(user.id, parsed.stateCode, parsed.note ?? null, now)
-      response.json({ ok: true, community: readCommunity(user.id) })
+      response.json({ ok: true, community: readCommunity() })
     } catch (error) {
       sendError(response, error, 'Unable to add your state vote.')
     }
@@ -161,7 +169,7 @@ export function registerCommunityRoutes(app: Express) {
       db.prepare(`
         DELETE FROM state_votes WHERE user_id = ? AND state_code = ?
       `).run(user.id, stateCode)
-      response.json({ ok: true, community: readCommunity(user.id) })
+      response.json({ ok: true, community: readCommunity() })
     } catch (error) {
       sendError(response, error, 'Unable to remove your state vote.')
     }
@@ -211,8 +219,8 @@ export function registerCommunityRoutes(app: Express) {
       db.prepare(`
         INSERT INTO suggestions (
           id, user_id, category, title, body, state_code,
-          status, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, 'published', ?, ?)
+          status, review_status, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, 'hidden', 'pending', ?, ?)
       `).run(
         id,
         user.id,
@@ -223,7 +231,7 @@ export function registerCommunityRoutes(app: Express) {
         now,
         now,
       )
-      response.status(201).json({ ok: true, id, community: readCommunity(user.id) })
+      response.status(201).json({ ok: true, id, community: readCommunity() })
     } catch (error) {
       sendError(response, error, 'Unable to share your suggestion.')
     }
@@ -252,7 +260,7 @@ export function registerCommunityRoutes(app: Express) {
         VALUES (?, ?, ?)
       `).run(request.params.id, user.id, new Date().toISOString())
     }
-    response.json({ ok: true, community: readCommunity(user.id) })
+    response.json({ ok: true, community: readCommunity() })
   })
 
   app.post('/api/community/achievements', (request, response) => {
@@ -299,6 +307,28 @@ export function registerCommunityRoutes(app: Express) {
         WHERE meetup_invites.status = 'pending'
         ORDER BY meetup_invites.created_at DESC
       `).all(),
+      suggestionInbox: db.prepare(`
+        SELECT
+          suggestions.id,
+          suggestions.category,
+          suggestions.title,
+          suggestions.body,
+          suggestions.state_code,
+          suggestions.review_status,
+          suggestions.created_at,
+          suggestions.updated_at,
+          users.username AS display_name
+        FROM suggestions
+        JOIN users ON users.id = suggestions.user_id
+        ORDER BY
+          CASE suggestions.review_status
+            WHEN 'pending' THEN 0
+            WHEN 'reviewed' THEN 1
+            ELSE 2
+          END,
+          suggestions.created_at DESC
+        LIMIT 200
+      `).all(),
     })
   })
 
@@ -320,6 +350,7 @@ export function registerCommunityRoutes(app: Express) {
           latitude = ?,
           longitude = ?,
           started_at = ?,
+          departure_date = ?,
           updated_at = ?
         WHERE id = 1
       `).run(
@@ -334,6 +365,7 @@ export function registerCommunityRoutes(app: Express) {
         parsed.latitude ?? null,
         parsed.longitude ?? null,
         parsed.startedAt ?? null,
+        parsed.departureDate ?? null,
         now,
       )
       response.json({ ok: true, community: readCommunity() })
@@ -350,31 +382,107 @@ export function registerCommunityRoutes(app: Express) {
       const now = new Date().toISOString()
       db.prepare(`
         INSERT INTO trip_updates (
-          id, day_number, location, title, body, visiting, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+          id, day_number, location, title, body, visiting, phase,
+          artifact_url, artifact_label, artifact_type, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         id,
         parsed.dayNumber ?? null,
-        parsed.location,
+        parsed.location || 'Pre-trip',
         parsed.title,
         parsed.body,
         parsed.visiting ?? null,
+        parsed.phase,
+        parsed.artifactUrl ?? null,
+        parsed.artifactLabel ?? null,
+        parsed.artifactType ?? null,
+        now,
         now,
       )
       db.prepare(`
         UPDATE anthony_trip SET
-          active = 1,
           day_number = COALESCE(?, day_number),
           current_location = ?,
           headline = ?,
           body = ?,
           updated_at = ?
         WHERE id = 1
-      `).run(parsed.dayNumber ?? null, parsed.location, parsed.title, parsed.body, now)
+      `).run(parsed.dayNumber ?? null, parsed.location ?? null, parsed.title, parsed.body, now)
       response.status(201).json({ ok: true, id, community: readCommunity() })
     } catch (error) {
       sendError(response, error, 'Unable to publish the trip update.')
     }
+  })
+
+  app.patch('/api/admin/trip-updates/:id', (request, response) => {
+    try {
+      if (!requireAdmin(request, response)) return
+      const parsed = updateSchema.parse(request.body)
+      const now = new Date().toISOString()
+      const result = db.prepare(`
+        UPDATE trip_updates SET
+          day_number = ?, location = ?, title = ?, body = ?, visiting = ?,
+          phase = ?, artifact_url = ?, artifact_label = ?, artifact_type = ?,
+          updated_at = ?
+        WHERE id = ?
+      `).run(
+        parsed.dayNumber ?? null,
+        parsed.location || 'Pre-trip',
+        parsed.title,
+        parsed.body,
+        parsed.visiting ?? null,
+        parsed.phase,
+        parsed.artifactUrl ?? null,
+        parsed.artifactLabel ?? null,
+        parsed.artifactType ?? null,
+        now,
+        request.params.id,
+      )
+      if (result.changes === 0) {
+        response.status(404).json({ message: 'Journey update not found.' })
+        return
+      }
+      response.json({ ok: true, community: readCommunity() })
+    } catch (error) {
+      sendError(response, error, 'Unable to update the journey entry.')
+    }
+  })
+
+  app.delete('/api/admin/trip-updates/:id', (request, response) => {
+    if (!requireAdmin(request, response)) return
+    const result = db.prepare('DELETE FROM trip_updates WHERE id = ?').run(request.params.id)
+    if (result.changes === 0) {
+      response.status(404).json({ message: 'Journey update not found.' })
+      return
+    }
+    response.json({ ok: true, community: readCommunity() })
+  })
+
+  app.patch('/api/admin/suggestions/:id', (request, response) => {
+    try {
+      if (!requireAdmin(request, response)) return
+      const parsed = suggestionReviewSchema.parse(request.body)
+      const result = db.prepare(`
+        UPDATE suggestions SET review_status = ?, updated_at = ? WHERE id = ?
+      `).run(parsed.status, new Date().toISOString(), request.params.id)
+      if (result.changes === 0) {
+        response.status(404).json({ message: 'Suggestion not found.' })
+        return
+      }
+      response.json({ ok: true })
+    } catch (error) {
+      sendError(response, error, 'Unable to update the suggestion.')
+    }
+  })
+
+  app.delete('/api/admin/suggestions/:id', (request, response) => {
+    if (!requireAdmin(request, response)) return
+    const result = db.prepare('DELETE FROM suggestions WHERE id = ?').run(request.params.id)
+    if (result.changes === 0) {
+      response.status(404).json({ message: 'Suggestion not found.' })
+      return
+    }
+    response.json({ ok: true })
   })
 
   app.patch('/api/admin/meetups/:id', (request, response) => {
@@ -395,13 +503,14 @@ export function registerCommunityRoutes(app: Express) {
   })
 }
 
-function readCommunity(viewerId?: string) {
+function readCommunity() {
   const trip = db.prepare('SELECT * FROM anthony_trip WHERE id = 1').get() as
     | Record<string, unknown>
     | undefined
   const updates = db.prepare(`
-    SELECT id, day_number, location, title, body, visiting, created_at
-    FROM trip_updates ORDER BY created_at DESC LIMIT 20
+    SELECT id, day_number, location, title, body, visiting, phase,
+      artifact_url, artifact_label, artifact_type, created_at, updated_at
+    FROM trip_updates ORDER BY created_at DESC LIMIT 50
   `).all()
   const stateVotes = db.prepare(`
     SELECT state_code, COUNT(*) AS votes
@@ -422,25 +531,6 @@ function readCommunity(viewerId?: string) {
     ORDER BY meetup_invites.created_at DESC
     LIMIT 30
   `).all()
-  const suggestions = db.prepare(`
-    SELECT
-      suggestions.id,
-      suggestions.category,
-      suggestions.title,
-      suggestions.body,
-      suggestions.state_code,
-      suggestions.created_at,
-      users.username AS display_name,
-      COUNT(suggestion_votes.user_id) AS votes,
-      MAX(CASE WHEN suggestion_votes.user_id = ? THEN 1 ELSE 0 END) AS viewer_voted
-    FROM suggestions
-    JOIN users ON users.id = suggestions.user_id
-    LEFT JOIN suggestion_votes ON suggestion_votes.suggestion_id = suggestions.id
-    WHERE suggestions.status = 'published'
-    GROUP BY suggestions.id
-    ORDER BY votes DESC, suggestions.created_at DESC
-    LIMIT 40
-  `).all(viewerId ?? '')
   const achievements = db.prepare(`
     SELECT
       achievements.id,
@@ -469,13 +559,14 @@ function readCommunity(viewerId?: string) {
           latitude: trip.latitude,
           longitude: trip.longitude,
           startedAt: trip.started_at,
+          departureDate: trip.departure_date,
           updatedAt: trip.updated_at,
         }
       : undefined,
     updates,
     stateVotes,
     meetups,
-    suggestions,
+    suggestions: [],
     achievements,
   }
 }
