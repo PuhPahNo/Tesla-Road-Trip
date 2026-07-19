@@ -27,6 +27,9 @@ CORE is the next step for all three. The content should answer the first questio
 - Long-lived caching for hashed production assets.
 - A 13-page field-guide cluster covering the competition, four high-interest badge stops, and three route ideas.
 - Homepage and footer links that make every content hub discoverable without relying on the sitemap alone.
+- Visible Anthony Pappano bylines, updated dates, and an author page that explains how the research and examples are produced.
+- A side-by-side competition category table and the complete 17-badge reference used by CORE.
+- Fixed, reproducible CORE examples on the three main route guides, with their vehicle, range, pace, date, and station-feed assumptions disclosed.
 
 ## The next 90 days
 
@@ -55,6 +58,8 @@ Priority order:
 6. **A monthly route-build note** — what moved, what was cut, and why.
 
 The monthly route note matters because it creates something competitors cannot copy from a generic keyword brief: Anthony’s actual process.
+
+Raw notes are enough. Use `docs/ANTHONY_FIELD_NOTE_TEMPLATE.md` to capture the decision and evidence without trying to write a finished article. The editorial pass can happen after the facts are recorded.
 
 ### Weeks 6–12: turn product evidence into an acquisition loop
 

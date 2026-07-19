@@ -1,6 +1,8 @@
 import { ArrowRight, ExternalLink } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import {
+  SEO_AUTHOR,
+  formatSeoDate,
   getRelatedSeoPages,
   seoPageStructuredData,
   type SeoPage as SeoPageContent,
@@ -34,6 +36,20 @@ export function SeoPage({ page }: { page: SeoPageContent }) {
           <p className="mt-8 max-w-[790px] text-[17px] leading-[1.72] text-white/68 sm:text-[20px]">
             {page.intro}
           </p>
+          <div className="mt-7 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[8.5px] uppercase tracking-[0.11em] text-white/42">
+            {page.kind === 'about' ? (
+              <span>{SEO_AUTHOR.name}</span>
+            ) : (
+              <span>
+                Written by{' '}
+                <Link to={SEO_AUTHOR.path} className="font-semibold text-white/78 no-underline hover:text-white">
+                  {SEO_AUTHOR.name}
+                </Link>
+              </span>
+            )}
+            <span aria-hidden="true">·</span>
+            <time dateTime={page.updatedAt}>Updated {formatSeoDate(page.updatedAt)}</time>
+          </div>
           <div className="mt-14 grid border-y border-white/15 sm:grid-cols-3">
             {page.facts.map((fact) => (
               <div key={fact.label} className="border-b border-white/15 px-0 py-6 last:border-b-0 sm:border-b-0 sm:border-r sm:px-6 sm:first:pl-0 sm:last:border-r-0">
@@ -61,6 +77,47 @@ export function SeoPage({ page }: { page: SeoPageContent }) {
                   <ul className="mt-8 space-y-3 border-l-2 border-[#e82127] pl-6 text-[15px] leading-[1.7] text-black/65">
                     {section.bullets.map((bullet) => <li key={bullet}>{bullet}</li>)}
                   </ul>
+                ) : null}
+                {section.table ? (
+                  <div className="mt-9 overflow-x-auto border border-black/14 bg-white/42">
+                    <table className="w-full min-w-[720px] border-collapse text-left">
+                      <caption className="border-b border-black/14 px-5 py-4 text-left font-mono text-[8px] font-semibold uppercase tracking-[0.12em] text-black/45">
+                        {section.table.caption}
+                      </caption>
+                      <thead>
+                        <tr className="bg-black text-white">
+                          {section.table.columns.map((column) => (
+                            <th key={column} scope="col" className="px-4 py-3.5 font-mono text-[8px] font-semibold uppercase tracking-[0.1em]">
+                              {column}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {section.table.rows.map((row, rowIndex) => (
+                          <tr key={`${section.table?.caption}-${rowIndex}`} className="border-b border-black/10 align-top last:border-b-0">
+                            {row.map((cell, cellIndex) => (
+                              <td key={`${cellIndex}-${typeof cell === 'string' ? cell : cell.text}`} className={`px-4 py-4 text-[13px] leading-[1.55] text-black/62 ${cellIndex === 0 ? 'font-semibold text-black/82' : ''}`}>
+                                {typeof cell === 'string' ? cell : cell.links?.length ? (
+                                  <span className="flex flex-wrap gap-x-3 gap-y-1">
+                                    {cell.links.map((link) => (
+                                      <a key={link.href} href={link.href} target="_blank" rel="noreferrer" className="font-semibold text-black underline decoration-black/20 underline-offset-4 hover:decoration-[#e82127]">
+                                        {link.text}
+                                      </a>
+                                    ))}
+                                  </span>
+                                ) : cell.href ? (
+                                  <a href={cell.href} target="_blank" rel="noreferrer" className="font-semibold text-black underline decoration-black/20 underline-offset-4 hover:decoration-[#e82127]">
+                                    {cell.text}
+                                  </a>
+                                ) : cell.text}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 ) : null}
               </section>
             ))}

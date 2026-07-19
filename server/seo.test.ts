@@ -16,6 +16,10 @@ describe('server SEO rendering', () => {
       expect(rendered.html).toContain(page.headline)
       expect(rendered.html).toContain('content="index,follow"')
       expect(rendered.html).toContain('data-page-schema')
+      expect(rendered.html).toContain(`datetime="${page.updatedAt}"`)
+      if (page.kind !== 'about') {
+        expect(rendered.html).toContain('Written by <a href="/about-anthony">Anthony Pappano</a>')
+      }
     }
   })
 

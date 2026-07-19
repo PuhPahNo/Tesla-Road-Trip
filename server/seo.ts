@@ -1,11 +1,14 @@
 import {
   SEO_PAGES,
+  SEO_AUTHOR,
   SEO_UPDATED_AT,
   SITE_ORIGIN,
+  formatSeoDate,
   getRelatedSeoPages,
   getSeoPageByPath,
   seoPageStructuredData,
   type SeoPage,
+  type SeoTable,
 } from '../src/seo/seoPages'
 
 interface PageMetadata {
@@ -13,7 +16,7 @@ interface PageMetadata {
   description: string
   path: string
   robots?: 'index,follow' | 'noindex,nofollow'
-  type?: 'website' | 'article'
+  type?: 'website' | 'article' | 'profile'
   structuredData?: Record<string, unknown>
   fallback?: string
 }
@@ -77,7 +80,11 @@ export function renderClientDocument(indexHtml: string, pathname: string): Rende
         title: seoPage.title,
         description: seoPage.description,
         path: seoPage.path,
-        type: seoPage.kind === 'hub' ? 'website' : 'article',
+        type: seoPage.kind === 'hub'
+          ? 'website'
+          : seoPage.kind === 'about'
+            ? 'profile'
+            : 'article',
         structuredData: seoPageStructuredData(seoPage),
         fallback: renderSeoFallback(seoPage),
       }),
@@ -169,7 +176,8 @@ function renderSeoFallback(page: SeoPage) {
     const bullets = section.bullets?.length
       ? `<ul>${section.bullets.map((bullet) => `<li>${escapeHtml(bullet)}</li>`).join('')}</ul>`
       : ''
-    return `<section><h2>${escapeHtml(section.heading)}</h2>${paragraphs}${bullets}</section>`
+    const table = section.table ? renderSeoTable(section.table) : ''
+    return `<section><h2>${escapeHtml(section.heading)}</h2>${paragraphs}${bullets}${table}</section>`
   }).join('\n')
   const facts = page.facts.map((fact) => `<li><strong>${escapeHtml(fact.label)}:</strong> ${escapeHtml(fact.value)}</li>`).join('')
   const sources = page.sources.length
@@ -184,6 +192,9 @@ function renderSeoFallback(page: SeoPage) {
     <p>${escapeHtml(page.eyebrow)}</p>
     <h1>${escapeHtml(page.headline)}</h1>
     <p>${escapeHtml(page.intro)}</p>
+    <p>${page.kind === 'about'
+      ? escapeHtml(SEO_AUTHOR.name)
+      : `Written by <a href="${escapeAttribute(SEO_AUTHOR.path)}">${escapeHtml(SEO_AUTHOR.name)}</a>`} · <time datetime="${escapeAttribute(page.updatedAt)}">Updated ${escapeHtml(formatSeoDate(page.updatedAt))}</time></p>
     <ul>${facts}</ul>
     ${sections}
     ${page.note ? `<aside><strong>Important context:</strong> ${escapeHtml(page.note)}</aside>` : ''}
@@ -191,6 +202,22 @@ function renderSeoFallback(page: SeoPage) {
     <section><h2>Keep exploring</h2><ul>${related}</ul></section>
     <p><a href="${escapeAttribute(page.cta.path)}">${escapeHtml(page.cta.label)}</a></p>
   </article></main>`
+}
+
+function renderSeoTable(table: SeoTable) {
+  const headings = table.columns
+    .map((column) => `<th scope="col">${escapeHtml(column)}</th>`)
+    .join('')
+  const rows = table.rows.map((row) => `<tr>${row.map((cell) => {
+    if (typeof cell === 'string') return `<td>${escapeHtml(cell)}</td>`
+    const value = cell.links?.length
+      ? cell.links.map((link) => `<a href="${escapeAttribute(link.href)}">${escapeHtml(link.text)}</a>`).join(' · ')
+      : cell.href
+        ? `<a href="${escapeAttribute(cell.href)}">${escapeHtml(cell.text)}</a>`
+        : escapeHtml(cell.text)
+    return `<td>${value}</td>`
+  }).join('')}</tr>`).join('')
+  return `<table><caption>${escapeHtml(table.caption)}</caption><thead><tr>${headings}</tr></thead><tbody>${rows}</tbody></table>`
 }
 
 function renderBasicFallback(heading: string, body: string, links: Array<[string, string]> = []) {

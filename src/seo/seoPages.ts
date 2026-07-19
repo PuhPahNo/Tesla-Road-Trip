@@ -1,12 +1,32 @@
+import { TESLA_ICONIC_BADGES } from '../domain/teslaBadges'
+
 export const SITE_ORIGIN = 'https://www.teslachargequest.com'
 export const SEO_UPDATED_AT = '2026-07-19'
+export const SEO_AUTHOR = {
+  name: 'Anthony Pappano',
+  path: '/about-anthony',
+  url: `${SITE_ORIGIN}/about-anthony`,
+}
 
-export type SeoPageKind = 'hub' | 'guide' | 'badge' | 'route'
+export type SeoPageKind = 'hub' | 'guide' | 'badge' | 'route' | 'about'
+
+export interface SeoTableCell {
+  text: string
+  href?: string
+  links?: Array<{ text: string; href: string }>
+}
+
+export interface SeoTable {
+  caption: string
+  columns: string[]
+  rows: Array<Array<string | SeoTableCell>>
+}
 
 export interface SeoSection {
   heading: string
   paragraphs: string[]
   bullets?: string[]
+  table?: SeoTable
 }
 
 export interface SeoFact {
@@ -58,6 +78,75 @@ const buildRouteCta = {
   path: '/signup?returnTo=%2Fplanner',
 }
 
+const competitionComparisonTable: SeoTable = {
+  caption: 'How the three 2026 Tesla Supercharging Competition categories differ',
+  columns: ['Category', 'Tesla measures', 'Route-planning implication', 'Where CORE helps'],
+  rows: [
+    [
+      'Longest Trip',
+      'The longest continuous streak of unique Supercharger locations under Tesla’s stated timing rule.',
+      'Continuity, recoverable sequencing, and a backup site matter more than drawing the longest-looking line.',
+      'Compare multi-day streak routes, daily limits, required stops, and alternate candidates.',
+    ],
+    [
+      'Most Unique Sites',
+      'The highest number of different qualifying Supercharger sites visited during 2026.',
+      'Dense corridors and low-cost detours can produce more new sites per hour than a scenic national loop.',
+      'Model site coverage, preserve route history, and compare the cost of different corridors.',
+    ],
+    [
+      'Most Energy Supercharged',
+      'The highest total qualifying energy delivered at Superchargers in 2026.',
+      'Your real vehicle, driving volume, efficiency, weather, and charging behavior matter more than site count alone.',
+      'Plan from a vehicle profile and practical range while keeping energy output clearly labeled as an estimate.',
+    ],
+  ],
+}
+
+const badgeReferenceTable: SeoTable = {
+  caption: 'The 17 North American Iconic Charger badge targets currently mapped in ChargeQuest',
+  columns: ['Badge', 'Region', 'ChargeQuest mapped target', 'Official location'],
+  rows: TESLA_ICONIC_BADGES.map((badge) => [
+    badge.label,
+    `${badge.state}, ${badge.country}`,
+    badge.summary,
+    {
+      text: badge.officialLocationUrls.length > 1 ? 'Tesla locations' : 'Tesla location',
+      links: badge.officialLocationUrls.map((href, index) => ({
+        text: badge.officialLocationUrls.length > 1 ? `Location ${index + 1}` : 'Open location',
+        href,
+      })),
+    },
+  ]),
+}
+
+const coreExampleAssumptions =
+  'To make this concrete, I ran the template through CORE on July 19, 2026 using the same fixed setup for all three examples: Chattanooga start, September 1 departure, 60-day Longest Trip target, Tesla Model Y Long Range AWD, 245-mile practical range, balanced pace, five target driving hours with a 6.5-hour maximum, automatic stays off, and U.S. Superchargers only. The run used 3,146 eligible stations from the Supercharge.info feed.'
+
+function coreExampleTable({
+  routeName,
+  totalMiles,
+  averageMilesPerDay,
+  averageDriveHoursPerDay,
+}: {
+  routeName: string
+  totalMiles: string
+  averageMilesPerDay: string
+  averageDriveHoursPerDay: string
+}): SeoTable {
+  return {
+    caption: `${routeName} — fixed CORE example output`,
+    columns: ['Metric', 'Example output', 'How to read it'],
+    rows: [
+      ['Planning distance', totalMiles, 'CORE estimate before live turn-by-turn road refinement.'],
+      ['Planned streak', '60 days / 60 unique sites', 'One new qualifying site is planned for each route day.'],
+      ['Average distance', `${averageMilesPerDay} per day`, 'The mean hides harder and easier individual days.'],
+      ['Average drive time', `${averageDriveHoursPerDay} per day`, 'Based on the disclosed 60 mph planning assumption.'],
+      ['Average site spacing', averageMilesPerDay, 'Average route distance associated with each planned unique site.'],
+    ],
+  }
+}
+
 export const SEO_PAGES: SeoPage[] = [
   {
     path: '/2026-tesla-supercharging-competition',
@@ -85,6 +174,7 @@ export const SEO_PAGES: SeoPage[] = [
           'Most Unique Sites: visit as many different qualifying Supercharger sites as possible during the competition window.',
           'Most Energy: accumulate the largest amount of energy delivered through qualifying Supercharging sessions.',
         ],
+        table: competitionComparisonTable,
       },
       {
         heading: 'What route planning can solve—and what it cannot',
@@ -270,6 +360,14 @@ export const SEO_PAGES: SeoPage[] = [
           'Each mapped badge points to a specific qualifying Supercharger location or a small set of locations Tesla associates with the destination. CORE can make selected badges required route anchors, so they are not quietly dropped when a shorter path appears.',
           'That matters because the attraction and the qualifying charger are not always the same point. The Grand Canyon badge is tied to Tusayan near the South Rim. Yellowstone uses West Yellowstone. Yosemite has gateway options at El Portal and Fish Camp. The badge name tells the story; the location record tells the planner where to go.',
         ],
+      },
+      {
+        heading: 'The complete North American badge reference mapped today',
+        paragraphs: [
+          'The table below comes from the same 17-record catalog CORE uses for route targeting. It is a planning reference, not a permanent promise from Tesla. A badge can be connected to one site or several qualifying sites, and Tesla’s app remains the final place to check the current requirement.',
+          'I included every mapped target rather than publishing a separate thin page for each one. The detail guides exist only where the route decision deserves more explanation.',
+        ],
+        table: badgeReferenceTable,
       },
       {
         heading: 'Badges are targets, not guarantees',
@@ -561,6 +659,19 @@ export const SEO_PAGES: SeoPage[] = [
           'This page describes a route idea, not a turn-by-turn itinerary. The actual mileage, time, and charging sequence depend on your start, required stops, travel pace, and current network.',
         ],
       },
+      {
+        heading: 'A fixed CORE example, so the numbers have context',
+        paragraphs: [
+          coreExampleAssumptions,
+          'That run produced the snapshot below for Route 66 and Desert Icons. The relatively light daily average comes from designing a 60-day charging streak, not from claiming the full loop is a 60-day sightseeing itinerary. Park time, city time, weather, and live road routing still belong in the real plan.',
+        ],
+        table: coreExampleTable({
+          routeName: 'Route 66 and Desert Icons',
+          totalMiles: '6,077 miles',
+          averageMilesPerDay: '101 miles',
+          averageDriveHoursPerDay: '1.69 hours',
+        }),
+      },
     ],
     note: 'Historic Route 66 access and road conditions vary. Confirm local roads and live charging details before travel.',
     sources: [],
@@ -607,6 +718,19 @@ export const SEO_PAGES: SeoPage[] = [
           'National parks are poor “drive-by” anchors. Arrival traffic, shuttles, trail time, wildlife, and the distance inside the park all sit outside a simple charging calculation. I would rather remove one park than turn five parks into parking-lot photographs.',
           'Set a daily driving limit that leaves space for the reason you came. CORE will still show the tradeoff. The route may become longer on the calendar and better in every other way.',
         ],
+      },
+      {
+        heading: 'A fixed CORE example, so the numbers have context',
+        paragraphs: [
+          coreExampleAssumptions,
+          'For National Parks and Western Icons, CORE returned the snapshot below. It is a charging-streak model across the template anchors. It does not pretend that 1.83 average driving hours tells you how much time Yellowstone, Yosemite, or Grand Canyon deserves outside the car.',
+        ],
+        table: coreExampleTable({
+          routeName: 'National Parks and Western Icons',
+          totalMiles: '6,587 miles',
+          averageMilesPerDay: '110 miles',
+          averageDriveHoursPerDay: '1.83 hours',
+        }),
       },
     ],
     note: 'Check National Park Service road status, reservations, weather, and Tesla’s current charger details before travel.',
@@ -655,10 +779,76 @@ export const SEO_PAGES: SeoPage[] = [
           'Winning would be incredible. It is not the only win available. The strongest Great American Icons route is one you would still be grateful to have driven if the final leaderboard went another way.',
         ],
       },
+      {
+        heading: 'A fixed CORE example, so the numbers have context',
+        paragraphs: [
+          coreExampleAssumptions,
+          'Great American Icons is the broadest of these three templates, and the fixed run reflects that. The example is useful for comparing route shape, not for promising an exact odometer reading. A route saved in CORE should be recalculated with your real start, dates, range, stops, and current road data.',
+        ],
+        table: coreExampleTable({
+          routeName: 'Great American Icons',
+          totalMiles: '7,890 miles',
+          averageMilesPerDay: '132 miles',
+          averageDriveHoursPerDay: '2.19 hours',
+        }),
+      },
     ],
     note: 'This is a planning framework, not a fixed itinerary. Recalculate around your vehicle, dates, pace, and current road and charging conditions.',
     sources: [],
     relatedPaths: ['/tesla-road-trip-routes', '/2026-tesla-supercharging-competition', '/badges/tesla-diner'],
+    cta: buildRouteCta,
+  },
+  {
+    path: '/about-anthony',
+    kind: 'about',
+    eyebrow: 'About the builder',
+    title: 'About Anthony Pappano, Creator of ChargeQuest',
+    description: 'Meet Anthony Pappano, why he built ChargeQuest for the 2026 Tesla Supercharging Competition, and how its route guides are researched and tested.',
+    headline: 'I built ChargeQuest because I needed the route to answer better questions',
+    intro: 'I’m Anthony Pappano. ChargeQuest started while I was trying to plan an ambitious run at the 2026 Tesla Supercharging Competition. The existing tools could tell me how to reach a destination. I wanted to compare entire journeys: different competition strategies, practical range, daily pace, badge targets, places worth seeing, and the tradeoffs hiding between them.',
+    updatedAt: SEO_UPDATED_AT,
+    facts: [
+      { label: 'Role', value: 'Creator and route builder' },
+      { label: 'Starting point', value: 'The 2026 competition' },
+      { label: 'Operating rule', value: 'Show the assumptions' },
+    ],
+    sections: [
+      {
+        heading: 'The competition started it. The road made it bigger.',
+        paragraphs: [
+          'I originally built CORE to give myself a better way to think through a very specific challenge. A long competition route is not one navigation request. It is a sequence of decisions about continuity, unique charging sites, the car, the season, the amount of driving I can sustain, and the places I would regret passing.',
+          'Once those decisions became visible, the project stopped feeling useful only to me. A driver planning Route 66, a western parks loop, or a first cross-country Tesla trip faces many of the same questions even if a leaderboard never enters the picture. ChargeQuest became a place to start with a meaningful road and build a version that fits the person driving it.',
+        ],
+      },
+      {
+        heading: 'How I build the field guides',
+        paragraphs: [
+          'Competition and badge facts are linked back to Tesla’s current support and location pages. Route examples come from the same CORE engine available in the planner, with the vehicle, range, dates, pace, and station-feed snapshot stated on the page. When a number is an estimate, I call it an estimate.',
+          'The guides are intentionally connected to the product. I do not want a separate pile of travel articles that could belong to any website. Each page should explain a real route decision, clarify an official rule, identify a badge target, or help someone make a better choice inside CORE.',
+        ],
+      },
+      {
+        heading: 'What I am—and am not—claiming',
+        paragraphs: [
+          'I am the builder taking the route problem seriously, not an official voice for Tesla. ChargeQuest is independent and cannot award a badge, certify a competition score, guarantee a charger, or know what weather and traffic will do on your travel day. Tesla owns its competition and charging records. Road, park, and charger conditions still need current verification.',
+          'I will add first-hand route notes as my own plan develops and, eventually, as the road tests the assumptions. Those notes should make the existing guides more useful. They will not be used to pretend one person’s trip is the correct route for everyone.',
+        ],
+      },
+      {
+        heading: 'The standard I want ChargeQuest to keep',
+        paragraphs: [
+          'A page should be worth reading even if it never ranks first. A route should show why its stops are there. A metric should carry enough context to be challenged. And the visitor should remain the person making the final decision.',
+          'Winning the competition would be incredible. Building a road worth remembering is the larger goal. ChargeQuest exists to make both ambitions easier to see clearly.',
+        ],
+      },
+    ],
+    note: 'ChargeQuest is independently built by Anthony Pappano and is not affiliated with or endorsed by Tesla.',
+    sources: [],
+    relatedPaths: [
+      '/2026-tesla-supercharging-competition',
+      '/tesla-iconic-charger-badges',
+      '/tesla-road-trip-routes',
+    ],
     cta: buildRouteCta,
   },
 ]
@@ -677,6 +867,15 @@ export function getRelatedSeoPages(page: SeoPage) {
   })
 }
 
+export function formatSeoDate(date: string) {
+  return new Date(`${date}T12:00:00Z`).toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  })
+}
+
 export function seoPageStructuredData(page: SeoPage) {
   const segments = page.path.split('/').filter(Boolean)
   const breadcrumbItems = [
@@ -688,11 +887,23 @@ export function seoPageStructuredData(page: SeoPage) {
       item: `${SITE_ORIGIN}/${segments.slice(0, index + 1).join('/')}`,
     })),
   ]
-
-  return {
-    '@context': 'https://schema.org',
-    '@graph': [
-      {
+  const author = {
+    '@type': 'Person',
+    name: SEO_AUTHOR.name,
+    url: SEO_AUTHOR.url,
+  }
+  const primaryPage = page.kind === 'about'
+    ? {
+        '@type': 'ProfilePage',
+        name: page.headline,
+        headline: page.headline,
+        description: page.description,
+        url: `${SITE_ORIGIN}${page.path}`,
+        dateModified: page.updatedAt,
+        inLanguage: 'en-US',
+        mainEntity: author,
+      }
+    : {
         '@type': page.kind === 'hub' ? 'CollectionPage' : 'Article',
         headline: page.headline,
         name: page.headline,
@@ -700,9 +911,14 @@ export function seoPageStructuredData(page: SeoPage) {
         url: `${SITE_ORIGIN}${page.path}`,
         dateModified: page.updatedAt,
         inLanguage: 'en-US',
-        author: { '@type': 'Person', name: 'Anthony Pappano' },
+        author,
         publisher: { '@type': 'Organization', name: 'ChargeQuest', url: SITE_ORIGIN },
-      },
+      }
+
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      primaryPage,
       {
         '@type': 'BreadcrumbList',
         itemListElement: breadcrumbItems,

@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
+import { TESLA_ICONIC_BADGES } from '../domain/teslaBadges'
 import { SEO_PAGES, getRelatedSeoPages, seoPageStructuredData } from './seoPages'
 
 describe('public SEO content registry', () => {
   it('contains a focused set of unique, substantial pages', () => {
-    expect(SEO_PAGES).toHaveLength(13)
+    expect(SEO_PAGES).toHaveLength(14)
     expect(new Set(SEO_PAGES.map((page) => page.path)).size).toBe(SEO_PAGES.length)
     expect(new Set(SEO_PAGES.map((page) => page.title)).size).toBe(SEO_PAGES.length)
 
@@ -15,6 +16,10 @@ describe('public SEO content registry', () => {
           section.heading,
           ...section.paragraphs,
           ...(section.bullets ?? []),
+          ...(section.table?.columns ?? []),
+          ...(section.table?.rows.flatMap((row) => row.map((cell) =>
+            typeof cell === 'string' ? cell : cell.text,
+          )) ?? []),
         ]),
         page.note ?? '',
       ].join(' ')
@@ -47,5 +52,44 @@ describe('public SEO content registry', () => {
       author: { '@type': 'Person', name: 'Anthony Pappano' },
     })
     expect(schema['@graph'][1]).toMatchObject({ '@type': 'BreadcrumbList' })
+  })
+
+  it('publishes the comparison, complete badge reference, and fixed route examples', () => {
+    const competition = SEO_PAGES.find((page) => page.path === '/2026-tesla-supercharging-competition')
+    const badges = SEO_PAGES.find((page) => page.path === '/tesla-iconic-charger-badges')
+    expect(competition?.sections.flatMap((section) => section.table?.rows ?? [])).toHaveLength(3)
+    const badgeRows = badges?.sections.flatMap((section) => section.table?.rows ?? []) ?? []
+    expect(badgeRows).toHaveLength(17)
+    const officialLinks = badgeRows.flatMap((row) => row.flatMap((cell) => {
+      if (typeof cell === 'string') return []
+      return cell.links ?? (cell.href ? [{ text: cell.text, href: cell.href }] : [])
+    }))
+    expect(officialLinks).toHaveLength(
+      TESLA_ICONIC_BADGES.reduce((total, badge) => total + badge.officialLocationUrls.length, 0),
+    )
+
+    for (const path of [
+      '/routes/tesla-route-66-supercharger-road-trip',
+      '/routes/tesla-national-parks-road-trip',
+      '/routes/great-american-icons',
+    ]) {
+      const route = SEO_PAGES.find((page) => page.path === path)
+      const example = route?.sections.find((section) => section.heading.includes('fixed CORE example'))
+      expect(example?.paragraphs.join(' '), path).toContain('3,146 eligible stations')
+      expect(example?.table?.rows, path).toHaveLength(5)
+    }
+  })
+
+  it('uses a ProfilePage for the visible Anthony author page', () => {
+    const about = SEO_PAGES.find((page) => page.path === '/about-anthony')
+    expect(about).toBeTruthy()
+    expect(seoPageStructuredData(about!)['@graph'][0]).toMatchObject({
+      '@type': 'ProfilePage',
+      mainEntity: {
+        '@type': 'Person',
+        name: 'Anthony Pappano',
+        url: 'https://www.teslachargequest.com/about-anthony',
+      },
+    })
   })
 })

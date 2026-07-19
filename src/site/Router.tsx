@@ -28,6 +28,7 @@ export function ChargeQuestRouter() {
             <Route path="badges/:slug" element={<SeoRoutePage />} />
             <Route path="tesla-road-trip-routes" element={<SeoRoutePage />} />
             <Route path="routes/:slug" element={<SeoRoutePage />} />
+            <Route path="about-anthony" element={<SeoRoutePage />} />
             <Route path="login" element={<NoIndexPage title="Sign in"><AuthPage mode="login" /></NoIndexPage>} />
             <Route path="signup" element={<NoIndexPage title="Create an account"><AuthPage mode="signup" /></NoIndexPage>} />
             <Route path="change-password" element={<NoIndexPage title="Change password"><PasswordChangePage /></NoIndexPage>} />
