@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 
-const SITE_ORIGIN = 'https://supercharger-quest-planner.onrender.com'
+const SITE_ORIGIN = 'https://www.teslachargequest.com'
 
 export function usePageMetadata({
   title,

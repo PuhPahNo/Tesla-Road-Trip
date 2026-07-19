@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://supercharger-quest-planner.onrender.com/sitemap.xml
+Sitemap: https://www.teslachargequest.com/sitemap.xml

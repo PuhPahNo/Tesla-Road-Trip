@@ -1,27 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://supercharger-quest-planner.onrender.com/</loc>
-    <lastmod>2026-07-11</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
+    <loc>https://www.teslachargequest.com/</loc>
   </url>
   <url>
-    <loc>https://supercharger-quest-planner.onrender.com/community</loc>
-    <lastmod>2026-07-11</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
+    <loc>https://www.teslachargequest.com/community</loc>
   </url>
   <url>
-    <loc>https://supercharger-quest-planner.onrender.com/track-anthony</loc>
-    <lastmod>2026-07-11</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://supercharger-quest-planner.onrender.com/signup</loc>
-    <lastmod>2026-07-11</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.teslachargequest.com/track-anthony</loc>
   </url>
 </urlset>

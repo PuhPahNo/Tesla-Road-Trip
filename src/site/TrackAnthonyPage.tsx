@@ -7,6 +7,7 @@ import {
 } from '../api/siteClient'
 import { STATE_CODE_TO_NAME } from '../domain/usStates'
 import { useAuth } from './AuthContext'
+import { usePageMetadata } from './usePageMetadata'
 
 const STATES = Object.entries(STATE_CODE_TO_NAME).sort((a, b) =>
   a[1].localeCompare(b[1]),
@@ -22,6 +23,12 @@ export function TrackAnthonyPage() {
     city: '',
     proposedDay: '',
     message: '',
+  })
+
+  usePageMetadata({
+    title: 'Track Anthony’s ChargeQuest | Live Tesla Road Trip Updates',
+    description: 'Follow Anthony’s live ChargeQuest progress, Tesla Supercharger stops, route milestones, field updates, and approved community meetups.',
+    path: '/track-anthony',
   })
 
   useEffect(() => {
