@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from './AuthContext'
 import { cx } from '../ui/primitives'
 import { ANTHONY_EMAIL, ANTHONY_EMAIL_HREF } from './contact'
+import { LEGAL_OPERATOR_DISCLOSURE, LEGAL_OPERATOR_NAME } from './business'
 
 const NAV_ITEMS = [
   { to: '/', label: 'Home' },
@@ -129,7 +130,7 @@ export function SiteShell() {
               <img src="/chargequest-logo.png?v=4" alt="ChargeQuest" className="h-8 w-auto object-contain" />
               <p className="mt-5 text-[12px] leading-[1.7] text-white/42">
                 Competition-aware Tesla road trips built around places worth visiting.
-                Independent from and not endorsed by Tesla.
+                {' '}{LEGAL_OPERATOR_DISCLOSURE} Independent from and not endorsed by Tesla.
               </p>
               <a href={ANTHONY_EMAIL_HREF} className="mt-5 inline-block text-[11.5px] font-semibold text-white/72 no-underline hover:text-white">
                 {ANTHONY_EMAIL}
@@ -157,7 +158,7 @@ export function SiteShell() {
           </div>
 
           <div className="flex flex-col gap-2 pt-6 font-mono text-[8px] uppercase tracking-[0.09em] text-white/25 sm:flex-row sm:items-center sm:justify-between">
-            <div>© {new Date().getFullYear()} ChargeQuest · Built by Anthony Pappano</div>
+            <div>© {new Date().getFullYear()} {LEGAL_OPERATOR_NAME} · ChargeQuest · Built by Anthony Pappano</div>
             <div>Route estimates require current road, weather, and charging verification</div>
           </div>
         </div>

@@ -194,14 +194,14 @@ export function AdminPage() {
   }
 
   return (
-    <div className="mx-auto max-w-[1320px] px-4 py-8 sm:px-7 sm:py-14 lg:px-10 lg:py-16">
-      <header className="flex flex-col justify-between gap-7 border-b border-edge pb-8 lg:flex-row lg:items-end">
+    <div className="mx-auto max-w-[1320px] px-4 py-7 sm:px-7 sm:py-9 lg:px-10 lg:py-10">
+      <header className="flex flex-col justify-between gap-5 border-b border-edge pb-6 lg:flex-row lg:items-center">
         <div>
           <div className="site-kicker">Anthony admin</div>
-          <h1 className="mt-3 max-w-[780px] text-[clamp(38px,5.6vw,66px)] font-semibold leading-[.98] tracking-[-0.05em]">
-            Run the entire site from one place
+          <h1 className="mt-2 text-[34px] font-semibold leading-none tracking-[-0.04em] sm:text-[42px]">
+            ChargeQuest admin
           </h1>
-          <p className="mt-4 max-w-[680px] text-[14px] leading-[1.65] text-dim">
+          <p className="mt-3 max-w-[680px] text-[12.5px] leading-[1.6] text-dim">
             Manage users and their route activity, publish the full ChargeQuest journey,
             review private suggestions, and switch the tracker into live-trip mode when you leave.
           </p>

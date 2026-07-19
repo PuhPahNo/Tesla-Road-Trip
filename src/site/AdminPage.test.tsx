@@ -1,4 +1,5 @@
 import { cleanup, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AuthProvider } from './AuthContext'
 import { AdminPage } from './AdminPage'
@@ -62,6 +63,39 @@ describe('Anthony admin workspace', () => {
                 },
               ],
             }
+          : input === '/api/admin/accounts/member-1'
+            ? {
+                account: {
+                  id: 'member-1',
+                  username: 'roadtripper',
+                  role: 'member',
+                  mustChangePassword: true,
+                  createdAt: '2026-07-11T00:00:00.000Z',
+                  updatedAt: '2026-07-11T00:00:00.000Z',
+                  lastLoginAt: null,
+                  activeSessions: 0,
+                  routeCount: 1,
+                  suggestionCount: 1,
+                  meetupCount: 0,
+                  stateVoteCount: 2,
+                  achievementCount: 1,
+                },
+                routes: [{
+                  id: 'route-1',
+                  name: 'Western Parks Loop',
+                  color: '#e82127',
+                  waypoints: [{ id: 'wp-1', label: 'Grand Canyon', radiusMiles: 40 }],
+                  keepOrder: false,
+                  createdAt: '2026-07-11T00:00:00.000Z',
+                  updatedAt: '2026-07-11T00:00:00.000Z',
+                }],
+                preferences: null,
+                suggestions: [],
+                meetups: [],
+                stateVotes: [],
+                achievements: [],
+                activity: [],
+              }
           : {
               community: {
                 trip: {
@@ -110,12 +144,18 @@ describe('Anthony admin workspace', () => {
       </AuthProvider>,
     )
 
-    expect(screen.getByRole('heading', { name: 'Run the entire site from one place' })).toBeTruthy()
-    expect(await screen.findByRole('heading', { name: 'Manage every ChargeQuest account' })).toBeTruthy()
-    expect(screen.getByLabelText('Username for anthony')).toBeTruthy()
-    expect(screen.getByLabelText('Username for roadtripper')).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Create account' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'ChargeQuest admin' })).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: 'Users' })).toBeTruthy()
+    expect(screen.getByRole('columnheader', { name: 'User' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Add user' })).toBeTruthy()
+    expect(screen.getAllByRole('button', { name: 'Open anthony' }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('button', { name: 'Open roadtripper' }).length).toBeGreaterThan(0)
     expect(screen.getByRole('heading', { name: 'Recent account activity' })).toBeTruthy()
+    await userEvent.click(screen.getAllByRole('button', { name: 'Open roadtripper' })[0])
+    expect(await screen.findByRole('heading', { name: '@roadtripper' })).toBeTruthy()
+    expect(screen.getByLabelText('Username for roadtripper')).toBeTruthy()
+    expect(await screen.findByText('Western Parks Loop')).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Security' })).toBeTruthy()
     expect(await screen.findByRole('heading', { name: 'Public trip profile' })).toBeTruthy()
     expect(screen.getByRole('heading', { name: 'Publish progress' })).toBeTruthy()
     expect(screen.getByRole('heading', { name: 'Manage the Track Anthony timeline' })).toBeTruthy()

@@ -1,5 +1,6 @@
 import { TESLA_ICONIC_BADGES } from '../domain/teslaBadges'
 import { ANTHONY_EMAIL_HREF } from '../site/contact'
+import { LEGAL_OPERATOR_DISCLOSURE, LEGAL_OPERATOR_NAME } from '../site/business'
 
 export const SITE_ORIGIN = 'https://www.teslachargequest.com'
 export const SEO_UPDATED_AT = '2026-07-19'
@@ -831,6 +832,7 @@ export const SEO_PAGES: SeoPage[] = [
       {
         heading: 'What I am—and am not—claiming',
         paragraphs: [
+          `${LEGAL_OPERATOR_DISCLOSURE} I am the builder and public voice behind it; Antelligence LLC is the business operating the project.`,
           'I am the builder taking the route problem seriously, not an official voice for Tesla. ChargeQuest is independent and cannot award a badge, certify a competition score, guarantee a charger, or know what weather and traffic will do on your travel day. Tesla owns its competition and charging records. Road, park, and charger conditions still need current verification.',
           'I will add first-hand route notes as my own plan develops and, eventually, as the road tests the assumptions. Those notes should make the existing guides more useful. They will not be used to pretend one person’s trip is the correct route for everyone.',
         ],
@@ -843,7 +845,7 @@ export const SEO_PAGES: SeoPage[] = [
         ],
       },
     ],
-    note: 'ChargeQuest is independently built by Anthony Pappano and is not affiliated with or endorsed by Tesla.',
+    note: `${LEGAL_OPERATOR_DISCLOSURE} Built by Anthony Pappano and not affiliated with or endorsed by Tesla.`,
     sources: [],
     relatedPaths: [
       '/2026-tesla-supercharging-competition',
@@ -908,6 +910,12 @@ export function seoPageStructuredData(page: SeoPage) {
         dateModified: page.updatedAt,
         inLanguage: 'en-US',
         mainEntity: author,
+        publisher: {
+          '@type': 'Organization',
+          name: LEGAL_OPERATOR_NAME,
+          url: SITE_ORIGIN,
+          brand: { '@type': 'Brand', name: 'ChargeQuest' },
+        },
       }
     : {
         '@type': page.kind === 'hub' ? 'CollectionPage' : 'Article',
@@ -918,7 +926,12 @@ export function seoPageStructuredData(page: SeoPage) {
         dateModified: page.updatedAt,
         inLanguage: 'en-US',
         author,
-        publisher: { '@type': 'Organization', name: 'ChargeQuest', url: SITE_ORIGIN },
+        publisher: {
+          '@type': 'Organization',
+          name: LEGAL_OPERATOR_NAME,
+          url: SITE_ORIGIN,
+          brand: { '@type': 'Brand', name: 'ChargeQuest' },
+        },
       }
 
   return {

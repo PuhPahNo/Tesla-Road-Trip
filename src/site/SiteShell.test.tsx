@@ -34,6 +34,8 @@ describe('public site navigation', () => {
     const plannerLinks = screen.getAllByRole('link', { name: 'Build a route' })
     expect(plannerLinks[0].getAttribute('href')).toBe('/signup?returnTo=%2Fplanner')
     expect(screen.getByRole('link', { name: 'Contact Anthony' }).getAttribute('href')).toBe('mailto:anthony@antelligentprojects.dev')
+    expect(screen.getByText(/ChargeQuest is a project of Antelligence LLC/)).toBeTruthy()
+    expect(screen.getByText(/© \d{4} Antelligence LLC/)).toBeTruthy()
     expect(screen.getByText('Public homepage')).toBeTruthy()
   })
 

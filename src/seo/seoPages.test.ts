@@ -50,6 +50,11 @@ describe('public SEO content registry', () => {
       '@type': 'Article',
       headline: page!.headline,
       author: { '@type': 'Person', name: 'Anthony Pappano' },
+      publisher: {
+        '@type': 'Organization',
+        name: 'Antelligence LLC',
+        brand: { '@type': 'Brand', name: 'ChargeQuest' },
+      },
     })
     expect(schema['@graph'][1]).toMatchObject({ '@type': 'BreadcrumbList' })
   })

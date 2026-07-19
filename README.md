@@ -1,5 +1,7 @@
 # ChargeQuest
 
+ChargeQuest is a project of Antelligence LLC, built by Anthony Pappano.
+
 Multi-user Tesla road-trip planner for the 2026 Free Supercharging Competition, with landmark-first routing, configurable travel preferences, saved routes, a private suggestion channel, and Anthony’s public journey timeline.
 
 ## Run Locally
