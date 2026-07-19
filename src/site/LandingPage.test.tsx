@@ -63,6 +63,10 @@ describe('ChargeQuest landing page', () => {
     expect(screen.getByText('Charging Optimization & Route Engine')).toBeTruthy()
     expect(screen.getByText('Tell CORE what matters')).toBeTruthy()
     expect(screen.getByText('CORE connects the journey')).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Plan the challenge. Keep the journey.' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Read the competition guide' }).getAttribute('href')).toBe('/2026-tesla-supercharging-competition')
+    expect(screen.getByRole('link', { name: 'Explore badge guides' }).getAttribute('href')).toBe('/tesla-iconic-charger-badges')
+    expect(screen.getByRole('link', { name: 'Browse route ideas' }).getAttribute('href')).toBe('/tesla-road-trip-routes')
     expect(document.title).toBe('ChargeQuest CORE | Tesla Supercharger Route Planner for 2026')
   })
 

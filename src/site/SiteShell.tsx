@@ -129,6 +129,9 @@ export function SiteShell() {
             </NavLink>
             <NavLink to="/community" className="text-white/35 no-underline hover:text-white">Community</NavLink>
             <NavLink to="/track-anthony" className="text-white/35 no-underline hover:text-white">Track Anthony</NavLink>
+            <NavLink to="/2026-tesla-supercharging-competition" className="text-white/35 no-underline hover:text-white">Competition guide</NavLink>
+            <NavLink to="/tesla-iconic-charger-badges" className="text-white/35 no-underline hover:text-white">Iconic badges</NavLink>
+            <NavLink to="/tesla-road-trip-routes" className="text-white/35 no-underline hover:text-white">Route library</NavLink>
           </div>
         </div>
       </footer>

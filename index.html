@@ -12,6 +12,15 @@
       content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1"
     />
     <meta name="theme-color" content="#0a0d12" id="theme-color-meta" />
+    <style>
+      .seo-static-fallback { max-width: 980px; margin: 0 auto; padding: 4rem 1.25rem; font: 16px/1.7 system-ui, sans-serif; }
+      .seo-static-fallback h1 { font-size: clamp(2.5rem, 7vw, 5rem); line-height: .95; letter-spacing: -.055em; }
+      .seo-static-fallback h2 { margin-top: 3rem; font-size: 1.75rem; line-height: 1.1; }
+      .seo-static-fallback a { color: #b51217; }
+      .seo-static-fallback aside { margin-top: 2rem; padding: 1.25rem; background: #eee9df; }
+      .js .seo-static-fallback { display: none; }
+    </style>
+    <script>document.documentElement.classList.add('js')</script>
     <meta
       name="description"
       content="Build and save a Tesla Supercharger route for the 2026 competition. Plan around your Tesla, real-world range, Iconic Charger badges, landmarks, and daily driving limits."
@@ -32,7 +41,7 @@
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
-    <script type="application/ld+json">
+    <script id="site-structured-data" type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "WebApplication",

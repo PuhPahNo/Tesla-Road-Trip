@@ -1,5 +1,6 @@
 import 'dotenv/config'
 import { createHash } from 'node:crypto'
+import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import express from 'express'
@@ -32,6 +33,7 @@ import {
   normalizeSuperchargeSites,
 } from '../src/domain/stations'
 import type { PlannerConfig, Station } from '../src/domain/types'
+import { renderClientDocument } from './seo'
 import { z } from 'zod'
 
 const METERS_PER_MILE = 1609.344
@@ -685,10 +687,28 @@ if (process.env.SERVE_CLIENT) {
     path.dirname(fileURLToPath(import.meta.url)),
     '../dist',
   )
-  app.use(express.static(clientDir))
+  const clientIndexHtml = await readFile(path.join(clientDir, 'index.html'), 'utf8')
+  app.use(express.static(clientDir, {
+    index: false,
+    setHeaders(response, filePath) {
+      if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+        response.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+        return
+      }
+      response.setHeader('Cache-Control', 'public, max-age=0, must-revalidate')
+    },
+  }))
   app.use((request, response) => {
-    if (request.method === 'GET' && !request.path.startsWith('/api')) {
-      response.sendFile(path.join(clientDir, 'index.html'))
+    if ((request.method === 'GET' || request.method === 'HEAD') && !request.path.startsWith('/api')) {
+      const rendered = renderClientDocument(clientIndexHtml, request.path)
+      response.status(rendered.status)
+      response.setHeader(
+        'Cache-Control',
+        rendered.status === 404
+          ? 'no-store'
+          : 'public, max-age=0, must-revalidate',
+      )
+      response.type('html').send(rendered.html)
       return
     }
     response.status(404).json({ error: 'not_found' })

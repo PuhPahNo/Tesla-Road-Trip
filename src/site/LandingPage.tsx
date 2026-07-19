@@ -268,6 +268,50 @@ export function LandingPage() {
         </div>
       </section>
 
+      <section className="bg-[#d9d2c5] px-4 py-20 text-black sm:px-5 sm:py-28 lg:px-8 lg:py-36">
+        <div className="mx-auto max-w-[1320px]">
+          <div className="grid gap-8 lg:grid-cols-[1fr_.72fr] lg:items-end">
+            <div>
+              <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-black/42">ChargeQuest field guides</div>
+              <h2 className="mt-5 max-w-[860px] text-[clamp(42px,10vw,96px)] font-semibold leading-[0.9] tracking-[-0.06em] sm:leading-[0.86] sm:tracking-[-0.068em]">
+                Plan the challenge. Keep the journey.
+              </h2>
+            </div>
+            <p className="max-w-[500px] text-[16px] leading-[1.75] text-black/58">
+              I’m publishing the same research I use to shape my own route: the
+              competition rules that change the strategy, the badge locations that
+              can change the road, and starting routes built around places worth seeing.
+            </p>
+          </div>
+          <div className="mt-14 grid border-t border-black/18 md:grid-cols-3">
+            <FieldGuideCard
+              number="01"
+              eyebrow="2026 competition"
+              title="Know which contest you are actually planning for"
+              body="A plain-English look at Longest Trip, Most Unique Sites, Most Energy, and the tradeoffs between them."
+              to="/2026-tesla-supercharging-competition"
+              label="Read the competition guide"
+            />
+            <FieldGuideCard
+              number="02"
+              eyebrow="Iconic Charger badges"
+              title="Make a charging stop part of the destination"
+              body="Explore the 17 North American badge targets currently mapped in CORE and verify the official locations."
+              to="/tesla-iconic-charger-badges"
+              label="Explore badge guides"
+            />
+            <FieldGuideCard
+              number="03"
+              eyebrow="Route library"
+              title="Start with a road worth remembering"
+              body="Use Route 66, the western parks, or a broad American loop as a starting idea—then make it yours."
+              to="/tesla-road-trip-routes"
+              label="Browse route ideas"
+            />
+          </div>
+        </div>
+      </section>
+
       <section className="cq-editorial-light px-4 py-20 text-center sm:px-5 sm:py-36 lg:px-8 lg:py-44">
         <div className="mx-auto max-w-[1120px]">
           <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-black/45">What ChargeQuest is becoming</div>
@@ -308,6 +352,36 @@ export function LandingPage() {
         </div>
       </section>
     </>
+  )
+}
+
+function FieldGuideCard({
+  number,
+  eyebrow,
+  title,
+  body,
+  to,
+  label,
+}: {
+  number: string
+  eyebrow: string
+  title: string
+  body: string
+  to: string
+  label: string
+}) {
+  return (
+    <article className="border-b border-black/18 py-8 md:border-b-0 md:border-r md:px-8 md:first:pl-0 md:last:border-r-0">
+      <div className="flex items-center justify-between gap-5 font-mono text-[8px] font-semibold uppercase tracking-[0.12em] text-black/38">
+        <span>{eyebrow}</span>
+        <span>{number}</span>
+      </div>
+      <h3 className="mt-7 text-[28px] font-semibold leading-[1.02] tracking-[-0.045em]">{title}</h3>
+      <p className="mt-5 text-[14px] leading-[1.7] text-black/56">{body}</p>
+      <Link to={to} className="mt-7 inline-flex items-center gap-2 text-[12px] font-semibold text-black no-underline hover:text-[#e82127]">
+        {label} <ArrowRight aria-hidden="true" size={15} />
+      </Link>
+    </article>
   )
 }
 
