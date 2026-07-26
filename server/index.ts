@@ -374,7 +374,7 @@ function demoWarning(): string[] {
 
 registerAuthRoutes(app)
 registerAdminAccountRoutes(app)
-registerCommunityRoutes(app)
+registerCommunityRoutes(app, () => loadStations())
 registerCustomRouteRoutes(app)
 registerAgentRoutes(app, () => loadStations())
 

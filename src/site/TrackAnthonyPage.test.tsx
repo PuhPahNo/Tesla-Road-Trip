@@ -1,8 +1,15 @@
 import { cleanup, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AuthProvider } from './AuthContext'
 import { TrackAnthonyPage } from './TrackAnthonyPage'
+
+vi.mock('../components/MapView', () => ({
+  MapView: ({ highlightedDayIndex }: { highlightedDayIndex?: number }) => (
+    <div>Map highlighting day {(highlightedDayIndex ?? 0) + 1}</div>
+  ),
+}))
 
 afterEach(() => {
   cleanup()
@@ -47,5 +54,140 @@ describe('Track Anthony', () => {
     expect(screen.getByRole('link', { name: /Open the route comparison/ }).getAttribute('href')).toBe('https://example.com/route-map')
     expect(screen.getByText('September 1, 2026')).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Send invite to Anthony' })).toBeNull()
+  })
+
+  it('lays out the published saved route by day and opens writing attached to a location', async () => {
+    const station = {
+      id: 'station-1',
+      sourceId: 'station-1',
+      source: 'supercharge.info',
+      name: 'Grand Canyon Supercharger',
+      status: 'OPEN',
+      position: { lat: 35.2, lon: -111.6 },
+      address: {
+        city: 'Grand Canyon Village',
+        state: 'AZ',
+        country: 'USA',
+      },
+      stallCount: 12,
+      powerKw: 250,
+      counted: true,
+      otherEvs: false,
+    }
+    const day = (number: number, landmark: string) => ({
+      day: number,
+      miles: number * 120,
+      driveHours: number * 2,
+      stopMinutes: 30,
+      uniqueStations: 1,
+      averageDistanceBetweenSuperchargers: 120,
+      visits: [{ sequence: number, day: number, station, legMiles: 120, driveHours: 2, stopMinutes: 20, rangeWarning: false }],
+      warnings: [],
+      advisories: [],
+      longDayOptimized: false,
+      rating: {
+        score: 90,
+        sceneryScore: 90,
+        cityScore: 80,
+        landmarkScore: 95,
+        places: [{
+          id: `landmark-${number}`,
+          type: 'landmark',
+          label: landmark,
+          rating: 95,
+          sceneryScore: 95,
+          visits: 1,
+          summary: 'Planned landmark',
+        }],
+        summary: 'Scenic day',
+      },
+      ...(number === 2
+        ? { stay: { placeId: 'grand-canyon', label: 'Grand Canyon', rating: 95, night: 1, totalNights: 1 } }
+        : {}),
+    })
+    const days = [day(1, 'Cadillac Ranch'), day(2, 'Grand Canyon')]
+    const route = {
+      id: 'saved-2026-competition',
+      plannerMode: 'longest_trip',
+      tripStartDate: '2026-08-03',
+      name: '2026 Competition',
+      strategy: 'Saved route',
+      color: '#e82127',
+      uniqueStations: 2,
+      totalMiles: 360,
+      totalDriveHours: 6,
+      totalStopHours: 1,
+      totalDays: 2,
+      averageMilesPerDay: 180,
+      averageDriveHoursPerDay: 3,
+      averageStopHoursPerDay: 0.5,
+      averageDistanceBetweenSuperchargers: 120,
+      stationsPerDay: 1,
+      days,
+      visits: days.flatMap((item) => item.visits),
+      warnings: [],
+      advisories: [],
+      longDays: 0,
+      routeLine: [station.position],
+      rating: days[0].rating,
+    }
+
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async (input: string) => ({
+      ok: true,
+      json: async () => {
+        if (input === '/api/auth/session') return {}
+        if (input === '/api/community/anthony-route') {
+          return {
+            selectedRouteId: route.id,
+            route: {
+              savedRoute: {
+                id: route.id,
+                name: route.name,
+                color: route.color,
+                startDate: route.tripStartDate,
+                targetDays: 2,
+                waypointCount: 2,
+                updatedAt: '2026-07-26T12:00:00.000Z',
+              },
+              route,
+            },
+          }
+        }
+        return {
+          trip: {
+            active: false,
+            title: "Anthony's ChargeQuest",
+            selectedRouteId: route.id,
+            routeName: route.name,
+            totalDays: 2,
+            departureDate: route.tripStartDate,
+            updatedAt: '2026-07-26T12:00:00.000Z',
+          },
+          updates: [{
+            id: 'grand-canyon-blog',
+            phase: 'on-the-road',
+            day_number: 2,
+            location: 'Grand Canyon',
+            title: 'What sunrise looked like from the rim',
+            body: 'A field note attached to the second day of the route.',
+            created_at: '2026-08-04T12:00:00.000Z',
+          }],
+          stateVotes: [],
+          meetups: [],
+          suggestions: [],
+          achievements: [],
+        }
+      },
+    })))
+
+    render(<MemoryRouter><AuthProvider><TrackAnthonyPage /></AuthProvider></MemoryRouter>)
+
+    expect(await screen.findByRole('heading', { name: '2026 Competition, day by day' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Every day. Every stop. One mapped trip.' })).toBeTruthy()
+    expect(screen.getByText('Map highlighting day 1')).toBeTruthy()
+    await userEvent.click(screen.getByRole('button', { name: 'Open day 2, Grand Canyon' }))
+    expect(screen.getByText('Map highlighting day 2')).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Day 2: Grand Canyon' })).toBeTruthy()
+    expect(screen.getAllByText('What sunrise looked like from the rim').length).toBeGreaterThan(0)
   })
 })

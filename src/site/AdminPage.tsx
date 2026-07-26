@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import {
   deleteAnthonyUpdate,
   deleteSuggestion,
+  fetchAdminAnthonyRoute,
   fetchAdminCommunity,
   moderateMeetup,
   publishAnthonyUpdate,
@@ -12,8 +13,10 @@ import {
   type AnthonyUpdatePhase,
   type AnthonyTrip,
   type CommunitySnapshot,
+  type PublishedAnthonyRoute,
   type SuggestionInboxItem,
 } from '../api/siteClient'
+import type { DayPlan, SavedCustomRoute } from '../domain/types'
 import { AdminAccountsSection } from './AdminAccountsSection'
 
 interface PendingMeetup {
@@ -29,6 +32,7 @@ interface PendingMeetup {
 const EMPTY_TRIP: Omit<AnthonyTrip, 'updatedAt'> = {
   active: false,
   title: "Anthony's ChargeQuest",
+  selectedRouteId: null,
   routeName: '',
   dayNumber: null,
   totalDays: 60,
@@ -55,6 +59,9 @@ const EMPTY_UPDATE = {
 
 export function AdminPage() {
   const [community, setCommunity] = useState<CommunitySnapshot>()
+  const [savedRoutes, setSavedRoutes] = useState<SavedCustomRoute[]>([])
+  const [routePreview, setRoutePreview] = useState<PublishedAnthonyRoute>()
+  const [routePreviewLoading, setRoutePreviewLoading] = useState(false)
   const [pendingMeetups, setPendingMeetups] = useState<PendingMeetup[]>([])
   const [suggestionInbox, setSuggestionInbox] = useState<SuggestionInboxItem[]>([])
   const [trip, setTrip] = useState(EMPTY_TRIP)
@@ -67,12 +74,14 @@ export function AdminPage() {
     try {
       const result = await fetchAdminCommunity()
       setCommunity(result.community)
+      setSavedRoutes(result.savedRoutes ?? [])
       setPendingMeetups(result.pendingMeetups as unknown as PendingMeetup[])
       setSuggestionInbox(result.suggestionInbox ?? [])
       const current = result.community.trip
       setTrip({
         active: current.active,
         title: current.title,
+        selectedRouteId: current.selectedRouteId ?? null,
         routeName: current.routeName ?? '',
         dayNumber: current.dayNumber ?? null,
         totalDays: current.totalDays ?? 60,
@@ -84,6 +93,21 @@ export function AdminPage() {
         startedAt: current.startedAt ?? null,
         departureDate: current.departureDate ?? null,
       })
+      if (current.selectedRouteId) {
+        setRoutePreviewLoading(true)
+        void fetchAdminAnthonyRoute(current.selectedRouteId)
+          .then((preview) => setRoutePreview(preview.route))
+          .catch((requestError) => {
+            setError(
+              requestError instanceof Error
+                ? requestError.message
+                : 'Unable to preview the published route.',
+            )
+          })
+          .finally(() => setRoutePreviewLoading(false))
+      } else {
+        setRoutePreview(undefined)
+      }
       setError(undefined)
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Unable to load admin.')
@@ -99,7 +123,13 @@ export function AdminPage() {
     try {
       const result = await saveAnthonyTrip(trip)
       setCommunity(result.community)
-      setNotice(trip.active ? 'The live tracker is active and updated.' : 'The live tracker is now parked.')
+      setNotice(
+        trip.selectedRouteId
+          ? `${trip.routeName} now powers the full Track Anthony route.`
+          : trip.active
+            ? 'The live tracker is active and updated.'
+            : 'The live tracker is now parked.',
+      )
       setError(undefined)
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Unable to save trip.')
@@ -193,6 +223,71 @@ export function AdminPage() {
     }
   }
 
+  const selectPublishedRoute = async (routeId: string) => {
+    if (!routeId) {
+      setTrip((current) => ({
+        ...current,
+        selectedRouteId: null,
+        routeName: '',
+        departureDate: null,
+      }))
+      setRoutePreview(undefined)
+      return
+    }
+    const selected = savedRoutes.find((route) => route.id === routeId)
+    if (!selected) return
+    setTrip((current) => ({
+      ...current,
+      selectedRouteId: selected.id,
+      routeName: selected.name,
+      departureDate: selected.startDate ?? null,
+      totalDays: selected.targetDays ?? current.totalDays,
+    }))
+    setRoutePreviewLoading(true)
+    setError(undefined)
+    try {
+      const result = await fetchAdminAnthonyRoute(selected.id)
+      setRoutePreview(result.route)
+    } catch (requestError) {
+      setRoutePreview(undefined)
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : 'Unable to preview the saved route.',
+      )
+    } finally {
+      setRoutePreviewLoading(false)
+    }
+  }
+
+  const setCurrentDay = (value: string) => {
+    const dayNumber = value ? Number(value) : null
+    const day = routePreview?.route.days.find((item) => item.day === dayNumber)
+    const finalStop = day?.visits.at(-1)?.station
+    setTrip((current) => ({
+      ...current,
+      dayNumber,
+      ...(day
+        ? {
+            currentLocation: adminDayLocation(day),
+            latitude: finalStop?.position.lat ?? current.latitude,
+            longitude: finalStop?.position.lon ?? current.longitude,
+          }
+        : {}),
+    }))
+  }
+
+  const setUpdateDay = (value: string) => {
+    const day = routePreview?.route.days.find(
+      (item) => item.day === Number(value),
+    )
+    setUpdate((current) => ({
+      ...current,
+      dayNumber: value,
+      location: day ? adminDayLocation(day) : value ? current.location : '',
+    }))
+  }
+
   return (
     <div className="mx-auto max-w-[1320px] px-4 py-7 sm:px-7 sm:py-9 lg:px-10 lg:py-10">
       <header className="flex flex-col justify-between gap-5 border-b border-edge pb-6 lg:flex-row lg:items-center">
@@ -238,21 +333,82 @@ export function AdminPage() {
 
           <div className="space-y-8 p-5 sm:p-7">
             <fieldset className="border-0 p-0">
-              <legend className="admin-fieldset-title">Trip identity</legend>
+              <legend className="admin-fieldset-title">Published saved route</legend>
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <label className="site-field-label sm:col-span-2">
                   Trip title
                   <input required className="site-input" value={trip.title} onChange={(event) => setTrip((current) => ({ ...current, title: event.target.value }))} />
                 </label>
                 <label className="site-field-label sm:col-span-2">
-                  Route name
-                  <input className="site-input" value={trip.routeName ?? ''} onChange={(event) => setTrip((current) => ({ ...current, routeName: event.target.value }))} placeholder="The Long Way Home" />
+                  Route shown on Track Anthony
+                  <select
+                    className="site-input"
+                    aria-label="Route shown on Track Anthony"
+                    data-testid="track-anthony-route-select"
+                    value={trip.selectedRouteId ?? ''}
+                    onChange={(event) => void selectPublishedRoute(event.target.value)}
+                  >
+                    <option value="">No saved route selected</option>
+                    {savedRoutes.map((route) => (
+                      <option key={route.id} value={route.id}>
+                        {route.name} · {route.targetDays ?? '—'} days · {route.startDate ?? 'No date'}
+                      </option>
+                    ))}
+                  </select>
                 </label>
-                <label className="site-field-label sm:col-span-2">
-                  Planned departure date
-                  <input type="date" className="site-input" value={trip.departureDate ?? ''} onChange={(event) => setTrip((current) => ({ ...current, departureDate: event.target.value || null }))} />
+                {savedRoutes.length === 0 ? (
+                  <div className="sm:col-span-2 rounded-[11px] border border-edge bg-chip px-4 py-3 text-[12px] leading-[1.6] text-dim">
+                    Save a route in the planner first. It will appear here with its exact
+                    start date, day count, stops, and optimized day plan.
+                  </div>
+                ) : null}
+                <label className="site-field-label">
+                  Published route name
+                  <input
+                    className="site-input"
+                    value={trip.routeName ?? ''}
+                    disabled={Boolean(trip.selectedRouteId)}
+                    onChange={(event) => setTrip((current) => ({ ...current, routeName: event.target.value }))}
+                    placeholder="Select a saved route"
+                  />
+                </label>
+                <label className="site-field-label">
+                  Planned departure
+                  <input
+                    type="date"
+                    className="site-input"
+                    value={trip.departureDate ?? ''}
+                    disabled={Boolean(trip.selectedRouteId)}
+                    onChange={(event) => setTrip((current) => ({ ...current, departureDate: event.target.value || null }))}
+                  />
                 </label>
               </div>
+              {routePreviewLoading ? (
+                <div className="mt-4 rounded-[11px] border border-edge bg-chip px-4 py-4 text-[12px] text-dim">
+                  Building the complete day-by-day route preview…
+                </div>
+              ) : routePreview ? (
+                <div className="mt-5 overflow-hidden rounded-[13px] border border-edge bg-chip">
+                  <div className="flex flex-col justify-between gap-4 border-b border-edge px-4 py-4 sm:flex-row sm:items-center">
+                    <div>
+                      <div className="font-mono text-[8px] uppercase tracking-[0.1em] text-accent2">Ready to publish</div>
+                      <div className="mt-1 text-[16px] font-semibold">{routePreview.savedRoute.name}</div>
+                    </div>
+                    <a href="/track-anthony" target="_blank" rel="noreferrer" className="site-secondary-button flex min-h-10 items-center justify-center no-underline">
+                      Preview Track Anthony
+                    </a>
+                  </div>
+                  <div className="grid grid-cols-2 divide-x divide-y divide-edge sm:grid-cols-4 sm:divide-y-0">
+                    <RoutePreviewStat label="Days" value={routePreview.route.totalDays} />
+                    <RoutePreviewStat label="Miles" value={Math.round(routePreview.route.totalMiles).toLocaleString()} />
+                    <RoutePreviewStat label="Stops" value={routePreview.route.uniqueStations} />
+                    <RoutePreviewStat label="Route anchors" value={routePreview.savedRoute.waypointCount} />
+                  </div>
+                  <p className="m-0 border-t border-edge px-4 py-3 text-[11.5px] leading-[1.55] text-dim">
+                    Saving publishes the full map and all {routePreview.route.days.length} day locations. Route edits made in the planner automatically flow through without copying the itinerary here.
+                  </p>
+                </div>
+              ) : null}
             </fieldset>
 
             <fieldset className="border-0 border-t border-edge p-0 pt-7">
@@ -260,15 +416,26 @@ export function AdminPage() {
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <label className="site-field-label">
                   Current day
-                  <input type="number" min={1} max={365} className="site-input" value={trip.dayNumber ?? ''} onChange={(event) => setTrip((current) => ({ ...current, dayNumber: event.target.value ? Number(event.target.value) : null }))} placeholder="1" />
+                  {routePreview ? (
+                    <select data-testid="track-anthony-current-day" className="site-input" value={trip.dayNumber ?? ''} onChange={(event) => setCurrentDay(event.target.value)}>
+                      <option value="">Not on the road yet</option>
+                      {routePreview.route.days.map((day) => (
+                        <option key={day.day} value={day.day}>
+                          Day {day.day} · {adminDayLocation(day)}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input type="number" min={1} max={365} className="site-input" value={trip.dayNumber ?? ''} onChange={(event) => setCurrentDay(event.target.value)} placeholder="1" />
+                  )}
                 </label>
                 <label className="site-field-label">
                   Total days
-                  <input type="number" min={1} max={365} className="site-input" value={trip.totalDays ?? ''} onChange={(event) => setTrip((current) => ({ ...current, totalDays: event.target.value ? Number(event.target.value) : null }))} />
+                  <input type="number" min={1} max={365} className="site-input" value={trip.totalDays ?? ''} disabled={Boolean(trip.selectedRouteId)} onChange={(event) => setTrip((current) => ({ ...current, totalDays: event.target.value ? Number(event.target.value) : null }))} />
                 </label>
                 <label className="site-field-label sm:col-span-2">
                   Current location
-                  <input className="site-input" value={trip.currentLocation ?? ''} onChange={(event) => setTrip((current) => ({ ...current, currentLocation: event.target.value }))} placeholder="Boulder, Colorado" />
+                  <input data-testid="track-anthony-current-location" className="site-input" value={trip.currentLocation ?? ''} onChange={(event) => setTrip((current) => ({ ...current, currentLocation: event.target.value }))} placeholder="Choose the current trip day to fill this automatically" />
                 </label>
               </div>
             </fieldset>
@@ -309,12 +476,23 @@ export function AdminPage() {
               </label>
               <div className="grid gap-4 sm:grid-cols-[110px_1fr]">
                 <label className="site-field-label">
-                  Day
-                  <input type="number" min={1} max={365} className="site-input" value={update.dayNumber} onChange={(event) => setUpdate((current) => ({ ...current, dayNumber: event.target.value }))} />
+                  Trip day
+                  {routePreview ? (
+                    <select data-testid="track-anthony-journal-day" className="site-input" aria-label="Trip day for journal entry" value={update.dayNumber} onChange={(event) => setUpdateDay(event.target.value)}>
+                      <option value="">Pre-trip / general</option>
+                      {routePreview.route.days.map((day) => (
+                        <option key={day.day} value={day.day}>
+                          Day {day.day}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input type="number" min={1} max={365} className="site-input" value={update.dayNumber} onChange={(event) => setUpdateDay(event.target.value)} />
+                  )}
                 </label>
                 <label className="site-field-label">
                   Location or context
-                  <input className="site-input" value={update.location} onChange={(event) => setUpdate((current) => ({ ...current, location: event.target.value }))} placeholder="Optional before the trip" />
+                  <input data-testid="track-anthony-journal-location" className="site-input" value={update.location} onChange={(event) => setUpdate((current) => ({ ...current, location: event.target.value }))} placeholder="Optional before the trip" />
                 </label>
               </div>
               <label className="site-field-label">
@@ -461,6 +639,23 @@ function SnapshotStat({ label, value }: { label: string; value: number }) {
   )
 }
 
+function RoutePreviewStat({
+  label,
+  value,
+}: {
+  label: string
+  value: string | number
+}) {
+  return (
+    <div className="px-3 py-4 text-center">
+      <div className="text-[19px] font-semibold tracking-[-0.035em]">{value}</div>
+      <div className="mt-1 font-mono text-[7px] uppercase tracking-[0.09em] text-faint">
+        {label}
+      </div>
+    </div>
+  )
+}
+
 function JourneyAdminRow({ entry, onEdit, onDelete }: { entry: AnthonyUpdate; onEdit: () => void; onDelete: () => Promise<void> }) {
   const [deleteArmed, setDeleteArmed] = useState(false)
   return (
@@ -514,4 +709,11 @@ function SuggestionAdminCard({ suggestion, onStatus, onDelete }: { suggestion: S
 
 function formatAdminDate(value: string) {
   return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(value))
+}
+
+function adminDayLocation(day: DayPlan) {
+  if (day.stay?.label) return day.stay.label
+  const finalStop = day.visits.at(-1)?.station
+  if (!finalStop) return `Trip day ${day.day}`
+  return `${finalStop.address.city}, ${finalStop.address.state}`
 }

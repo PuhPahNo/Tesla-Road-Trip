@@ -162,6 +162,8 @@ db.exec(`
 `)
 
 ensureColumn('anthony_trip', 'departure_date', 'TEXT')
+ensureColumn('anthony_trip', 'selected_route_id', 'TEXT')
+ensureColumn('anthony_trip', 'selected_route_user_id', 'TEXT')
 ensureColumn('trip_updates', 'phase', "TEXT NOT NULL DEFAULT 'planning'")
 ensureColumn('trip_updates', 'artifact_url', 'TEXT')
 ensureColumn('trip_updates', 'artifact_label', 'TEXT')

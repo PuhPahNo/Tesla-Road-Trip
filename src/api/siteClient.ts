@@ -1,4 +1,4 @@
-import type { PlannerConfig, SavedCustomRoute } from '../domain/types'
+import type { PlannerConfig, RoutePlan, SavedCustomRoute } from '../domain/types'
 
 export interface AuthUser {
   id: string
@@ -11,6 +11,7 @@ export interface AuthUser {
 export interface AnthonyTrip {
   active: boolean
   title: string
+  selectedRouteId?: string | null
   routeName?: string | null
   dayNumber?: number | null
   totalDays?: number | null
@@ -78,6 +79,19 @@ export interface CommunitySnapshot {
     display_name: string
     created_at: string
   }>
+}
+
+export interface PublishedAnthonyRoute {
+  savedRoute: {
+    id: string
+    name: string
+    color: string
+    startDate?: string
+    targetDays?: number
+    waypointCount: number
+    updatedAt: string
+  }
+  route: RoutePlan
 }
 
 export interface ManagedAccount {
@@ -200,6 +214,13 @@ export async function fetchCommunity() {
   return request<CommunitySnapshot>('/api/community')
 }
 
+export async function fetchAnthonyRoute() {
+  return request<{
+    selectedRouteId: string | null
+    route: PublishedAnthonyRoute | null
+  }>('/api/community/anthony-route')
+}
+
 export async function saveStateVote(input: { stateCode: string; note?: string }) {
   return request<{ ok: true; community: CommunitySnapshot }>(
     '/api/community/state-votes',
@@ -270,9 +291,17 @@ export async function fetchAccount() {
 export async function fetchAdminCommunity() {
   return request<{
     community: CommunitySnapshot
+    savedRoutes: SavedCustomRoute[]
     pendingMeetups: Array<Record<string, unknown>>
     suggestionInbox: SuggestionInboxItem[]
   }>('/api/admin/community')
+}
+
+export async function fetchAdminAnthonyRoute(routeId: string) {
+  return request<{
+    selectedRouteId: string
+    route: PublishedAnthonyRoute
+  }>(`/api/admin/trip-route/${encodeURIComponent(routeId)}`)
 }
 
 export async function fetchAdminAccounts() {

@@ -4,6 +4,11 @@ import { z } from 'zod'
 import { defaultPlannerConfig, plannerConfigSchema } from '../src/domain/config'
 import { STATE_CODE_TO_NAME } from '../src/domain/usStates'
 import { getRequestUser, requireAdmin, requireUser } from './auth'
+import {
+  buildAnthonyRoute,
+  type StationSnapshot,
+} from './anthonyRoute'
+import { readSavedCustomRoutes } from './customRoutes'
 import { db } from './database'
 
 const STATE_CODES = Object.keys(STATE_CODE_TO_NAME)
@@ -42,6 +47,7 @@ const achievementSchema = z.object({
 const tripSchema = z.object({
   active: z.boolean(),
   title: z.string().trim().min(3).max(100),
+  selectedRouteId: z.string().trim().min(1).max(96).optional().nullable(),
   routeName: z.string().trim().max(100).optional().nullable(),
   dayNumber: z.coerce.number().int().min(1).max(365).optional().nullable(),
   totalDays: z.coerce.number().int().min(1).max(365).optional().nullable(),
@@ -74,9 +80,33 @@ const suggestionReviewSchema = z.object({
   status: z.enum(['pending', 'reviewed', 'archived']),
 })
 
-export function registerCommunityRoutes(app: Express) {
+export function registerCommunityRoutes(
+  app: Express,
+  loadStations: () => Promise<StationSnapshot>,
+) {
   app.get('/api/community', (_request, response) => {
     response.json(readCommunity())
+  })
+
+  app.get('/api/community/anthony-route', async (_request, response) => {
+    try {
+      const selection = readAnthonyRouteSelection()
+      if (!selection) {
+        response.json({ selectedRouteId: null, route: null })
+        return
+      }
+      const route = await buildAnthonyRoute(
+        selection.userId,
+        selection.routeId,
+        loadStations,
+      )
+      response.json({
+        selectedRouteId: selection.routeId,
+        route: route ?? null,
+      })
+    } catch (error) {
+      sendError(response, error, 'Unable to load Anthony’s published route.')
+    }
   })
 
   app.get('/api/account', (request, response) => {
@@ -289,9 +319,11 @@ export function registerCommunityRoutes(app: Express) {
   })
 
   app.get('/api/admin/community', (request, response) => {
-    if (!requireAdmin(request, response)) return
+    const admin = requireAdmin(request, response)
+    if (!admin) return
     response.json({
       community: readCommunity(),
+      savedRoutes: readSavedCustomRoutes(admin.id),
       pendingMeetups: db.prepare(`
         SELECT
           meetup_invites.id,
@@ -334,13 +366,27 @@ export function registerCommunityRoutes(app: Express) {
 
   app.put('/api/admin/trip', (request, response) => {
     try {
-      if (!requireAdmin(request, response)) return
+      const admin = requireAdmin(request, response)
+      if (!admin) return
       const parsed = tripSchema.parse(request.body)
+      const selectedRoute = parsed.selectedRouteId
+        ? readSavedCustomRoutes(admin.id).find(
+            (route) => route.id === parsed.selectedRouteId,
+          )
+        : undefined
+      if (parsed.selectedRouteId && !selectedRoute) {
+        response.status(400).json({
+          message: 'Choose one of your own saved routes for Track Anthony.',
+        })
+        return
+      }
       const now = new Date().toISOString()
       db.prepare(`
         UPDATE anthony_trip SET
           active = ?,
           title = ?,
+          selected_route_id = ?,
+          selected_route_user_id = ?,
           route_name = ?,
           day_number = ?,
           total_days = ?,
@@ -356,16 +402,18 @@ export function registerCommunityRoutes(app: Express) {
       `).run(
         parsed.active ? 1 : 0,
         parsed.title,
-        parsed.routeName ?? null,
+        selectedRoute?.id ?? null,
+        selectedRoute ? admin.id : null,
+        selectedRoute?.name ?? parsed.routeName ?? null,
         parsed.dayNumber ?? null,
-        parsed.totalDays ?? null,
+        selectedRoute?.targetDays ?? parsed.totalDays ?? null,
         parsed.currentLocation ?? null,
         parsed.headline ?? null,
         parsed.body ?? null,
         parsed.latitude ?? null,
         parsed.longitude ?? null,
         parsed.startedAt ?? null,
-        parsed.departureDate ?? null,
+        selectedRoute?.startDate ?? parsed.departureDate ?? null,
         now,
       )
       response.json({ ok: true, community: readCommunity() })
@@ -411,6 +459,25 @@ export function registerCommunityRoutes(app: Express) {
       response.status(201).json({ ok: true, id, community: readCommunity() })
     } catch (error) {
       sendError(response, error, 'Unable to publish the trip update.')
+    }
+  })
+
+  app.get('/api/admin/trip-route/:routeId', async (request, response) => {
+    try {
+      const admin = requireAdmin(request, response)
+      if (!admin) return
+      const route = await buildAnthonyRoute(
+        admin.id,
+        request.params.routeId,
+        loadStations,
+      )
+      if (!route) {
+        response.status(404).json({ message: 'Saved route not found.' })
+        return
+      }
+      response.json({ selectedRouteId: request.params.routeId, route })
+    } catch (error) {
+      sendError(response, error, 'Unable to preview the saved route.')
     }
   })
 
@@ -550,6 +617,7 @@ function readCommunity() {
       ? {
           active: Boolean(trip.active),
           title: trip.title,
+          selectedRouteId: trip.selected_route_id,
           routeName: trip.route_name,
           dayNumber: trip.day_number,
           totalDays: trip.total_days,
@@ -568,6 +636,21 @@ function readCommunity() {
     meetups,
     suggestions: [],
     achievements,
+  }
+}
+
+function readAnthonyRouteSelection() {
+  const row = db.prepare(`
+    SELECT selected_route_id, selected_route_user_id
+    FROM anthony_trip
+    WHERE id = 1
+  `).get() as unknown as
+    | { selected_route_id?: string | null; selected_route_user_id?: string | null }
+    | undefined
+  if (!row?.selected_route_id || !row.selected_route_user_id) return undefined
+  return {
+    routeId: row.selected_route_id,
+    userId: row.selected_route_user_id,
   }
 }
 

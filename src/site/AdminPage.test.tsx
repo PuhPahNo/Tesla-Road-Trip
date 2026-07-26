@@ -96,6 +96,92 @@ describe('Anthony admin workspace', () => {
                 achievements: [],
                 activity: [],
               }
+          : input === '/api/admin/trip-route/saved-2026-competition'
+            ? {
+                selectedRouteId: 'saved-2026-competition',
+                route: {
+                  savedRoute: {
+                    id: 'saved-2026-competition',
+                    name: '2026 Competition',
+                    color: '#e82127',
+                    startDate: '2026-08-03',
+                    targetDays: 70,
+                    waypointCount: 29,
+                    updatedAt: '2026-07-26T00:00:00.000Z',
+                  },
+                  route: {
+                    id: 'saved-2026-competition',
+                    plannerMode: 'longest_trip',
+                    tripStartDate: '2026-08-03',
+                    name: '2026 Competition',
+                    strategy: 'Saved route',
+                    color: '#e82127',
+                    uniqueStations: 410,
+                    totalMiles: 10328,
+                    totalDriveHours: 191,
+                    totalStopHours: 80,
+                    totalDays: 70,
+                    averageMilesPerDay: 148,
+                    averageDriveHoursPerDay: 2.73,
+                    averageStopHoursPerDay: 1.1,
+                    averageDistanceBetweenSuperchargers: 25,
+                    stationsPerDay: 5.8,
+                    days: [{
+                      day: 1,
+                      miles: 185,
+                      driveHours: 3.2,
+                      stopMinutes: 50,
+                      uniqueStations: 5,
+                      averageDistanceBetweenSuperchargers: 37,
+                      visits: [{
+                        sequence: 1,
+                        day: 1,
+                        station: {
+                          id: 'station-1',
+                          sourceId: 'station-1',
+                          source: 'supercharge.info',
+                          name: 'Knoxville Supercharger',
+                          status: 'OPEN',
+                          position: { lat: 35.96, lon: -83.92 },
+                          address: { city: 'Knoxville', state: 'TN', country: 'USA' },
+                          stallCount: 12,
+                          powerKw: 250,
+                          counted: true,
+                          otherEvs: false,
+                        },
+                        legMiles: 185,
+                        driveHours: 3.2,
+                        stopMinutes: 20,
+                        rangeWarning: false,
+                      }],
+                      warnings: [],
+                      advisories: [],
+                      longDayOptimized: false,
+                      rating: {
+                        score: 80,
+                        sceneryScore: 70,
+                        cityScore: 80,
+                        landmarkScore: 70,
+                        places: [],
+                        summary: 'Opening day',
+                      },
+                    }],
+                    visits: [],
+                    warnings: [],
+                    advisories: [],
+                    longDays: 0,
+                    routeLine: [],
+                    rating: {
+                      score: 80,
+                      sceneryScore: 70,
+                      cityScore: 80,
+                      landmarkScore: 70,
+                      places: [],
+                      summary: 'Competition route',
+                    },
+                  },
+                },
+              }
           : {
               community: {
                 trip: {
@@ -110,6 +196,21 @@ describe('Anthony admin workspace', () => {
                 meetups: [],
                 achievements: [],
               },
+              savedRoutes: [{
+                id: 'saved-2026-competition',
+                name: '2026 Competition',
+                color: '#e82127',
+                waypoints: [{
+                  id: 'grand-canyon',
+                  label: 'Grand Canyon',
+                  position: { lat: 36.1, lon: -112.1 },
+                  radiusMiles: 40,
+                }],
+                targetDays: 70,
+                startDate: '2026-08-03',
+                createdAt: '2026-07-26T00:00:00.000Z',
+                updatedAt: '2026-07-26T00:00:00.000Z',
+              }],
               pendingMeetups: [
                 {
                   id: 'meetup-1',
@@ -165,5 +266,12 @@ describe('Anthony admin workspace', () => {
     expect(screen.getByText('Denver, CO')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Approve' })).toBeTruthy()
     expect(screen.getByLabelText('Tracker active')).toBeTruthy()
+    await userEvent.selectOptions(
+      screen.getByLabelText('Route shown on Track Anthony'),
+      'saved-2026-competition',
+    )
+    expect(await screen.findByText('Ready to publish')).toBeTruthy()
+    expect(screen.getByText('2026 Competition')).toBeTruthy()
+    expect(screen.getByLabelText('Trip day for journal entry')).toBeTruthy()
   })
 })

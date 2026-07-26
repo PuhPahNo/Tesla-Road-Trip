@@ -51,12 +51,12 @@ const publicPages = new Map<string, PageMetadata>([
     ),
   }],
   ['/track-anthony', {
-    title: 'Track Anthony’s ChargeQuest | Route Build and Trip Updates',
-    description: 'Follow Anthony’s route decisions, ChargeQuest CORE experiments, trip preparation, artifacts, and live Tesla road-trip progress in one chronological story.',
+    title: 'Track Anthony’s ChargeQuest | Full Route and Trip Journal',
+    description: 'Explore Anthony’s complete ChargeQuest route day by day, including every planned location and landmark plus the blogs, videos, and field notes attached to each trip day.',
     path: '/track-anthony',
     fallback: renderBasicFallback(
-      'I’m building the route in public',
-      'Follow the decisions, route comparisons, CORE build notes, and trip preparation now. When Anthony leaves, the same timeline becomes the live road story.',
+      'The complete ChargeQuest route, day by day',
+      'Follow Anthony’s full mapped trip from departure through the return home, then open each planned day and location for landmarks, blogs, videos, and live road updates.',
     ),
   }],
 ])
