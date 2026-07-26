@@ -94,6 +94,11 @@ describe('planning modal responsibilities', () => {
     expect(
       (within(dialog).getByLabelText('Trip start date') as HTMLInputElement).value,
     ).toBe('2026-04-20')
+    expect(
+      within(dialog).getByText(
+        'Change this any time. Saving recalculates every itinerary date from Day 1 through your return.',
+      ),
+    ).toBeTruthy()
     fireEvent.click(
       within(dialog).getByLabelText('Customize travel preferences for this route'),
     )

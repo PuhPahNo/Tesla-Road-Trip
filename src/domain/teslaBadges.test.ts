@@ -4,6 +4,7 @@ import {
   badgeOpportunitiesForRoute,
   iconicBadgesForStation,
   specialEventBadgesInTripWindow,
+  tripDateForDay,
 } from './teslaBadges'
 import type { RoutePlan, Station } from './types'
 
@@ -122,6 +123,14 @@ describe('Tesla charging badge catalog', () => {
       expect.objectContaining({ label: 'Earth Day 2026', day: 3 }),
     ])
     expect(specialEventBadgesInTripWindow('2026-07-05', 30)).toEqual([])
+  })
+
+  it('rebases every itinerary date from the editable trip start date', () => {
+    expect(tripDateForDay('2026-07-26', 1)).toBe('2026-07-26')
+    expect(tripDateForDay('2026-07-26', 40)).toBe('2026-09-03')
+    expect(tripDateForDay('2026-07-26', 70)).toBe('2026-10-03')
+    expect(tripDateForDay('2026-08-02', 40)).toBe('2026-09-10')
+    expect(tripDateForDay('2026-08-02', 70)).toBe('2026-10-10')
   })
 
   it('promotes route-aware special events and milestone opportunities', () => {

@@ -332,6 +332,9 @@ export function CustomRouteModal({
                   onChange={(event) => setStartDate(event.target.value)}
                   className="mt-2 h-11 w-full rounded-[10px] border border-edge bg-panel2 px-3 text-[13px] text-ink outline-none"
                 />
+                <span className="mt-1.5 block text-[10.5px] font-normal leading-[1.45] text-faint">
+                  Change this any time. Saving recalculates every itinerary date from Day 1 through your return.
+                </span>
               </label>
               <label className="block text-[12px] font-medium text-dim" htmlFor="custom-route-direction">
                 First heading
