@@ -481,8 +481,12 @@ function LiveRouteHero({
 }) {
   const route = publication.route
   const selectedDay = route.days[selectedDayIndex] ?? route.days[0]
-  const liveDay =
-    route.days.find((day) => day.day === trip.dayNumber) ?? selectedDay
+  const matchedLiveDayIndex = route.days.findIndex(
+    (day) => day.day === trip.dayNumber,
+  )
+  const liveDayIndex =
+    matchedLiveDayIndex >= 0 ? matchedLiveDayIndex : selectedDayIndex
+  const liveDay = route.days[liveDayIndex] ?? selectedDay
   const routeStations = useMemo(
     () => route.visits.map((visit) => visit.station),
     [route.visits],
@@ -511,6 +515,8 @@ function LiveRouteHero({
           start={CHATTANOOGA_37405_START}
           showAllStations={false}
           highlightedDayIndex={selectedDayIndex}
+          activeDayIndex={liveDayIndex}
+          scrollWheelZoom={false}
           fitPadding={{
             topLeft: [48, 150],
             bottomRight: [48, 260],
@@ -540,6 +546,25 @@ function LiveRouteHero({
               <div className="mt-2 text-[22px] font-semibold tracking-[-0.035em] sm:text-[28px]">
                 {liveLocation}
               </div>
+              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 font-mono text-[7px] uppercase tracking-[0.08em] text-white/46">
+                <span className="inline-flex items-center gap-1.5">
+                  <span
+                    className="h-1.5 w-4 rounded-full"
+                    style={{ backgroundColor: route.color }}
+                  />
+                  Full trip
+                </span>
+                <span className="inline-flex items-center gap-1.5 text-[#23d7d1]">
+                  <span className="h-1.5 w-4 rounded-full bg-[#23d7d1]" />
+                  Current day {liveDay?.day ?? '—'}
+                </span>
+                {!selectedIsLive ? (
+                  <span className="inline-flex items-center gap-1.5 text-[#facc15]">
+                    <span className="h-1.5 w-4 rounded-full bg-[#facc15]" />
+                    Preview day {selectedDay?.day ?? '—'}
+                  </span>
+                ) : null}
+              </div>
             </div>
             <div className="bg-black/82 px-4 py-3 text-right backdrop-blur-md">
               <div className={`font-mono text-[8px] uppercase tracking-[0.11em] ${roadAccurate ? 'text-[#23d7d1]' : 'text-[#f5b642]'}`}>
@@ -549,6 +574,9 @@ function LiveRouteHero({
               </div>
               <div className="mt-1 font-mono text-[7px] uppercase tracking-[0.09em] text-white/36">
                 Updated {formatTimestamp(trip.updatedAt)}
+              </div>
+              <div className="mt-2 font-mono text-[6.5px] uppercase tracking-[0.08em] text-white/28">
+                Scroll moves the page · use map controls to zoom
               </div>
             </div>
           </div>
@@ -694,6 +722,7 @@ function CompleteRoute({
                   start={CHATTANOOGA_37405_START}
                   showAllStations={false}
                   highlightedDayIndex={selectedDayIndex}
+                  scrollWheelZoom={false}
                   fitPadding={{
                     topLeft: [48, 48],
                     bottomRight: [48, 48],

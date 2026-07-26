@@ -42,6 +42,8 @@ interface MapViewProps {
   onHoverState?: (state: string | undefined) => void
   highlightedState?: string
   highlightedDayIndex?: number
+  activeDayIndex?: number
+  scrollWheelZoom?: boolean
   fitPadding: FitPadding
 }
 
@@ -56,6 +58,8 @@ const TURN_MARKER_MIN_ANGLE_DEGREES = 105
 const DAY_BOUNDARY_MATCH_TOLERANCE_MILES = 5
 const BADGE_MARKER_FILL = '#d72638'
 const BADGE_MARKER_STROKE = '#facc15'
+const ACTIVE_DAY_COLOR = '#23d7d1'
+const PREVIEW_DAY_COLOR = '#facc15'
 
 const TILE_URL = {
   tesla: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
@@ -73,6 +77,8 @@ export const MapView = memo(function MapView({
   onHoverState,
   highlightedState,
   highlightedDayIndex,
+  activeDayIndex,
+  scrollWheelZoom = true,
   fitPadding,
 }: MapViewProps) {
   const { theme, isDark } = useTheme()
@@ -101,7 +107,7 @@ export const MapView = memo(function MapView({
       preferCanvas
       zoom={5}
       zoomControl={false}
-      scrollWheelZoom
+      scrollWheelZoom={scrollWheelZoom}
     >
       <TileLayer
         key={theme}
@@ -161,19 +167,39 @@ export const MapView = memo(function MapView({
             isDark={isDark}
             fitPadding={fitPadding}
           />
-          <DayHighlightLine
-            route={route}
-            start={start}
-            dayIndex={highlightedDayIndex}
-            roadLine={roadLine}
-            isDark={isDark}
-          />
           <RouteStopMarkers
             route={route}
             visits={routeVisits}
             nodeColor={node}
             connectorColor={connector}
           />
+          {activeDayIndex != null ? (
+            <DayHighlightLine
+              route={route}
+              start={start}
+              dayIndex={activeDayIndex}
+              roadLine={roadLine}
+              isDark={isDark}
+              color={ACTIVE_DAY_COLOR}
+              labelPrefix="Current day"
+              showEndpoint
+            />
+          ) : null}
+          {highlightedDayIndex != null &&
+          highlightedDayIndex !== activeDayIndex ? (
+            <DayHighlightLine
+              route={route}
+              start={start}
+              dayIndex={highlightedDayIndex}
+              roadLine={roadLine}
+              isDark={isDark}
+              color={
+                activeDayIndex == null ? route.color : PREVIEW_DAY_COLOR
+              }
+              labelPrefix={activeDayIndex == null ? 'Day' : 'Preview day'}
+              showEndpoint={activeDayIndex != null}
+            />
+          ) : null}
         </>
       )}
     </MapContainer>
@@ -470,12 +496,18 @@ function DayHighlightLine({
   dayIndex,
   roadLine,
   isDark,
+  color,
+  labelPrefix,
+  showEndpoint,
 }: {
   route: RoutePlan
   start: Coordinate
   dayIndex?: number
   roadLine?: Coordinate[]
   isDark: boolean
+  color: string
+  labelPrefix: string
+  showEndpoint: boolean
 }) {
   const zoom = useMapZoom()
 
@@ -524,9 +556,9 @@ function DayHighlightLine({
           positions={positions}
           smoothFactor={smoothFactor}
           pathOptions={{
-            color: route.color,
-            opacity: 0.28,
-            weight: 18,
+            color,
+            opacity: 0.34,
+            weight: 22,
             lineCap: 'round',
             lineJoin: 'round',
           }}
@@ -538,7 +570,7 @@ function DayHighlightLine({
         pathOptions={{
           color: '#ffffff',
           opacity: 0.98,
-          weight: 12,
+          weight: 14,
           lineCap: 'round',
           lineJoin: 'round',
         }}
@@ -547,19 +579,38 @@ function DayHighlightLine({
         positions={positions}
         smoothFactor={smoothFactor}
         pathOptions={{
-          color: route.color,
+          color,
           opacity: 1,
-          weight: 6,
+          weight: 8,
           lineCap: 'round',
           lineJoin: 'round',
         }}
       >
         {label ? (
           <Tooltip sticky direction="top">
-            Day {label}
+            {labelPrefix} {label}
           </Tooltip>
         ) : null}
       </Polyline>
+      {showEndpoint ? (
+        <CircleMarker
+          center={positions[positions.length - 1]}
+          radius={9}
+          pathOptions={{
+            color: '#ffffff',
+            fillColor: color,
+            fillOpacity: 1,
+            opacity: 1,
+            weight: 3,
+          }}
+        >
+          {label ? (
+            <Tooltip permanent direction="top" offset={[0, -8]}>
+              {labelPrefix} {label}
+            </Tooltip>
+          ) : null}
+        </CircleMarker>
+      ) : null}
     </>
   )
 }
