@@ -9,11 +9,13 @@ vi.mock('../components/MapView', () => ({
   MapView: ({
     highlightedDayIndex,
     activeDayIndex,
+    zoomFocusDayIndex,
     roadLine,
     scrollWheelZoom,
   }: {
     highlightedDayIndex?: number
     activeDayIndex?: number
+    zoomFocusDayIndex?: number
     roadLine?: Array<{ lat: number; lon: number }>
     scrollWheelZoom?: boolean
   }) => (
@@ -21,7 +23,8 @@ vi.mock('../components/MapView', () => ({
       Map highlighting day {(highlightedDayIndex ?? 0) + 1}. Road points{' '}
       {roadLine?.length ?? 0}. Active day{' '}
       {activeDayIndex == null ? 'none' : activeDayIndex + 1}. Wheel zoom{' '}
-      {scrollWheelZoom === false ? 'off' : 'on'}.
+      {scrollWheelZoom === false ? 'off' : 'on'}. Zoom focus day{' '}
+      {zoomFocusDayIndex == null ? 'none' : zoomFocusDayIndex + 1}.
     </div>
   ),
 }))
@@ -217,12 +220,14 @@ describe('Track Anthony', () => {
     })).toBeTruthy()
     expect(screen.getAllByText(/Map highlighting day 1\. Road points 3/)).toHaveLength(1)
     expect(screen.getByText(/Active day 1\. Wheel zoom off/)).toBeTruthy()
+    expect(screen.getByText(/Zoom focus day 1/)).toBeTruthy()
     expect(screen.getByText('Current day 1')).toBeTruthy()
     expect(screen.getAllByText('ORS road-accurate route').length).toBeGreaterThan(0)
     expect(screen.getByRole('heading', { name: 'Every day. Every stop. One mapped trip.' })).toBeTruthy()
     await userEvent.click(screen.getByRole('button', { name: 'Open day 2, Grand Canyon' }))
     expect(screen.getByText(/Map highlighting day 2\. Road points 3/)).toBeTruthy()
     expect(screen.getByText(/Active day 1\. Wheel zoom off/)).toBeTruthy()
+    expect(screen.getByText(/Zoom focus day 2/)).toBeTruthy()
     expect(screen.getByText('Preview day 2')).toBeTruthy()
     expect(screen.getByRole('heading', {
       level: 1,

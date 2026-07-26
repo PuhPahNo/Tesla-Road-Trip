@@ -43,6 +43,7 @@ interface MapViewProps {
   highlightedState?: string
   highlightedDayIndex?: number
   activeDayIndex?: number
+  zoomFocusDayIndex?: number
   scrollWheelZoom?: boolean
   fitPadding: FitPadding
 }
@@ -78,6 +79,7 @@ export const MapView = memo(function MapView({
   highlightedState,
   highlightedDayIndex,
   activeDayIndex,
+  zoomFocusDayIndex,
   scrollWheelZoom = true,
   fitPadding,
 }: MapViewProps) {
@@ -99,6 +101,31 @@ export const MapView = memo(function MapView({
     () => selectRouteMarkers(route?.visits ?? [], MAX_ROUTE_MARKERS),
     [route?.visits],
   )
+  const routeFitPositions = useMemo(
+    () =>
+      route
+        ? downsampleLine(route.routeLine, MAX_POLYLINE_POINTS).map(
+            (point) => [point.lat, point.lon] as [number, number],
+          )
+        : [],
+    [route],
+  )
+  const zoomFocusPositions = useMemo(() => {
+    if (!route || zoomFocusDayIndex == null) return []
+    const day = route.days[zoomFocusDayIndex]
+    if (!day?.visits.length) return []
+    const previousStop =
+      route.days[zoomFocusDayIndex - 1]?.visits.at(-1)?.station.position ??
+      start
+    const positions = [
+      previousStop,
+      ...day.visits.map((visit) => visit.station.position),
+    ]
+    if (zoomFocusDayIndex === route.days.length - 1) positions.push(start)
+    return positions.map(
+      (point) => [point.lat, point.lon] as [number, number],
+    )
+  }, [route, start, zoomFocusDayIndex])
 
   return (
     <MapContainer
@@ -116,7 +143,11 @@ export const MapView = memo(function MapView({
         subdomains="abcd"
         url={isDark ? TILE_URL.dash : TILE_URL.tesla}
       />
-      <ZoomControl />
+      <ZoomControl
+        focusPositions={zoomFocusPositions}
+        routePositions={routeFitPositions}
+        fitPadding={fitPadding}
+      />
       <ResizeHandler />
 
       <StateChoropleth
@@ -713,27 +744,106 @@ function ResizeHandler() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Custom zoom control — glass island, bottom-right (desktop only)     */
+/* Explicit zoom/focus dock — wheel remains available to the page     */
 /* ------------------------------------------------------------------ */
-function ZoomControl() {
+function ZoomControl({
+  focusPositions,
+  routePositions,
+  fitPadding,
+}: {
+  focusPositions: [number, number][]
+  routePositions: [number, number][]
+  fitPadding: FitPadding
+}) {
   const map = useMap()
+  const zoom = useMapZoom()
+  const focusPoint = focusPositions.at(-1)
+  const zoomBy = (delta: number) => {
+    const nextZoom = Math.max(
+      map.getMinZoom(),
+      Math.min(map.getMaxZoom(), map.getZoom() + delta),
+    )
+    if (focusPoint) {
+      map.setZoomAround(focusPoint, nextZoom)
+      return
+    }
+    map.setZoom(nextZoom)
+  }
+  const focusLeg = () => {
+    if (focusPositions.length < 2) return
+    const center = focusPositions.reduce(
+      (sum, point) => [sum[0] + point[0], sum[1] + point[1]],
+      [0, 0] as [number, number],
+    )
+    center[0] /= focusPositions.length
+    center[1] /= focusPositions.length
+    const legMiles = focusPositions.reduce((total, point, index) => {
+      if (index === 0) return 0
+      const previous = focusPositions[index - 1]
+      return total + haversineMiles(
+        { lat: previous[0], lon: previous[1] },
+        { lat: point[0], lon: point[1] },
+      )
+    }, 0)
+    const targetZoom =
+      legMiles <= 60 ? 9 : legMiles <= 180 ? 8 : legMiles <= 320 ? 7 : 6
+    map.setView(center, targetZoom, { animate: true })
+  }
+  const fitFullRoute = () => {
+    if (routePositions.length < 2) return
+    map.fitBounds(routePositions, {
+      paddingTopLeft: fitPadding.topLeft,
+      paddingBottomRight: fitPadding.bottomRight,
+      maxZoom: 7,
+    })
+  }
+
   return (
-    <div className="glass absolute bottom-4 right-4 z-[800] hidden flex-col overflow-hidden rounded-[11px] md:flex">
+    <div
+      className="glass absolute right-3 top-1/2 z-[800] flex -translate-y-1/2 flex-col overflow-hidden rounded-[11px] sm:right-4"
+      aria-label="Map view controls"
+    >
       <button
         type="button"
         aria-label="Zoom in"
-        onClick={() => map.zoomIn()}
-        className="flex h-[38px] w-[38px] cursor-pointer items-center justify-center border-0 border-b border-glass-bd bg-transparent text-[19px] leading-none text-ink"
+        onClick={() => zoomBy(1)}
+        disabled={zoom >= map.getMaxZoom()}
+        className="flex h-11 w-11 cursor-pointer items-center justify-center border-0 border-b border-glass-bd bg-transparent text-[21px] leading-none text-ink disabled:cursor-not-allowed disabled:opacity-30"
       >
         +
       </button>
+      <div
+        className="flex h-7 w-11 items-center justify-center border-b border-glass-bd bg-transparent font-mono text-[7px] uppercase tracking-[0.08em] text-dim"
+        aria-live="polite"
+      >
+        Z{zoom}
+      </div>
       <button
         type="button"
         aria-label="Zoom out"
-        onClick={() => map.zoomOut()}
-        className="flex h-[38px] w-[38px] cursor-pointer items-center justify-center border-0 bg-transparent text-[19px] leading-none text-ink"
+        onClick={() => zoomBy(-1)}
+        disabled={zoom <= map.getMinZoom()}
+        className="flex h-11 w-11 cursor-pointer items-center justify-center border-0 border-b border-glass-bd bg-transparent text-[21px] leading-none text-ink disabled:cursor-not-allowed disabled:opacity-30"
       >
         −
+      </button>
+      <button
+        type="button"
+        aria-label="Focus selected route leg"
+        onClick={focusLeg}
+        disabled={focusPositions.length < 2}
+        className="flex h-10 w-11 cursor-pointer items-center justify-center border-0 border-b border-glass-bd bg-transparent font-mono text-[7px] uppercase tracking-[0.05em] text-ink disabled:cursor-not-allowed disabled:opacity-30"
+      >
+        Leg
+      </button>
+      <button
+        type="button"
+        aria-label="Fit full route"
+        onClick={fitFullRoute}
+        disabled={routePositions.length < 2}
+        className="flex h-10 w-11 cursor-pointer items-center justify-center border-0 bg-transparent font-mono text-[7px] uppercase tracking-[0.05em] text-ink disabled:cursor-not-allowed disabled:opacity-30"
+      >
+        All
       </button>
     </div>
   )

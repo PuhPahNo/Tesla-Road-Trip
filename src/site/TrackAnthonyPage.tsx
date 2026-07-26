@@ -516,6 +516,7 @@ function LiveRouteHero({
           showAllStations={false}
           highlightedDayIndex={selectedDayIndex}
           activeDayIndex={liveDayIndex}
+          zoomFocusDayIndex={selectedDayIndex}
           scrollWheelZoom={false}
           fitPadding={{
             topLeft: [48, 150],
@@ -576,7 +577,7 @@ function LiveRouteHero({
                 Updated {formatTimestamp(trip.updatedAt)}
               </div>
               <div className="mt-2 font-mono text-[6.5px] uppercase tracking-[0.08em] text-white/28">
-                Scroll moves the page · use map controls to zoom
+                Wheel scrolls the page · + / − follows the selected leg
               </div>
             </div>
           </div>
@@ -722,6 +723,7 @@ function CompleteRoute({
                   start={CHATTANOOGA_37405_START}
                   showAllStations={false}
                   highlightedDayIndex={selectedDayIndex}
+                  zoomFocusDayIndex={selectedDayIndex}
                   scrollWheelZoom={false}
                   fitPadding={{
                     topLeft: [48, 48],
