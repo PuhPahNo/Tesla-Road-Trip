@@ -393,6 +393,19 @@ export function AdminPage() {
                     <div>
                       <div className="font-mono text-[8px] uppercase tracking-[0.1em] text-accent2">Ready to publish</div>
                       <div className="mt-1 text-[16px] font-semibold">{routePreview.savedRoute.name}</div>
+                      <div className={`mt-2 font-mono text-[7.5px] uppercase tracking-[0.09em] ${
+                        routePreview.road &&
+                        !routePreview.road.degraded &&
+                        routePreview.road.line.length > 1
+                          ? 'text-good'
+                          : 'text-warn'
+                      }`}>
+                        {routePreview.road &&
+                        !routePreview.road.degraded &&
+                        routePreview.road.line.length > 1
+                          ? `Road mapped via ${routePreview.road.provider}`
+                          : 'Road provider unavailable · preview uses estimates'}
+                      </div>
                     </div>
                     <a href="/track-anthony" target="_blank" rel="noreferrer" className="site-secondary-button flex min-h-10 items-center justify-center no-underline">
                       Preview Track Anthony
@@ -405,7 +418,7 @@ export function AdminPage() {
                     <RoutePreviewStat label="Route anchors" value={routePreview.savedRoute.waypointCount} />
                   </div>
                   <p className="m-0 border-t border-edge px-4 py-3 text-[11.5px] leading-[1.55] text-dim">
-                    Saving publishes the full map and all {routePreview.route.days.length} day locations. Route edits made in the planner automatically flow through without copying the itinerary here.
+                    Saving publishes the full road map and all {routePreview.route.days.length} day locations. Route edits made in the planner automatically flow through without copying the itinerary here.
                   </p>
                 </div>
               ) : null}

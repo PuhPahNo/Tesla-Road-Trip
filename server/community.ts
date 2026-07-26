@@ -6,6 +6,7 @@ import { STATE_CODE_TO_NAME } from '../src/domain/usStates'
 import { getRequestUser, requireAdmin, requireUser } from './auth'
 import {
   buildAnthonyRoute,
+  type RoadRouteResult,
   type StationSnapshot,
 } from './anthonyRoute'
 import { readSavedCustomRoutes } from './customRoutes'
@@ -83,6 +84,7 @@ const suggestionReviewSchema = z.object({
 export function registerCommunityRoutes(
   app: Express,
   loadStations: () => Promise<StationSnapshot>,
+  loadRoadRoute: (coordinates: Array<{ lat: number; lon: number }>) => Promise<RoadRouteResult>,
 ) {
   app.get('/api/community', (_request, response) => {
     response.json(readCommunity())
@@ -99,6 +101,7 @@ export function registerCommunityRoutes(
         selection.userId,
         selection.routeId,
         loadStations,
+        loadRoadRoute,
       )
       response.json({
         selectedRouteId: selection.routeId,
@@ -470,6 +473,7 @@ export function registerCommunityRoutes(
         admin.id,
         request.params.routeId,
         loadStations,
+        loadRoadRoute,
       )
       if (!route) {
         response.status(404).json({ message: 'Saved route not found.' })

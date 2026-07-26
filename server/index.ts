@@ -374,7 +374,11 @@ function demoWarning(): string[] {
 
 registerAuthRoutes(app)
 registerAdminAccountRoutes(app)
-registerCommunityRoutes(app, () => loadStations())
+registerCommunityRoutes(
+  app,
+  () => loadStations(),
+  async (coordinates) => fetchRoadProvider(coordinates),
+)
 registerCustomRouteRoutes(app)
 registerAgentRoutes(app, () => loadStations())
 

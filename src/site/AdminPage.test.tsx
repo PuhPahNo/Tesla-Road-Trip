@@ -180,6 +180,16 @@ describe('Anthony admin workspace', () => {
                       summary: 'Competition route',
                     },
                   },
+                  road: {
+                    provider: 'ORS',
+                    line: [
+                      { lat: 35.1, lon: -85.3 },
+                      { lat: 35.96, lon: -83.92 },
+                    ],
+                    degraded: false,
+                    warnings: [],
+                    requestCount: 1,
+                  },
                 },
               }
           : {
@@ -271,6 +281,7 @@ describe('Anthony admin workspace', () => {
       'saved-2026-competition',
     )
     expect(await screen.findByText('Ready to publish')).toBeTruthy()
+    expect(screen.getByText('Road mapped via ORS')).toBeTruthy()
     expect(screen.getByText('2026 Competition')).toBeTruthy()
     expect(screen.getByLabelText('Trip day for journal entry')).toBeTruthy()
   })

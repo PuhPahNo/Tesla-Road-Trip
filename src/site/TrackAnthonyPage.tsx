@@ -20,6 +20,7 @@ import {
   sendMeetupInvite,
   type AnthonyUpdate,
   type AnthonyUpdatePhase,
+  type AnthonyTrip,
   type CommunitySnapshot,
   type PublishedAnthonyRoute,
 } from '../api/siteClient'
@@ -139,7 +140,17 @@ export function TrackAnthonyPage() {
 
   return (
     <div className="bg-[#f1eee6] text-[#0a0b0d]">
-      <section className="relative overflow-hidden bg-black px-4 py-16 text-white sm:px-6 sm:py-24 lg:px-12 lg:py-32">
+      {trip?.active && publishedRoute && routePlan ? (
+        <LiveRouteHero
+          publication={publishedRoute}
+          trip={trip}
+          selectedDayIndex={selectedDayIndex}
+          progress={progress}
+          error={error}
+          notice={notice}
+        />
+      ) : (
+        <section className="relative overflow-hidden bg-black px-4 py-16 text-white sm:px-6 sm:py-24 lg:px-12 lg:py-32">
         <div className="pointer-events-none absolute -right-40 -top-52 h-[680px] w-[680px] rounded-full bg-[#e82127]/18 blur-[150px]" />
         <div className="relative mx-auto max-w-[1240px]">
           {error ? (
@@ -256,7 +267,8 @@ export function TrackAnthonyPage() {
             </div>
           </div>
         </div>
-      </section>
+        </section>
+      )}
 
       {publishedRoute ? (
         <CompleteRoute
@@ -264,6 +276,7 @@ export function TrackAnthonyPage() {
           updates={updates}
           selectedDayIndex={selectedDayIndex}
           onSelectDay={setSelectedDayIndex}
+          mapInHero={Boolean(trip?.active)}
         />
       ) : routeError ? (
         <section className="bg-[#0a0b0d] px-4 py-14 text-white sm:px-6">
@@ -451,16 +464,169 @@ export function TrackAnthonyPage() {
   )
 }
 
+function LiveRouteHero({
+  publication,
+  trip,
+  selectedDayIndex,
+  progress,
+  error,
+  notice,
+}: {
+  publication: PublishedAnthonyRoute
+  trip: AnthonyTrip
+  selectedDayIndex: number
+  progress: number
+  error?: string
+  notice?: string
+}) {
+  const route = publication.route
+  const selectedDay = route.days[selectedDayIndex] ?? route.days[0]
+  const liveDay =
+    route.days.find((day) => day.day === trip.dayNumber) ?? selectedDay
+  const routeStations = useMemo(
+    () => route.visits.map((visit) => visit.station),
+    [route.visits],
+  )
+  const liveLocation =
+    trip.currentLocation?.trim() ||
+    (liveDay ? dayLocation(liveDay) : 'On the road')
+  const selectedLocation = selectedDay
+    ? dayLocation(selectedDay)
+    : liveLocation
+  const selectedIsLive = selectedDay?.day === liveDay?.day
+  const roadAccurate =
+    Boolean(publication.road?.line.length) && !publication.road?.degraded
+
+  return (
+    <section
+      id="live-route-map"
+      aria-label="Live trip map"
+      className="relative min-h-[720px] overflow-hidden bg-[#08090b] text-white lg:h-[calc(100svh-64px)] lg:max-h-[980px]"
+    >
+      <div className="absolute inset-0">
+        <MapView
+          stations={routeStations}
+          route={route}
+          roadLine={publication.road?.line}
+          start={CHATTANOOGA_37405_START}
+          showAllStations={false}
+          highlightedDayIndex={selectedDayIndex}
+          fitPadding={{
+            topLeft: [48, 150],
+            bottomRight: [48, 260],
+          }}
+        />
+      </div>
+      <div className="pointer-events-none absolute inset-0 z-[450] bg-[linear-gradient(180deg,rgba(0,0,0,.54)_0%,rgba(0,0,0,.04)_38%,rgba(0,0,0,.08)_58%,rgba(0,0,0,.88)_100%)]" />
+
+      <div className="pointer-events-none relative z-[500] mx-auto flex min-h-[720px] max-w-[1440px] flex-col justify-start p-4 sm:p-7 lg:h-full lg:justify-between lg:p-10">
+        <div>
+          {error ? (
+            <div className="pointer-events-auto mb-3 max-w-[680px] rounded-[10px] bg-[#e82127] px-4 py-3 text-[13px] text-white">
+              {error}
+            </div>
+          ) : null}
+          {notice ? (
+            <div className="pointer-events-auto mb-3 max-w-[680px] rounded-[10px] bg-[#23d7d1] px-4 py-3 text-[13px] font-semibold text-black">
+              {notice}
+            </div>
+          ) : null}
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="bg-black/88 px-4 py-3 backdrop-blur-md sm:px-5 sm:py-4">
+              <div className="flex items-center gap-2 font-mono text-[8px] uppercase tracking-[0.14em] text-[#23d7d1]">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-[#23d7d1]" />
+                Live now · Day {trip.dayNumber ?? selectedDay?.day ?? '—'} of {route.totalDays}
+              </div>
+              <div className="mt-2 text-[22px] font-semibold tracking-[-0.035em] sm:text-[28px]">
+                {liveLocation}
+              </div>
+            </div>
+            <div className="bg-black/82 px-4 py-3 text-right backdrop-blur-md">
+              <div className={`font-mono text-[8px] uppercase tracking-[0.11em] ${roadAccurate ? 'text-[#23d7d1]' : 'text-[#f5b642]'}`}>
+                {roadAccurate
+                  ? `${publication.road?.provider} road-accurate route`
+                  : 'Route estimate'}
+              </div>
+              <div className="mt-1 font-mono text-[7px] uppercase tracking-[0.09em] text-white/36">
+                Updated {formatTimestamp(trip.updatedAt)}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-[360px] grid gap-5 lg:mt-0 lg:grid-cols-[minmax(0,1fr)_minmax(360px,.52fr)] lg:items-end">
+          <div className="max-w-[850px] bg-black/84 p-5 backdrop-blur-md sm:p-7 lg:p-8">
+            <div className="font-mono text-[8px] uppercase tracking-[0.14em] text-[#23d7d1]">
+              {selectedIsLive ? 'Current route leg' : 'Previewing route leg'} ·{' '}
+              {selectedDay
+                ? formatTripDay(route.tripStartDate, selectedDay.day)
+                : publication.savedRoute.name}
+            </div>
+            <h1 className="mt-3 text-[clamp(38px,8vw,78px)] font-semibold leading-[0.9] tracking-[-0.06em]">
+              {selectedIsLive && trip.headline
+                ? trip.headline
+                : `Day ${selectedDay?.day ?? trip.dayNumber ?? '—'}: ${selectedLocation}`}
+            </h1>
+            <p className="mt-5 max-w-[680px] text-[13.5px] leading-[1.7] text-white/58 sm:text-[15px]">
+              {selectedIsLive && trip.body
+                ? trip.body
+                : selectedIsLive
+                  ? 'Follow the road route, open today’s stops, and read the latest field notes from the trip.'
+                  : 'This planned leg is highlighted on the road map. Open its landmarks, charging stops, and any attached field notes below.'}
+            </p>
+            <div className="pointer-events-auto mt-6 flex flex-col gap-2 sm:flex-row">
+              <a
+                href="#full-route"
+                className="flex min-h-11 items-center justify-center rounded-full bg-[#e82127] px-5 py-3 text-[12px] font-semibold text-white no-underline"
+              >
+                Open the day-by-day route
+              </a>
+              <a
+                href="#journey-log"
+                className="flex min-h-11 items-center justify-center rounded-full border border-white/30 px-5 py-3 text-[12px] font-semibold text-white no-underline"
+              >
+                Read the trip journal
+              </a>
+            </div>
+          </div>
+
+          <div className="bg-black/84 p-5 backdrop-blur-md sm:p-6">
+            <div className="grid grid-cols-3 divide-x divide-white/12">
+              <LiveHeroStat label="Miles" value={Math.round(route.totalMiles).toLocaleString()} />
+              <LiveHeroStat label="Stops" value={route.uniqueStations.toLocaleString()} />
+              <LiveHeroStat label="Landmarks" value={countRouteLandmarks(route).toLocaleString()} />
+            </div>
+            <div className="mt-5">
+              <div className="mb-2 flex justify-between font-mono text-[7.5px] uppercase tracking-[0.09em] text-white/42">
+                <span>Trip progress</span>
+                <span>{Math.round(progress)}%</span>
+              </div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-white/15">
+                <div
+                  className="h-full bg-[#e82127]"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function CompleteRoute({
   publication,
   updates,
   selectedDayIndex,
   onSelectDay,
+  mapInHero,
 }: {
   publication: PublishedAnthonyRoute
   updates: AnthonyUpdate[]
   selectedDayIndex: number
   onSelectDay: (index: number) => void
+  mapInHero: boolean
 }) {
   const route = publication.route
   const selectedDay = route.days[selectedDayIndex] ?? route.days[0]
@@ -483,12 +649,23 @@ function CompleteRoute({
             <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-[#23d7d1]">
               The complete route
             </div>
+            <div className={`mt-4 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 font-mono text-[7.5px] uppercase tracking-[0.09em] ${
+              publication.road && !publication.road.degraded
+                ? 'border-[#23d7d1]/35 bg-[#23d7d1]/10 text-[#23d7d1]'
+                : 'border-[#f5b642]/30 bg-[#f5b642]/10 text-[#f5b642]'
+            }`}>
+              <span className="h-1.5 w-1.5 rounded-full bg-current" />
+              {publication.road && !publication.road.degraded
+                ? `Road accurate via ${publication.road.provider}`
+                : 'Road routing temporarily using estimates'}
+            </div>
             <h2 className="mt-4 max-w-[850px] text-[clamp(42px,7vw,78px)] font-semibold leading-[0.9] tracking-[-0.06em]">
               Every day. Every stop. One mapped trip.
             </h2>
             <p className="mt-6 max-w-[720px] text-[14px] leading-[1.75] text-white/52">
-              Select a day or its overnight location to highlight that leg on the
-              map. Landmarks and day-specific writing open inside the itinerary.
+              {mapInHero
+                ? 'Select a day or overnight location to inspect its landmarks and writing. The live road map above follows the selected leg.'
+                : 'Select a day or its overnight location to highlight that road leg on the map. Landmarks and day-specific writing open inside the itinerary.'}
             </p>
           </div>
           <div className="grid grid-cols-2 gap-px overflow-hidden border border-white/14 bg-white/14 sm:grid-cols-4 lg:w-[520px]">
@@ -502,49 +679,44 @@ function CompleteRoute({
           </div>
         </div>
 
-        <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(390px,.8fr)]">
+        <div className={`mt-8 grid gap-6 ${
+          mapInHero
+            ? 'xl:grid-cols-[minmax(360px,.72fr)_minmax(0,1.28fr)]'
+            : 'xl:grid-cols-[minmax(0,1.2fr)_minmax(390px,.8fr)]'
+        }`}>
           <div className="xl:sticky xl:top-24 xl:h-fit">
-            <div className="relative h-[460px] overflow-hidden border border-white/14 bg-[#15171b] sm:h-[590px]">
-              <MapView
-                stations={routeStations}
-                route={route}
-                start={CHATTANOOGA_37405_START}
-                showAllStations={false}
-                highlightedDayIndex={selectedDayIndex}
-                fitPadding={{
-                  topLeft: [48, 48],
-                  bottomRight: [48, 48],
-                }}
-              />
-              <div className="pointer-events-none absolute left-4 top-4 z-[500] max-w-[calc(100%-2rem)] bg-black/88 px-4 py-3 backdrop-blur">
-                <div className="font-mono text-[8px] uppercase tracking-[0.12em] text-[#23d7d1]">
-                  Day {selectedDay?.day ?? '—'} highlighted
-                </div>
-                <div className="mt-1 text-[13px] font-semibold">
-                  {selectedDay ? dayLocation(selectedDay) : publication.savedRoute.name}
+            {!mapInHero ? (
+              <div className="relative h-[460px] overflow-hidden border border-white/14 bg-[#15171b] sm:h-[590px]">
+                <MapView
+                  stations={routeStations}
+                  route={route}
+                  roadLine={publication.road?.line}
+                  start={CHATTANOOGA_37405_START}
+                  showAllStations={false}
+                  highlightedDayIndex={selectedDayIndex}
+                  fitPadding={{
+                    topLeft: [48, 48],
+                    bottomRight: [48, 48],
+                  }}
+                />
+                <div className="pointer-events-none absolute left-4 top-4 z-[500] max-w-[calc(100%-2rem)] bg-black/88 px-4 py-3 backdrop-blur">
+                  <div className="font-mono text-[8px] uppercase tracking-[0.12em] text-[#23d7d1]">
+                    Day {selectedDay?.day ?? '—'} highlighted
+                  </div>
+                  <div className="mt-1 text-[13px] font-semibold">
+                    {selectedDay ? dayLocation(selectedDay) : publication.savedRoute.name}
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : null}
 
             {selectedDay ? (
-              <div className="border-x border-b border-white/14 bg-white/[.035] p-5 sm:p-7">
-                <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-                  <div>
-                    <div className="font-mono text-[8px] uppercase tracking-[0.12em] text-[#e82127]">
-                      {formatTripDay(route.tripStartDate, selectedDay.day)}
-                    </div>
-                    <h3 className="mt-2 text-[clamp(27px,5vw,40px)] font-semibold tracking-[-0.045em]">
-                      Day {selectedDay.day}: {dayLocation(selectedDay)}
-                    </h3>
-                  </div>
-                  <div className="flex gap-4 font-mono text-[8px] uppercase tracking-[0.08em] text-white/42">
-                    <span>{Math.round(selectedDay.miles)} mi</span>
-                    <span>{selectedDay.driveHours.toFixed(1)} hr</span>
-                    <span>{selectedDay.uniqueStations} stops</span>
-                  </div>
-                </div>
-                <DayDetails day={selectedDay} updates={selectedUpdates} />
-              </div>
+              <SelectedDayPanel
+                route={route}
+                day={selectedDay}
+                updates={selectedUpdates}
+                mapInHero={mapInHero}
+              />
             ) : null}
           </div>
 
@@ -568,6 +740,54 @@ function CompleteRoute({
         </div>
       </div>
     </section>
+  )
+}
+
+function SelectedDayPanel({
+  route,
+  day,
+  updates,
+  mapInHero,
+}: {
+  route: RoutePlan
+  day: DayPlan
+  updates: AnthonyUpdate[]
+  mapInHero: boolean
+}) {
+  return (
+    <div
+      className={`bg-white/[.035] p-5 sm:p-7 ${
+        mapInHero
+          ? 'border border-white/14'
+          : 'border-x border-b border-white/14'
+      }`}
+    >
+      {mapInHero ? (
+        <a
+          href="#live-route-map"
+          className="mb-5 inline-flex items-center gap-2 font-mono text-[8px] uppercase tracking-[0.1em] text-[#23d7d1] no-underline"
+        >
+          <Navigation size={12} />
+          See this leg on the live map
+        </a>
+      ) : null}
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+        <div>
+          <div className="font-mono text-[8px] uppercase tracking-[0.12em] text-[#e82127]">
+            {formatTripDay(route.tripStartDate, day.day)}
+          </div>
+          <h3 className="mt-2 text-[clamp(27px,5vw,40px)] font-semibold tracking-[-0.045em]">
+            Day {day.day}: {dayLocation(day)}
+          </h3>
+        </div>
+        <div className="flex gap-4 font-mono text-[8px] uppercase tracking-[0.08em] text-white/42 sm:flex-col sm:items-end sm:gap-1.5">
+          <span>{Math.round(day.miles)} mi</span>
+          <span>{day.driveHours.toFixed(1)} hr</span>
+          <span>{day.uniqueStations} stops</span>
+        </div>
+      </div>
+      <DayDetails day={day} updates={updates} />
+    </div>
   )
 }
 
@@ -780,6 +1000,19 @@ function RouteStat({ label, value }: { label: string; value: string }) {
     <div className="bg-[#0a0b0d] px-4 py-4 text-center">
       <div className="text-[21px] font-semibold tracking-[-0.04em]">{value}</div>
       <div className="mt-1 font-mono text-[7px] uppercase tracking-[0.1em] text-white/30">
+        {label}
+      </div>
+    </div>
+  )
+}
+
+function LiveHeroStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="px-3 text-center first:pl-0 last:pr-0">
+      <div className="text-[20px] font-semibold tracking-[-0.04em] sm:text-[24px]">
+        {value}
+      </div>
+      <div className="mt-1 font-mono text-[7px] uppercase tracking-[0.1em] text-white/34">
         {label}
       </div>
     </div>

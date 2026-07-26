@@ -6,8 +6,17 @@ import { AuthProvider } from './AuthContext'
 import { TrackAnthonyPage } from './TrackAnthonyPage'
 
 vi.mock('../components/MapView', () => ({
-  MapView: ({ highlightedDayIndex }: { highlightedDayIndex?: number }) => (
-    <div>Map highlighting day {(highlightedDayIndex ?? 0) + 1}</div>
+  MapView: ({
+    highlightedDayIndex,
+    roadLine,
+  }: {
+    highlightedDayIndex?: number
+    roadLine?: Array<{ lat: number; lon: number }>
+  }) => (
+    <div>
+      Map highlighting day {(highlightedDayIndex ?? 0) + 1}. Road points{' '}
+      {roadLine?.length ?? 0}
+    </div>
   ),
 }))
 
@@ -150,12 +159,25 @@ describe('Track Anthony', () => {
                 updatedAt: '2026-07-26T12:00:00.000Z',
               },
               route,
+              road: {
+                provider: 'ORS',
+                line: [
+                  { lat: 35.1, lon: -85.3 },
+                  { lat: 35.2, lon: -100.4 },
+                  station.position,
+                ],
+                degraded: false,
+                warnings: [],
+                requestCount: 1,
+              },
             },
           }
         }
         return {
           trip: {
-            active: false,
+            active: true,
+            dayNumber: 1,
+            currentLocation: '',
             title: "Anthony's ChargeQuest",
             selectedRouteId: route.id,
             routeName: route.name,
@@ -182,12 +204,20 @@ describe('Track Anthony', () => {
 
     render(<MemoryRouter><AuthProvider><TrackAnthonyPage /></AuthProvider></MemoryRouter>)
 
-    expect(await screen.findByRole('heading', { name: '2026 Competition, day by day' })).toBeTruthy()
+    expect(await screen.findByRole('region', { name: 'Live trip map' })).toBeTruthy()
+    expect(screen.getByRole('heading', {
+      level: 1,
+      name: 'Day 1: Grand Canyon Village, AZ',
+    })).toBeTruthy()
+    expect(screen.getAllByText(/Map highlighting day 1\. Road points 3/)).toHaveLength(1)
+    expect(screen.getAllByText('ORS road-accurate route').length).toBeGreaterThan(0)
     expect(screen.getByRole('heading', { name: 'Every day. Every stop. One mapped trip.' })).toBeTruthy()
-    expect(screen.getByText('Map highlighting day 1')).toBeTruthy()
     await userEvent.click(screen.getByRole('button', { name: 'Open day 2, Grand Canyon' }))
-    expect(screen.getByText('Map highlighting day 2')).toBeTruthy()
-    expect(screen.getByRole('heading', { name: 'Day 2: Grand Canyon' })).toBeTruthy()
+    expect(screen.getByText(/Map highlighting day 2\. Road points 3/)).toBeTruthy()
+    expect(screen.getByRole('heading', {
+      level: 1,
+      name: 'Day 2: Grand Canyon',
+    })).toBeTruthy()
     expect(screen.getAllByText('What sunrise looked like from the rim').length).toBeGreaterThan(0)
   })
 })

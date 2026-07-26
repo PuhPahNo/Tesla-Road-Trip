@@ -1,4 +1,9 @@
-import type { PlannerConfig, RoutePlan, SavedCustomRoute } from '../domain/types'
+import type {
+  Coordinate,
+  PlannerConfig,
+  RoutePlan,
+  SavedCustomRoute,
+} from '../domain/types'
 
 export interface AuthUser {
   id: string
@@ -92,6 +97,13 @@ export interface PublishedAnthonyRoute {
     updatedAt: string
   }
   route: RoutePlan
+  road: {
+    provider: string
+    line: Coordinate[]
+    degraded: boolean
+    warnings: string[]
+    requestCount: number
+  } | null
 }
 
 export interface ManagedAccount {
