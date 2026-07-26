@@ -79,6 +79,7 @@ export interface CreateCustomRouteRequest {
 export interface CreateCustomRouteResponse {
   storage?: string
   route: SavedCustomRoute
+  routes: SavedCustomRoute[]
 }
 
 export async function fetchHealth() {

@@ -2,7 +2,10 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import type { Express } from 'express'
 import { z } from 'zod'
-import { PLANNER_NUMERIC_LIMITS } from '../src/domain/config'
+import {
+  MAX_SAVED_ROUTE_WAYPOINTS,
+  PLANNER_NUMERIC_LIMITS,
+} from '../src/domain/config'
 import type { RouteWaypoint, SavedCustomRoute } from '../src/domain/types'
 import { VEHICLE_PROFILE_IDS } from '../src/domain/vehicleProfiles'
 import { requireUser } from './auth'
@@ -62,7 +65,7 @@ const savedRouteSchema = z.object({
   id: z.string().min(1).max(96),
   name: z.string().min(1).max(80),
   color: z.string().min(1).max(32),
-  waypoints: z.array(waypointSchema).min(1).max(16),
+  waypoints: z.array(waypointSchema).min(1).max(MAX_SAVED_ROUTE_WAYPOINTS),
   targetDays: z.coerce.number().int().min(1).max(365).optional(),
   keepOrder: z.boolean().optional(),
   startMonth: z.coerce.number().int().min(1).max(12).optional(),
@@ -78,7 +81,7 @@ const savedRouteSchema = z.object({
 const createRouteSchema = z.object({
   name: z.string().min(1).max(80),
   color: z.string().min(1).max(32).optional(),
-  waypoints: z.array(waypointSchema).min(1).max(16),
+  waypoints: z.array(waypointSchema).min(1).max(MAX_SAVED_ROUTE_WAYPOINTS),
   targetDays: z.coerce.number().int().min(1).max(365).optional(),
   keepOrder: z.boolean().optional(),
   startMonth: z.coerce.number().int().min(1).max(12).optional(),
@@ -209,8 +212,9 @@ export function registerCustomRouteRoutes(app: Express) {
         updatedAt: now,
       }
 
-      writeSavedCustomRoutes(user.id, [...existing, route])
-      response.status(201).json({ route, storage: 'account' })
+      const routes = [...existing, route]
+      writeSavedCustomRoutes(user.id, routes)
+      response.status(201).json({ route, routes, storage: 'account' })
     } catch (error) {
       response.status(error instanceof z.ZodError ? 400 : 500).json({
         error: 'custom_route_create_failed',

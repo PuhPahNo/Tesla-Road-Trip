@@ -25,6 +25,11 @@ export const VEHICLE_PROFILES = [
     practicalRangeMiles: 245,
   },
   {
+    id: 'model-y-premium-long-range-rwd',
+    label: 'Tesla Model Y Premium Long Range RWD',
+    practicalRangeMiles: 290,
+  },
+  {
     id: 'model-y-performance',
     label: 'Tesla Model Y Performance',
     practicalRangeMiles: 230,

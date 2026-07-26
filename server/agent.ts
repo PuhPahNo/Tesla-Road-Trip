@@ -3,6 +3,7 @@ import path from 'node:path'
 import type { Express } from 'express'
 import { z } from 'zod'
 import {
+  MAX_SAVED_ROUTE_WAYPOINTS,
   PLANNER_NUMERIC_LIMITS,
   defaultPlannerConfig,
   plannerConfigSchema,
@@ -138,12 +139,12 @@ const savedRouteUpdateArgsSchema = z
       .nullable(),
     waypointIdsToAdd: z
       .array(z.string().min(1).max(96))
-      .max(16)
+      .max(MAX_SAVED_ROUTE_WAYPOINTS)
       .optional()
       .nullable(),
     waypointIdsToRemove: z
       .array(z.string().min(1).max(96))
-      .max(16)
+      .max(MAX_SAVED_ROUTE_WAYPOINTS)
       .optional()
       .nullable(),
     keepOrder: z.boolean().optional().nullable(),
@@ -567,8 +568,10 @@ async function runAgentTool(
     if (waypoints.length === 0) {
       throw new Error('A saved route must keep at least one waypoint.')
     }
-    if (waypoints.length > 16) {
-      throw new Error('A saved route can contain at most 16 waypoints.')
+    if (waypoints.length > MAX_SAVED_ROUTE_WAYPOINTS) {
+      throw new Error(
+        `A saved route can contain at most ${MAX_SAVED_ROUTE_WAYPOINTS} waypoints.`,
+      )
     }
 
     const updated = await updateSavedCustomRoute(savedRoute.id, {
@@ -860,12 +863,12 @@ const plannerAgentTools = [
         },
         waypointIdsToAdd: {
           type: ['array', 'null'],
-          maxItems: 16,
+          maxItems: MAX_SAVED_ROUTE_WAYPOINTS,
           items: { type: 'string' },
         },
         waypointIdsToRemove: {
           type: ['array', 'null'],
-          maxItems: 16,
+          maxItems: MAX_SAVED_ROUTE_WAYPOINTS,
           items: { type: 'string' },
         },
         keepOrder: { type: ['boolean', 'null'] },

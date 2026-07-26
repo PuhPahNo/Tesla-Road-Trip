@@ -61,7 +61,10 @@ try {
   await setInputValue(page, '#custom-route-date', '2026-01-10')
   await page.select('#custom-route-direction', 'seasonal')
   await page.click('input[aria-label="Customize travel preferences for this route"]')
-  await page.select('select[aria-label="Custom route vehicle profile"]', 'model-s-awd')
+  await page.select(
+    'select[aria-label="Custom route vehicle profile"]',
+    'model-y-premium-long-range-rwd',
+  )
   await page.select('select[aria-label="Custom route trip pace"]', 'savor')
   await setInputValue(
     page,
@@ -93,14 +96,28 @@ try {
   if (badgeLabels.length !== 17) {
     throw new Error(`Expected 17 North American badge targets, found ${badgeLabels.length}.`)
   }
-  const firstAddedLabel = await page.$eval(
-    'button[aria-label^="Add "][aria-label$=" to custom route"]',
-    (button) => {
-      const label = button.getAttribute('aria-label') ?? ''
-      button.click()
-      return label.replace(/^Add /, '').replace(/ to custom route$/, '')
-    },
-  )
+  await page.select('select[aria-label="Filter by category"]', 'all')
+  const addedLabels = []
+  while (addedLabels.length < 22) {
+    const addedLabel = await page.$$eval(
+      'button[aria-label^="Add "][aria-label$=" to custom route"]',
+      (buttons) => {
+        const button = buttons.find(
+          (candidate) =>
+            candidate instanceof HTMLButtonElement && !candidate.disabled,
+        )
+        if (!(button instanceof HTMLButtonElement)) return ''
+        const label = button.getAttribute('aria-label') ?? ''
+        button.click()
+        return label.replace(/^Add /, '').replace(/ to custom route$/, '')
+      },
+    )
+    if (!addedLabel) {
+      throw new Error(`Could only add ${addedLabels.length} custom-route destinations.`)
+    }
+    addedLabels.push(addedLabel)
+  }
+  const firstAddedLabel = addedLabels[0]
   await clickButtonByText(page, 'Review route')
   await clickButtonByText(page, 'Save and optimize')
 
@@ -123,7 +140,9 @@ try {
     createdRoute?.startMonth !== 1 ||
     createdRoute?.startDate !== '2026-01-10' ||
     createdRoute?.directionPreference !== 'seasonal' ||
-    createdRoute?.travelPreferences?.vehicleProfileId !== 'model-s-awd' ||
+    createdRoute?.waypoints?.length !== 22 ||
+    createdRoute?.travelPreferences?.vehicleProfileId !==
+      'model-y-premium-long-range-rwd' ||
     createdRoute?.travelPreferences?.tripPace !== 'savor' ||
     createdRoute?.travelPreferences?.dailyDriveTargetHours !== 4 ||
     createdRoute?.travelPreferences?.dailyDriveMaxHours !== 5 ||
@@ -187,7 +206,7 @@ try {
       directionPreference: createdRoute.directionPreference,
       travelPreferences: createdRoute.travelPreferences,
       badgeTargetsAvailable: badgeLabels,
-      badgeTarget: firstAddedLabel,
+      destinationsCreated: addedLabels,
       editDays: 71,
       addedAndRemovedLocations: true,
       renamed: true,

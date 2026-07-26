@@ -123,6 +123,7 @@ function App() {
   const [customRouteOpen, setCustomRouteOpen] = useState(false)
   const [editingCustomRoute, setEditingCustomRoute] = useState<SavedCustomRoute>()
   const [isSavingCustomRoute, setIsSavingCustomRoute] = useState(false)
+  const [customRouteError, setCustomRouteError] = useState<string>()
   const [deletingCustomRouteId, setDeletingCustomRouteId] = useState<string>()
   const [hoveredDayIndex, setHoveredDayIndex] = useState<number>()
   const [hoveredState, setHoveredState] = useState<string>()
@@ -439,6 +440,7 @@ function App() {
       return
     }
     setEditingCustomRoute(undefined)
+    setCustomRouteError(undefined)
     setRoutePickerOpen(false)
     setCopilotOpen(false)
     setMobileTab(null)
@@ -447,6 +449,7 @@ function App() {
 
   const handleEditCustomRoute = (route: SavedCustomRoute) => {
     setEditingCustomRoute(route)
+    setCustomRouteError(undefined)
     setRoutePickerOpen(false)
     setCopilotOpen(false)
     setMobileTab(null)
@@ -454,20 +457,45 @@ function App() {
   }
 
   const handleSaveCustomRoute = async (draft: CustomRouteDraft) => {
+    const wasEditing = Boolean(editingCustomRoute)
     setIsSavingCustomRoute(true)
+    setCustomRouteError(undefined)
     setError(undefined)
     try {
       const saved = editingCustomRoute
         ? await updateCustomRoute(editingCustomRoute.id, draft)
         : await createCustomRoute(draft)
-      const response = await optimizeRoutes(sanitizePlannerConfig(config))
-      applyOptimizationResult(response, saved.route.id)
+      setConfig((current) =>
+        sanitizePlannerConfig({
+          ...current,
+          savedCustomRoutes: saved.routes,
+        }),
+      )
       setCustomRouteOpen(false)
       setEditingCustomRoute(undefined)
-      setRoutePickerOpen(true)
-      showToast(`${editingCustomRoute ? 'Updated' : 'Saved'} ${saved.route.name}`)
+      showToast(
+        `${wasEditing ? 'Updated' : 'Saved'} ${saved.route.name} · optimizing…`,
+      )
+
+      try {
+        const response = await optimizeRoutes(sanitizePlannerConfig(config))
+        applyOptimizationResult(response, saved.route.id)
+        setRoutePickerOpen(true)
+        showToast(
+          `${wasEditing ? 'Updated' : 'Saved'} and optimized ${saved.route.name}`,
+        )
+      } catch (optimizationError) {
+        const message =
+          optimizationError instanceof Error
+            ? optimizationError.message
+            : 'Route optimization failed.'
+        setError(
+          `${wasEditing ? 'Updated' : 'Saved'} ${saved.route.name}, but optimization failed: ${message}`,
+        )
+        showToast(`${wasEditing ? 'Updated' : 'Saved'} ${saved.route.name}`)
+      }
     } catch (requestError) {
-      setError(
+      setCustomRouteError(
         requestError instanceof Error ? requestError.message : 'Custom route save failed.',
       )
     } finally {
@@ -568,7 +596,7 @@ function App() {
 
       {/* Error banner */}
       {error && (
-        <div className="glass fixed left-1/2 top-16 z-50 flex max-w-[min(560px,calc(100vw-24px))] -translate-x-1/2 items-center gap-2 rounded-[11px] px-3.5 py-2.5 text-[12.5px] text-warn sm:top-[76px] sm:max-w-[min(560px,calc(100vw-32px))]">
+        <div className="glass fixed left-1/2 top-16 z-[1150] flex max-w-[min(560px,calc(100vw-24px))] -translate-x-1/2 items-center gap-2 rounded-[11px] px-3.5 py-2.5 text-[12.5px] text-warn sm:top-[76px] sm:max-w-[min(560px,calc(100vw-32px))]">
           <AlertIcon size={14} className="flex-none" />
           <span className="min-w-0 flex-1 truncate">{error}</span>
           <button
@@ -749,6 +777,7 @@ function App() {
       <CustomRouteModal
         open={customRouteOpen}
         isSaving={isSavingCustomRoute}
+        error={customRouteError}
         route={editingCustomRoute}
         defaultTargetDays={config.longestTripDays}
         defaultStartDate={config.tripStartDate}
@@ -756,6 +785,7 @@ function App() {
         onClose={() => {
           setCustomRouteOpen(false)
           setEditingCustomRoute(undefined)
+          setCustomRouteError(undefined)
         }}
         onSave={handleSaveCustomRoute}
       />

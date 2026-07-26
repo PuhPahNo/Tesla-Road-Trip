@@ -71,6 +71,11 @@ export const PLANNER_NUMERIC_LIMITS = {
   roadDistanceFactor: { min: 1, max: 1.8 },
 } as const
 
+// Saved routes are intentionally bounded, but the route builder and every
+// persistence/agent schema must share the same ceiling. A previous server-only
+// limit of 16 allowed larger drafts in the UI and rejected them only on save.
+export const MAX_SAVED_ROUTE_WAYPOINTS = 32
+
 export type PlannerNumericSettingKey = keyof typeof PLANNER_NUMERIC_LIMITS
 
 function limitedNumber(key: PlannerNumericSettingKey) {
@@ -95,7 +100,7 @@ const savedCustomRouteSchema = z.object({
   id: z.string().min(1).max(96),
   name: z.string().min(1).max(80),
   color: z.string().min(1).max(32),
-  waypoints: z.array(routeWaypointSchema).min(1).max(16),
+  waypoints: z.array(routeWaypointSchema).min(1).max(MAX_SAVED_ROUTE_WAYPOINTS),
   targetDays: limitedNumber('longestTripDays').optional(),
   keepOrder: z.boolean().optional(),
   startMonth: z.coerce.number().int().min(1).max(12).optional(),

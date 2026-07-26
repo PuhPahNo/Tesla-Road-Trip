@@ -7,7 +7,10 @@ import type {
   SavedCustomRoute,
   TripPace,
 } from '../domain/types'
-import { CHATTANOOGA_37405_START } from '../domain/config'
+import {
+  CHATTANOOGA_37405_START,
+  MAX_SAVED_ROUTE_WAYPOINTS,
+} from '../domain/config'
 import { TRIP_PACE_LABELS } from '../domain/stays'
 import {
   directionPreferenceDescription,
@@ -68,6 +71,7 @@ export interface CustomRouteDraft {
 export interface CustomRouteModalProps {
   open: boolean
   isSaving: boolean
+  error?: string
   route?: SavedCustomRoute
   defaultTargetDays: number
   defaultStartDate?: string
@@ -90,6 +94,7 @@ const CATALOG: CatalogLocation[] = buildCatalog()
 export function CustomRouteModal({
   open,
   isSaving,
+  error,
   route,
   defaultTargetDays,
   defaultStartDate = new Date().toISOString().slice(0, 10),
@@ -167,6 +172,7 @@ export function CustomRouteModal({
   }, [categoryFilter, query, typeFilter, waypoints])
 
   const addCatalogItem = (item: CatalogLocation) => {
+    if (waypoints.length >= MAX_SAVED_ROUTE_WAYPOINTS) return
     setWaypoints((current) => [
       ...current,
       {
@@ -180,6 +186,7 @@ export function CustomRouteModal({
   }
 
   const addManualWaypoint = () => {
+    if (waypoints.length >= MAX_SAVED_ROUTE_WAYPOINTS) return
     const label = manualLabel.trim()
     const lat = Number(manualLat)
     const lon = Number(manualLon)
@@ -221,6 +228,7 @@ export function CustomRouteModal({
     if (
       !trimmedName ||
       waypoints.length === 0 ||
+      waypoints.length > MAX_SAVED_ROUTE_WAYPOINTS ||
       !Number.isInteger(parsedTargetDays) ||
       parsedTargetDays < 1 ||
       parsedTargetDays > 365 ||
@@ -245,7 +253,9 @@ export function CustomRouteModal({
   const validTargetDays =
     Number.isInteger(Number(targetDays)) && Number(targetDays) >= 1 && Number(targetDays) <= 365
   const setupValid = Boolean(name.trim() && startDate && validTargetDays)
-  const destinationsValid = waypoints.length > 0
+  const destinationsValid =
+    waypoints.length > 0 && waypoints.length <= MAX_SAVED_ROUTE_WAYPOINTS
+  const atWaypointLimit = waypoints.length >= MAX_SAVED_ROUTE_WAYPOINTS
   const effectivePreferences = customizePreferences ? routePreferences : preferences
 
   return (
@@ -454,8 +464,15 @@ export function CustomRouteModal({
               </select>
             </div>
             <div className="mt-2 font-mono text-[10px] text-faint">
-              Showing {filteredCatalog.length} of {CATALOG.length} catalog stops
+              Showing {filteredCatalog.length} of {CATALOG.length} catalog stops ·{' '}
+              {waypoints.length}/{MAX_SAVED_ROUTE_WAYPOINTS} selected
             </div>
+            {atWaypointLimit ? (
+              <div className="mt-2 rounded-[9px] border border-warn/40 bg-chip px-3 py-2 text-[11px] leading-[1.45] text-warn">
+                This route has reached the {MAX_SAVED_ROUTE_WAYPOINTS}-destination
+                limit. Remove a stop before adding another.
+              </div>
+            ) : null}
             {categoryFilter === 'tesla-badge' ? (
               <div className="mt-2 rounded-[9px] border border-edge bg-chip px-3 py-2 text-[11px] leading-[1.45] text-faint">
                 Researched Iconic Charger targets use exact Supercharger sites where
@@ -466,7 +483,7 @@ export function CustomRouteModal({
 
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
             {filteredCatalog.map((item) => {
-              const canAdd = item.routeTarget &&
+              const canAdd = !atWaypointLimit && item.routeTarget &&
                 (item.badgeRegion !== 'canada' || preferences.includeCanada)
               const availability = item.badgeRegion === 'canada' && !preferences.includeCanada
                 ? 'Turn on Include Canada in Travel Preferences to target this badge.'
@@ -535,7 +552,12 @@ export function CustomRouteModal({
                 inputMode="decimal"
                 className="h-10 rounded-[9px] border border-edge bg-panel2 px-3 text-[12.5px] text-ink outline-none placeholder:text-faint"
               />
-              <Button variant="secondary" className="h-10" onClick={addManualWaypoint}>
+              <Button
+                variant="secondary"
+                className="h-10"
+                disabled={atWaypointLimit}
+                onClick={addManualWaypoint}
+              >
                 Add
               </Button>
             </div>
@@ -589,7 +611,7 @@ export function CustomRouteModal({
               {step === 2 ? 'Selected destinations' : 'Stop order'}
             </div>
             <div className="font-mono text-[10.5px] text-faint">
-              {waypoints.length} stops
+              {waypoints.length}/{MAX_SAVED_ROUTE_WAYPOINTS} stops
             </div>
           </div>
 
@@ -682,6 +704,15 @@ export function CustomRouteModal({
           </label> : null}
         </aside> : null}
       </div>
+
+      {error ? (
+        <div
+          role="alert"
+          className="flex-none border-t border-warn/35 bg-panel px-4 py-3 text-[12px] leading-[1.5] text-warn"
+        >
+          {error}
+        </div>
+      ) : null}
 
       <div className="grid flex-none grid-cols-[minmax(82px,0.7fr)_minmax(0,1.3fr)] items-center gap-2.5 border-t border-edge bg-panel2 px-3.5 py-3 sm:flex sm:justify-between sm:gap-3 sm:px-4">
         <Button className="w-full sm:w-auto" variant="secondary" onClick={step === 1 ? onClose : () => setStep((step - 1) as RouteWizardStep)}>

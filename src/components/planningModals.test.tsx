@@ -173,6 +173,55 @@ describe('planning modal responsibilities', () => {
     )
   })
 
+  it('keeps large saved routes editable and shows save failures inside the modal', () => {
+    const onSave = vi.fn()
+    const now = '2026-07-26T12:00:00.000Z'
+    const route: SavedCustomRoute = {
+      id: 'saved-competition-route',
+      name: '2026 Competition',
+      color: '#7c3aed',
+      waypoints: Array.from({ length: 22 }, (_, index) => ({
+        id: `competition-stop-${index + 1}`,
+        label: `Competition stop ${index + 1}`,
+        position: { lat: 30 + index / 100, lon: -100 - index / 100 },
+        radiusMiles: 50,
+      })),
+      targetDays: 60,
+      createdAt: now,
+      updatedAt: now,
+    }
+
+    render(
+      <CustomRouteModal
+        open
+        isSaving={false}
+        error="A route save problem is visible here."
+        route={route}
+        defaultTargetDays={60}
+        defaultStartDate="2026-07-26"
+        preferences={defaultPlannerConfig}
+        onClose={vi.fn()}
+        onSave={onSave}
+      />,
+    )
+
+    const dialog = screen.getByRole('dialog')
+    expect(within(dialog).getByRole('alert').textContent).toContain(
+      'A route save problem is visible here.',
+    )
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Continue to destinations' }),
+    )
+    expect(within(dialog).getByText('22/32 stops')).toBeTruthy()
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Review route' }))
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Update and optimize' }),
+    )
+
+    expect(onSave).toHaveBeenCalledTimes(1)
+    expect(onSave.mock.calls[0][0].waypoints).toHaveLength(22)
+  })
+
   it('keeps route cards full-height so custom Edit and Delete actions remain visible', () => {
     const savedRoute: SavedCustomRoute = {
       id: 'saved-test',
