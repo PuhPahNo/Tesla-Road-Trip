@@ -469,12 +469,11 @@ function App() {
       const saved = editingCustomRoute
         ? await updateCustomRoute(editingCustomRoute.id, draft)
         : await createCustomRoute(draft)
-      setConfig((current) =>
-        sanitizePlannerConfig({
-          ...current,
-          savedCustomRoutes: saved.routes,
-        }),
-      )
+      const nextConfig = sanitizePlannerConfig({
+        ...config,
+        savedCustomRoutes: saved.routes,
+      })
+      setConfig(nextConfig)
       setCustomRouteOpen(false)
       setEditingCustomRoute(undefined)
       showToast(
@@ -482,7 +481,7 @@ function App() {
       )
 
       try {
-        const response = await optimizeRoutes(sanitizePlannerConfig(config))
+        const response = await optimizeRoutes(nextConfig)
         applyOptimizationResult(response, saved.route.id)
         setRoutePickerOpen(true)
         showToast(

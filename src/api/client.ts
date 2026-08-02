@@ -71,6 +71,7 @@ export interface CreateCustomRouteRequest {
   targetDays?: number
   keepOrder?: boolean
   reverseLoop?: boolean
+  stayDayCaps?: SavedCustomRoute['stayDayCaps']
   startMonth?: number
   startDate?: string
   directionPreference?: SavedCustomRoute['directionPreference']

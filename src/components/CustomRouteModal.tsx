@@ -2,6 +2,7 @@ import { useEffect, useId, useMemo, useState } from 'react'
 import type {
   PlannerConfig,
   RouteDirectionPreference,
+  RouteStayDayCap,
   RouteTravelPreferences,
   RouteWaypoint,
   SavedCustomRoute,
@@ -11,7 +12,8 @@ import {
   CHATTANOOGA_37405_START,
   MAX_SAVED_ROUTE_WAYPOINTS,
 } from '../domain/config'
-import { TRIP_PACE_LABELS } from '../domain/stays'
+import { suggestedStayDays, TRIP_PACE_LABELS } from '../domain/stays'
+import { haversineMiles } from '../domain/geo'
 import {
   directionPreferenceDescription,
   ROUTE_DIRECTION_OPTIONS,
@@ -67,6 +69,7 @@ export interface CustomRouteDraft {
   startDate: string
   directionPreference: RouteDirectionPreference
   travelPreferences?: RouteTravelPreferences | null
+  stayDayCaps: RouteStayDayCap[]
 }
 
 export interface CustomRouteModalProps {
@@ -120,6 +123,7 @@ export function CustomRouteModal({
   const [routePreferences, setRoutePreferences] = useState<RouteTravelPreferences>(
     () => routeTravelPreferencesFrom(preferences),
   )
+  const [stayDayCaps, setStayDayCaps] = useState<RouteStayDayCap[]>([])
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const [manualLabel, setManualLabel] = useState('')
   const [manualLat, setManualLat] = useState('')
@@ -142,6 +146,7 @@ export function CustomRouteModal({
     setRoutePreferences(
       route?.travelPreferences ?? routeTravelPreferencesFrom(preferences),
     )
+    setStayDayCaps(route?.stayDayCaps ?? [])
     setDragIndex(null)
     setManualLabel('')
     setManualLat('')
@@ -251,6 +256,7 @@ export function CustomRouteModal({
         : route
           ? null
           : undefined,
+      stayDayCaps,
     })
   }
 
@@ -261,6 +267,25 @@ export function CustomRouteModal({
     waypoints.length > 0 && waypoints.length <= MAX_SAVED_ROUTE_WAYPOINTS
   const atWaypointLimit = waypoints.length >= MAX_SAVED_ROUTE_WAYPOINTS
   const effectivePreferences = customizePreferences ? routePreferences : preferences
+  const stayCapOptions = useMemo(
+    () => buildStayCapOptions(waypoints, effectivePreferences.tripPace, stayDayCaps),
+    [effectivePreferences.tripPace, stayDayCaps, waypoints],
+  )
+
+  const setStayDayCap = (placeId: string, value: string) => {
+    if (value === '') {
+      setStayDayCaps((current) =>
+        current.filter((cap) => cap.placeId !== placeId),
+      )
+      return
+    }
+    const maxDays = Number(value)
+    if (!Number.isInteger(maxDays) || maxDays < 1 || maxDays > 21) return
+    setStayDayCaps((current) => [
+      ...current.filter((cap) => cap.placeId !== placeId),
+      { placeId, maxDays },
+    ])
+  }
 
   return (
     <Overlay open={open} onClose={onClose} size="wide" labelledBy={titleId}>
@@ -599,6 +624,57 @@ export function CustomRouteModal({
                     : directionPreferenceDescription(directionPreference, startMonth, CHATTANOOGA_37405_START)}
                 </div>
               </div>
+
+              {stayCapOptions.length > 0 ? (
+                <details
+                  className="mt-4 rounded-[11px] border border-edge bg-chip p-3"
+                  open={stayDayCaps.length > 0}
+                >
+                  <summary className="cursor-pointer text-[12.5px] font-semibold text-ink">
+                    Basecamp day limits
+                  </summary>
+                  <p className="mt-2 text-[11px] leading-[1.5] text-faint">
+                    Cap consecutive streak stops near a destination. Freed days
+                    are reassigned to connector Superchargers on the longest
+                    remaining drive legs. Leave blank for Auto.
+                  </p>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    {stayCapOptions.map((option) => {
+                      const cap = stayDayCaps.find(
+                        (item) => item.placeId === option.placeId,
+                      )
+                      return (
+                        <label
+                          key={option.placeId}
+                          className="flex items-center justify-between gap-3 rounded-[9px] border border-edge bg-panel2 px-3 py-2 text-[11.5px] text-dim"
+                        >
+                          <span className="min-w-0">
+                            <span className="block truncate font-medium text-ink">
+                              {option.label}
+                            </span>
+                            <span className="block font-mono text-[9px] text-faint">
+                              Auto suggests {option.suggestedDays} days
+                            </span>
+                          </span>
+                          <input
+                            aria-label={`Maximum days at ${option.label}`}
+                            type="number"
+                            min={1}
+                            max={21}
+                            step={1}
+                            placeholder="Auto"
+                            value={cap?.maxDays ?? ''}
+                            onChange={(event) =>
+                              setStayDayCap(option.placeId, event.target.value)
+                            }
+                            className="h-9 w-20 flex-none rounded-[8px] border border-edge bg-chip px-2 text-right font-mono text-[11.5px] text-ink outline-none placeholder:text-faint"
+                          />
+                        </label>
+                      )
+                    })}
+                  </div>
+                </details>
+              ) : null}
 
               {specialEventBadges.length > 0 ? (
                 <div className="mt-4 rounded-[11px] border border-accent2/40 bg-chip p-3">
@@ -1018,6 +1094,51 @@ function routeTravelPreferencesFrom(
     dailyDriveTargetHours: preferences.dailyDriveTargetHours,
     dailyDriveMaxHours: preferences.dailyDriveMaxHours,
   }
+}
+
+function buildStayCapOptions(
+  waypoints: RouteWaypoint[],
+  pace: TripPace,
+  currentCaps: RouteStayDayCap[],
+) {
+  const eligiblePlaces = PLACE_CATALOG.filter(
+    (place) => suggestedStayDays(detailForCatalogPlace(place).rating, pace) >= 2,
+  )
+  const selected = new Map<
+    string,
+    { placeId: string; label: string; suggestedDays: number }
+  >()
+
+  waypoints.forEach((waypoint) => {
+    const place = eligiblePlaces
+      .map((candidate) => ({
+        candidate,
+        distanceMiles: haversineMiles(
+          waypoint.position,
+          candidate.position,
+        ),
+      }))
+      .filter((item) => item.distanceMiles <= item.candidate.radiusMiles)
+      .sort((a, b) => a.distanceMiles - b.distanceMiles)[0]?.candidate
+    if (!place) return
+    selected.set(place.id, {
+      placeId: place.id,
+      label: place.label,
+      suggestedDays: suggestedStayDays(detailForCatalogPlace(place).rating, pace),
+    })
+  })
+
+  currentCaps.forEach((cap) => {
+    const place = PLACE_CATALOG.find((candidate) => candidate.id === cap.placeId)
+    if (!place || selected.has(place.id)) return
+    selected.set(place.id, {
+      placeId: place.id,
+      label: place.label,
+      suggestedDays: suggestedStayDays(detailForCatalogPlace(place).rating, pace),
+    })
+  })
+
+  return [...selected.values()].sort((a, b) => a.label.localeCompare(b.label))
 }
 
 function normalizedTravelPreferences(

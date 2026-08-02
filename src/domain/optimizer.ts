@@ -33,6 +33,7 @@ import type {
   PlannerAdvisory,
   PlannerConfig,
   RoutePlan,
+  RouteStayDayCap,
   RouteStationVisit,
   RouteWaypoint,
   SavedCustomRoute,
@@ -51,6 +52,7 @@ interface RouteVariant {
   startDate?: string
   travelPreferences?: SavedCustomRoute['travelPreferences']
   reverseLoop?: boolean
+  stayDayCaps?: RouteStayDayCap[]
   stationFilter?: (station: Station) => boolean
   /** Undefined preserves the built-in north-first behavior; anchor keeps the
    * saved custom anchor order without imposing a compass heading. */
@@ -1533,6 +1535,7 @@ function buildSavedCustomRouteVariants(
       startDate: route.startDate,
       travelPreferences: route.travelPreferences,
       reverseLoop,
+      stayDayCaps: route.stayDayCaps,
       initialHeading: route.keepOrder ? 'anchor' : resolvedDirection ?? 'anchor',
       anchors: insertRequiredWaypoints(
         closeAnchorsToStart(anchors, start),
@@ -1750,6 +1753,7 @@ function chooseStationsForVariant(
       )
     }
   })
+  const waypointStationIds = new Set(forcedStationIds)
 
   if (options.visitTargets && options.visitTargets.length > 0) {
     const visitTargetResult = ensureVisitTargetStations(
@@ -1789,6 +1793,7 @@ function chooseStationsForVariant(
     scored,
     waypointWarnings,
     protectedStationIds: forcedStationIds,
+    waypointStationIds,
   }
 }
 
@@ -3207,6 +3212,187 @@ function repairLongestTripLegSpacing(
   return next
 }
 
+interface ResolvedStayDayCap {
+  maxDays: number
+  position: Coordinate
+  radiusMiles: number
+}
+
+function resolveStayDayCaps(caps: RouteStayDayCap[] = []): ResolvedStayDayCap[] {
+  return caps.flatMap((cap) => {
+    const place = getPlaceCatalogEntry(cap.placeId)
+    return place
+      ? [{
+          maxDays: cap.maxDays,
+          position: place.position,
+          radiusMiles: place.radiusMiles,
+        }]
+      : []
+  })
+}
+
+/**
+ * A saved stay cap frees streak stops that would otherwise cluster around one
+ * basecamp. Remove the excess local stops, then spend those exact slots on
+ * connector Superchargers that split the route's longest remaining legs.
+ */
+function rebalanceCappedStayStops(
+  orderedStations: ScoredStation[],
+  candidateStations: Station[],
+  config: PlannerConfig,
+  target: number,
+  protectedStationIds: Set<string>,
+  caps: RouteStayDayCap[] = [],
+) {
+  const resolvedCaps = resolveStayDayCaps(caps)
+  if (resolvedCaps.length === 0) return orderedStations
+
+  let next = orderedStations.slice()
+
+  resolvedCaps.forEach((cap) => {
+    const matching = next
+      .map((station) => ({
+        station,
+        distanceMiles: haversineMiles(station.station.position, cap.position),
+      }))
+      .filter((item) => item.distanceMiles <= cap.radiusMiles)
+
+    if (matching.length <= cap.maxDays) return
+
+    const protectedMatches = matching.filter((item) =>
+      protectedStationIds.has(item.station.station.id),
+    )
+    const openSlots = Math.max(0, cap.maxDays - protectedMatches.length)
+    const keptRegularIds = new Set(
+      matching
+        .filter((item) => !protectedStationIds.has(item.station.station.id))
+        .sort((a, b) => a.distanceMiles - b.distanceMiles)
+        .slice(0, openSlots)
+        .map((item) => item.station.station.id),
+    )
+    const removedIds = new Set(
+      matching
+        .filter(
+          (item) =>
+            !protectedStationIds.has(item.station.station.id) &&
+            !keptRegularIds.has(item.station.station.id),
+        )
+        .map((item) => item.station.station.id),
+    )
+    next = next.filter((station) => !removedIds.has(station.station.id))
+  })
+
+  for (let pass = 0; next.length < target && pass < target * 2; pass += 1) {
+    const usedStationIds = new Set(next.map((station) => station.station.id))
+    const availableStations = candidateStations.filter((station) => {
+      if (usedStationIds.has(station.id)) return false
+      return resolvedCaps.every((cap) => {
+        if (haversineMiles(station.position, cap.position) > cap.radiusMiles) {
+          return true
+        }
+        const currentCount = next.filter(
+          (selected) =>
+            haversineMiles(selected.station.position, cap.position) <=
+            cap.radiusMiles,
+        ).length
+        return currentCount < cap.maxDays
+      })
+    })
+    const insertion = findLongestLegConnector(
+      next,
+      availableStations,
+      usedStationIds,
+      config,
+    )
+    if (!insertion) break
+    next.splice(
+      insertion.toIndex,
+      0,
+      asConnectorScoredStation(
+        insertion.connector,
+        insertion.from,
+        insertion.to,
+      ),
+    )
+  }
+
+  return next
+}
+
+function findLongestLegConnector(
+  orderedStations: ScoredStation[],
+  availableStations: Station[],
+  usedStationIds: Set<string>,
+  config: PlannerConfig,
+) {
+  let previous = config.start
+  const legs = orderedStations
+    .map((station, toIndex) => {
+      const leg = {
+        from: previous,
+        to: station.station.position,
+        toIndex,
+        miles: roadLegMiles(
+          previous,
+          station.station.position,
+          config.roadDistanceFactor,
+        ),
+      }
+      previous = station.station.position
+      return leg
+    })
+    .sort((a, b) => b.miles - a.miles)
+
+  for (const leg of legs) {
+    const connector =
+      chooseConnectorStation(
+        leg.from,
+        leg.to,
+        availableStations,
+        usedStationIds,
+        config,
+      ) ??
+      chooseBridgeConnectorStation(
+        leg.from,
+        leg.to,
+        availableStations,
+        usedStationIds,
+        config,
+      )
+    if (connector) return { ...leg, connector }
+  }
+
+  const routeLine = [
+    config.start,
+    ...orderedStations.map((station) => station.station.position),
+  ]
+  const fallback = availableStations
+    .map((station) => ({
+      station,
+      score: scoreAgainstPolyline(station.position, routeLine),
+    }))
+    .sort(
+      (a, b) =>
+        a.score.distanceMiles - b.score.distanceMiles ||
+        a.score.order - b.score.order,
+    )[0]
+  if (!fallback) return undefined
+
+  const toIndex = Math.min(
+    orderedStations.length,
+    fallback.score.segmentIndex,
+  )
+  return {
+    from: toIndex === 0
+      ? config.start
+      : orderedStations[toIndex - 1].station.position,
+    to: orderedStations[toIndex]?.station.position ?? config.start,
+    toIndex,
+    miles: 0,
+    connector: fallback.station,
+  }
+}
+
 function chooseBridgeConnectorStation(
   from: Coordinate,
   to: Coordinate,
@@ -3769,6 +3955,19 @@ export function optimizeRoutes(
 
     if (variant.reverseLoop) {
       orderedStations = reverseRouteInterior(orderedStations)
+    }
+    if (
+      routeConfig.plannerMode === 'longest_trip' &&
+      variant.stayDayCaps?.length
+    ) {
+      orderedStations = rebalanceCappedStayStops(
+        orderedStations,
+        stations,
+        routeConfig,
+        routeTarget,
+        stationChoice.waypointStationIds,
+        variant.stayDayCaps,
+      )
     }
 
     const ratingTargets = ratingTargetsForVariant(

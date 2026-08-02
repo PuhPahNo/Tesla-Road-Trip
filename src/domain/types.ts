@@ -101,8 +101,15 @@ export interface SavedCustomRoute {
   directionPreference?: RouteDirectionPreference
   /** Optional route-specific snapshot that overrides the global travel presets. */
   travelPreferences?: RouteTravelPreferences
+  /** Route-specific caps for consecutive streak days inside selected basecamps. */
+  stayDayCaps?: RouteStayDayCap[]
   createdAt: string
   updatedAt: string
+}
+
+export interface RouteStayDayCap {
+  placeId: string
+  maxDays: number
 }
 
 export interface RouteTravelPreferences {

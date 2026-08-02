@@ -420,6 +420,64 @@ describe('route optimizer', () => {
     expect(reversed.strategy).toContain('reverses the optimized loop')
   })
 
+  it('turns saved basecamp caps into connector stops on longer legs', () => {
+    const savedRoute: SavedCustomRoute = {
+      id: 'saved-capped-stay',
+      name: 'Capped Stay',
+      color: '#7c3aed',
+      targetDays: 40,
+      waypoints: [
+        {
+          id: 'city-los-angeles',
+          label: 'Los Angeles',
+          position: { lat: 34.0522, lon: -118.2437 },
+          radiusMiles: 55,
+        },
+        {
+          id: 'city-san-francisco',
+          label: 'San Francisco Bay Area',
+          position: { lat: 37.7749, lon: -122.4194 },
+          radiusMiles: 55,
+        },
+      ],
+      createdAt: '2026-08-02T00:00:00.000Z',
+      updatedAt: '2026-08-02T00:00:00.000Z',
+    }
+    const stations = buildStationGrid()
+    const baseline = optimizeRoutes(stations, {
+      ...defaultPlannerConfig,
+      longestTripDays: 40,
+      savedCustomRoutes: [savedRoute],
+    }).routes.find((route) => route.id === savedRoute.id)
+    const capped = optimizeRoutes(stations, {
+      ...defaultPlannerConfig,
+      longestTripDays: 40,
+      savedCustomRoutes: [
+        {
+          ...savedRoute,
+          stayDayCaps: [{ placeId: 'city-san-francisco', maxDays: 2 }],
+        },
+      ],
+    }).routes.find((route) => route.id === savedRoute.id)
+
+    expect(baseline).toBeDefined()
+    expect(capped).toBeDefined()
+    if (!baseline || !capped) throw new Error('Saved custom routes were not generated.')
+
+    const sanFrancisco = { lat: 37.7749, lon: -122.4194 }
+    const countBayAreaStops = (route: typeof capped) =>
+      route.visits.filter(
+        (visit) => haversineMiles(visit.station.position, sanFrancisco) <= 55,
+      ).length
+
+    expect(countBayAreaStops(baseline)).toBeGreaterThan(2)
+    expect(countBayAreaStops(capped)).toBe(2)
+    expect(capped.days).toHaveLength(40)
+    expect(capped.visits.filter((visit) => visit.connectorStop).length).toBeGreaterThan(
+      baseline.visits.filter((visit) => visit.connectorStop).length,
+    )
+  })
+
   it('starts a winter custom route south when season-smart direction is selected', () => {
     const winterRoute: SavedCustomRoute = {
       id: 'saved-winter-south-first',

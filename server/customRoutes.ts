@@ -61,6 +61,15 @@ const travelPreferencesSchema = z
     'Daily maximum must be at least the comfortable drive target.',
   )
 
+const stayDayCapsSchema = z
+  .array(
+    z.object({
+      placeId: z.string().min(1).max(80),
+      maxDays: z.coerce.number().int().min(1).max(21),
+    }),
+  )
+  .max(16)
+
 const savedRouteSchema = z.object({
   id: z.string().min(1).max(96),
   name: z.string().min(1).max(80),
@@ -75,6 +84,7 @@ const savedRouteSchema = z.object({
     .enum(['seasonal', 'north', 'south', 'east', 'west'])
     .optional(),
   travelPreferences: travelPreferencesSchema.optional(),
+  stayDayCaps: stayDayCapsSchema.optional(),
   createdAt: z.string().min(1).max(48),
   updatedAt: z.string().min(1).max(48),
 })
@@ -92,6 +102,7 @@ const createRouteSchema = z.object({
     .enum(['seasonal', 'north', 'south', 'east', 'west'])
     .optional(),
   travelPreferences: travelPreferencesSchema.nullable().optional(),
+  stayDayCaps: stayDayCapsSchema.optional(),
 })
 
 const updateRouteSchema = createRouteSchema
@@ -165,6 +176,9 @@ export function updateSavedCustomRoute(
     ...(parsed.travelPreferences
       ? { travelPreferences: parsed.travelPreferences }
       : {}),
+    ...(parsed.stayDayCaps !== undefined
+      ? { stayDayCaps: parsed.stayDayCaps }
+      : {}),
     updatedAt: new Date().toISOString(),
   }
   if (parsed.travelPreferences === null) delete route.travelPreferences
@@ -211,6 +225,9 @@ export function registerCustomRouteRoutes(app: Express) {
           : {}),
         ...(parsed.travelPreferences
           ? { travelPreferences: parsed.travelPreferences }
+          : {}),
+        ...(parsed.stayDayCaps?.length
+          ? { stayDayCaps: parsed.stayDayCaps }
           : {}),
         createdAt: now,
         updatedAt: now,

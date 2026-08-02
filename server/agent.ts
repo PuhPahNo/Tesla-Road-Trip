@@ -149,6 +149,16 @@ const savedRouteUpdateArgsSchema = z
       .nullable(),
     keepOrder: z.boolean().optional().nullable(),
     reverseLoop: z.boolean().optional().nullable(),
+    stayDayCaps: z
+      .array(
+        z.object({
+          placeId: z.string().min(1).max(80),
+          maxDays: z.number().int().min(1).max(21),
+        }),
+      )
+      .max(16)
+      .optional()
+      .nullable(),
   })
   .refine(
     ({ routeId: _routeId, ...changes }) =>
@@ -597,6 +607,9 @@ async function runAgentTool(
       ...(parsed.directionPreference !== undefined && parsed.directionPreference !== null
         ? { directionPreference: parsed.directionPreference }
         : {}),
+      ...(parsed.stayDayCaps !== undefined && parsed.stayDayCaps !== null
+        ? { stayDayCaps: parsed.stayDayCaps }
+        : {}),
       waypoints,
     }, context.userId)
     if (!updated) throw new Error('Saved route not found.')
@@ -624,6 +637,7 @@ async function runAgentTool(
         startMonth: updated.route.startMonth,
         startDate: updated.route.startDate,
         directionPreference: updated.route.directionPreference,
+        stayDayCaps: updated.route.stayDayCaps ?? [],
       },
       route: summarizeRoute(route),
     }
@@ -882,6 +896,21 @@ const plannerAgentTools = [
           description:
             'Keep the first and return stops, but drive the generated Supercharger loop between them in reverse. Set keepOrder false when enabling this.',
         },
+        stayDayCaps: {
+          type: ['array', 'null'],
+          maxItems: 16,
+          description:
+            'Optional route-specific caps for consecutive streak days at catalog basecamps. Freed days are reassigned to long-leg connector stops.',
+          items: {
+            type: 'object',
+            properties: {
+              placeId: { type: 'string' },
+              maxDays: { type: 'number' },
+            },
+            required: ['placeId', 'maxDays'],
+            additionalProperties: false,
+          },
+        },
       },
       additionalProperties: false,
     },
@@ -951,6 +980,7 @@ function summarizeConfig(config: PlannerConfig) {
       startMonth: route.startMonth,
       startDate: route.startDate,
       directionPreference: route.directionPreference,
+      stayDayCaps: route.stayDayCaps ?? [],
     })),
     longestTripTargets: config.longestTripTargets,
   }

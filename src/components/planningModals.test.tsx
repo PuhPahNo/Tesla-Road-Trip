@@ -167,6 +167,10 @@ describe('planning modal responsibilities', () => {
     expect(within(dialog).getByText('Review the route, then optimize')).toBeTruthy()
     expect(within(dialog).getByText('Stop order')).toBeTruthy()
     expect(within(dialog).getByText('Badge Run')).toBeTruthy()
+    fireEvent.change(
+      within(dialog).getByLabelText('Maximum days at Grand Canyon'),
+      { target: { value: '3' } },
+    )
     fireEvent.click(within(dialog).getByLabelText('Reverse optimized loop'))
     fireEvent.click(within(dialog).getByRole('button', { name: 'Save and optimize' }))
     expect(onSave).toHaveBeenCalledWith(
@@ -175,6 +179,9 @@ describe('planning modal responsibilities', () => {
         targetDays: 60,
         startDate: '2026-04-20',
         reverseLoop: true,
+        stayDayCaps: [
+          { placeId: 'landmark-az-grand-canyon', maxDays: 3 },
+        ],
         waypoints: [expect.objectContaining({ label: 'Grand Canyon' })],
       }),
     )
@@ -194,6 +201,7 @@ describe('planning modal responsibilities', () => {
         radiusMiles: 50,
       })),
       targetDays: 60,
+      stayDayCaps: [{ placeId: 'landmark-ca-golden-gate', maxDays: 2 }],
       createdAt: now,
       updatedAt: now,
     }
@@ -221,12 +229,20 @@ describe('planning modal responsibilities', () => {
     )
     expect(within(dialog).getByText('22/32 stops')).toBeTruthy()
     fireEvent.click(within(dialog).getByRole('button', { name: 'Review route' }))
+    const sanFranciscoCap = within(dialog).getByLabelText(
+      'Maximum days at Golden Gate / San Francisco',
+    ) as HTMLInputElement
+    expect(sanFranciscoCap.value).toBe('2')
+    fireEvent.change(sanFranciscoCap, { target: { value: '1' } })
     fireEvent.click(
       within(dialog).getByRole('button', { name: 'Update and optimize' }),
     )
 
     expect(onSave).toHaveBeenCalledTimes(1)
     expect(onSave.mock.calls[0][0].waypoints).toHaveLength(22)
+    expect(onSave.mock.calls[0][0].stayDayCaps).toEqual([
+      { placeId: 'landmark-ca-golden-gate', maxDays: 1 },
+    ])
   })
 
   it('keeps route cards full-height so custom Edit and Delete actions remain visible', () => {

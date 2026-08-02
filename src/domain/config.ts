@@ -119,6 +119,15 @@ const savedCustomRouteSchema = z.object({
       dailyDriveMaxHours: limitedNumber('dailyDriveMaxHours'),
     })
     .optional(),
+  stayDayCaps: z
+    .array(
+      z.object({
+        placeId: z.string().min(1).max(80),
+        maxDays: z.coerce.number().int().min(1).max(21),
+      }),
+    )
+    .max(16)
+    .optional(),
   createdAt: z.string().min(1).max(48),
   updatedAt: z.string().min(1).max(48),
 })
