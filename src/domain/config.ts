@@ -103,6 +103,7 @@ const savedCustomRouteSchema = z.object({
   waypoints: z.array(routeWaypointSchema).min(1).max(MAX_SAVED_ROUTE_WAYPOINTS),
   targetDays: limitedNumber('longestTripDays').optional(),
   keepOrder: z.boolean().optional(),
+  reverseLoop: z.boolean().optional(),
   startMonth: z.coerce.number().int().min(1).max(12).optional(),
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   directionPreference: z

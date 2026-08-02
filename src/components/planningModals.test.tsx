@@ -167,12 +167,14 @@ describe('planning modal responsibilities', () => {
     expect(within(dialog).getByText('Review the route, then optimize')).toBeTruthy()
     expect(within(dialog).getByText('Stop order')).toBeTruthy()
     expect(within(dialog).getByText('Badge Run')).toBeTruthy()
+    fireEvent.click(within(dialog).getByLabelText('Reverse optimized loop'))
     fireEvent.click(within(dialog).getByRole('button', { name: 'Save and optimize' }))
     expect(onSave).toHaveBeenCalledWith(
       expect.objectContaining({
         name: 'Badge Run',
         targetDays: 60,
         startDate: '2026-04-20',
+        reverseLoop: true,
         waypoints: [expect.objectContaining({ label: 'Grand Canyon' })],
       }),
     )

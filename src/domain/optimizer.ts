@@ -50,6 +50,7 @@ interface RouteVariant {
   targetDays?: number
   startDate?: string
   travelPreferences?: SavedCustomRoute['travelPreferences']
+  reverseLoop?: boolean
   stationFilter?: (station: Station) => boolean
   /** Undefined preserves the built-in north-first behavior; anchor keeps the
    * saved custom anchor order without imposing a compass heading. */
@@ -1515,18 +1516,23 @@ function buildSavedCustomRouteVariants(
         ? ` It starts ${resolvedDirection} first based on the saved ${route.directionPreference === 'seasonal' ? 'season-smart' : 'direction'} preference.`
         : ' It keeps the most efficient starting leg for the selected month.'
       : ''
+    const reverseLoop = Boolean(route.reverseLoop && !route.keepOrder)
+    const reverseNote = reverseLoop
+      ? ' It keeps the first and return stops in place and reverses the optimized loop between them.'
+      : ''
 
     return {
       id: route.id,
       name: route.name,
       strategy: route.keepOrder
         ? `Saved custom ${strategyNoun} that visits ${route.waypoints.length} stop${route.waypoints.length === 1 ? '' : 's'} in your exact saved order (${selectedLabels.join(' -> ')}).`
-        : `Saved custom ${strategyNoun} that optimizes ${route.waypoints.length} selected stop${route.waypoints.length === 1 ? '' : 's'} (${selectedLabels.join(', ')}) against the current trip settings and Supercharger coverage.${directionNote}`,
+        : `Saved custom ${strategyNoun} that optimizes ${route.waypoints.length} selected stop${route.waypoints.length === 1 ? '' : 's'} (${selectedLabels.join(', ')}) against the current trip settings and Supercharger coverage.${directionNote}${reverseNote}`,
       color: route.color,
       corridorMiles: 150,
       targetDays: route.targetDays,
       startDate: route.startDate,
       travelPreferences: route.travelPreferences,
+      reverseLoop,
       initialHeading: route.keepOrder ? 'anchor' : resolvedDirection ?? 'anchor',
       anchors: insertRequiredWaypoints(
         closeAnchorsToStart(anchors, start),
@@ -3761,6 +3767,10 @@ export function optimizeRoutes(
       }
     }
 
+    if (variant.reverseLoop) {
+      orderedStations = reverseRouteInterior(orderedStations)
+    }
+
     const ratingTargets = ratingTargetsForVariant(
       routeConfig,
       variant.forcedWaypoints,
@@ -3833,4 +3843,13 @@ export function optimizeRoutes(
     routes,
     stations,
   }
+}
+
+function reverseRouteInterior(stations: ScoredStation[]) {
+  if (stations.length <= 2) return stations
+  return [
+    stations[0],
+    ...stations.slice(1, -1).reverse(),
+    stations[stations.length - 1],
+  ]
 }

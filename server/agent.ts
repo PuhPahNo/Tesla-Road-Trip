@@ -148,6 +148,7 @@ const savedRouteUpdateArgsSchema = z
       .optional()
       .nullable(),
     keepOrder: z.boolean().optional().nullable(),
+    reverseLoop: z.boolean().optional().nullable(),
   })
   .refine(
     ({ routeId: _routeId, ...changes }) =>
@@ -584,6 +585,9 @@ async function runAgentTool(
       ...(parsed.keepOrder !== undefined && parsed.keepOrder !== null
         ? { keepOrder: parsed.keepOrder }
         : {}),
+      ...(parsed.reverseLoop !== undefined && parsed.reverseLoop !== null
+        ? { reverseLoop: parsed.reverseLoop }
+        : {}),
       ...(parsed.startMonth !== undefined && parsed.startMonth !== null
         ? { startMonth: parsed.startMonth }
         : {}),
@@ -616,6 +620,7 @@ async function runAgentTool(
           label: waypoint.label,
         })),
         keepOrder: Boolean(updated.route.keepOrder),
+        reverseLoop: Boolean(updated.route.reverseLoop),
         startMonth: updated.route.startMonth,
         startDate: updated.route.startDate,
         directionPreference: updated.route.directionPreference,
@@ -872,6 +877,11 @@ const plannerAgentTools = [
           items: { type: 'string' },
         },
         keepOrder: { type: ['boolean', 'null'] },
+        reverseLoop: {
+          type: ['boolean', 'null'],
+          description:
+            'Keep the first and return stops, but drive the generated Supercharger loop between them in reverse. Set keepOrder false when enabling this.',
+        },
       },
       additionalProperties: false,
     },
@@ -937,6 +947,7 @@ function summarizeConfig(config: PlannerConfig) {
         label: waypoint.label,
       })),
       keepOrder: Boolean(route.keepOrder),
+      reverseLoop: Boolean(route.reverseLoop),
       startMonth: route.startMonth,
       startDate: route.startDate,
       directionPreference: route.directionPreference,

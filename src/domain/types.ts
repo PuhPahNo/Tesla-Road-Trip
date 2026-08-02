@@ -91,6 +91,8 @@ export interface SavedCustomRoute {
   targetDays?: number
   /** Visit stops exactly in the saved order instead of letting the optimizer reorder them. */
   keepOrder?: boolean
+  /** Keep the optimized boundary stops and visit the generated loop between them in reverse. */
+  reverseLoop?: boolean
   /** Calendar month (1-12) used by the season-aware starting direction. */
   startMonth?: number
   /** Exact start date used for route direction and date-limited badge opportunities. */

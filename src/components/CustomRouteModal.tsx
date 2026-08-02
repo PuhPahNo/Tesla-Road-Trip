@@ -62,6 +62,7 @@ export interface CustomRouteDraft {
   waypoints: RouteWaypoint[]
   targetDays: number
   keepOrder: boolean
+  reverseLoop: boolean
   startMonth: number
   startDate: string
   directionPreference: RouteDirectionPreference
@@ -111,6 +112,7 @@ export function CustomRouteModal({
   const [categoryFilter, setCategoryFilter] = useState<CatalogCategoryFilter>('all')
   const [waypoints, setWaypoints] = useState<RouteWaypoint[]>([])
   const [keepOrder, setKeepOrder] = useState(false)
+  const [reverseLoop, setReverseLoop] = useState(false)
   const [startDate, setStartDate] = useState(defaultStartDate)
   const [directionPreference, setDirectionPreference] =
     useState<RouteDirectionPreference>('seasonal')
@@ -133,6 +135,7 @@ export function CustomRouteModal({
     setCategoryFilter('all')
     setWaypoints(route?.waypoints ?? [])
     setKeepOrder(Boolean(route?.keepOrder))
+    setReverseLoop(Boolean(route?.reverseLoop))
     setStartDate(routeStartDate(route, defaultStartDate))
     setDirectionPreference(route?.directionPreference ?? 'seasonal')
     setCustomizePreferences(Boolean(route?.travelPreferences))
@@ -239,6 +242,7 @@ export function CustomRouteModal({
       waypoints,
       targetDays: parsedTargetDays,
       keepOrder,
+      reverseLoop,
       startMonth,
       startDate,
       directionPreference,
@@ -688,23 +692,50 @@ export function CustomRouteModal({
             )}
           </div>
 
-          {step === 3 ? <label className="mt-3 flex flex-none cursor-pointer items-center justify-between gap-3 rounded-[11px] border border-edge bg-panel2 px-[13px] py-2.5">
-            <span className="min-w-0">
-              <span className="block text-[12.5px] font-medium text-ink">
-                Keep stop order
+          {step === 3 ? <div className="mt-3 flex flex-none flex-col gap-2">
+            <label className="flex cursor-pointer items-center justify-between gap-3 rounded-[11px] border border-edge bg-panel2 px-[13px] py-2.5">
+              <span className="min-w-0">
+                <span className="block text-[12.5px] font-medium text-ink">
+                  Keep stop order
+                </span>
+                <span className="mt-0.5 block text-[11px] text-faint">
+                  Visit stops exactly as listed instead of letting the optimizer
+                  reorder them.
+                </span>
               </span>
-              <span className="mt-0.5 block text-[11px] text-faint">
-                Visit stops exactly as listed instead of letting the optimizer
-                reorder them.
+              <input
+                type="checkbox"
+                checked={keepOrder}
+                onChange={(event) => {
+                  setKeepOrder(event.target.checked)
+                  if (event.target.checked) setReverseLoop(false)
+                }}
+                aria-label="Keep saved destination order"
+                className="h-4 w-4 flex-none accent-[var(--accent)]"
+              />
+            </label>
+            <label className="flex cursor-pointer items-center justify-between gap-3 rounded-[11px] border border-edge bg-panel2 px-[13px] py-2.5">
+              <span className="min-w-0">
+                <span className="block text-[12.5px] font-medium text-ink">
+                  Reverse optimized loop
+                </span>
+                <span className="mt-0.5 block text-[11px] text-faint">
+                  Keep the first and return stops, but drive the generated
+                  Supercharger loop between them in reverse.
+                </span>
               </span>
-            </span>
-            <input
-              type="checkbox"
-              checked={keepOrder}
-              onChange={(event) => setKeepOrder(event.target.checked)}
-              className="h-4 w-4 flex-none accent-[var(--accent)]"
-            />
-          </label> : null}
+              <input
+                type="checkbox"
+                checked={reverseLoop}
+                onChange={(event) => {
+                  setReverseLoop(event.target.checked)
+                  if (event.target.checked) setKeepOrder(false)
+                }}
+                aria-label="Reverse optimized loop"
+                className="h-4 w-4 flex-none accent-[var(--accent)]"
+              />
+            </label>
+          </div> : null}
         </aside> : null}
       </div>
 

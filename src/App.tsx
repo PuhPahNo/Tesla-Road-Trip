@@ -341,6 +341,10 @@ function App() {
     selectedRoute && refinedRoutes[selectedRoute.id]
       ? refinedRoutes[selectedRoute.id]
       : selectedRoute
+  const routePickerRoutes = useMemo(
+    () => result?.routes.map((route) => refinedRoutes[route.id] ?? route) ?? [],
+    [refinedRoutes, result],
+  )
   const routeStateStats = useMemo(
     () => buildStateRouteStats(displayRoute, visibleStations),
     [displayRoute, visibleStations],
@@ -744,7 +748,7 @@ function App() {
 
       {/* Modals */}
       <RoutePicker
-        routes={result?.routes ?? []}
+        routes={routePickerRoutes}
         selectedRouteId={selectedRoute?.id}
         open={routePickerOpen}
         onClose={() => setRoutePickerOpen(false)}

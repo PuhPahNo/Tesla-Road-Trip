@@ -70,6 +70,7 @@ export interface CreateCustomRouteRequest {
   waypoints: RouteWaypoint[]
   targetDays?: number
   keepOrder?: boolean
+  reverseLoop?: boolean
   startMonth?: number
   startDate?: string
   directionPreference?: SavedCustomRoute['directionPreference']

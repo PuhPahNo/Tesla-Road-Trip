@@ -371,6 +371,55 @@ describe('route optimizer', () => {
     )
   })
 
+  it('reverses the optimized loop while preserving its first and return stops', () => {
+    const savedRoute: SavedCustomRoute = {
+      id: 'saved-reversed-loop',
+      name: 'Reversed Loop',
+      color: '#0891b2',
+      directionPreference: 'east',
+      waypoints: [
+        {
+          id: 'city-los-angeles',
+          label: 'Los Angeles',
+          position: { lat: 34.0522, lon: -118.2437 },
+          radiusMiles: 55,
+        },
+        {
+          id: 'city-new-york',
+          label: 'New York City',
+          position: { lat: 40.7128, lon: -74.006 },
+          radiusMiles: 50,
+        },
+      ],
+      createdAt: '2026-08-02T00:00:00.000Z',
+      updatedAt: '2026-08-02T00:00:00.000Z',
+    }
+    const stations = buildStationGrid()
+    const base = optimizeRoutes(stations, {
+      ...defaultPlannerConfig,
+      longestTripDays: 12,
+      savedCustomRoutes: [savedRoute],
+    }).routes.find((route) => route.id === savedRoute.id)
+    const reversed = optimizeRoutes(stations, {
+      ...defaultPlannerConfig,
+      longestTripDays: 12,
+      savedCustomRoutes: [{ ...savedRoute, reverseLoop: true }],
+    }).routes.find((route) => route.id === savedRoute.id)
+
+    expect(base).toBeDefined()
+    expect(reversed).toBeDefined()
+    if (!base || !reversed) throw new Error('Saved custom routes were not generated.')
+
+    const baseIds = base.visits.map((visit) => visit.station.id)
+    const expectedIds = [
+      baseIds[0],
+      ...baseIds.slice(1, -1).reverse(),
+      baseIds[baseIds.length - 1],
+    ]
+    expect(reversed.visits.map((visit) => visit.station.id)).toEqual(expectedIds)
+    expect(reversed.strategy).toContain('reverses the optimized loop')
+  })
+
   it('starts a winter custom route south when season-smart direction is selected', () => {
     const winterRoute: SavedCustomRoute = {
       id: 'saved-winter-south-first',

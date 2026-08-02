@@ -68,6 +68,7 @@ const savedRouteSchema = z.object({
   waypoints: z.array(waypointSchema).min(1).max(MAX_SAVED_ROUTE_WAYPOINTS),
   targetDays: z.coerce.number().int().min(1).max(365).optional(),
   keepOrder: z.boolean().optional(),
+  reverseLoop: z.boolean().optional(),
   startMonth: z.coerce.number().int().min(1).max(12).optional(),
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   directionPreference: z
@@ -84,6 +85,7 @@ const createRouteSchema = z.object({
   waypoints: z.array(waypointSchema).min(1).max(MAX_SAVED_ROUTE_WAYPOINTS),
   targetDays: z.coerce.number().int().min(1).max(365).optional(),
   keepOrder: z.boolean().optional(),
+  reverseLoop: z.boolean().optional(),
   startMonth: z.coerce.number().int().min(1).max(12).optional(),
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   directionPreference: z
@@ -154,6 +156,7 @@ export function updateSavedCustomRoute(
       : {}),
     ...(parsed.targetDays !== undefined ? { targetDays: parsed.targetDays } : {}),
     ...(parsed.keepOrder !== undefined ? { keepOrder: parsed.keepOrder } : {}),
+    ...(parsed.reverseLoop !== undefined ? { reverseLoop: parsed.reverseLoop } : {}),
     ...(parsed.startMonth !== undefined ? { startMonth: parsed.startMonth } : {}),
     ...(parsed.startDate !== undefined ? { startDate: parsed.startDate } : {}),
     ...(parsed.directionPreference !== undefined
@@ -200,6 +203,7 @@ export function registerCustomRouteRoutes(app: Express) {
         waypoints: normalizeWaypoints(parsed.waypoints),
         ...(parsed.targetDays !== undefined ? { targetDays: parsed.targetDays } : {}),
         ...(parsed.keepOrder ? { keepOrder: true } : {}),
+        ...(parsed.reverseLoop ? { reverseLoop: true } : {}),
         ...(parsed.startMonth !== undefined ? { startMonth: parsed.startMonth } : {}),
         ...(parsed.startDate !== undefined ? { startDate: parsed.startDate } : {}),
         ...(parsed.directionPreference !== undefined
