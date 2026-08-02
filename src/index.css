@@ -33,6 +33,9 @@
   --info-bg: rgba(11, 160, 213, 0.12);
   --info-bd: rgba(11, 160, 213, 0.32);
   --info-tx: #5bc8f0;
+  --calendar-transit: #ff5a52;
+  --calendar-highlight: #42d392;
+  --calendar-short: #58a6ff;
   --chip: rgba(255, 255, 255, 0.06);
   --route: #ff453a;
   --glass: rgba(15, 19, 26, 0.72);
@@ -69,6 +72,9 @@
   --info-bg: #eef4ff;
   --info-bd: #cfe0ff;
   --info-tx: #2b5fb3;
+  --calendar-transit: #c62828;
+  --calendar-highlight: #16794b;
+  --calendar-short: #2563b8;
   --chip: rgba(20, 22, 28, 0.05);
   --route: #e82127;
   --glass: rgba(255, 255, 255, 0.8);

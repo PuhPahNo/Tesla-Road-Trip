@@ -1,12 +1,25 @@
 import { useId } from 'react'
 import type { DayPlan, RoutePlan } from '../domain/types'
 import { Overlay, OverlayHeader } from '../ui/Overlay'
-import { scoreColor } from '../ui/primitives'
 import {
   badgeOpportunitiesForRoute,
   tripDateForDay,
   type TeslaBadgeOpportunity,
 } from '../domain/teslaBadges'
+import {
+  calendarDayPresentation,
+  type CalendarDayTone,
+} from './calendarDayPresentation'
+
+const CALENDAR_DAY_STYLES: Record<
+  CalendarDayTone,
+  { color: string; label: string }
+> = {
+  transit: { color: 'var(--calendar-transit)', label: 'Transit · 4h+' },
+  highlight: { color: 'var(--calendar-highlight)', label: 'Highlight · 90+' },
+  short: { color: 'var(--calendar-short)', label: 'Easy drive · <1.5h' },
+  standard: { color: 'var(--dim)', label: 'Standard day' },
+}
 
 function stars(score: number) {
   const full = Math.max(1, Math.min(5, Math.round(score / 20)))
@@ -26,18 +39,24 @@ function DayTile({
 }) {
   const cities = [...new Set(day.visits.map((visit) => visit.station.address.city))]
   const star = stars(day.rating.score)
-  const tint = scoreColor(day.rating.score)
+  const presentation = calendarDayPresentation(day)
+  const tone = CALENDAR_DAY_STYLES[presentation.tone]
   return (
     <button
       type="button"
       onClick={onOpen}
       aria-label={`Open day ${day.day} state coverage`}
-      className="flex min-h-[104px] cursor-pointer flex-col gap-1.5 rounded-xl p-3 text-left transition hover:brightness-110"
+      data-calendar-tone={presentation.tone}
+      className="flex min-h-[118px] cursor-pointer flex-col gap-1.5 rounded-xl p-3 text-left transition hover:brightness-110"
       style={{
-        border: day.longDayOptimized
-          ? '1px solid color-mix(in srgb, var(--amber) 50%, var(--border))'
-          : '1px solid var(--border)',
-        background: `color-mix(in srgb, ${tint} ${8 + Math.round(day.rating.score * 0.16)}%, var(--panel-2))`,
+        border:
+          presentation.tone === 'standard'
+            ? '1px solid var(--border)'
+            : `1px solid color-mix(in srgb, ${tone.color} 52%, var(--border))`,
+        background:
+          presentation.tone === 'standard'
+            ? 'var(--panel-2)'
+            : `color-mix(in srgb, ${tone.color} 16%, var(--panel-2))`,
       }}
     >
       <div className="flex items-center justify-between gap-1.5">
@@ -56,6 +75,27 @@ function DayTile({
           ⛺ {day.stay.label} · N{day.stay.night}/{day.stay.totalNights}
         </div>
       )}
+      <div className="mt-auto flex flex-wrap gap-1">
+        {(presentation.flags.length > 0
+          ? presentation.flags
+          : (['standard'] as const)
+        ).map((flag) => {
+          const flagStyle = CALENDAR_DAY_STYLES[flag]
+          return (
+            <span
+              key={flag}
+              className="rounded-full border px-1.5 py-0.5 font-mono text-[8px] font-semibold uppercase tracking-[0.04em]"
+              style={{
+                borderColor: `color-mix(in srgb, ${flagStyle.color} 48%, var(--border))`,
+                background: `color-mix(in srgb, ${flagStyle.color} 12%, transparent)`,
+                color: flagStyle.color,
+              }}
+            >
+              {flagStyle.label}
+            </span>
+          )
+        })}
+      </div>
       <div className="font-mono text-[9.5px] text-faint">
         {day.uniqueStations} sites · {day.miles.toLocaleString()} mi ·{' '}
         {day.driveHours.toFixed(1)}h
@@ -129,27 +169,31 @@ export function CalendarModal({
       </div>
 
       <div className="flex flex-none flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-edge px-[18px] py-3 font-mono text-[10.5px] text-faint md:px-[22px]">
-        <span className="flex items-center gap-1.5">
-          <span
-            className="h-[11px] w-[11px] rounded-[3px] border border-edge"
-            style={{ background: 'color-mix(in srgb, var(--good-tx) 30%, var(--panel-2))' }}
-          />
-          Standout
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span
-            className="h-[11px] w-[11px] rounded-[3px] border border-edge"
-            style={{ background: 'color-mix(in srgb, var(--warn-tx) 30%, var(--panel-2))' }}
-          />
-          Transit-heavy
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span
-            className="h-[11px] w-[11px] rounded-[3px]"
-            style={{ border: '1px solid color-mix(in srgb, var(--amber) 55%, var(--border))' }}
-          />
-          Long-day boost
-        </span>
+        {(
+          [
+            ['transit', 'Transit · 4.0h+'],
+            ['highlight', 'Highlight · rating 90+'],
+            ['short', 'Easy drive · under 1.5h'],
+            ['standard', 'Standard day'],
+          ] as const
+        ).map(([toneName, label]) => (
+          <span key={toneName} className="flex items-center gap-1.5">
+            <span
+              className="h-[11px] w-[11px] rounded-[3px] border"
+              style={{
+                borderColor:
+                  toneName === 'standard'
+                    ? 'var(--border-2)'
+                    : CALENDAR_DAY_STYLES[toneName].color,
+                background:
+                  toneName === 'standard'
+                    ? 'var(--panel-2)'
+                    : `color-mix(in srgb, ${CALENDAR_DAY_STYLES[toneName].color} 24%, var(--panel-2))`,
+              }}
+            />
+            {label}
+          </span>
+        ))}
         <span className="flex-1" />
         <span className="hidden sm:inline">Click a day to open state coverage</span>
       </div>
