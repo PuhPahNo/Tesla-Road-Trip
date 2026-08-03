@@ -7,6 +7,7 @@ import {
   type TeslaBadgeOpportunity,
 } from '../domain/teslaBadges'
 import {
+  CALENDAR_LANDMARK_DAY_MIN_SCORE,
   calendarDayPresentation,
   type CalendarDayTone,
 } from './calendarDayPresentation'
@@ -210,7 +211,7 @@ export function CalendarModal({
               outlineOffset: '1px',
             }}
           />
-          Landmark to visit
+          Landmark to visit · day rating {CALENDAR_LANDMARK_DAY_MIN_SCORE}+
         </span>
         <span className="flex-1" />
         <span className="hidden sm:inline">Click a day to open state coverage</span>

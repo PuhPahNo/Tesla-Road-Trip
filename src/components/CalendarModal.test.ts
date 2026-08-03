@@ -56,8 +56,8 @@ describe('calendarDayPresentation', () => {
     })
   })
 
-  it('selects the highest-rated landmark independently of the day tone', () => {
-    const landmarkDay = day(4.25, 88)
+  it('selects the highest-rated landmark for a day rated 85 or higher', () => {
+    const landmarkDay = day(4.25, 85)
     landmarkDay.rating.places = [
       {
         id: 'city:test',
@@ -92,6 +92,27 @@ describe('calendarDayPresentation', () => {
       tone: 'transit',
       flags: ['transit'],
       landmark: expect.objectContaining({ label: 'Scenic Landmark' }),
+    })
+  })
+
+  it('does not highlight a landmark day rated below 85', () => {
+    const lowRatedLandmarkDay = day(2.5, 84)
+    lowRatedLandmarkDay.rating.places = [
+      {
+        id: 'landmark:excellent',
+        type: 'landmark',
+        label: 'Excellent Landmark',
+        rating: 99,
+        sceneryScore: 99,
+        visits: 1,
+        summary: 'A great landmark on a lower-rated day.',
+      },
+    ]
+
+    expect(calendarDayPresentation(lowRatedLandmarkDay)).toEqual({
+      tone: 'standard',
+      flags: [],
+      landmark: undefined,
     })
   })
 })
