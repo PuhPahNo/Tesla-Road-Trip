@@ -41,12 +41,15 @@ function DayTile({
   const star = stars(day.rating.score)
   const presentation = calendarDayPresentation(day)
   const tone = CALENDAR_DAY_STYLES[presentation.tone]
+  const landmark = presentation.landmark
   return (
     <button
       type="button"
       onClick={onOpen}
-      aria-label={`Open day ${day.day} state coverage`}
+      aria-label={`Open day ${day.day} state coverage${landmark ? `; landmark: ${landmark.label}` : ''}`}
       data-calendar-tone={presentation.tone}
+      data-calendar-landmark={landmark ? 'true' : 'false'}
+      data-calendar-landmark-label={landmark?.label}
       className="flex min-h-[118px] cursor-pointer flex-col gap-1.5 rounded-xl p-3 text-left transition hover:brightness-110"
       style={{
         border:
@@ -57,6 +60,11 @@ function DayTile({
           presentation.tone === 'standard'
             ? 'var(--panel-2)'
             : `color-mix(in srgb, ${tone.color} 16%, var(--panel-2))`,
+        outline: landmark ? '2px solid var(--calendar-landmark)' : undefined,
+        outlineOffset: landmark ? '1px' : undefined,
+        boxShadow: landmark
+          ? '0 0 16px color-mix(in srgb, var(--calendar-landmark) 18%, transparent)'
+          : undefined,
       }}
     >
       <div className="flex items-center justify-between gap-1.5">
@@ -194,6 +202,16 @@ export function CalendarModal({
             {label}
           </span>
         ))}
+        <span className="flex items-center gap-1.5">
+          <span
+            className="h-[11px] w-[11px] rounded-[3px] border border-edge bg-panel2"
+            style={{
+              outline: '2px solid var(--calendar-landmark)',
+              outlineOffset: '1px',
+            }}
+          />
+          Landmark to visit
+        </span>
         <span className="flex-1" />
         <span className="hidden sm:inline">Click a day to open state coverage</span>
       </div>

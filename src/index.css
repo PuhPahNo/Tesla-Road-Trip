@@ -36,6 +36,7 @@
   --calendar-transit: #ff5a52;
   --calendar-highlight: #42d392;
   --calendar-short: #58a6ff;
+  --calendar-landmark: #f5a623;
   --chip: rgba(255, 255, 255, 0.06);
   --route: #ff453a;
   --glass: rgba(15, 19, 26, 0.72);
@@ -75,6 +76,7 @@
   --calendar-transit: #c62828;
   --calendar-highlight: #16794b;
   --calendar-short: #2563b8;
+  --calendar-landmark: #a85d00;
   --chip: rgba(20, 22, 28, 0.05);
   --route: #e82127;
   --glass: rgba(255, 255, 255, 0.8);
