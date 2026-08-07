@@ -88,7 +88,7 @@ export const MapView = memo(function MapView({
 }: MapViewProps) {
   const { theme, isDark } = useTheme()
   const isMobile = useIsMobile()
-  const mapGesturesEnabled = !pageScrollOnMobile || !isMobile
+  const cooperativeTouchMode = pageScrollOnMobile && isMobile
   // preferCanvas means Leaflet vector strokes/fills are painted to <canvas>,
   // which cannot resolve CSS var(), so theme colors are picked here in JS.
   const ink = isDark ? '#e9edf2' : '#171a20'
@@ -134,19 +134,17 @@ export const MapView = memo(function MapView({
 
   return (
     <MapContainer
-      className={`h-full w-full ${
-        mapGesturesEnabled ? '' : 'touch-pan-y'
-      }`}
+      className="h-full w-full"
       center={[start.lat, start.lon]}
       preferCanvas
       zoom={5}
       zoomControl={false}
       scrollWheelZoom={scrollWheelZoom}
-      dragging={mapGesturesEnabled}
-      touchZoom={mapGesturesEnabled}
-      doubleClickZoom={mapGesturesEnabled}
-      boxZoom={mapGesturesEnabled}
-      keyboard={mapGesturesEnabled}
+      // On an embedded mobile map, one-finger dragging blocks the browser's
+      // page scroll. Leaflet's two-finger touchZoom handler also moves the map,
+      // so keep that enabled while reserving one-finger gestures for the page.
+      dragging={!cooperativeTouchMode}
+      touchZoom
     >
       <TileLayer
         key={theme}

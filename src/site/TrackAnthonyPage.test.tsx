@@ -224,6 +224,7 @@ describe('Track Anthony', () => {
     expect(screen.getAllByText(/Map highlighting day 1\. Road points 3/)).toHaveLength(1)
     expect(screen.getByText(/Active day 1\. Wheel zoom off/)).toBeTruthy()
     expect(screen.getByText(/Mobile page scroll on/)).toBeTruthy()
+    expect(screen.getByText('One finger scrolls · two fingers move or zoom')).toBeTruthy()
     expect(screen.getByText(/Zoom focus day 1/)).toBeTruthy()
     expect(screen.getByText('Current day 1')).toBeTruthy()
     expect(screen.getAllByText('ORS road-accurate route').length).toBeGreaterThan(0)

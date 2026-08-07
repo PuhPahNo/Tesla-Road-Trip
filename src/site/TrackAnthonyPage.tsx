@@ -578,7 +578,12 @@ function LiveRouteHero({
                 Updated {formatTimestamp(trip.updatedAt)}
               </div>
               <div className="mt-2 font-mono text-[6.5px] uppercase tracking-[0.08em] text-white/28">
-                Wheel scrolls the page · + / − follows the selected leg
+                <span className="md:hidden">
+                  One finger scrolls · two fingers move or zoom
+                </span>
+                <span className="hidden md:inline">
+                  Wheel scrolls the page · + / − follows the selected leg
+                </span>
               </div>
             </div>
           </div>
