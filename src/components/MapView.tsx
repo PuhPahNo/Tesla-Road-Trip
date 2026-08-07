@@ -22,6 +22,7 @@ import type {
 import { haversineMiles, simplifyPolyline } from '../domain/geo'
 import { stationHighlights } from '../domain/highlights'
 import { STATE_NAME_TO_CODE } from '../domain/usStates'
+import { useIsMobile } from '../hooks/useMediaQuery'
 import usStatesRaw from '../assets/us-states.json'
 import { useTheme } from '../theme/theme'
 
@@ -45,6 +46,7 @@ interface MapViewProps {
   activeDayIndex?: number
   zoomFocusDayIndex?: number
   scrollWheelZoom?: boolean
+  pageScrollOnMobile?: boolean
   fitPadding: FitPadding
 }
 
@@ -81,9 +83,12 @@ export const MapView = memo(function MapView({
   activeDayIndex,
   zoomFocusDayIndex,
   scrollWheelZoom = true,
+  pageScrollOnMobile = false,
   fitPadding,
 }: MapViewProps) {
   const { theme, isDark } = useTheme()
+  const isMobile = useIsMobile()
+  const mapGesturesEnabled = !pageScrollOnMobile || !isMobile
   // preferCanvas means Leaflet vector strokes/fills are painted to <canvas>,
   // which cannot resolve CSS var(), so theme colors are picked here in JS.
   const ink = isDark ? '#e9edf2' : '#171a20'
@@ -129,12 +134,19 @@ export const MapView = memo(function MapView({
 
   return (
     <MapContainer
-      className="h-full w-full"
+      className={`h-full w-full ${
+        mapGesturesEnabled ? '' : 'touch-pan-y'
+      }`}
       center={[start.lat, start.lon]}
       preferCanvas
       zoom={5}
       zoomControl={false}
       scrollWheelZoom={scrollWheelZoom}
+      dragging={mapGesturesEnabled}
+      touchZoom={mapGesturesEnabled}
+      doubleClickZoom={mapGesturesEnabled}
+      boxZoom={mapGesturesEnabled}
+      keyboard={mapGesturesEnabled}
     >
       <TileLayer
         key={theme}

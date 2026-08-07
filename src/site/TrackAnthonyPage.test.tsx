@@ -12,19 +12,22 @@ vi.mock('../components/MapView', () => ({
     zoomFocusDayIndex,
     roadLine,
     scrollWheelZoom,
+    pageScrollOnMobile,
   }: {
     highlightedDayIndex?: number
     activeDayIndex?: number
     zoomFocusDayIndex?: number
     roadLine?: Array<{ lat: number; lon: number }>
     scrollWheelZoom?: boolean
+    pageScrollOnMobile?: boolean
   }) => (
     <div>
       Map highlighting day {(highlightedDayIndex ?? 0) + 1}. Road points{' '}
       {roadLine?.length ?? 0}. Active day{' '}
       {activeDayIndex == null ? 'none' : activeDayIndex + 1}. Wheel zoom{' '}
       {scrollWheelZoom === false ? 'off' : 'on'}. Zoom focus day{' '}
-      {zoomFocusDayIndex == null ? 'none' : zoomFocusDayIndex + 1}.
+      {zoomFocusDayIndex == null ? 'none' : zoomFocusDayIndex + 1}. Mobile page
+      scroll {pageScrollOnMobile ? 'on' : 'off'}.
     </div>
   ),
 }))
@@ -220,6 +223,7 @@ describe('Track Anthony', () => {
     })).toBeTruthy()
     expect(screen.getAllByText(/Map highlighting day 1\. Road points 3/)).toHaveLength(1)
     expect(screen.getByText(/Active day 1\. Wheel zoom off/)).toBeTruthy()
+    expect(screen.getByText(/Mobile page scroll on/)).toBeTruthy()
     expect(screen.getByText(/Zoom focus day 1/)).toBeTruthy()
     expect(screen.getByText('Current day 1')).toBeTruthy()
     expect(screen.getAllByText('ORS road-accurate route').length).toBeGreaterThan(0)

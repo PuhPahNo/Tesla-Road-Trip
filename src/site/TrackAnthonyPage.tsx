@@ -518,6 +518,7 @@ function LiveRouteHero({
           activeDayIndex={liveDayIndex}
           zoomFocusDayIndex={selectedDayIndex}
           scrollWheelZoom={false}
+          pageScrollOnMobile
           fitPadding={{
             topLeft: [48, 150],
             bottomRight: [48, 260],
@@ -725,6 +726,7 @@ function CompleteRoute({
                   highlightedDayIndex={selectedDayIndex}
                   zoomFocusDayIndex={selectedDayIndex}
                   scrollWheelZoom={false}
+                  pageScrollOnMobile
                   fitPadding={{
                     topLeft: [48, 48],
                     bottomRight: [48, 48],
