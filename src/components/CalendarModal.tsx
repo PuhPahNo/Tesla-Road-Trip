@@ -6,6 +6,8 @@ import {
   tripDateForDay,
   type TeslaBadgeOpportunity,
 } from '../domain/teslaBadges'
+import { formatStationAddress } from '../domain/stationAddress'
+import { StationStatusBadge } from './StationStatusBadge'
 import {
   CALENDAR_LANDMARK_DAY_MIN_SCORE,
   calendarDayPresentation,
@@ -39,6 +41,7 @@ function DayTile({
   onOpen: () => void
 }) {
   const cities = [...new Set(day.visits.map((visit) => visit.station.address.city))]
+  const finalStation = day.visits.at(-1)?.station
   const star = stars(day.rating.score)
   const presentation = calendarDayPresentation(day)
   const tone = CALENDAR_DAY_STYLES[presentation.tone]
@@ -51,7 +54,7 @@ function DayTile({
       data-calendar-tone={presentation.tone}
       data-calendar-landmark={landmark ? 'true' : 'false'}
       data-calendar-landmark-label={landmark?.label}
-      className="flex min-h-[118px] cursor-pointer flex-col gap-1.5 rounded-xl p-3 text-left transition hover:brightness-110"
+      className="flex min-h-[146px] cursor-pointer flex-col gap-1.5 rounded-xl p-3 text-left transition hover:brightness-110"
       style={{
         border:
           presentation.tone === 'standard'
@@ -79,6 +82,22 @@ function DayTile({
       <div className="truncate text-[12px] font-medium text-ink">
         {cities.slice(0, 2).join(' → ') || 'Open road'}
       </div>
+      {finalStation ? (
+        <div className="min-w-0">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <div className="min-w-0 flex-1 truncate text-[10px] font-medium text-dim" title={finalStation.name}>
+              ⚡ {finalStation.name}
+            </div>
+            <StationStatusBadge status={finalStation.status} compact />
+          </div>
+          <div
+            className="mt-0.5 break-words font-mono text-[8.5px] leading-[1.35] text-faint"
+            title={formatStationAddress(finalStation.address)}
+          >
+            {formatStationAddress(finalStation.address)}
+          </div>
+        </div>
+      ) : null}
       {day.stay && (
         <div className="truncate font-mono text-[9.5px] text-accent2">
           ⛺ {day.stay.label} · N{day.stay.night}/{day.stay.totalNights}

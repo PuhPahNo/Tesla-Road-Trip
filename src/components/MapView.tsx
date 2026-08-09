@@ -21,6 +21,8 @@ import type {
 } from '../domain/types'
 import { haversineMiles, simplifyPolyline } from '../domain/geo'
 import { stationHighlights } from '../domain/highlights'
+import { formatStationAddress } from '../domain/stationAddress'
+import { StationStatusBadge } from './StationStatusBadge'
 import { STATE_NAME_TO_CODE } from '../domain/usStates'
 import { useIsMobile } from '../hooks/useMediaQuery'
 import usStatesRaw from '../assets/us-states.json'
@@ -443,7 +445,9 @@ function RouteStopMarker({
           </>
         ) : null}
         <br />
-        {visit.station.address.city}, {visit.station.address.state}
+        {formatStationAddress(visit.station.address)}
+        <br />
+        <StationStatusBadge status={visit.station.status} />
       </Popup>
     </CircleMarker>
   )

@@ -3,12 +3,15 @@ import type { DayPlan, PlaceRating, RoutePlan } from '../domain/types'
 import type { StateRouteStats } from '../domain/routeStats'
 import type { ContestStatus } from '../domain/rules'
 import { stationHighlights } from '../domain/highlights'
+import { formatStationAddress } from '../domain/stationAddress'
+import { routeStationAvailability } from '../domain/stationStatus'
 import { buildTripComposition, topLandmarkLabel } from '../domain/tripComposition'
 import { badgeOpportunitiesForRoute, tripDateForDay } from '../domain/teslaBadges'
 import type { StationsResponse } from '../api/client'
-import { ProgressBar, StatTile, cx, scoreColor } from '../ui/primitives'
+import { ProgressBar, StatTile, cx, scoreColor, toneClasses } from '../ui/primitives'
 import { AlertIcon, CloseIcon, InfoIcon, RefreshIcon } from '../ui/icons'
 import type { PanelKey } from './Chrome'
+import { StationStatusBadge } from './StationStatusBadge'
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
@@ -100,6 +103,7 @@ export function OverviewSection({
   const isLongestTrip = route?.plannerMode === 'longest_trip'
   const dash = '—'
   const composition = buildTripComposition(route)
+  const availability = route ? routeStationAvailability(route) : undefined
   return (
     <div className="flex flex-col gap-3">
       <div className="grid grid-cols-2 gap-2">
@@ -132,6 +136,23 @@ export function OverviewSection({
           unit={route ? '/100' : undefined}
         />
       </div>
+
+      {availability && availability.total > 0 ? (
+        <div
+          data-route-availability
+          className={cx(
+            'rounded-[11px] border px-[13px] py-[11px]',
+            toneClasses(availability.notOpen === 0 ? 'good' : 'warn'),
+          )}
+        >
+          <div className="text-[12.5px] font-semibold">
+            {availability.open}/{availability.total} route sites currently open
+          </div>
+          <div className="mt-1 font-mono text-[9.5px] leading-[1.45] opacity-80">
+            Current Supercharge.info snapshot · refresh before travel
+          </div>
+        </div>
+      ) : null}
 
       {route ? (
         <Card>
@@ -338,6 +359,31 @@ export function DaysSection({
                 )}
               </div>
             )}
+            {day.visits.length > 0 ? (
+              <div className="mt-2 flex flex-col gap-1.5 pl-11">
+                {day.visits.map((visit) => (
+                  <div
+                    key={`${visit.sequence}-${visit.station.id}`}
+                    className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-start gap-x-1.5"
+                  >
+                    <span className="text-[10px] text-accent" aria-hidden>
+                      ⚡
+                    </span>
+                    <span className="min-w-0">
+                      <span className="flex min-w-0 flex-wrap items-center gap-1.5">
+                        <span className="min-w-0 text-[10.5px] font-medium leading-[1.35] text-ink">
+                          {visit.station.name}
+                        </span>
+                        <StationStatusBadge status={visit.station.status} compact />
+                      </span>
+                      <span className="block break-words font-mono text-[9.5px] leading-[1.4] text-faint">
+                        {formatStationAddress(visit.station.address)}
+                      </span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
             <div className="mt-1.5 flex items-center gap-3 pl-11 font-mono text-[10.5px] text-faint">
               <span>{day.uniqueStations} sites</span>
               <span>{day.miles.toLocaleString()} mi</span>
@@ -613,6 +659,10 @@ export function StatusSection({
         </div>
         <div className="mt-[5px] font-mono text-[11px] leading-[1.5] text-faint">
           Supercharge.info · fetched {fetchedLabel(stationStatus?.source.fetchedAt)}
+        </div>
+        <div className="mt-2 text-[11.5px] leading-[1.45] text-dim">
+          Only sites marked OPEN are route-eligible. Closed, construction,
+          expanding, and planned sites are excluded.
         </div>
         <button
           type="button"

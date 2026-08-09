@@ -99,10 +99,14 @@ async function parseJsonResponse<T>(response: Response): Promise<T> {
   return payload as T
 }
 
-export async function fetchStations(config: Pick<PlannerConfig, 'includeCanada' | 'includeMexico'>) {
+export async function fetchStations(
+  config: Pick<PlannerConfig, 'includeCanada' | 'includeMexico'>,
+  refresh = false,
+) {
   const params = new URLSearchParams({
     includeCanada: String(config.includeCanada),
     includeMexico: String(config.includeMexico),
+    ...(refresh ? { refresh: 'true' } : {}),
   })
   const response = await fetch(`/api/stations?${params.toString()}`)
   return parseJsonResponse<StationsResponse>(response)

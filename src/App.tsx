@@ -207,6 +207,29 @@ function App() {
     }
   }
 
+  const refreshStationsAndRoute = async () => {
+    setIsLoadingStations(true)
+    setIsOptimizing(true)
+    setError(undefined)
+    setOptimizeStep(OPTIMIZE_STEPS[0])
+    try {
+      const sanitized = sanitizePlannerConfig(config)
+      setStationStatus(await fetchStations(sanitized, true))
+      const response = await optimizeRoutes(sanitized)
+      applyOptimizationResult(response, selectedRouteId)
+      showToast('Stations and selected route refreshed')
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : 'Station and route refresh failed.',
+      )
+    } finally {
+      setIsLoadingStations(false)
+      setIsOptimizing(false)
+    }
+  }
+
   const applyAgentResponse = (response: PlannerAgentResponse) => {
     setConfig(sanitizePlannerConfig(response.config))
     if (response.result) {
@@ -556,7 +579,7 @@ function App() {
           <StatusSection
             stationStatus={stationStatus}
             isLoadingStations={isLoadingStations}
-            onRefresh={loadStations}
+            onRefresh={refreshStationsAndRoute}
             contestStatus={contestStatus}
             roadStatus={roadStatus}
           />
@@ -591,7 +614,7 @@ function App() {
       />
       <ActionsIsland
         onOpenCopilot={() => setCopilotOpen((open) => !open)}
-        onRefresh={() => void loadStations()}
+        onRefresh={() => void refreshStationsAndRoute()}
         isRefreshing={isLoadingStations}
         onOpenConfig={() => setConfigOpen(true)}
         showAsk={!isMobile}
@@ -681,7 +704,7 @@ function App() {
                 <StatusSection
                   stationStatus={stationStatus}
                   isLoadingStations={isLoadingStations}
-                  onRefresh={loadStations}
+                  onRefresh={refreshStationsAndRoute}
                   contestStatus={contestStatus}
                   roadStatus={roadStatus}
                 />
