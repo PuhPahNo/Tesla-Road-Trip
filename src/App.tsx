@@ -63,6 +63,7 @@ import { AlertIcon } from './ui/icons'
 import { Eyebrow } from './ui/primitives'
 import { fetchPreferences, savePreferences } from './api/siteClient'
 import { useAuth } from './site/AuthContext'
+import { preferredRouteId } from './domain/routeReadiness'
 
 const EMPTY_STATIONS: Station[] = []
 
@@ -161,7 +162,7 @@ function App() {
 
   const applyOptimizationResult = (
     response: OptimizeResponse,
-    routeId = response.routes[0]?.id,
+    routeId = preferredRouteId(response.routes),
   ) => {
     setConfig(sanitizePlannerConfig(response.config))
     setResult(response)
@@ -537,7 +538,9 @@ function App() {
       const response = await optimizeRoutes(sanitizePlannerConfig(config))
       applyOptimizationResult(
         response,
-        selectedRoute?.id === route.id ? response.routes[0]?.id : selectedRoute?.id,
+        selectedRoute?.id === route.id
+          ? preferredRouteId(response.routes)
+          : selectedRoute?.id,
       )
       setRoutePickerOpen(true)
       showToast(`Deleted ${route.name}`)

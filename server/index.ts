@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import express from 'express'
+import express, { type Request, type Response } from 'express'
 import { registerAgentRoutes } from './agent'
 import { registerAdminAccountRoutes } from './adminAccounts'
 import { registerAdminHotelRoutes } from './adminHotels'
@@ -14,11 +14,11 @@ import {
 } from './customRoutes'
 import {
   ensureAnthonyAdmin,
-  getRequestUser,
+  requireUser,
   registerAuthRoutes,
 } from './auth'
 import { registerCommunityRoutes } from './community'
-import { databasePath } from './database'
+import { databaseIsHealthy, databasePath } from './database'
 import {
   defaultPlannerConfig,
   plannerConfigSchema,
@@ -35,6 +35,10 @@ import {
 } from '../src/domain/stations'
 import type { PlannerConfig, Station } from '../src/domain/types'
 import { renderClientDocument } from './seo'
+import {
+  RequestRateLimitError,
+  enforceRequestRateLimit,
+} from './rateLimit'
 import { z } from 'zod'
 
 const METERS_PER_MILE = 1609.344
@@ -106,6 +110,9 @@ async function isRoadRoutingHealthy(): Promise<boolean> {
 
 const CACHE_TTL_MS = 1000 * 60 * 60
 const MAX_OSRM_COORDINATES = 32
+const MAX_PUBLIC_ROUTE_COORDINATES = 600
+const MAX_ROAD_ROUTE_CACHE_ENTRIES = 100
+const PLANNER_RATE_LIMIT_WINDOW_MS = 60_000
 const PORT = Number(process.env.PORT ?? 4177)
 const RELEASE_REVISION = firstSafeReleaseValue(
   process.env.RENDER_GIT_COMMIT,
@@ -138,7 +145,7 @@ const roadRouteSchema = z.object({
       }),
     )
     .min(2)
-    .max(2000),
+    .max(MAX_PUBLIC_ROUTE_COORDINATES),
 })
 
 const refineRouteSchema = z.object({
@@ -161,7 +168,7 @@ const refineRouteSchema = z.object({
         .passthrough(),
     )
     .min(1)
-    .max(5000),
+    .max(MAX_PUBLIC_ROUTE_COORDINATES - 2),
 })
 
 async function loadStations(force = false): Promise<StationCache> {
@@ -212,12 +219,15 @@ app.use((_request, response, next) => {
 
 app.get('/api/health', async (_request, response) => {
   const enabled = await isRoadRoutingHealthy()
+  const databaseHealthy = databaseIsHealthy()
+  response.status(databaseHealthy ? 200 : 503)
   response.json({
-    ok: true,
+    ok: databaseHealthy,
     service: 'tesla-supercharger-quest',
     time: new Date().toISOString(),
     roadRouting: { enabled, provider: ROAD_PROVIDER },
     accounts: { enabled: true },
+    database: { enabled: true, healthy: databaseHealthy },
     release: {
       revision: RELEASE_REVISION,
       deployedAt: RELEASE_DEPLOYED_AT,
@@ -227,7 +237,13 @@ app.get('/api/health', async (_request, response) => {
 
 app.get('/api/stations', async (request, response) => {
   try {
-    const cache = await loadStations(request.query.refresh === 'true')
+    const forceRefresh = request.query.refresh === 'true'
+    if (forceRefresh) {
+      const user = requireUser(request, response)
+      if (!user) return
+      enforcePlannerApiRateLimit(request, user.id, 'station refresh', 2)
+    }
+    const cache = await loadStations(forceRefresh)
     const config = plannerConfigSchema.parse({
       ...defaultPlannerConfig,
       includeCanada: request.query.includeCanada === 'true',
@@ -248,6 +264,7 @@ app.get('/api/stations', async (request, response) => {
       stations,
     })
   } catch (error) {
+    if (sendRateLimitError(response, error)) return
     response.status(502).json({
       error: 'station_feed_failed',
       message:
@@ -259,10 +276,12 @@ app.get('/api/stations', async (request, response) => {
 })
 
 app.post('/api/optimize', async (request, response) => {
+  const user = requireUser(request, response)
+  if (!user) return
   try {
+    enforcePlannerApiRateLimit(request, user.id, 'route optimization', 6)
     const cache = await loadStations()
-    const user = getRequestUser(request)
-    const savedCustomRoutes = readSavedCustomRoutes(user?.id)
+    const savedCustomRoutes = readSavedCustomRoutes(user.id)
     const config = plannerConfigSchema.parse({
       ...defaultPlannerConfig,
       ...request.body,
@@ -276,6 +295,7 @@ app.post('/api/optimize', async (request, response) => {
 
     response.json(result)
   } catch (error) {
+    if (sendRateLimitError(response, error)) return
     response.status(400).json({
       error: 'optimization_failed',
       message:
@@ -287,7 +307,10 @@ app.post('/api/optimize', async (request, response) => {
 })
 
 app.post('/api/road-route', async (request, response) => {
+  const user = requireUser(request, response)
+  if (!user) return
   try {
+    enforcePlannerApiRateLimit(request, user.id, 'road routing', 12)
     const { coordinates } = roadRouteSchema.parse(request.body)
     const cacheKey = createHash('sha256')
       .update(JSON.stringify({ coordinates, osrm: OSRM_BASE_URL }))
@@ -312,9 +335,10 @@ app.post('/api/road-route', async (request, response) => {
       warnings: [...demoWarning(), ...roadRoute.warnings],
     }
 
-    roadRouteCache.set(cacheKey, payload)
+    setRoadRouteCache(cacheKey, payload)
     response.json(payload)
   } catch (error) {
+    if (sendRateLimitError(response, error)) return
     response.status(502).json({
       error: 'road_route_failed',
       message:
@@ -326,7 +350,10 @@ app.post('/api/road-route', async (request, response) => {
 })
 
 app.post('/api/refine-route', async (request, response) => {
+  const user = requireUser(request, response)
+  if (!user) return
   try {
+    enforcePlannerApiRateLimit(request, user.id, 'route refinement', 6)
     const { config, route, stations } = refineRouteSchema.parse(request.body)
     const partialConfig = (config ?? {}) as Partial<PlannerConfig>
     const sanitized = plannerConfigSchema.parse({
@@ -360,6 +387,7 @@ app.post('/api/refine-route', async (request, response) => {
       route,
       legMiles,
       driveHours,
+      road.degraded ? 'estimate' : 'road',
     )
 
     response.json({
@@ -375,6 +403,7 @@ app.post('/api/refine-route', async (request, response) => {
       degraded: road.degraded ?? false,
     })
   } catch (error) {
+    if (sendRateLimitError(response, error)) return
     response.status(502).json({
       error: 'refine_route_failed',
       message:
@@ -384,6 +413,50 @@ app.post('/api/refine-route', async (request, response) => {
     })
   }
 })
+
+function enforcePlannerApiRateLimit(
+  request: Request,
+  userId: string,
+  scope: string,
+  perUserLimit: number,
+) {
+  enforceRequestRateLimit({
+    scope: `${scope} per account`,
+    actorId: userId,
+    limit: perUserLimit,
+    windowMs: PLANNER_RATE_LIMIT_WINDOW_MS,
+  })
+  enforceRequestRateLimit({
+    scope: `${scope} per network`,
+    actorId: request.ip ?? 'unknown',
+    limit: Math.max(perUserLimit * 2, 20),
+    windowMs: PLANNER_RATE_LIMIT_WINDOW_MS,
+  })
+  enforceRequestRateLimit({
+    scope: `${scope} global`,
+    actorId: 'all-users',
+    limit: Math.max(perUserLimit * 5, 30),
+    windowMs: PLANNER_RATE_LIMIT_WINDOW_MS,
+  })
+}
+
+function sendRateLimitError(response: Response, error: unknown) {
+  if (!(error instanceof RequestRateLimitError)) return false
+  response.setHeader('Retry-After', String(error.retryAfterSeconds))
+  response.status(error.status).json({
+    error: 'rate_limit_reached',
+    message: error.message,
+  })
+  return true
+}
+
+function setRoadRouteCache(key: string, payload: unknown) {
+  if (roadRouteCache.size >= MAX_ROAD_ROUTE_CACHE_ENTRIES) {
+    const oldestKey = roadRouteCache.keys().next().value
+    if (typeof oldestKey === 'string') roadRouteCache.delete(oldestKey)
+  }
+  roadRouteCache.set(key, payload)
+}
 
 function demoWarning(): string[] {
   return OSRM_BASE_URL === 'https://router.project-osrm.org'

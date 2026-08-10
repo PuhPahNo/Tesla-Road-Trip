@@ -4,6 +4,7 @@ import { Overlay, OverlayHeader } from '../ui/Overlay'
 import { CheckIcon } from '../ui/icons'
 import { Button } from '../ui/primitives'
 import { buildTripComposition } from '../domain/tripComposition'
+import { routeRangeReadiness } from '../domain/routeReadiness'
 
 export interface RoutePickerProps {
   routes: RoutePlan[]
@@ -67,6 +68,7 @@ export function RoutePicker({
           routes.map((route) => {
             const selected = route.id === selectedRouteId
             const composition = buildTripComposition(route)
+            const readiness = routeRangeReadiness(route)
             const savedRoute = savedCustomRoutes.find((saved) => saved.id === route.id)
             return (
               <div
@@ -96,10 +98,29 @@ export function RoutePicker({
                       {route.name}
                     </span>
                     <span className="mt-0.5 block text-[12px] text-dim">{route.strategy}</span>
+                    <span
+                      data-route-readiness={readiness.status}
+                      className={`mt-[5px] inline-flex rounded-full border px-2 py-0.5 font-mono text-[9.5px] font-semibold uppercase tracking-[0.05em] ${
+                        readiness.status === 'road_ready'
+                          ? 'border-good-bd bg-good-bg text-good'
+                          : readiness.rangeGapCount > 0
+                            ? 'border-warn-bd bg-warn-bg text-warn'
+                            : 'border-edge bg-chip text-faint'
+                      }`}
+                    >
+                      {readiness.status === 'road_ready'
+                        ? 'Road checked · range passed'
+                        : readiness.status === 'road_gaps'
+                          ? `Road checked · ${readiness.rangeGapCount} charging gap${readiness.rangeGapCount === 1 ? '' : 's'}`
+                          : readiness.status === 'estimate_gaps'
+                            ? `Estimate · ${readiness.rangeGapCount} potential gap${readiness.rangeGapCount === 1 ? '' : 's'}`
+                            : 'Estimate · road check pending'}
+                    </span>
                     <span className="mt-[5px] block font-mono text-[11px] text-faint">
                       {route.uniqueStations.toLocaleString()}{' '}
                       {route.plannerMode === 'longest_trip' ? 'stops' : 'sites'} ·{' '}
-                      {route.totalDays} days · {route.totalMiles.toLocaleString()} mi ·{' '}
+                      {route.totalDays} days · {route.totalMiles.toLocaleString()}{' '}
+                      {readiness.distanceSource === 'road' ? 'road mi' : 'est. mi'} ·{' '}
                       {route.averageDriveHoursPerDay}h/day · ★ {route.rating.score}
                     </span>
                     <span className="mt-[4px] block font-mono text-[10.5px] text-faint">

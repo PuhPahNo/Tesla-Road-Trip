@@ -5,6 +5,7 @@ import type { ContestStatus } from '../domain/rules'
 import { stationHighlights } from '../domain/highlights'
 import { formatStationAddress } from '../domain/stationAddress'
 import { routeStationAvailability } from '../domain/stationStatus'
+import { routeRangeReadiness } from '../domain/routeReadiness'
 import { buildTripComposition, topLandmarkLabel } from '../domain/tripComposition'
 import { badgeOpportunitiesForRoute, tripDateForDay } from '../domain/teslaBadges'
 import type { StationsResponse } from '../api/client'
@@ -104,6 +105,7 @@ export function OverviewSection({
   const dash = '—'
   const composition = buildTripComposition(route)
   const availability = route ? routeStationAvailability(route) : undefined
+  const readiness = route ? routeRangeReadiness(route) : undefined
   return (
     <div className="flex flex-col gap-3">
       <div className="grid grid-cols-2 gap-2">
@@ -112,7 +114,7 @@ export function OverviewSection({
           value={route ? route.uniqueStations.toLocaleString() : dash}
         />
         <StatTile
-          label="Total miles"
+          label={readiness?.distanceSource === 'road' ? 'Road miles' : 'Est. miles'}
           value={route ? route.totalMiles.toLocaleString() : dash}
           unit={route ? 'mi' : undefined}
         />
@@ -150,6 +152,41 @@ export function OverviewSection({
           </div>
           <div className="mt-1 font-mono text-[9.5px] leading-[1.45] opacity-80">
             Current Supercharge.info snapshot · refresh before travel
+          </div>
+        </div>
+      ) : null}
+
+      {readiness ? (
+        <div
+          data-route-readiness={readiness.status}
+          className={cx(
+            'rounded-[11px] border px-[13px] py-[11px]',
+            toneClasses(
+              readiness.status === 'road_ready'
+                ? 'good'
+                : readiness.status === 'estimate_clear'
+                  ? 'info'
+                  : 'warn',
+            ),
+          )}
+        >
+          <div className="text-[12.5px] font-semibold">
+            {readiness.status === 'road_ready'
+              ? 'Road range check passed'
+              : readiness.status === 'road_gaps'
+                ? `Not trip-ready · ${readiness.rangeGapCount} charging gap${readiness.rangeGapCount === 1 ? '' : 's'}`
+                : readiness.status === 'estimate_gaps'
+                  ? `Draft route · ${readiness.rangeGapCount} potential charging gap${readiness.rangeGapCount === 1 ? '' : 's'}`
+                  : 'Road validation pending'}
+          </div>
+          <div className="mt-1 font-mono text-[9.5px] leading-[1.45] opacity-80">
+            {readiness.status === 'road_ready'
+              ? 'No road-measured leg exceeds your configured practical range · verify conditions in the Tesla app'
+              : readiness.status === 'road_gaps'
+                ? 'Add a closer Supercharger or auxiliary charging stop before relying on this route'
+                : readiness.status === 'estimate_gaps'
+                  ? 'CORE found gaps in the estimate; road mileage may reveal additional gaps'
+                  : 'CORE estimate only · mileage and range status can change after road routing'}
           </div>
         </div>
       ) : null}

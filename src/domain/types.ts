@@ -199,6 +199,7 @@ export interface DayPlan {
 export interface RoutePlan {
   id: string
   plannerMode: PlannerMode
+  distanceSource?: 'estimate' | 'road'
   tripStartDate?: string
   name: string
   strategy: string

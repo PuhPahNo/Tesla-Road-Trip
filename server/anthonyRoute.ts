@@ -133,6 +133,7 @@ export async function buildAnthonyRoute(
           },
           legMiles,
           driveHours,
+          routed.degraded ? 'estimate' : 'road',
         )
         road = {
           provider: routed.provider.toUpperCase(),

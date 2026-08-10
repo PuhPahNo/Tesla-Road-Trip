@@ -25,7 +25,7 @@ export const defaultPlannerConfig: PlannerConfig = {
   autoStays: true,
   favoriteCategories: [],
   mutedCategories: [],
-  targetStations: 650,
+  targetStations: 500,
   tripWeeks: 9,
   dailyDriveTargetHours: 5,
   dailyDriveMaxHours: 6.5,
@@ -57,7 +57,7 @@ export const defaultPlannerConfig: PlannerConfig = {
  */
 export const PLANNER_NUMERIC_LIMITS = {
   longestTripDays: { min: 1, max: 365, integer: true },
-  targetStations: { min: 25, max: 5000, integer: true },
+  targetStations: { min: 25, max: 500, integer: true },
   tripWeeks: { min: 1, max: 52 },
   dailyDriveTargetHours: { min: 1, max: 14 },
   dailyDriveMaxHours: { min: 1, max: 16 },

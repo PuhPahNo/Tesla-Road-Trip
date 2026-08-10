@@ -68,6 +68,28 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS custom_routes_updated_idx
     ON custom_routes(user_id, updated_at DESC);
 
+  CREATE TABLE IF NOT EXISTS openai_daily_usage (
+    budget_date TEXT PRIMARY KEY,
+    spent_microusd INTEGER NOT NULL DEFAULT 0,
+    reserved_microusd INTEGER NOT NULL DEFAULT 0,
+    requests_started INTEGER NOT NULL DEFAULT 0,
+    requests_finished INTEGER NOT NULL DEFAULT 0,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS openai_budget_reservations (
+    id TEXT PRIMARY KEY,
+    budget_date TEXT NOT NULL REFERENCES openai_daily_usage(budget_date),
+    reserved_microusd INTEGER NOT NULL,
+    charged_microusd INTEGER,
+    status TEXT NOT NULL DEFAULT 'pending'
+      CHECK (status IN ('pending', 'settled', 'forfeited')),
+    created_at TEXT NOT NULL,
+    settled_at TEXT
+  );
+  CREATE INDEX IF NOT EXISTS openai_budget_reservations_date_idx
+    ON openai_budget_reservations(budget_date, status);
+
   CREATE TABLE IF NOT EXISTS anthony_trip (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     active INTEGER NOT NULL DEFAULT 0,
@@ -212,4 +234,13 @@ function ensureColumn(table: string, column: string, definition: string) {
 
 export function databasePath() {
   return DATABASE_PATH
+}
+
+export function databaseIsHealthy() {
+  try {
+    db.prepare('SELECT 1 AS ok').get()
+    return true
+  } catch {
+    return false
+  }
 }

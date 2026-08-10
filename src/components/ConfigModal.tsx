@@ -18,6 +18,7 @@ import {
   VEHICLE_PROFILES,
   type VehicleProfileId,
 } from '../domain/vehicleProfiles'
+import { PLANNER_NUMERIC_LIMITS } from '../domain/config'
 
 export interface ConfigModalProps {
   config: PlannerConfig
@@ -172,9 +173,9 @@ const UNIQUE_SITE_DEFAULTS: SliderSpec[] = [
   {
     key: 'targetStations',
     label: 'Default site target',
-    hint: 'Used for generated Most Unique Sites candidates.',
+    hint: 'Used for generated Most Unique Sites candidates · public beta max 500.',
     min: 25,
-    max: 5000,
+    max: PLANNER_NUMERIC_LIMITS.targetStations.max,
     step: 25,
   },
   {

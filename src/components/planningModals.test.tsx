@@ -310,6 +310,8 @@ describe('planning modal responsibilities', () => {
       name: 'Select route Saved Test, rating 80 out of 100',
     })
     expect(selectButton.parentElement?.className).toContain('flex-none')
+    expect(screen.getByText('Estimate · road check pending')).toBeTruthy()
+    expect(screen.getByText(/100 est\. mi/)).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Edit Saved Test' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Delete Saved Test' })).toBeTruthy()
   })

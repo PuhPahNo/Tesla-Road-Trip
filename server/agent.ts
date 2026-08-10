@@ -1,6 +1,4 @@
-import { readFile, writeFile } from 'node:fs/promises'
-import path from 'node:path'
-import type { Express } from 'express'
+import type { Express, Request } from 'express'
 import { z } from 'zod'
 import {
   MAX_SAVED_ROUTE_WAYPOINTS,
@@ -22,10 +20,20 @@ import {
   type PlaceCategory,
 } from '../src/domain/placeCatalog'
 import { buildStateRouteStats } from '../src/domain/routeStats'
+import { preferredRouteId } from '../src/domain/routeReadiness'
 import { buildTripComposition } from '../src/domain/tripComposition'
 import { TESLA_ICONIC_BADGES, searchTeslaIconicBadges } from '../src/domain/teslaBadges'
 import { readSavedCustomRoutes, updateSavedCustomRoute } from './customRoutes'
-import { getRequestUser } from './auth'
+import { requireUser } from './auth'
+import {
+  OpenAiBudgetError,
+  openAiBudgetLedger,
+  type OpenAiBudgetReservation,
+} from './openAiBudget'
+import {
+  RequestRateLimitError,
+  enforceRequestRateLimit,
+} from './rateLimit'
 import type {
   OptimizeResponse,
   PlannerConfig,
@@ -40,6 +48,8 @@ const DEFAULT_DAILY_LIMIT_USD = 5
 const DEFAULT_MAX_REQUEST_USD = 0.35
 const DEFAULT_MAX_OUTPUT_TOKENS = 900
 const DEFAULT_AGENT_RATE_LIMIT_PER_MINUTE = 6
+const DEFAULT_AGENT_IP_RATE_LIMIT_PER_MINUTE = 12
+const DEFAULT_AGENT_GLOBAL_RATE_LIMIT_PER_MINUTE = 30
 const MAX_AGENT_TOOL_TURNS = 8
 const DEFAULT_INPUT_COST_PER_1M_USD = 1.25
 const DEFAULT_OUTPUT_COST_PER_1M_USD = 10
@@ -47,13 +57,6 @@ const DEFAULT_OUTPUT_COST_PER_1M_USD = 10
 interface StationCache {
   fetchedAt: string
   stations: Station[]
-}
-
-interface AgentUsageRecord {
-  date: string
-  requests: number
-  estimatedSpendUsd: number
-  updatedAt: string
 }
 
 interface OpenAiResponse {
@@ -166,13 +169,14 @@ const savedRouteUpdateArgsSchema = z
     'At least one saved-route change is required.',
   )
 
-let agentRequestTimestamps: number[] = []
-
 export function registerAgentRoutes(
   app: Express,
   loadStations: () => Promise<StationCache>,
 ) {
   app.post('/api/agent', async (request, response) => {
+    const user = requireUser(request, response)
+    if (!user) return
+
     const apiKey = process.env.OPENAI_API_KEY
     const dailyLimitUsd = getNumberEnv(
       'OPENAI_DAILY_SPEND_LIMIT_USD',
@@ -199,15 +203,14 @@ export function registerAgentRoutes(
       return
     }
 
+    let reservation: OpenAiBudgetReservation | undefined
     try {
-      enforceAgentRateLimit()
-      await assertDailyBudget(dailyLimitUsd, maxRequestUsd)
-
+      enforceAgentRateLimit(request, user.id)
       const parsed = agentRequestSchema.parse(request.body)
-      const user = getRequestUser(request)
+      reservation = openAiBudgetLedger.reserve(dailyLimitUsd, maxRequestUsd)
       let workingConfig = sanitizePlannerConfig({
         ...parsed.config,
-        savedCustomRoutes: readSavedCustomRoutes(user?.id),
+        savedCustomRoutes: readSavedCustomRoutes(user.id),
       })
       let selectedRouteId = parsed.selectedRouteId
       let workingResult: OptimizeResponse | undefined
@@ -221,7 +224,7 @@ export function registerAgentRoutes(
           workingConfig,
           cache.fetchedAt,
         )
-        selectedRouteId = selectedRouteId ?? workingResult.routes[0]?.id
+        selectedRouteId = selectedRouteId ?? preferredRouteId(workingResult.routes)
         return workingResult
       }
 
@@ -240,7 +243,7 @@ export function registerAgentRoutes(
           selectedRouteId = nextRouteId
         },
         actions,
-        userId: user?.id,
+        userId: user.id,
         ensureOptimized,
       }
 
@@ -248,10 +251,13 @@ export function registerAgentRoutes(
         apiKey,
         message: parsed.message,
         toolContext,
+        maxRequestUsd,
       })
-      const usageRecord = await chargeDailyUsage(
-        estimateOpenAiCost(agentResult.usage, maxRequestUsd),
+      const usageRecord = openAiBudgetLedger.settle(
+        reservation.id,
+        agentResult.estimatedRequestSpendUsd,
       )
+      reservation = undefined
 
       response.json({
         message: agentResult.message,
@@ -262,17 +268,29 @@ export function registerAgentRoutes(
         usage: {
           enabled: true,
           dailyLimitUsd,
-          estimatedDailySpendUsd: usageRecord.estimatedSpendUsd,
+          estimatedDailySpendUsd: usageRecord.accountedUsd,
           estimatedRequestSpendUsd: agentResult.estimatedRequestSpendUsd,
         },
       })
     } catch (error) {
+      if (reservation) {
+        try {
+          openAiBudgetLedger.forfeit(reservation.id)
+        } catch (settlementError) {
+          console.error('Unable to settle failed OpenAI budget reservation.', settlementError)
+        }
+      }
       const status =
-        error instanceof AgentHttpError
+        error instanceof AgentHttpError ||
+        error instanceof OpenAiBudgetError ||
+        error instanceof RequestRateLimitError
           ? error.status
           : error instanceof z.ZodError
             ? 400
             : 502
+      if (error instanceof RequestRateLimitError) {
+        response.setHeader('Retry-After', String(error.retryAfterSeconds))
+      }
       response.status(status).json({
         error: 'agent_failed',
         message:
@@ -296,10 +314,12 @@ async function runPlannerAgent({
   apiKey,
   message,
   toolContext,
+  maxRequestUsd,
 }: {
   apiKey: string
   message: string
   toolContext: AgentToolContext
+  maxRequestUsd: number
 }) {
   let input: unknown[] = [
     {
@@ -316,15 +336,24 @@ async function runPlannerAgent({
   let estimatedRequestSpendUsd = 0
 
   for (let turn = 0; turn <= MAX_AGENT_TOOL_TURNS; turn += 1) {
-    const response = await createOpenAiResponse(
-      apiKey,
+    const allowTools = turn < MAX_AGENT_TOOL_TURNS
+    const requestBody = buildOpenAiRequestBody(
       input,
-      turn < MAX_AGENT_TOOL_TURNS,
+      allowTools,
     )
+    const callUpperBoundUsd = estimateOpenAiCallUpperBound(requestBody)
+    if (estimatedRequestSpendUsd + callUpperBoundUsd > maxRequestUsd) {
+      throw new AgentHttpError(
+        429,
+        `Ask CORE stopped before another model call could exceed its $${maxRequestUsd.toFixed(2)} per-request cap. Your route remains unchanged unless a completed action was listed.`,
+      )
+    }
+
+    const response = await createOpenAiResponse(apiKey, requestBody)
     usage = mergeUsage(usage, response.usage)
     estimatedRequestSpendUsd += estimateOpenAiCost(
       response.usage,
-      getNumberEnv('OPENAI_AGENT_MAX_REQUEST_USD', DEFAULT_MAX_REQUEST_USD),
+      callUpperBoundUsd,
     )
 
     const functionCalls = response.output?.filter(
@@ -355,8 +384,7 @@ async function runPlannerAgent({
 
 async function createOpenAiResponse(
   apiKey: string,
-  input: unknown[],
-  allowTools: boolean,
+  requestBody: ReturnType<typeof buildOpenAiRequestBody>,
 ) {
   const openAiResponse = await fetch(OPENAI_RESPONSES_URL, {
     method: 'POST',
@@ -364,19 +392,7 @@ async function createOpenAiResponse(
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      model: process.env.OPENAI_MODEL ?? FALLBACK_MODEL,
-      instructions:
-        `You are the route-planning assistant inside ChargeQuest CORE (Charging Optimization & Route Engine). Use tools when you need route data or when the user asks to change settings, require a stop, create a temporary custom ordered route, edit the selected saved route, or reoptimize. The app has ${PLACE_CATALOG.length} curated city and landmark stops plus ${TESLA_ICONIC_BADGES.length} researched Tesla Iconic Charger targets. Longest Trip routes automatically give top-rated places multi-night basecamp stays (a new unique Supercharger each day keeps the streak alive); the tripPace setting (sprint/balanced/savor) and autoStays toggle control this, favoriteCategories/mutedCategories bias which places qualify, and suggest_stays shows current stays plus candidates before pacing advice. Saved routes can keep an exact startDate and directionPreference (seasonal/north/south/east/west); season-smart winter trips from Chattanooga start south and summer trips start north. Use search_catalog_locations with badgeOnly for Tesla badge requests so you add the exact qualifying Supercharger waypoint, not a broad attraction waypoint. For exact-order temporary custom-route requests through catalog waypoints, call create_custom_route with only the intermediate waypoint IDs in order; omit Chattanooga/start/end. When the selected route is a persistent saved route, use update_saved_custom_route once with all requested additions, removals, renaming, day-target, date, direction, and order changes batched together; that tool saves and reoptimizes the route. Avoid repeating a tool call after it succeeds. Keep final answers short and name the concrete changes made. You cannot execute arbitrary code, browse the web, or spend money outside this API call. Treat Tesla badge eligibility as curated planning data and tell users to confirm it in the Tesla app.${allowTools ? '' : ' Do not request more tools; summarize the completed changes and any unfinished request now.'}`,
-      input,
-      tools: plannerAgentTools,
-      tool_choice: allowTools ? 'auto' : 'none',
-      parallel_tool_calls: false,
-      max_output_tokens: getNumberEnv(
-        'OPENAI_AGENT_MAX_OUTPUT_TOKENS',
-        DEFAULT_MAX_OUTPUT_TOKENS,
-      ),
-    }),
+    body: JSON.stringify(requestBody),
   })
 
   const payload = (await openAiResponse.json()) as OpenAiResponse & {
@@ -391,6 +407,22 @@ async function createOpenAiResponse(
   }
 
   return payload
+}
+
+function buildOpenAiRequestBody(input: unknown[], allowTools: boolean) {
+  return {
+    model: process.env.OPENAI_MODEL ?? FALLBACK_MODEL,
+    instructions:
+      `You are the route-planning assistant inside ChargeQuest CORE (Charging Optimization & Route Engine). Use tools when you need route data or when the user asks to change settings, require a stop, create a temporary custom ordered route, edit the selected saved route, or reoptimize. The app has ${PLACE_CATALOG.length} curated city and landmark stops plus ${TESLA_ICONIC_BADGES.length} researched Tesla Iconic Charger targets. Longest Trip routes automatically give top-rated places multi-night basecamp stays (a new unique Supercharger each day keeps the streak alive); the tripPace setting (sprint/balanced/savor) and autoStays toggle control this, favoriteCategories/mutedCategories bias which places qualify, and suggest_stays shows current stays plus candidates before pacing advice. Saved routes can keep an exact startDate and directionPreference (seasonal/north/south/east/west); season-smart winter trips from Chattanooga start south and summer trips start north. Use search_catalog_locations with badgeOnly for Tesla badge requests so you add the exact qualifying Supercharger waypoint, not a broad attraction waypoint. For exact-order temporary custom-route requests through catalog waypoints, call create_custom_route with only the intermediate waypoint IDs in order; omit Chattanooga/start/end. When the selected route is a persistent saved route, use update_saved_custom_route once with all requested additions, removals, renaming, day-target, date, direction, and order changes batched together; that tool saves and reoptimizes the route. Avoid repeating a tool call after it succeeds. Keep final answers short and name the concrete changes made. You cannot execute arbitrary code, browse the web, or spend money outside this API call. Treat Tesla badge eligibility as curated planning data and tell users to confirm it in the Tesla app.${allowTools ? '' : ' Do not request more tools; summarize the completed changes and any unfinished request now.'}`,
+    input,
+    tools: plannerAgentTools,
+    tool_choice: allowTools ? 'auto' : 'none',
+    parallel_tool_calls: false,
+    max_output_tokens: getNumberEnv(
+      'OPENAI_AGENT_MAX_OUTPUT_TOKENS',
+      DEFAULT_MAX_OUTPUT_TOKENS,
+    ),
+  } as const
 }
 
 async function runAgentTool(
@@ -1244,74 +1276,51 @@ function estimateOpenAiCost(
   return Math.max(inputCost + outputCost, 0.001)
 }
 
-function enforceAgentRateLimit() {
-  const limit = getNumberEnv(
-    'OPENAI_AGENT_RATE_LIMIT_PER_MINUTE',
-    DEFAULT_AGENT_RATE_LIMIT_PER_MINUTE,
-  )
-  const now = Date.now()
-  agentRequestTimestamps = agentRequestTimestamps.filter(
-    (timestamp) => now - timestamp < ONE_MINUTE_MS,
-  )
-
-  if (agentRequestTimestamps.length >= limit) {
-    throw new AgentHttpError(
-      429,
-      `OpenAI trip agent rate limit reached: ${limit} requests per minute.`,
-    )
-  }
-
-  agentRequestTimestamps.push(now)
+export function estimateOpenAiCallUpperBound(
+  requestBody: ReturnType<typeof buildOpenAiRequestBody>,
+) {
+  // UTF-8 bytes are a conservative upper bound on byte-pair encoded input
+  // tokens. Add room for provider-side framing, then price with the configured
+  // rates (which intentionally default above current gpt-5-mini rates).
+  const inputTokenUpperBound =
+    Buffer.byteLength(JSON.stringify(requestBody), 'utf8') + 8_192
+  const inputCost =
+    (inputTokenUpperBound / 1_000_000) *
+    getNumberEnv('OPENAI_INPUT_COST_PER_1M_USD', DEFAULT_INPUT_COST_PER_1M_USD)
+  const outputCost =
+    (requestBody.max_output_tokens / 1_000_000) *
+    getNumberEnv('OPENAI_OUTPUT_COST_PER_1M_USD', DEFAULT_OUTPUT_COST_PER_1M_USD)
+  return roundMoney(inputCost + outputCost, 6)
 }
 
-async function assertDailyBudget(dailyLimitUsd: number, maxRequestUsd: number) {
-  const usage = await readDailyUsage()
-
-  if (usage.estimatedSpendUsd + maxRequestUsd > dailyLimitUsd) {
-    throw new AgentHttpError(
-      429,
-      `OpenAI trip agent daily budget would exceed $${dailyLimitUsd.toFixed(2)}.`,
-    )
-  }
-}
-
-async function chargeDailyUsage(costUsd: number) {
-  const usage = await readDailyUsage()
-  const nextUsage = {
-    ...usage,
-    requests: usage.requests + 1,
-    estimatedSpendUsd: roundMoney(usage.estimatedSpendUsd + costUsd),
-    updatedAt: new Date().toISOString(),
-  }
-
-  await writeFile(usageFilePath(), JSON.stringify(nextUsage, null, 2))
-  return nextUsage
-}
-
-async function readDailyUsage(): Promise<AgentUsageRecord> {
-  const today = new Date().toISOString().slice(0, 10)
-
-  try {
-    const raw = await readFile(usageFilePath(), 'utf8')
-    const parsed = JSON.parse(raw) as AgentUsageRecord
-    if (parsed.date === today) return parsed
-  } catch {
-    // Missing or malformed local usage state starts a new local day.
-  }
-
-  return {
-    date: today,
-    requests: 0,
-    estimatedSpendUsd: 0,
-    updatedAt: new Date().toISOString(),
-  }
-}
-
-function usageFilePath() {
-  return path.resolve(
-    process.cwd(),
-    process.env.OPENAI_AGENT_USAGE_FILE ?? '.quest-agent-usage.json',
-  )
+function enforceAgentRateLimit(request: Request, userId: string) {
+  enforceRequestRateLimit({
+    scope: 'Ask CORE per account',
+    actorId: userId,
+    limit: getNumberEnv(
+      'OPENAI_AGENT_RATE_LIMIT_PER_MINUTE',
+      DEFAULT_AGENT_RATE_LIMIT_PER_MINUTE,
+    ),
+    windowMs: ONE_MINUTE_MS,
+  })
+  enforceRequestRateLimit({
+    scope: 'Ask CORE per network',
+    actorId: request.ip ?? 'unknown',
+    limit: getNumberEnv(
+      'OPENAI_AGENT_IP_RATE_LIMIT_PER_MINUTE',
+      DEFAULT_AGENT_IP_RATE_LIMIT_PER_MINUTE,
+    ),
+    windowMs: ONE_MINUTE_MS,
+  })
+  enforceRequestRateLimit({
+    scope: 'Ask CORE global',
+    actorId: 'all-users',
+    limit: getNumberEnv(
+      'OPENAI_AGENT_GLOBAL_RATE_LIMIT_PER_MINUTE',
+      DEFAULT_AGENT_GLOBAL_RATE_LIMIT_PER_MINUTE,
+    ),
+    windowMs: ONE_MINUTE_MS,
+  })
 }
 
 function getNumberEnv(name: string, fallback: number) {
@@ -1319,8 +1328,9 @@ function getNumberEnv(name: string, fallback: number) {
   return Number.isFinite(value) && value > 0 ? value : fallback
 }
 
-function roundMoney(value: number) {
-  return Math.round(value * 10000) / 10000
+function roundMoney(value: number, digits = 4) {
+  const factor = 10 ** digits
+  return Math.ceil(value * factor) / factor
 }
 
 class AgentHttpError extends Error {

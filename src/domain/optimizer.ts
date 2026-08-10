@@ -3790,6 +3790,7 @@ export function refineRouteWithRoadLegs(
   legMiles: number[],
   /** Optional real drive hours per leg (e.g. ORS speed-limit durations). */
   driveHours?: number[],
+  distanceSource: RoutePlan['distanceSource'] = 'road',
 ): RoutePlan {
   const baseConfig = sanitizePlannerConfig(partialConfig)
   const config = plannerConfigForRoute(baseConfig, meta.id)
@@ -3817,6 +3818,7 @@ export function refineRouteWithRoadLegs(
   return {
     id: meta.id,
     plannerMode: config.plannerMode,
+    distanceSource,
     tripStartDate: tripStartDateForRoute(config, meta.id),
     name: meta.name,
     strategy: meta.strategy,
@@ -3994,6 +3996,7 @@ export function optimizeRoutes(
     return {
       id: variant.id,
       plannerMode: routeConfig.plannerMode,
+      distanceSource: 'estimate',
       tripStartDate: variant.startDate ?? routeConfig.tripStartDate,
       name: variant.name,
       strategy: variant.strategy,

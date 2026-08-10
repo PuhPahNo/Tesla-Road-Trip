@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   MAX_SAVED_ROUTE_WAYPOINTS,
+  PLANNER_NUMERIC_LIMITS,
   defaultPlannerConfig,
   sanitizePlannerConfig,
 } from './config'
@@ -36,6 +37,18 @@ describe('saved custom route limits', () => {
       sanitizePlannerConfig({
         ...defaultPlannerConfig,
         savedCustomRoutes: [savedRoute(MAX_SAVED_ROUTE_WAYPOINTS + 1)],
+      }),
+    ).toThrow()
+  })
+})
+
+describe('public beta planner limits', () => {
+  it('rejects route targets above the bounded public beta ceiling', () => {
+    expect(PLANNER_NUMERIC_LIMITS.targetStations.max).toBe(500)
+    expect(() =>
+      sanitizePlannerConfig({
+        ...defaultPlannerConfig,
+        targetStations: 501,
       }),
     ).toThrow()
   })
