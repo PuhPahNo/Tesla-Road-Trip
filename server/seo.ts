@@ -67,6 +67,7 @@ const privatePaths = new Set([
   '/change-password',
   '/account',
   '/admin',
+  '/admin/hotels',
   '/planner',
 ])
 

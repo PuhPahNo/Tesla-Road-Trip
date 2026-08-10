@@ -28,6 +28,10 @@ describe('server SEO rendering', () => {
     expect(planner.status).toBe(200)
     expect(planner.html).toContain('content="noindex,nofollow"')
 
+    const adminHotels = renderClientDocument(indexHtml, '/admin/hotels')
+    expect(adminHotels.status).toBe(200)
+    expect(adminHotels.html).toContain('content="noindex,nofollow"')
+
     const unknown = renderClientDocument(indexHtml, '/a-road-that-does-not-exist')
     expect(unknown.status).toBe(404)
     expect(unknown.html).toContain('<title>Page Not Found | ChargeQuest</title>')
