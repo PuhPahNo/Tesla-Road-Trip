@@ -1,5 +1,6 @@
 import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AuthProvider } from './AuthContext'
 import { AdminPage } from './AdminPage'
@@ -250,9 +251,11 @@ describe('Anthony admin workspace', () => {
     )
 
     render(
-      <AuthProvider>
-        <AdminPage />
-      </AuthProvider>,
+      <MemoryRouter>
+        <AuthProvider>
+          <AdminPage />
+        </AuthProvider>
+      </MemoryRouter>,
     )
 
     expect(screen.getByRole('heading', { name: 'ChargeQuest admin' })).toBeTruthy()

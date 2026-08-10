@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import App from '../App'
 import { AccountPage, ProtectedRoute } from './AccountPage'
@@ -12,6 +13,12 @@ import { SeoPage } from './SeoPage'
 import { SiteShell } from './SiteShell'
 import { TrackAnthonyPage } from './TrackAnthonyPage'
 import { getSeoPageByPath } from '../seo/seoPages'
+
+const AdminHotelsPage = lazy(() =>
+  import('./AdminHotelsPage').then((module) => ({
+    default: module.AdminHotelsPage,
+  })),
+)
 
 export function ChargeQuestRouter() {
   return (
@@ -48,6 +55,24 @@ export function ChargeQuestRouter() {
                 <NoIndexPage title="Admin">
                   <ProtectedRoute admin>
                     <AdminPage />
+                  </ProtectedRoute>
+                </NoIndexPage>
+              }
+            />
+            <Route
+              path="admin/hotels"
+              element={
+                <NoIndexPage title="Admin Hotels">
+                  <ProtectedRoute admin>
+                    <Suspense
+                      fallback={
+                        <div className="min-h-[60vh] p-10 text-faint">
+                          Loading hotel planner…
+                        </div>
+                      }
+                    >
+                      <AdminHotelsPage />
+                    </Suspense>
                   </ProtectedRoute>
                 </NoIndexPage>
               }

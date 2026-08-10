@@ -22,6 +22,9 @@ export function SiteShell() {
         ? { to: '/signup?returnTo=%2Fplanner', label: 'Build a route' }
         : item,
     )
+  if (user?.role === 'admin') {
+    navItems.push({ to: '/admin/hotels', label: 'Hotels' })
+  }
 
   if (loading) {
     return <div className="min-h-screen bg-app p-10 text-faint">Checking your account…</div>
@@ -102,7 +105,7 @@ export function SiteShell() {
             )}
           </div>
         </div>
-        <nav className={cx('grid gap-1 border-t border-white/10 bg-black/35 px-2 py-2 md:hidden', user ? 'grid-cols-3' : 'grid-cols-4')} aria-label="Mobile navigation">
+        <nav className={cx('grid gap-1 border-t border-white/10 bg-black/35 px-2 py-2 md:hidden', !user || user.role === 'admin' ? 'grid-cols-4' : 'grid-cols-3')} aria-label="Mobile navigation">
           {navItems.map((item) => (
             <NavLink
               key={item.to}

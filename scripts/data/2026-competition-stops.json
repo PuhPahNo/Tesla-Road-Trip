@@ -1,0 +1,444 @@
+{
+  "routeName": "2026 Competition",
+  "capturedAt": "2026-08-10T00:07:02.969Z",
+  "stops": [
+    {
+      "address": "4570 Frontage Rd NW, Cleveland, TN 37312",
+      "date": "2026-09-27",
+      "day": 1,
+      "stationName": "Cleveland, TN"
+    },
+    {
+      "address": "1676 Westpark Dr, Bowling Green, KY 42104",
+      "date": "2026-09-28",
+      "day": 2,
+      "stationName": "Bowling Green, KY"
+    },
+    {
+      "address": "675 Western Kentucky Pkwy, Beaver Dam, KY 42320",
+      "date": "2026-09-29",
+      "day": 3,
+      "stationName": "Beaver Dam, KY"
+    },
+    {
+      "address": "2603 The Hill Ave, Marion, IL 62959",
+      "date": "2026-09-30",
+      "day": 4,
+      "stationName": "Marion, IL"
+    },
+    {
+      "address": "925 Plaza Dr, St Clair, MO 63077",
+      "date": "2026-10-01",
+      "day": 5,
+      "stationName": "St Clair, MO"
+    },
+    {
+      "address": "950 Assembly Pkwy, Fenton, MO 63026",
+      "date": "2026-10-02",
+      "day": 6,
+      "stationName": "Fenton, MO"
+    },
+    {
+      "address": "4215 McMasters Ave, Hannibal, MO 63401",
+      "date": "2026-10-03",
+      "day": 7,
+      "stationName": "Hannibal, MO"
+    },
+    {
+      "address": "109 Spruce Dr, Lamoni, IA 50140",
+      "date": "2026-10-04",
+      "day": 8,
+      "stationName": "Lamoni, IA"
+    },
+    {
+      "address": "3807 Miller St, Bethany, MO 64424",
+      "date": "2026-10-05",
+      "day": 9,
+      "stationName": "Bethany, MO"
+    },
+    {
+      "address": "8801 W Center Rd, Omaha, NE 68124",
+      "date": "2026-10-06",
+      "day": 10,
+      "stationName": "Omaha, NE"
+    },
+    {
+      "address": "2107 Taylor Ave, Norfolk, NE 68701",
+      "date": "2026-10-07",
+      "day": 11,
+      "stationName": "Norfolk, NE"
+    },
+    {
+      "address": "302 W 5th St, Murdo, SD 57559",
+      "date": "2026-10-08",
+      "day": 12,
+      "stationName": "Murdo, SD"
+    },
+    {
+      "address": "407 Main St, Wall, SD 57790",
+      "date": "2026-10-09",
+      "day": 13,
+      "stationName": "Wall, SD"
+    },
+    {
+      "address": "730 S Main St, Lusk, WY 82225",
+      "date": "2026-10-10",
+      "day": 14,
+      "stationName": "Lusk, WY"
+    },
+    {
+      "address": "3100 28th St, Boulder, CO 80301",
+      "date": "2026-10-11",
+      "day": 15,
+      "stationName": "Boulder, CO - 28th St"
+    },
+    {
+      "address": "1710 29th St, Boulder, CO 80301",
+      "date": "2026-10-12",
+      "day": 16,
+      "stationName": "Boulder, CO"
+    },
+    {
+      "address": "333 E Wonderview Ave, Estes Park, CO 80517",
+      "date": "2026-10-13",
+      "day": 17,
+      "stationName": "Estes Park, CO"
+    },
+    {
+      "address": "2370 E Cedar St, Rawlins, WY 82301",
+      "date": "2026-10-14",
+      "day": 18,
+      "stationName": "Rawlins, WY"
+    },
+    {
+      "address": "2441 Foothill Blvd, Rock Springs, WY 82901",
+      "date": "2026-10-15",
+      "day": 19,
+      "stationName": "Rock Springs, WY"
+    },
+    {
+      "address": "1155 S Highway 89, Jackson, WY 83001",
+      "date": "2026-10-16",
+      "day": 20,
+      "stationName": "Jackson, WY"
+    },
+    {
+      "address": "201 S Canyon St, West Yellowstone, MT 59758",
+      "date": "2026-10-17",
+      "day": 21,
+      "stationName": "West Yellowstone, MT"
+    },
+    {
+      "address": "145 Town Center Ave, Gallatin Gateway, MT 59730",
+      "date": "2026-10-18",
+      "day": 22,
+      "stationName": "Big Sky, MT"
+    },
+    {
+      "address": "5280 Grant Creek Rd, Missoula, MT 59808",
+      "date": "2026-10-19",
+      "day": 23,
+      "stationName": "Missoula, MT"
+    },
+    {
+      "address": "859 W Reserve Dr, Kalispell, MT 59901",
+      "date": "2026-10-20",
+      "day": 24,
+      "stationName": "Kalispell, MT"
+    },
+    {
+      "address": "802 W Cameron Ave, Kellogg, ID 83837",
+      "date": "2026-10-21",
+      "day": 25,
+      "stationName": "Kellogg, ID"
+    },
+    {
+      "address": "1805 N Pepper Ln, Liberty Lake, WA 99019",
+      "date": "2026-10-22",
+      "day": 26,
+      "stationName": "Liberty Lake (SC), WA"
+    },
+    {
+      "address": "9944 US-2, Coulee City, WA 99115",
+      "date": "2026-10-23",
+      "day": 27,
+      "stationName": "Coulee City, WA"
+    },
+    {
+      "address": "3310 S Meridian, Puyallup, WA 98373",
+      "date": "2026-10-24",
+      "day": 28,
+      "stationName": "Puyallup, WA"
+    },
+    {
+      "address": "2249 Cascade Ave, Hood River, OR 97031",
+      "date": "2026-10-25",
+      "day": 29,
+      "stationName": "Hood River, OR"
+    },
+    {
+      "address": "94401 US-97, Chemult, OR 97731",
+      "date": "2026-10-26",
+      "day": 30,
+      "stationName": "Chemult, OR"
+    },
+    {
+      "address": "2229 N Eldorado Ave, Klamath Falls, OR 97601",
+      "date": "2026-10-27",
+      "day": 31,
+      "stationName": "Klamath Falls, OR - N Eldorado Ave"
+    },
+    {
+      "address": "1500 Anna Sparks Way, McKinleyville, CA 95519",
+      "date": "2026-10-28",
+      "day": 32,
+      "stationName": "McKinleyville, CA"
+    },
+    {
+      "address": "8852 Lakewood Dr, Windsor, CA 95492",
+      "date": "2026-10-29",
+      "day": 33,
+      "stationName": "Windsor, CA"
+    },
+    {
+      "address": "Truby St, San Francisco, CA 94129",
+      "date": "2026-10-30",
+      "day": 34,
+      "stationName": "San Francisco, CA - Letterman Drive"
+    },
+    {
+      "address": "1965 Lombard St, San Francisco, CA 94123",
+      "date": "2026-10-31",
+      "day": 35,
+      "stationName": "San Francisco, CA - Lombard St"
+    },
+    {
+      "address": "140 N. Lake Blvd, Tahoe City, CA 96145",
+      "date": "2026-11-01",
+      "day": 36,
+      "stationName": "Tahoe City, CA"
+    },
+    {
+      "address": "2182 CA-4, Arnold, CA 95223",
+      "date": "2026-11-02",
+      "day": 37,
+      "stationName": "Arnold, CA"
+    },
+    {
+      "address": "11136 CA-140, El Portal, CA 95318",
+      "date": "2026-11-03",
+      "day": 38,
+      "stationName": "El Portal, CA"
+    },
+    {
+      "address": "48123 Highway 1, Big Sur, CA 93920",
+      "date": "2026-11-04",
+      "day": 39,
+      "stationName": "Big Sur, CA - Ventana"
+    },
+    {
+      "address": "22422 CA-46, Lost Hills, CA 93280",
+      "date": "2026-11-05",
+      "day": 40,
+      "stationName": "Lost Hills, CA - Tesla Oasis"
+    },
+    {
+      "address": "900 Hwy 95 N, Beatty, NV 89003",
+      "date": "2026-11-06",
+      "day": 41,
+      "stationName": "Beatty, NV"
+    },
+    {
+      "address": "3993 Audrie St, Las Vegas, NV 89109",
+      "date": "2026-11-07",
+      "day": 42,
+      "stationName": "Las Vegas, NV - High Roller at LINQ"
+    },
+    {
+      "address": "12795 Main St, Hesperia, CA 92345",
+      "date": "2026-11-08",
+      "day": 43,
+      "stationName": "Hesperia, CA"
+    },
+    {
+      "address": "7001 Santa Monica Blvd, Los Angeles, CA 90038",
+      "date": "2026-11-09",
+      "day": 44,
+      "stationName": "Los Angeles, CA - Tesla Diner"
+    },
+    {
+      "address": "73829 Baseline Rd, Twentynine Palms, CA 92277",
+      "date": "2026-11-10",
+      "day": 45,
+      "stationName": "Twentynine Palms, CA"
+    },
+    {
+      "address": "1020 E Broadway St, Needles, CA 92363",
+      "date": "2026-11-11",
+      "day": 46,
+      "stationName": "Needles, CA - E Broadway St"
+    },
+    {
+      "address": "7000 AZ-179, Sedona, AZ 86351",
+      "date": "2026-11-12",
+      "day": 47,
+      "stationName": "Sedona, AZ"
+    },
+    {
+      "address": "301 N 7th St, Williams, AZ 86046",
+      "date": "2026-11-13",
+      "day": 48,
+      "stationName": "Williams, AZ"
+    },
+    {
+      "address": "149 AZ-64, Grand Canyon Village, AZ 86023",
+      "date": "2026-11-14",
+      "day": 49,
+      "stationName": "Tusayan, AZ"
+    },
+    {
+      "address": "600 1700 N, Toquerville, UT 84774",
+      "date": "2026-11-15",
+      "day": 50,
+      "stationName": "Toquerville, UT"
+    },
+    {
+      "address": "5249 West 3650 South, Cedar City, UT 84720",
+      "date": "2026-11-16",
+      "day": 51,
+      "stationName": "Cedar City, UT"
+    },
+    {
+      "address": "1065 S Main St, Cedar City, UT 84720",
+      "date": "2026-11-17",
+      "day": 52,
+      "stationName": "Cedar City, UT - S Main St"
+    },
+    {
+      "address": "26 S Main St, Bryce Canyon City, UT 84764",
+      "date": "2026-11-18",
+      "day": 53,
+      "stationName": "Bryce Canyon City, UT"
+    },
+    {
+      "address": "1765 East Main St, Green River, UT 84525",
+      "date": "2026-11-19",
+      "day": 54,
+      "stationName": "Green River, UT"
+    },
+    {
+      "address": "890 N Main St, Moab, UT 84532",
+      "date": "2026-11-20",
+      "day": 55,
+      "stationName": "Moab, UT - N Main St"
+    },
+    {
+      "address": "16 South Main St, Moab, UT 84511",
+      "date": "2026-11-21",
+      "day": 56,
+      "stationName": "Moab, UT"
+    },
+    {
+      "address": "US-160, Kayenta, AZ 86033",
+      "date": "2026-11-22",
+      "day": 57,
+      "stationName": "Kayenta, AZ"
+    },
+    {
+      "address": "1500 Willow Dr, Milan, NM 87021",
+      "date": "2026-11-23",
+      "day": 58,
+      "stationName": "Milan, NM"
+    },
+    {
+      "address": "2200 Louisiana Blvd NE, Albuquerque, NM 87110",
+      "date": "2026-11-24",
+      "day": 59,
+      "stationName": "Albuquerque, NM - Louisiana Blvd NE"
+    },
+    {
+      "address": "2510 12th St NW, Albuquerque, NM 87104",
+      "date": "2026-11-25",
+      "day": 60,
+      "stationName": "Albuquerque, NM - 12th St NW"
+    },
+    {
+      "address": "2600 Menaul Blvd NE, Albuquerque, NM 87107",
+      "date": "2026-11-26",
+      "day": 61,
+      "stationName": "Albuquerque, NM"
+    },
+    {
+      "address": "5151 Journal Center Blvd NE, Albuquerque, NM 87109",
+      "date": "2026-11-27",
+      "day": 62,
+      "stationName": "Albuquerque, NM - Lang Ave NE"
+    },
+    {
+      "address": "6581 Cerrillos Rd, Santa Fe, NM 87507",
+      "date": "2026-11-28",
+      "day": 63,
+      "stationName": "Santa Fe, NM - Cerrillos Rd"
+    },
+    {
+      "address": "675 E 10th St, Alamogordo, NM 88310",
+      "date": "2026-11-29",
+      "day": 64,
+      "stationName": "Alamogordo, NM"
+    },
+    {
+      "address": "2525 S Canal St, Carlsbad, NM 88220",
+      "date": "2026-11-30",
+      "day": 65,
+      "stationName": "Carlsbad, NM"
+    },
+    {
+      "address": "1307 Avenue A, Ozona, TX 76943",
+      "date": "2026-12-01",
+      "day": 66,
+      "stationName": "Ozona, TX"
+    },
+    {
+      "address": "718 Broadway, San Antonio, TX 78215",
+      "date": "2026-12-02",
+      "day": 67,
+      "stationName": "San Antonio, TX - Broadway"
+    },
+    {
+      "address": "205 IH 45, Madisonville, TX 77864",
+      "date": "2026-12-03",
+      "day": 68,
+      "stationName": "Madisonville, TX"
+    },
+    {
+      "address": "2615 NW Stallings Dr, Nacogdoches, TX 75964",
+      "date": "2026-12-04",
+      "day": 69,
+      "stationName": "Nacogdoches, TX"
+    },
+    {
+      "address": "1401 Eagle Dr, Ruston, LA 71270",
+      "date": "2026-12-05",
+      "day": 70,
+      "stationName": "Ruston, LA"
+    },
+    {
+      "address": "4116 Washington St, Vicksburg, MS 39180",
+      "date": "2026-12-06",
+      "day": 71,
+      "stationName": "Vicksburg, MS"
+    },
+    {
+      "address": "1001 Barnes Crossing Rd, Tupelo, MS 38804",
+      "date": "2026-12-07",
+      "day": 72,
+      "stationName": "Tupelo, MS"
+    },
+    {
+      "address": "301 Manufacturers Rd, Chattanooga, TN 37405",
+      "date": "2026-12-08",
+      "day": 73,
+      "stationName": "Chattanooga, TN - Manufacturers Rd"
+    }
+  ]
+}

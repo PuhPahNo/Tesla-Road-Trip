@@ -3,6 +3,7 @@ import type {
   PlannerConfig,
   RoutePlan,
   SavedCustomRoute,
+  StationAddress,
 } from '../domain/types'
 
 export interface AuthUser {
@@ -104,6 +105,90 @@ export interface PublishedAnthonyRoute {
     warnings: string[]
     requestCount: number
   } | null
+}
+
+export interface AdminHotelRecommendation {
+  sourceKey: string
+  name: string
+  brand?: string
+  tier:
+    | 'luxury'
+    | 'upscale'
+    | 'premium'
+    | 'unique'
+    | 'reputable'
+    | 'independent'
+    | 'basic'
+  tierLabel: string
+  isUnique: boolean
+  curatorNote?: string
+  position: Coordinate
+  address: string
+  distanceFromSuperchargerMiles: number
+  routeDetourMiles: number
+  evCharging: {
+    status: 'nearby' | 'unverified'
+    distanceMiles?: number
+    label?: string
+  }
+  officialUrl?: string
+  bookingUrl: string
+  mapsUrl: string
+  photoUrl?: string
+  photoSource?: string
+  rateSnapshot: {
+    provider: 'Booking.com'
+    availability: 'available' | 'unavailable' | 'not_found'
+    nightlyUsd: number | null
+    observedAt: string | null
+  }
+}
+
+export interface AdminHotelDay {
+  day: number
+  date: string
+  checkOut: string
+  station: {
+    sourceId: string
+    name: string
+    address: StationAddress
+    position: Coordinate
+  } | null
+  nextStation: {
+    name: string
+    city: string
+    state: string
+    position: Coordinate
+  } | null
+  recommendations: AdminHotelRecommendation[]
+  researchStatus: 'current' | 'needs_refresh'
+}
+
+export interface AdminHotelPlan {
+  route: {
+    id: string
+    name: string
+    startDate?: string
+    totalDays: number
+    uniqueStations: number
+  }
+  research: {
+    routeName: string
+    capturedAt: string
+    researchedAt: string
+    bookingResearchedAt?: string
+    sources: Record<string, string>
+  }
+  stats: {
+    researchedDays: number
+    totalRecommendations: number
+    pricedOptions: number
+    withPhotos: number
+    nearbyCharging: number
+    higherEnd: number
+    uniqueStays: number
+  }
+  days: AdminHotelDay[]
 }
 
 export interface ManagedAccount {
@@ -314,6 +399,12 @@ export async function fetchAdminAnthonyRoute(routeId: string) {
     selectedRouteId: string
     route: PublishedAnthonyRoute
   }>(`/api/admin/trip-route/${encodeURIComponent(routeId)}`)
+}
+
+export async function fetchAdminHotels(routeId: string) {
+  return request<AdminHotelPlan>(
+    `/api/admin/hotels/${encodeURIComponent(routeId)}`,
+  )
 }
 
 export async function fetchAdminAccounts() {

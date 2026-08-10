@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url'
 import express from 'express'
 import { registerAgentRoutes } from './agent'
 import { registerAdminAccountRoutes } from './adminAccounts'
+import { registerAdminHotelRoutes } from './adminHotels'
 import {
   migrateLegacyCustomRoutesToUser,
   readSavedCustomRoutes,
@@ -374,6 +375,7 @@ function demoWarning(): string[] {
 
 registerAuthRoutes(app)
 registerAdminAccountRoutes(app)
+registerAdminHotelRoutes(app, () => loadStations())
 registerCommunityRoutes(
   app,
   () => loadStations(),

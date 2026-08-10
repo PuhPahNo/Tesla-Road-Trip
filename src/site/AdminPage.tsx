@@ -1,4 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
+import { Hotel } from 'lucide-react'
 import {
   deleteAnthonyUpdate,
   deleteSuggestion,
@@ -302,10 +304,18 @@ export function AdminPage() {
           </p>
         </div>
 
-        <div className="grid w-full grid-cols-3 overflow-hidden rounded-[14px] border border-edge bg-panel2 lg:w-auto">
-          <AdminStat label="Tracker" value={trip.active ? 'Live' : 'Parked'} accent={trip.active} />
-          <AdminStat label="Updates" value={community?.updates.length ?? 0} />
-          <AdminStat label="Inbox" value={suggestionInbox.filter((item) => item.review_status === 'pending').length + pendingMeetups.length} />
+        <div className="flex w-full flex-col gap-3 lg:w-auto lg:items-end">
+          <Link
+            to="/admin/hotels"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-accent px-5 text-[11px] font-semibold text-on-accent no-underline shadow-[0_10px_30px_color-mix(in_srgb,var(--accent)_20%,transparent)]"
+          >
+            <Hotel size={14} /> Open hotel planner
+          </Link>
+          <div className="grid w-full grid-cols-3 overflow-hidden rounded-[14px] border border-edge bg-panel2 lg:w-auto">
+            <AdminStat label="Tracker" value={trip.active ? 'Live' : 'Parked'} accent={trip.active} />
+            <AdminStat label="Updates" value={community?.updates.length ?? 0} />
+            <AdminStat label="Inbox" value={suggestionInbox.filter((item) => item.review_status === 'pending').length + pendingMeetups.length} />
+          </div>
         </div>
       </header>
 
