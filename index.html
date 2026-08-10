@@ -9,7 +9,7 @@
     <link rel="manifest" href="/site.webmanifest" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
     <meta name="theme-color" content="#0a0d12" id="theme-color-meta" />
     <style>
@@ -31,9 +31,17 @@
     <meta property="og:title" content="ChargeQuest CORE — Tesla Supercharger Route Planner" />
     <meta property="og:description" content="Meet CORE, the Charging Optimization &amp; Route Engine for building Tesla road trips around your vehicle, pace, Supercharger stops, badge targets, and must-see places." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://www.teslachargequest.com/landing/desert-road.jpg" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:image" content="https://www.teslachargequest.com/social/chargequest-home.jpg" />
+    <meta property="og:image:alt" content="An open highway crossing the painted desert" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/jpeg" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="https://www.teslachargequest.com/landing/desert-road.jpg" />
+    <meta name="twitter:title" content="ChargeQuest CORE — Tesla Supercharger Route Planner" />
+    <meta name="twitter:description" content="Meet CORE, the Charging Optimization &amp; Route Engine for building Tesla road trips around your vehicle, pace, Supercharger stops, badge targets, and must-see places." />
+    <meta name="twitter:image" content="https://www.teslachargequest.com/social/chargequest-home.jpg" />
+    <meta name="twitter:image:alt" content="An open highway crossing the painted desert" />
     <title>ChargeQuest CORE | Tesla Supercharger Route Planner for 2026</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -44,35 +52,61 @@
     <script id="site-structured-data" type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "WebApplication",
-        "name": "ChargeQuest CORE",
-        "url": "https://www.teslachargequest.com/",
-        "applicationCategory": "TravelApplication",
-        "operatingSystem": "Web",
-        "description": "ChargeQuest CORE is a Charging Optimization & Route Engine and Tesla Supercharger route planner for multi-day road trips and the 2026 Tesla Supercharging Competition, with vehicle-aware range, Iconic Charger targets, landmarks, driving limits, saved routes, private route suggestions, and Anthony’s public journey.",
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "USD"
-        },
-        "creator": {
-          "@type": "Person",
-          "name": "Anthony Pappano"
-        },
-        "provider": {
-          "@type": "Organization",
-          "name": "Antelligence LLC",
-          "brand": {
-            "@type": "Brand",
-            "name": "ChargeQuest"
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://www.teslachargequest.com/#organization",
+            "name": "Antelligence LLC",
+            "url": "https://www.teslachargequest.com/",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://www.teslachargequest.com/chargequest-logo.png",
+              "width": 1000,
+              "height": 158
+            },
+            "brand": {
+              "@type": "Brand",
+              "@id": "https://www.teslachargequest.com/#brand",
+              "name": "ChargeQuest"
+            }
+          },
+          {
+            "@type": "Person",
+            "@id": "https://www.teslachargequest.com/about-anthony#person",
+            "name": "Anthony Pappano",
+            "url": "https://www.teslachargequest.com/about-anthony",
+            "worksFor": { "@id": "https://www.teslachargequest.com/#organization" }
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://www.teslachargequest.com/#website",
+            "name": "ChargeQuest",
+            "url": "https://www.teslachargequest.com/",
+            "publisher": { "@id": "https://www.teslachargequest.com/#organization" }
+          },
+          {
+            "@type": "WebApplication",
+            "@id": "https://www.teslachargequest.com/#core",
+            "name": "ChargeQuest CORE",
+            "url": "https://www.teslachargequest.com/",
+            "applicationCategory": "TravelApplication",
+            "operatingSystem": "Web",
+            "description": "ChargeQuest CORE is a Charging Optimization & Route Engine and Tesla Supercharger route planner for multi-day road trips and the 2026 Tesla Supercharging Competition, with vehicle-aware range, Iconic Charger targets, landmarks, driving limits, saved routes, private route suggestions, and Anthony’s public journey.",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD"
+            },
+            "creator": { "@id": "https://www.teslachargequest.com/about-anthony#person" },
+            "provider": { "@id": "https://www.teslachargequest.com/#organization" },
+            "featureList": [
+              "Tesla vehicle and practical range profiles",
+              "Multi-day Supercharger route optimization",
+              "Tesla Iconic Charger badge targets",
+              "Saved custom routes and trip preferences",
+              "Private route suggestions and Anthony's public trip tracking"
+            ]
           }
-        },
-        "featureList": [
-          "Tesla vehicle and practical range profiles",
-          "Multi-day Supercharger route optimization",
-          "Tesla Iconic Charger badge targets",
-          "Saved custom routes and trip preferences",
-          "Private route suggestions and Anthony's public trip tracking"
         ]
       }
     </script>

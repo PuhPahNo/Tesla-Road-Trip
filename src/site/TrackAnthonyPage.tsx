@@ -30,6 +30,10 @@ import type { DayPlan, RoutePlan } from '../domain/types'
 import { STATE_CODE_TO_NAME } from '../domain/usStates'
 import { useAuth } from './AuthContext'
 import { usePageMetadata } from './usePageMetadata'
+import { buildCustomPublicStructuredData, getCustomPublicPage } from '../seo/siteArchitecture'
+
+const TRACK_METADATA = getCustomPublicPage('/track-anthony')!
+const TRACK_STRUCTURED_DATA = buildCustomPublicStructuredData(TRACK_METADATA)
 
 const STATES = Object.entries(STATE_CODE_TO_NAME).sort((a, b) =>
   a[1].localeCompare(b[1]),
@@ -41,6 +45,24 @@ const PHASE_LABELS: Record<AnthonyUpdatePhase, string> = {
   'build-note': 'Building CORE',
   milestone: 'Milestone',
   'on-the-road': 'On the road',
+}
+
+type PublicTripPhase = 'pre_trip' | 'live' | 'completed'
+
+const DAY_IN_MS = 24 * 60 * 60 * 1000
+
+function getPublicTripPhase(
+  startDate: string | null | undefined,
+  totalDays: number | null | undefined,
+  now = new Date(),
+): PublicTripPhase {
+  const start = dateOnlyValue(startDate)
+  if (start == null || !totalDays || totalDays < 1) return 'pre_trip'
+
+  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())
+  if (today < start) return 'pre_trip'
+  if (today >= start + totalDays * DAY_IN_MS) return 'completed'
+  return 'live'
 }
 
 export function TrackAnthonyPage() {
@@ -59,9 +81,8 @@ export function TrackAnthonyPage() {
   })
 
   usePageMetadata({
-    title: 'Track Anthony’s ChargeQuest | Full Route and Trip Journal',
-    description: 'Explore Anthony’s complete ChargeQuest route day by day, follow every planned location and landmark on the map, and open the field notes, blogs, and videos attached to each stop.',
-    path: '/track-anthony',
+    ...TRACK_METADATA,
+    structuredData: TRACK_STRUCTURED_DATA,
   })
 
   useEffect(() => {
@@ -87,19 +108,38 @@ export function TrackAnthonyPage() {
   const trip = community?.trip
   const updates = community?.updates ?? []
   const routePlan = publishedRoute?.route
+  const publishedDays = routePlan?.totalDays ?? trip?.totalDays
+  const departureDate =
+    publishedRoute?.savedRoute.startDate ??
+    routePlan?.tripStartDate ??
+    trip?.departureDate
+  const tripPhase = getPublicTripPhase(departureDate, publishedDays)
+  const isLiveTrip = Boolean(
+    trip?.active && publishedRoute && routePlan && tripPhase === 'live',
+  )
+  const activeDayNumber = useMemo(() => {
+    if (!isLiveTrip || !publishedDays) return undefined
+    if (
+      trip?.dayNumber &&
+      trip.dayNumber >= 1 &&
+      trip.dayNumber <= publishedDays
+    ) {
+      return trip.dayNumber
+    }
+    return routeDayNumberForDate(departureDate, publishedDays)
+  }, [departureDate, isLiveTrip, publishedDays, trip?.dayNumber])
   const progress = useMemo(() => {
-    const totalDays = routePlan?.totalDays ?? trip?.totalDays
-    if (!trip?.active || !trip.dayNumber || !totalDays) return 0
-    return Math.max(0, Math.min(100, (trip.dayNumber / totalDays) * 100))
-  }, [routePlan?.totalDays, trip])
+    if (!isLiveTrip || !activeDayNumber || !publishedDays) return 0
+    return Math.max(0, Math.min(100, (activeDayNumber / publishedDays) * 100))
+  }, [activeDayNumber, isLiveTrip, publishedDays])
 
   useEffect(() => {
-    if (!trip?.active || !trip.dayNumber || !routePlan?.days.length) return
+    if (!isLiveTrip || !activeDayNumber || !routePlan?.days.length) return
     const currentDayIndex = routePlan.days.findIndex(
-      (day) => day.day === trip.dayNumber,
+      (day) => day.day === activeDayNumber,
     )
     if (currentDayIndex >= 0) setSelectedDayIndex(currentDayIndex)
-  }, [routePlan, trip?.active, trip?.dayNumber])
+  }, [activeDayNumber, isLiveTrip, routePlan])
 
   const submitInvite = async (event: FormEvent) => {
     event.preventDefault()
@@ -124,7 +164,7 @@ export function TrackAnthonyPage() {
 
   if (!community && !error) {
     return (
-      <div className="min-h-[65vh] bg-black px-5 py-20 text-white/40">
+      <div className="min-h-[calc(100svh-117px)] bg-black px-5 py-20 text-white/60 sm:min-h-[calc(100vh-78px)]">
         Loading Anthony’s quest…
       </div>
     )
@@ -132,18 +172,14 @@ export function TrackAnthonyPage() {
 
   const publishedName =
     publishedRoute?.savedRoute.name ?? trip?.routeName ?? 'Route still being decided'
-  const publishedDays = routePlan?.totalDays ?? trip?.totalDays
-  const departureDate =
-    publishedRoute?.savedRoute.startDate ??
-    routePlan?.tripStartDate ??
-    trip?.departureDate
 
   return (
     <div className="bg-[#f1eee6] text-[#0a0b0d]">
-      {trip?.active && publishedRoute && routePlan ? (
+      {isLiveTrip && trip && publishedRoute && routePlan ? (
         <LiveRouteHero
           publication={publishedRoute}
           trip={trip}
+          activeDayNumber={activeDayNumber}
           selectedDayIndex={selectedDayIndex}
           progress={progress}
           error={error}
@@ -167,21 +203,21 @@ export function TrackAnthonyPage() {
             <div className="inline-flex items-center gap-2 font-mono text-[9px] uppercase tracking-[0.15em] text-[#23d7d1]">
               <span
                 className={`h-2 w-2 rounded-full ${
-                  trip?.active
-                    ? 'animate-pulse bg-[#23d7d1]'
-                    : publishedRoute
-                      ? 'bg-[#e82127]'
-                      : 'bg-white/30'
+                  publishedRoute
+                    ? tripPhase === 'completed'
+                      ? 'bg-white/55'
+                      : 'bg-[#e82127]'
+                    : 'bg-white/30'
                 }`}
               />
-              {trip?.active
-                ? 'The quest is live'
-                : publishedRoute
-                  ? 'The complete trip plan'
-                  : 'The road to ChargeQuest'}
+              {publishedRoute
+                ? tripPhase === 'completed'
+                  ? '2026 competition route · planned itinerary archive'
+                  : '2026 competition route · pre-trip plan'
+                : 'Planning my 2026 competition route'}
             </div>
             {trip?.updatedAt ? (
-              <div className="font-mono text-[8px] uppercase tracking-[0.1em] text-white/32">
+              <div className="font-mono text-[8px] uppercase tracking-[0.1em] text-white/55">
                 Latest activity {formatTimestamp(trip.updatedAt)}
               </div>
             ) : null}
@@ -190,19 +226,18 @@ export function TrackAnthonyPage() {
           <div className="mt-12 grid gap-12 lg:grid-cols-[1fr_340px] lg:items-end">
             <div>
               <h1 className="max-w-[900px] text-[clamp(48px,10vw,112px)] font-semibold leading-[0.86] tracking-[-0.068em]">
-                {trip?.active
-                  ? trip.headline || publishedName
-                  : publishedRoute
-                    ? `${publishedName}, day by day`
-                    : 'I’m building the route in public'}
+                {publishedRoute
+                  ? tripPhase === 'completed'
+                    ? 'My planned 2026 Tesla Supercharging Competition route, preserved day by day'
+                    : 'My 2026 Tesla Supercharging Competition route, day by day'
+                  : 'I’m building my 2026 Tesla Supercharging Competition route in public'}
               </h1>
               <p className="mt-8 max-w-[740px] text-[17px] leading-[1.75] text-white/62">
-                {trip?.active
-                  ? trip.body ||
-                    'I’m on the road. Open any trip day to see the plan and the latest field notes.'
-                  : publishedRoute
-                    ? `This is the trip I plan to drive—${publishedDays ?? routePlan?.days.length} days mapped from departure through the return home. Open any day to see where I’ll be, what I’m visiting, and anything I publish from that part of the route.`
-                    : 'This is the chronological record—from building CORE and comparing route ideas to making the final cuts and, eventually, testing the plan on the road.'}
+                {publishedRoute
+                  ? tripPhase === 'completed'
+                    ? `This preserves the ${publishedDays ?? routePlan?.days.length}-day competition itinerary I published: the planned Supercharger sequence, route map, overnight areas, landmarks, and the dated notes attached to each day. Planned details remain labeled as a plan unless a field note records what was actually observed.`
+                    : `This is the ${publishedDays ?? routePlan?.days.length}-day competition route I currently plan to drive, mapped from departure through the return home. Open any day to inspect the planned Supercharger sequence, mileage, overnight area, landmarks, and the route decisions I publish before the trip.`
+                  : 'This is the chronological planning record—from comparing CORE route candidates and testing assumptions to making the final cuts. I publish real decisions and evidence without pretending the trip has started.'}
               </p>
               <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 {publishedRoute ? (
@@ -230,40 +265,22 @@ export function TrackAnthonyPage() {
               />
               <HeroFact
                 icon={<CalendarDays size={15} />}
-                label={trip?.active ? 'Trip progress' : 'Departure'}
-                value={
-                  trip?.active
-                    ? `Day ${trip.dayNumber ?? '—'} of ${publishedDays ?? '—'}`
-                    : formatDeparture(departureDate)
-                }
+                label={tripPhase === 'completed' ? 'Published itinerary' : 'Planned departure'}
+                value={tripPhase === 'completed'
+                  ? `${publishedDays ?? '—'} planned days`
+                  : formatDeparture(departureDate)}
               />
               <HeroFact
                 icon={<MapPin size={15} />}
-                label={trip?.active ? 'Current area' : 'Trip length'}
-                value={
-                  trip?.active
-                    ? trip.currentLocation || 'En route'
-                    : publishedDays
-                      ? `${publishedDays} planned days`
-                      : updates[0]
-                        ? PHASE_LABELS[updates[0].phase]
-                        : 'Planning'
-                }
+                label={publishedRoute ? 'Route status' : 'Planning stage'}
+                value={publishedRoute
+                  ? tripPhase === 'completed'
+                    ? 'Planned itinerary archive'
+                    : `${publishedDays ?? '—'} days · not yet live`
+                  : updates[0]
+                    ? PHASE_LABELS[updates[0].phase]
+                    : 'Planning'}
               />
-              {trip?.active ? (
-                <div className="py-5">
-                  <div className="mb-2 flex justify-between font-mono text-[7.5px] uppercase tracking-[0.09em] text-white/35">
-                    <span>Quest progress</span>
-                    <span>{Math.round(progress)}%</span>
-                  </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-white/12">
-                    <div
-                      className="h-full bg-[#e82127]"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                </div>
-              ) : null}
             </div>
           </div>
         </div>
@@ -276,7 +293,7 @@ export function TrackAnthonyPage() {
           updates={updates}
           selectedDayIndex={selectedDayIndex}
           onSelectDay={setSelectedDayIndex}
-          mapInHero={Boolean(trip?.active)}
+          mapInHero={isLiveTrip}
         />
       ) : routeError ? (
         <section className="bg-[#0a0b0d] px-4 py-14 text-white sm:px-6">
@@ -292,13 +309,13 @@ export function TrackAnthonyPage() {
         className="mx-auto grid max-w-[1240px] gap-12 px-4 py-20 sm:px-6 sm:py-28 lg:grid-cols-[minmax(0,1fr)_330px] lg:px-8 lg:py-36"
       >
         <div>
-          <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-black/42">
+          <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-black/65">
             Trip journal
           </div>
           <h2 className="mt-4 max-w-[760px] text-[clamp(40px,7vw,74px)] font-semibold leading-[0.92] tracking-[-0.058em]">
             The story behind the route
           </h2>
-          <p className="mt-6 max-w-[700px] text-[15px] leading-[1.75] text-black/55">
+          <p className="mt-6 max-w-[700px] text-[15px] leading-[1.75] text-black/65">
             Route decisions, planning notes, blogs, videos, milestones, and live road
             updates stay together here. Entries assigned to a trip day also appear
             inside that day in the route explorer above.
@@ -310,10 +327,10 @@ export function TrackAnthonyPage() {
             ))}
             {updates.length === 0 ? (
               <div className="border-b border-black/15 py-12">
-                <div className="font-mono text-[8px] uppercase tracking-[0.12em] text-[#e82127]">
+                <div className="font-mono text-[8px] uppercase tracking-[0.12em] text-[#c9161d]">
                   The first entry is coming
                 </div>
-                <p className="mt-4 max-w-[620px] text-[14px] leading-[1.7] text-black/55">
+                <p className="mt-4 max-w-[620px] text-[14px] leading-[1.7] text-black/65">
                   The route is public now. Blogs, videos, and field notes will appear
                   here and on the day where they happened.
                 </p>
@@ -331,8 +348,8 @@ export function TrackAnthonyPage() {
               <AsideStep number="01" title="Pick a day">
                 See the date, overnight area, mileage, landmarks, and charging plan.
               </AsideStep>
-              <AsideStep number="02" title="Read what happened">
-                Day-linked blogs, vlogs, and field notes open with that location.
+              <AsideStep number="02" title="Read the evidence">
+                Day-linked planning notes, blogs, vlogs, and field evidence open with that location.
               </AsideStep>
               <AsideStep number="03" title="Check back on the road">
                 The current day and live location move as the trip unfolds.
@@ -341,18 +358,18 @@ export function TrackAnthonyPage() {
           </div>
 
           <div className="border border-black/14 bg-white/45 p-6">
-            <div className="font-mono text-[8px] uppercase tracking-[0.13em] text-black/38">
+            <div className="font-mono text-[8px] uppercase tracking-[0.13em] text-black/65">
               You can influence the route
             </div>
             <h3 className="mt-3 text-[25px] font-semibold tracking-[-0.04em]">
               See a route problem I missed?
             </h3>
-            <p className="mt-4 text-[13px] leading-[1.65] text-black/55">
+            <p className="mt-4 text-[13px] leading-[1.65] text-black/65">
               Suggestions go to me privately. Nothing is posted automatically.
             </p>
             <Link
               to="/community"
-              className="mt-6 flex min-h-11 items-center justify-between rounded-full bg-[#e82127] px-5 py-3 text-[12px] font-semibold text-white no-underline"
+              className="mt-6 flex min-h-11 items-center justify-between rounded-full bg-[#e51c23] px-5 py-3 text-[12px] font-semibold text-white no-underline"
             >
               Send the idea <ArrowUpRight size={15} />
             </Link>
@@ -360,7 +377,7 @@ export function TrackAnthonyPage() {
         </aside>
       </section>
 
-      {trip?.active ? (
+      {isLiveTrip ? (
         <section className="bg-[#090a0c] px-4 py-20 text-white sm:px-6 sm:py-28 lg:px-8">
           <div className="mx-auto grid max-w-[1120px] gap-10 lg:grid-cols-[.8fr_1.2fr]">
             <div>
@@ -380,7 +397,7 @@ export function TrackAnthonyPage() {
                 className="grid gap-4 border border-white/15 bg-white/[.04] p-5 sm:grid-cols-2 sm:p-7"
                 onSubmit={submitInvite}
               >
-                <label className="site-field-label text-white/42">
+                <label className="site-field-label text-white/60">
                   State
                   <select
                     className="site-input"
@@ -399,7 +416,7 @@ export function TrackAnthonyPage() {
                     ))}
                   </select>
                 </label>
-                <label className="site-field-label text-white/42">
+                <label className="site-field-label text-white/60">
                   City
                   <input
                     required
@@ -412,7 +429,7 @@ export function TrackAnthonyPage() {
                     }
                   />
                 </label>
-                <label className="site-field-label text-white/42 sm:col-span-2">
+                <label className="site-field-label text-white/60 sm:col-span-2">
                   Possible trip day
                   <input
                     type="number"
@@ -428,7 +445,7 @@ export function TrackAnthonyPage() {
                     }
                   />
                 </label>
-                <label className="site-field-label text-white/42 sm:col-span-2">
+                <label className="site-field-label text-white/60 sm:col-span-2">
                   Message
                   <textarea
                     required
@@ -467,6 +484,7 @@ export function TrackAnthonyPage() {
 function LiveRouteHero({
   publication,
   trip,
+  activeDayNumber,
   selectedDayIndex,
   progress,
   error,
@@ -474,6 +492,7 @@ function LiveRouteHero({
 }: {
   publication: PublishedAnthonyRoute
   trip: AnthonyTrip
+  activeDayNumber?: number
   selectedDayIndex: number
   progress: number
   error?: string
@@ -482,7 +501,7 @@ function LiveRouteHero({
   const route = publication.route
   const selectedDay = route.days[selectedDayIndex] ?? route.days[0]
   const matchedLiveDayIndex = route.days.findIndex(
-    (day) => day.day === trip.dayNumber,
+    (day) => day.day === activeDayNumber,
   )
   const liveDayIndex =
     matchedLiveDayIndex >= 0 ? matchedLiveDayIndex : selectedDayIndex
@@ -504,7 +523,7 @@ function LiveRouteHero({
   return (
     <section
       id="live-route-map"
-      aria-label="Live trip map"
+      aria-label="Live 2026 Tesla Supercharging Competition route map"
       className="relative min-h-[720px] overflow-hidden bg-[#08090b] text-white lg:h-[calc(100svh-64px)] lg:max-h-[980px]"
     >
       <div className="absolute inset-0">
@@ -543,7 +562,7 @@ function LiveRouteHero({
             <div className="bg-black/88 px-4 py-3 backdrop-blur-md sm:px-5 sm:py-4">
               <div className="flex items-center gap-2 font-mono text-[8px] uppercase tracking-[0.14em] text-[#23d7d1]">
                 <span className="h-2 w-2 animate-pulse rounded-full bg-[#23d7d1]" />
-                Live now · Day {trip.dayNumber ?? selectedDay?.day ?? '—'} of {route.totalDays}
+                2026 competition route · Live day {activeDayNumber ?? selectedDay?.day ?? '—'} of {route.totalDays}
               </div>
               <div className="mt-2 text-[22px] font-semibold tracking-[-0.035em] sm:text-[28px]">
                 {liveLocation}
@@ -598,9 +617,10 @@ function LiveRouteHero({
                 : publication.savedRoute.name}
             </div>
             <h1 className="mt-3 text-[clamp(38px,8vw,78px)] font-semibold leading-[0.9] tracking-[-0.06em]">
+              My 2026 Tesla Supercharging Competition route:{' '}
               {selectedIsLive && trip.headline
                 ? trip.headline
-                : `Day ${selectedDay?.day ?? trip.dayNumber ?? '—'}: ${selectedLocation}`}
+                : `Day ${selectedDay?.day ?? activeDayNumber ?? '—'} — ${selectedLocation}`}
             </h1>
             <p className="mt-5 max-w-[680px] text-[13.5px] leading-[1.7] text-white/58 sm:text-[15px]">
               {selectedIsLive && trip.body
@@ -632,7 +652,7 @@ function LiveRouteHero({
               <LiveHeroStat label="Landmarks" value={countRouteLandmarks(route).toLocaleString()} />
             </div>
             <div className="mt-5">
-              <div className="mb-2 flex justify-between font-mono text-[7.5px] uppercase tracking-[0.09em] text-white/42">
+              <div className="mb-2 flex justify-between font-mono text-[7.5px] uppercase tracking-[0.09em] text-white/60">
                 <span>Trip progress</span>
                 <span>{Math.round(progress)}%</span>
               </div>
@@ -682,7 +702,7 @@ function CompleteRoute({
         <div className="grid gap-8 border-b border-white/14 pb-10 lg:grid-cols-[1fr_auto] lg:items-end">
           <div>
             <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-[#23d7d1]">
-              The complete route
+              Published 2026 competition route plan
             </div>
             <div className={`mt-4 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 font-mono text-[7.5px] uppercase tracking-[0.09em] ${
               publication.road && !publication.road.degraded
@@ -695,7 +715,7 @@ function CompleteRoute({
                 : 'Road routing temporarily using estimates'}
             </div>
             <h2 className="mt-4 max-w-[850px] text-[clamp(42px,7vw,78px)] font-semibold leading-[0.9] tracking-[-0.06em]">
-              Every day. Every stop. One mapped trip.
+              The complete 2026 competition route and day-by-day itinerary
             </h2>
             <p className="mt-6 max-w-[720px] text-[14px] leading-[1.75] text-white/52">
               {mapInHero
@@ -818,7 +838,7 @@ function SelectedDayPanel({
             Day {day.day}: {dayLocation(day)}
           </h3>
         </div>
-        <div className="flex gap-4 font-mono text-[8px] uppercase tracking-[0.08em] text-white/42 sm:flex-col sm:items-end sm:gap-1.5">
+        <div className="flex gap-4 font-mono text-[8px] uppercase tracking-[0.08em] text-white/60 sm:flex-col sm:items-end sm:gap-1.5">
           <span>{Math.round(day.miles)} mi</span>
           <span>{day.driveHours.toFixed(1)} hr</span>
           <span>{day.uniqueStations} stops</span>
@@ -863,7 +883,7 @@ function DayRouteCard({
         </div>
       </div>
       <div>
-        <div className="font-mono text-[8px] uppercase tracking-[0.1em] text-white/34">
+        <div className="font-mono text-[8px] uppercase tracking-[0.1em] text-white/55">
           {formatTripDay(startDate, day.day)}
         </div>
         <div className="mt-2 flex items-center gap-2 text-[16px] font-semibold">
@@ -892,7 +912,7 @@ function DayRouteCard({
         </div>
       </div>
       <div className="flex items-center gap-4 sm:flex-col sm:items-end sm:gap-2">
-        <div className="font-mono text-[8px] uppercase tracking-[0.08em] text-white/38">
+        <div className="font-mono text-[8px] uppercase tracking-[0.08em] text-white/55">
           {Math.round(day.miles)} mi · {day.driveHours.toFixed(1)} hr
         </div>
         {updateCount ? (
@@ -920,7 +940,7 @@ function DayDetails({
   return (
     <div className="mt-6 grid gap-6 border-t border-white/12 pt-6 lg:grid-cols-2">
       <div>
-        <div className="font-mono text-[8px] uppercase tracking-[0.1em] text-white/30">
+        <div className="font-mono text-[8px] uppercase tracking-[0.1em] text-white/55">
           Planned highlights
         </div>
         {landmarks.length ? (
@@ -936,18 +956,18 @@ function DayDetails({
             ))}
           </ul>
         ) : (
-          <p className="mt-3 text-[12px] leading-[1.6] text-white/38">
+          <p className="mt-3 text-[12px] leading-[1.6] text-white/60">
             This leg is focused on driving and unique Supercharger stops.
           </p>
         )}
         {day.stay ? (
-          <div className="mt-4 border-l-2 border-[#e82127] pl-3 text-[11px] leading-[1.55] text-white/45">
+          <div className="mt-4 border-l-2 border-[#e82127] pl-3 text-[11px] leading-[1.55] text-white/60">
             Overnight {day.stay.night} of {day.stay.totalNights} near {day.stay.label}
           </div>
         ) : null}
       </div>
       <div>
-        <div className="font-mono text-[8px] uppercase tracking-[0.1em] text-white/30">
+        <div className="font-mono text-[8px] uppercase tracking-[0.1em] text-white/55">
           Blogs, vlogs, and field notes
         </div>
         {updates.length ? (
@@ -971,7 +991,7 @@ function DayDetails({
             ))}
           </div>
         ) : (
-          <p className="mt-3 text-[12px] leading-[1.6] text-white/38">
+          <p className="mt-3 text-[12px] leading-[1.6] text-white/60">
             Nothing has been published from this day yet. The route details are
             here now; writing and video will attach to this location as the trip
             unfolds.
@@ -997,9 +1017,9 @@ function TimelineEntry({ update, index }: { update: AnthonyUpdate; index: number
           <span className="text-[#e82127]">{PHASE_LABELS[update.phase]}</span>
           <span className="text-black/25">{formatTimestamp(update.created_at)}</span>
           {update.day_number ? (
-            <span className="text-black/35">Day {update.day_number}</span>
+            <span className="text-black/65">Day {update.day_number}</span>
           ) : null}
-          {showLocation ? <span className="text-black/35">{update.location}</span> : null}
+          {showLocation ? <span className="text-black/65">{update.location}</span> : null}
         </div>
         <h3 className="mt-3 text-[clamp(25px,4vw,36px)] font-semibold leading-[1.02] tracking-[-0.045em]">
           {update.title}
@@ -1037,7 +1057,7 @@ function RouteStat({ label, value }: { label: string; value: string }) {
   return (
     <div className="bg-[#0a0b0d] px-4 py-4 text-center">
       <div className="text-[21px] font-semibold tracking-[-0.04em]">{value}</div>
-      <div className="mt-1 font-mono text-[7px] uppercase tracking-[0.1em] text-white/30">
+      <div className="mt-1 font-mono text-[7px] uppercase tracking-[0.1em] text-white/55">
         {label}
       </div>
     </div>
@@ -1050,7 +1070,7 @@ function LiveHeroStat({ label, value }: { label: string; value: string }) {
       <div className="text-[20px] font-semibold tracking-[-0.04em] sm:text-[24px]">
         {value}
       </div>
-      <div className="mt-1 font-mono text-[7px] uppercase tracking-[0.1em] text-white/34">
+      <div className="mt-1 font-mono text-[7px] uppercase tracking-[0.1em] text-white/55">
         {label}
       </div>
     </div>
@@ -1069,7 +1089,7 @@ function HeroFact({
   return (
     <div className="grid grid-cols-[22px_110px_minmax(0,1fr)] items-center gap-2 border-b border-white/15 py-5 last:border-b-0">
       <span className="text-[#23d7d1]">{icon}</span>
-      <span className="font-mono text-[7.5px] uppercase tracking-[0.09em] text-white/35">
+      <span className="font-mono text-[7.5px] uppercase tracking-[0.09em] text-white/55">
         {label}
       </span>
       <span className="text-right text-[12.5px] font-semibold">{value}</span>
@@ -1091,7 +1111,7 @@ function AsideStep({
       <span className="font-mono text-[8px] text-[#e82127]">{number}</span>
       <div>
         <div className="text-[13px] font-semibold">{title}</div>
-        <p className="mt-1 text-[11.5px] leading-[1.55] text-white/42">{children}</p>
+        <p className="mt-1 text-[11.5px] leading-[1.55] text-white/60">{children}</p>
       </div>
     </li>
   )
@@ -1116,6 +1136,35 @@ function landmarksForDay(day: DayPlan) {
 
 function countRouteLandmarks(route: RoutePlan) {
   return new Set(route.days.flatMap((day) => landmarksForDay(day))).size
+}
+
+function dateOnlyValue(value?: string | null) {
+  const match = value?.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (!match) return null
+  const year = Number(match[1])
+  const month = Number(match[2])
+  const day = Number(match[3])
+  const result = Date.UTC(year, month - 1, day)
+  const verified = new Date(result)
+  if (
+    verified.getUTCFullYear() !== year ||
+    verified.getUTCMonth() !== month - 1 ||
+    verified.getUTCDate() !== day
+  ) {
+    return null
+  }
+  return result
+}
+
+function routeDayNumberForDate(
+  startDate: string | null | undefined,
+  totalDays: number,
+  now = new Date(),
+) {
+  const start = dateOnlyValue(startDate)
+  if (start == null) return undefined
+  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())
+  return Math.max(1, Math.min(totalDays, Math.floor((today - start) / DAY_IN_MS) + 1))
 }
 
 function formatTripDay(startDate: string | undefined, day: number) {

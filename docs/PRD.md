@@ -15,11 +15,11 @@ The app encodes the following contest rules from Tesla's support page:
 - Region assignment: based on where the driver visits the most unique Supercharger sites.
 - Americas region: countries with Superchargers in North and South America.
 - Most Unique Supercharger Sites Visited: highest count of unique sites.
-- Longest Trip: a streak of visits to unique Supercharger sites. To extend the trip, the driver must begin charging at a new unique Supercharger site within the required 24-hour continuation window.
+- Longest Trip: a streak of visits to unique Supercharger sites. Tesla's public competition page used both previous-session **start** and **end** wording for the 24-hour continuation window when last reviewed August 10, 2026. Until Tesla clarifies the conflict, the planner must model the stricter start-to-start interpretation and the UI must disclose that assumption.
 - Repeat visits can occur during a trip but do not add to trip length.
 - Eligibility requires opening the 2026 Passport in the Tesla app before January 1, 2027.
 
-Tesla's public contest page does not specify a minimum charging duration for a site to count. The planner therefore exposes stop-time assumptions instead of hard-coding an unverified minimum.
+Tesla's public contest page does not specify a minimum charging duration for a site to count. The planner therefore exposes stop-time assumptions instead of hard-coding an unverified minimum. Tesla and the Tesla app remain authoritative; the rule source and review date must stay visible anywhere ChargeQuest explains the timing assumption.
 
 ## Primary Users
 - Anthony, a 26-year-old Chattanooga-based competitor building and sharing his own 2026 Tesla quest.

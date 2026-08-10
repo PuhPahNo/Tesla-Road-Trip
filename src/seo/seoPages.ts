@@ -4,6 +4,9 @@ import { LEGAL_OPERATOR_DISCLOSURE, LEGAL_OPERATOR_NAME } from '../site/business
 
 export const SITE_ORIGIN = 'https://www.teslachargequest.com'
 export const SEO_UPDATED_AT = '2026-07-19'
+export const SEO_PUBLISHED_AT = '2026-07-19'
+const COMPETITION_UPDATED_AT = '2026-08-10'
+const COMPETITION_SOURCE_REVIEWED = 'August 10, 2026'
 export const SEO_AUTHOR = {
   name: 'Anthony Pappano',
   path: '/about-anthony',
@@ -71,6 +74,26 @@ const competitionSource: SeoSource = {
 const badgeSource: SeoSource = {
   label: 'Tesla — Charging Badges',
   url: 'https://www.tesla.com/support/tesla-app/charging-badges',
+}
+
+const stationDataSource: SeoSource = {
+  label: 'Supercharge.info — community-maintained Supercharger station data',
+  url: 'https://supercharge.info/data',
+}
+
+const grandCanyonConditionsSource: SeoSource = {
+  label: 'National Park Service — Grand Canyon current conditions',
+  url: 'https://www.nps.gov/grca/planyourvisit/conditions.htm',
+}
+
+const yellowstoneRoadsSource: SeoSource = {
+  label: 'National Park Service — Yellowstone road conditions and closures',
+  url: 'https://www.nps.gov/yell/planyourvisit/parkroads.htm',
+}
+
+const yosemiteConditionsSource: SeoSource = {
+  label: 'National Park Service — Yosemite current conditions',
+  url: 'https://www.nps.gov/yose/planyourvisit/conditions.htm',
 }
 
 const buildRouteCta = {
@@ -154,15 +177,15 @@ export const SEO_PAGES: SeoPage[] = [
     path: '/2026-tesla-supercharging-competition',
     kind: 'hub',
     eyebrow: '2026 competition field guide',
-    title: '2026 Tesla Supercharging Competition Guide | ChargeQuest',
-    description: 'A plain-English guide to the 2026 Tesla Supercharging Competition categories, dates, rules, and the route decisions that matter.',
-    headline: 'The 2026 Tesla Supercharging Competition, without the guesswork',
-    intro: 'The competition is what pushed me to build ChargeQuest in the first place. This guide is my working map of the challenge: what Tesla has announced, what each category actually rewards, and where route planning can help without pretending the road will cooperate perfectly.',
-    updatedAt: SEO_UPDATED_AT,
+    title: '2026 Tesla Free Supercharging Competition: Rules & Guide',
+    description: 'A plain-English guide to the 2026 Tesla Free Supercharging Competition rules, eligibility, regions, enrollment, winner selection, and route planning.',
+    headline: '2026 Tesla Free Supercharging Competition: rules, categories, and route planning',
+    intro: `The 2026 competition is what pushed me to build ChargeQuest. I last reviewed Tesla’s official page on ${COMPETITION_SOURCE_REVIEWED}. This guide separates what Tesla currently confirms from the conservative planning assumptions I use when the published wording leaves room for doubt.`,
+    updatedAt: COMPETITION_UPDATED_AT,
     facts: [
       { label: 'Competition window', value: 'January 1–December 31, 2026' },
-      { label: 'Categories', value: '3 in each global region' },
-      { label: 'Total winners', value: '9 worldwide' },
+      { label: 'Prize categories', value: '3 per region · 9 winners worldwide' },
+      { label: 'Official source reviewed', value: COMPETITION_SOURCE_REVIEWED },
     ],
     sections: [
       {
@@ -179,21 +202,46 @@ export const SEO_PAGES: SeoPage[] = [
         table: competitionComparisonTable,
       },
       {
-        heading: 'What route planning can solve—and what it cannot',
+        heading: 'The 24-hour Longest Trip wording is not fully consistent',
         paragraphs: [
-          'A planner can help sequence stops, test a realistic driving pace, identify badge locations, and reveal where a beautiful detour costs too much time. It cannot guarantee a charger will be open, traffic will behave, weather will stay friendly, or a session will qualify exactly as expected. Tesla owns the scoreboard and the final rules.',
-          'My approach is to build a strong plan with room to recover. I would rather know the next two or three viable moves than chase a brittle route that only works if every minute lands perfectly. The competition may reward a number, but the trip still has to be lived.',
+          `When I reviewed Tesla’s official page on ${COMPETITION_SOURCE_REVIEWED}, its category summary described reaching a new site within 24 hours of the previous session’s start, while the detailed trip definition measured from the previous session’s end. Those are not the same clock. I do not think a competition route should quietly assume the more generous version.`,
+          'Until Tesla clarifies the discrepancy, I plan start-to-start: each new qualifying site should begin a session within 24 hours of the prior qualifying session’s start. That stricter interpretation creates more margin if the final scoring uses either version. It is a planning safeguard, not a claim that ChargeQuest can decide Tesla’s rules.',
+          'Tesla also says a repeat visit does not add a unique site or reset the Longest Trip timer. A route can pass through a familiar charger, but the next new qualifying location still carries the continuity requirement.',
         ],
       },
       {
-        heading: 'The dates and enrollment detail worth remembering',
+        heading: 'Region and eligibility can change which competition you are actually in',
         paragraphs: [
-          'Tesla says competition activity runs through the 2026 calendar year. Enrollment is expected through the 2026 Passport in December 2026, and Tesla says participants need to visit that Passport before January 1, 2027. That is unusual enough that I would not rely on memory or a third-party summary when the deadline gets close.',
-          'Use this field guide to think through the strategy, then confirm the current language in Tesla’s app and official rules page. I will keep ChargeQuest aligned with what Tesla publishes, but Tesla can change eligibility, badge locations, or competition details.',
+          'Tesla assigns a participant to the region where they visited the most unique Supercharger sites. If that count is tied across regions, total Supercharged energy breaks the region tie. Sessions elsewhere in the world can still count toward competition statistics, but participants compete against others in their assigned region.',
+          'Tesla currently lists three competition regions: the Americas, Asia-Pacific outside China’s separate competition, and EMEA with certain countries excluded for local-law reasons. Check the official page for the current country list before building a border-crossing strategy.',
+          'Tesla excludes vehicles that already have free Supercharging, vehicles used commercially for taxi, rideshare, or delivery work, residents outside an eligible region, and Tesla employees and their immediate families. ChargeQuest cannot determine eligibility from a route; that belongs to Tesla and the participant’s account and vehicle status.',
+        ],
+      },
+      {
+        heading: 'Enrollment happens later, but 2026 sessions already matter',
+        paragraphs: [
+          'Tesla says the 2026 Passport and enrollment open in December 2026, while eligible Supercharger activity from the beginning of the year is already being counted. To participate, Tesla instructs drivers to use the current Tesla app, enable sharing of charging data with the app, and open the 2026 Passport before January 1, 2027.',
+          'The official page says the submitted statistics come from the last time the participant opens the 2026 Passport before that deadline. That makes the final check operationally important: open it again after the last 2026 Supercharger session and make sure the expected sessions appear.',
+          'If a session is missing, Tesla directs participants to contact support through the app before January 1, 2027. ChargeQuest can preserve a planning log, but it cannot repair or certify Tesla’s account history.',
+        ],
+      },
+      {
+        heading: 'Winner order and tie-breaking affect the final result',
+        paragraphs: [
+          'Tesla says winners are chosen by category in this order within each region: Longest Trip, Most Unique Supercharger Sites Visited, then Most Energy Supercharged. A participant who wins one category is removed from consideration in the remaining categories, so the next qualifying participant can move up.',
+          'When category totals are tied, Tesla uses total Supercharged energy as the tie-breaker. The prize is connected to the winning Tesla Account and vehicle for as long as the winner owns that vehicle. Standard charging costs still apply during the competition; there is no separate entry fee.',
+        ],
+      },
+      {
+        heading: 'What route planning can solve—and what it cannot',
+        paragraphs: [
+          'A planner can sequence stops, test a realistic driving pace, identify badge locations, and reveal where a detour costs too much time. It cannot guarantee a charger will be open, traffic will cooperate, a session will qualify, or Tesla will interpret an ambiguous rule in the participant’s favor.',
+          'My approach is to keep recovery options visible: the next new site, at least one workable backup, the conservative 24-hour deadline, and enough sleep and weather margin to make the plan sustainable. Tesla owns the scoreboard, account record, eligibility decision, and final rules.',
+          'Use this field guide to understand the current structure, then confirm Tesla’s app and official page before acting. I will update the review date when I recheck the source or when Tesla changes the competition details.',
         ],
       },
     ],
-    note: 'ChargeQuest is independent and is not affiliated with or endorsed by Tesla. Tesla controls eligibility, scoring, official results, and any rule changes.',
+    note: `ChargeQuest is independent and is not affiliated with or endorsed by Tesla. Source language was last reviewed ${COMPETITION_SOURCE_REVIEWED}; Tesla controls eligibility, scoring, official results, and rule changes.`,
     sources: [competitionSource],
     relatedPaths: [
       '/competition/longest-trip-strategy',
@@ -207,22 +255,23 @@ export const SEO_PAGES: SeoPage[] = [
     path: '/competition/longest-trip-strategy',
     kind: 'guide',
     eyebrow: 'Competition strategy',
-    title: 'Tesla Longest Trip Competition Strategy | ChargeQuest',
-    description: 'How to think about the Longest Trip category: the 24-hour continuity rule, route resilience, pacing, recovery options, and honest tradeoffs.',
-    headline: 'Longest Trip is a continuity problem before it is a distance problem',
-    intro: 'The dramatic version of this category is a giant line across the map. The practical version is quieter: can you keep reaching a new Supercharger site before the continuity window closes, day after day, without designing a trip that falls apart after one delay?',
-    updatedAt: SEO_UPDATED_AT,
+    title: '2026 Tesla Longest Trip Strategy & 24-Hour Rule',
+    description: 'Plan for Tesla’s 2026 Longest Trip category using the stricter start-to-start 24-hour clock, route backups, sustainable pacing, and clear rule caveats.',
+    headline: 'How the 2026 Tesla Longest Trip rule changes the route',
+    intro: `The route only works if the continuity clock survives real days. Tesla’s official page contained conflicting start-time and end-time language when I reviewed it on ${COMPETITION_SOURCE_REVIEWED}, so I plan to the stricter start-to-start clock until Tesla clarifies the rule.`,
+    updatedAt: COMPETITION_UPDATED_AT,
     facts: [
-      { label: 'Primary constraint', value: 'A new site inside the stated 24-hour window' },
-      { label: 'Planning priority', value: 'Continuity and recovery' },
-      { label: 'Biggest trap', value: 'A brittle perfect-day schedule' },
+      { label: 'Planning clock', value: 'Start-to-start until Tesla clarifies' },
+      { label: 'Primary priority', value: 'Continuity and recovery' },
+      { label: 'Official source reviewed', value: COMPETITION_SOURCE_REVIEWED },
     ],
     sections: [
       {
-        heading: 'Treat every stop as a link in the chain',
+        heading: 'Use the stricter clock instead of betting the route on ambiguity',
         paragraphs: [
-          'Tesla describes Longest Trip as a continuous streak of unique Supercharger sites, with a charging session at a new site beginning within 24 hours of the previous session ending. That makes the clock between sessions more important than the shape of the route on a poster.',
-          'I would track the session end time, the next planned site, and at least one backup site. A stop is not just where you charge; it is the point that resets the next decision window. The plan should make that relationship obvious.',
+          `As of ${COMPETITION_SOURCE_REVIEWED}, Tesla’s category summary used the previous session’s start as the timing reference, while its detailed trip definition used the previous session’s end. ChargeQuest cannot resolve that conflict for Tesla, and I do not want a route to depend on the extra minutes created by choosing the end-time version.`,
+          'For planning, I treat each qualifying session start as the next deadline anchor. If a session begins at 4:00 p.m., the next new-site session should begin before 4:00 p.m. the following day. I would log both start and end times so the trip can be checked against either interpretation later.',
+          'A repeat visit can provide energy, but Tesla says it does not add to the unique-site streak or reset the clock. The route therefore needs the next new qualifying site and at least one realistic backup, not just another familiar charger within range.',
         ],
       },
       {
@@ -240,7 +289,7 @@ export const SEO_PAGES: SeoPage[] = [
         ],
       },
     ],
-    note: 'Always confirm the current continuity language and qualifying-session requirements in Tesla’s official rules before acting on a competition plan.',
+    note: `Tesla’s official page contained conflicting start-time and end-time wording when reviewed ${COMPETITION_SOURCE_REVIEWED}. Confirm the current language directly with Tesla; ChargeQuest uses start-to-start as the conservative planning assumption, not an official ruling.`,
     sources: [competitionSource],
     relatedPaths: [
       '/2026-tesla-supercharging-competition',
@@ -404,7 +453,7 @@ export const SEO_PAGES: SeoPage[] = [
     description: 'Plan for Tesla’s Grand Canyon Iconic Charger badge at the Tusayan Supercharger near the South Rim, with practical route context and official links.',
     headline: 'The Grand Canyon badge belongs on more than a charging checklist',
     intro: 'The qualifying target mapped in ChargeQuest is the Tusayan Supercharger at The Grand Hotel, just south of the park’s South Rim entrance. It is a natural anchor for a Route 66 trip, a desert parks loop, or a longer western competition route.',
-    updatedAt: SEO_UPDATED_AT,
+    updatedAt: '2026-08-10',
     facts: [
       { label: 'Qualifying target', value: 'Tusayan Supercharger' },
       { label: 'Route region', value: 'Grand Canyon South Rim gateway' },
@@ -436,6 +485,7 @@ export const SEO_PAGES: SeoPage[] = [
     sources: [
       badgeSource,
       { label: 'Tesla — Tusayan Supercharger', url: 'https://www.tesla.com/findus/location/supercharger/tusayanazsupercharger' },
+      grandCanyonConditionsSource,
     ],
     relatedPaths: ['/tesla-iconic-charger-badges', '/routes/tesla-route-66-supercharger-road-trip', '/badges/yellowstone'],
     cta: buildRouteCta,
@@ -448,7 +498,7 @@ export const SEO_PAGES: SeoPage[] = [
     description: 'Plan for Tesla’s Yellowstone Iconic Charger badge at West Yellowstone, with route context, seasonal caution, and the official charger link.',
     headline: 'West Yellowstone is the badge stop. The park is the journey.',
     intro: 'ChargeQuest maps the Yellowstone badge to the West Yellowstone Supercharger at the Grizzly & Wolf Discovery Center. It is a practical western gateway, but Yellowstone’s size, traffic, weather, and seasonal roads mean the charge is only one part of the plan.',
-    updatedAt: SEO_UPDATED_AT,
+    updatedAt: '2026-08-10',
     facts: [
       { label: 'Qualifying target', value: 'West Yellowstone Supercharger' },
       { label: 'Gateway', value: 'West entrance corridor' },
@@ -480,6 +530,7 @@ export const SEO_PAGES: SeoPage[] = [
     sources: [
       badgeSource,
       { label: 'Tesla — West Yellowstone Supercharger', url: 'https://www.tesla.com/findus/location/supercharger/westyellowstonesupercharger' },
+      yellowstoneRoadsSource,
     ],
     relatedPaths: ['/tesla-iconic-charger-badges', '/routes/tesla-national-parks-road-trip', '/badges/grand-canyon'],
     cta: buildRouteCta,
@@ -492,7 +543,7 @@ export const SEO_PAGES: SeoPage[] = [
     description: 'Plan for Tesla’s Yosemite Iconic Charger badge using the El Portal or Fish Camp gateway Superchargers, with route and access context.',
     headline: 'Yosemite gives you two gateway choices—and a reason to choose carefully',
     intro: 'ChargeQuest currently maps two qualifying Yosemite gateway targets from Tesla: El Portal and Fish Camp. That is useful flexibility, but the better stop depends on the road you are already traveling, the park access you expect, and what comes after Yosemite.',
-    updatedAt: SEO_UPDATED_AT,
+    updatedAt: '2026-08-10',
     facts: [
       { label: 'Mapped targets', value: 'El Portal and Fish Camp' },
       { label: 'Route role', value: 'Western parks or California anchor' },
@@ -525,6 +576,7 @@ export const SEO_PAGES: SeoPage[] = [
       badgeSource,
       { label: 'Tesla — El Portal Supercharger', url: 'https://www.tesla.com/findus/location/supercharger/elportalcasupercharger' },
       { label: 'Tesla — Fish Camp Supercharger', url: 'https://www.tesla.com/findus/location/supercharger/fishcampsupercharger' },
+      yosemiteConditionsSource,
     ],
     relatedPaths: ['/tesla-iconic-charger-badges', '/routes/tesla-national-parks-road-trip', '/badges/tesla-diner'],
     cta: buildRouteCta,
@@ -577,15 +629,15 @@ export const SEO_PAGES: SeoPage[] = [
     path: '/tesla-road-trip-routes',
     kind: 'hub',
     eyebrow: 'ChargeQuest route library',
-    title: 'Tesla Supercharger Road Trip Route Ideas | ChargeQuest',
+    title: 'Tesla Supercharger Road Trips: 3 Detailed Route Ideas',
     description: 'Explore Tesla road trip route ideas built around Route 66, national parks, American icons, Supercharger access, and places worth remembering.',
-    headline: 'Start with a road worth remembering',
-    intro: 'There is no single correct ChargeQuest. I keep a route library because a strong starting idea is more useful than an empty map. Each route below is a set of meaningful anchors—not a fixed itinerary, a mileage promise, or a substitute for recalculating around your Tesla.',
-    updatedAt: SEO_UPDATED_AT,
+    headline: 'Three detailed Tesla road-trip routes from a larger CORE library',
+    intro: 'This public guide develops three fixed CORE templates in detail: Route 66 and Desert Icons, National Parks and Western Icons, and Great American Icons. The planner contains 40 fixed templates across its two competition modes, plus two conditional custom variants that appear only after a driver adds personal waypoints. The three routes below are examples, not a claim that all 42 variants are published here.',
+    updatedAt: '2026-08-10',
     facts: [
-      { label: 'CORE templates', value: '42 starting route ideas' },
-      { label: 'Mapped places', value: '459 cities and landmarks' },
-      { label: 'Signature places', value: '193 across 49 state areas' },
+      { label: 'Fixed CORE templates', value: '40 across two competition modes' },
+      { label: 'Conditional custom variants', value: '2 after personal waypoints are added' },
+      { label: 'Detailed on this page', value: '3 fixed route examples' },
     ],
     sections: [
       {
@@ -611,7 +663,7 @@ export const SEO_PAGES: SeoPage[] = [
       },
     ],
     note: 'Every route idea needs live validation for road access, weather, charger status, vehicle range, and current travel conditions.',
-    sources: [],
+    sources: [stationDataSource],
     relatedPaths: [
       '/routes/tesla-route-66-supercharger-road-trip',
       '/routes/tesla-national-parks-road-trip',
@@ -628,7 +680,7 @@ export const SEO_PAGES: SeoPage[] = [
     description: 'A Tesla Route 66 and desert road trip idea connecting St. Louis, Oklahoma City, Amarillo, New Mexico, Grand Canyon, Las Vegas, and Los Angeles.',
     headline: 'Route 66, with enough freedom to leave Route 66',
     intro: 'The Route 66 and Desert Icons template uses the historic road as a direction, not a cage. It connects familiar Route 66 cities with Santa Fe, Grand Canyon, Las Vegas, Los Angeles, and optional approaches from Nashville, Memphis, Little Rock, Dallas, Phoenix, or San Diego.',
-    updatedAt: SEO_UPDATED_AT,
+    updatedAt: '2026-08-10',
     facts: [
       { label: 'Core spine', value: 'St. Louis to Los Angeles' },
       { label: 'Major anchors', value: 'Route 66 cities plus Grand Canyon and Vegas' },
@@ -676,7 +728,7 @@ export const SEO_PAGES: SeoPage[] = [
       },
     ],
     note: 'Historic Route 66 access and road conditions vary. Confirm local roads and live charging details before travel.',
-    sources: [],
+    sources: [stationDataSource],
     relatedPaths: ['/tesla-road-trip-routes', '/badges/grand-canyon', '/competition/most-unique-supercharger-sites'],
     cta: buildRouteCta,
   },
@@ -688,7 +740,7 @@ export const SEO_PAGES: SeoPage[] = [
     description: 'A western Tesla national parks route idea connecting the Rockies, Moab, Zion, Grand Canyon, Yosemite, Yellowstone, the Pacific Northwest, and Badlands.',
     headline: 'A western parks route should follow the season, not fight it',
     intro: 'The National Parks and Western Icons template is the most scenery-heavy route in ChargeQuest. It connects a huge wish list across the Rockies, canyon country, California, the Pacific Northwest, Yellowstone, and the Badlands. Its first job is to inspire. Its second is to be edited.',
-    updatedAt: SEO_UPDATED_AT,
+    updatedAt: '2026-08-10',
     facts: [
       { label: 'Park anchors', value: 'Rocky Mountain, Zion, Grand Canyon, Yosemite, Yellowstone' },
       { label: 'Western cities', value: 'Denver, Las Vegas, Portland, Seattle' },
@@ -736,7 +788,7 @@ export const SEO_PAGES: SeoPage[] = [
       },
     ],
     note: 'Check National Park Service road status, reservations, weather, and Tesla’s current charger details before travel.',
-    sources: [],
+    sources: [stationDataSource, grandCanyonConditionsSource, yellowstoneRoadsSource, yosemiteConditionsSource],
     relatedPaths: ['/tesla-road-trip-routes', '/badges/yellowstone', '/badges/yosemite', '/badges/grand-canyon'],
     cta: buildRouteCta,
   },
@@ -748,7 +800,7 @@ export const SEO_PAGES: SeoPage[] = [
     description: 'A coast-to-coast Tesla road trip idea connecting music cities, national parks, Route 66 country, California, the Pacific Northwest, Yellowstone, Chicago, and Washington.',
     headline: 'The big American route is really a collection of smaller stories',
     intro: 'Great American Icons is the template closest to the original ChargeQuest idea: cross the country through places with a story, then keep going until the route becomes a story of its own. It is ambitious by design and personal by necessity.',
-    updatedAt: SEO_UPDATED_AT,
+    updatedAt: '2026-08-10',
     facts: [
       { label: 'Route shape', value: 'A broad national loop' },
       { label: 'Themes', value: 'Music, parks, cities, road history, badges' },
@@ -796,7 +848,7 @@ export const SEO_PAGES: SeoPage[] = [
       },
     ],
     note: 'This is a planning framework, not a fixed itinerary. Recalculate around your vehicle, dates, pace, and current road and charging conditions.',
-    sources: [],
+    sources: [stationDataSource],
     relatedPaths: ['/tesla-road-trip-routes', '/2026-tesla-supercharging-competition', '/badges/tesla-diner'],
     cta: buildRouteCta,
   },

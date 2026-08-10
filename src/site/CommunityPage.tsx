@@ -6,6 +6,10 @@ import { STATE_CODE_TO_NAME } from '../domain/usStates'
 import { useAuth } from './AuthContext'
 import { ANTHONY_EMAIL_HREF } from './contact'
 import { usePageMetadata } from './usePageMetadata'
+import { buildCustomPublicStructuredData, getCustomPublicPage } from '../seo/siteArchitecture'
+
+const COMMUNITY_METADATA = getCustomPublicPage('/community')!
+const COMMUNITY_STRUCTURED_DATA = buildCustomPublicStructuredData(COMMUNITY_METADATA)
 
 const STATE_OPTIONS = Object.entries(STATE_CODE_TO_NAME).sort((a, b) =>
   a[1].localeCompare(b[1]),
@@ -24,9 +28,8 @@ export function CommunityPage() {
   })
 
   usePageMetadata({
-    title: 'Send Anthony a Route Idea | ChargeQuest Community',
-    description: 'Send Anthony a private route suggestion, local stop, charging tip, or challenge as he builds the first ChargeQuest and prepares for the 2026 trip.',
-    path: '/community',
+    ...COMMUNITY_METADATA,
+    structuredData: COMMUNITY_STRUCTURED_DATA,
   })
 
   const submitSuggestion = async (event: FormEvent) => {
@@ -72,7 +75,28 @@ export function CommunityPage() {
           </div>
         </div>
         <div className="relative min-h-[360px] overflow-hidden lg:min-h-full">
-          <img src="/landing/desert-road.jpg" alt="A long desert road stretching toward the mountains" className="absolute inset-0 h-full w-full object-cover" />
+          <picture className="absolute inset-0 block h-full w-full">
+            <source
+              type="image/avif"
+              srcSet="/landing/desert-road-640.avif 640w, /landing/desert-road-960.avif 960w, /landing/desert-road-1280.avif 1280w, /landing/desert-road-1920.avif 1920w"
+              sizes="(min-width: 1024px) 47vw, 100vw"
+            />
+            <source
+              type="image/webp"
+              srcSet="/landing/desert-road-640.webp 640w, /landing/desert-road-960.webp 960w, /landing/desert-road-1280.webp 1280w, /landing/desert-road-1920.webp 1920w"
+              sizes="(min-width: 1024px) 47vw, 100vw"
+            />
+            <img
+              src="/landing/desert-road-1280.jpg"
+              srcSet="/landing/desert-road-640.jpg 640w, /landing/desert-road-960.jpg 960w, /landing/desert-road-1280.jpg 1280w, /landing/desert-road-1920.jpg 1920w"
+              sizes="(min-width: 1024px) 47vw, 100vw"
+              width={1280}
+              height={1600}
+              decoding="async"
+              alt="A long desert road stretching toward the mountains"
+              className="h-full w-full object-cover"
+            />
+          </picture>
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent lg:bg-gradient-to-r lg:from-black/50 lg:via-transparent" />
           <div className="absolute bottom-6 right-6 max-w-[250px] text-right font-mono text-[8px] uppercase tracking-[0.1em] text-white/45">
             The route is still open to better ideas

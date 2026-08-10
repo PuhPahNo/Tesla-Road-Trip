@@ -2,7 +2,7 @@ import { cleanup, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AuthProvider } from './AuthContext'
-import { HomeRoute } from './Router'
+import { HomeRoute, RouteLoadingFallback } from './Router'
 
 afterEach(() => {
   cleanup()
@@ -10,6 +10,15 @@ afterEach(() => {
 })
 
 describe('ChargeQuest home route', () => {
+  it('announces route-level lazy loading without collapsing the page', () => {
+    render(<RouteLoadingFallback label="Loading the public route…" />)
+
+    const status = screen.getByRole('status')
+    expect(status.textContent).toBe('Loading the public route…')
+    expect(status.getAttribute('aria-live')).toBe('polite')
+    expect(status.className).toContain('min-h-[calc(100svh-117px)]')
+  })
+
   it('redirects signed-in members from the landing page to the planner', async () => {
     vi.stubGlobal(
       'fetch',

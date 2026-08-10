@@ -13,6 +13,8 @@ import { readSavedCustomRoutes } from './customRoutes'
 import { db } from './database'
 
 const STATE_CODES = Object.keys(STATE_CODE_TO_NAME)
+const PUBLIC_COMMUNITY_CACHE_CONTROL = 'public, max-age=30, s-maxage=60, stale-while-revalidate=300'
+const PUBLIC_ROUTE_CACHE_CONTROL = 'public, max-age=60, s-maxage=300, stale-while-revalidate=3600'
 
 const stateCodeSchema = z
   .string()
@@ -87,11 +89,13 @@ export function registerCommunityRoutes(
   loadRoadRoute: (coordinates: Array<{ lat: number; lon: number }>) => Promise<RoadRouteResult>,
 ) {
   app.get('/api/community', (_request, response) => {
+    response.setHeader('Cache-Control', PUBLIC_COMMUNITY_CACHE_CONTROL)
     response.json(readCommunity())
   })
 
   app.get('/api/community/anthony-route', async (_request, response) => {
     try {
+      response.setHeader('Cache-Control', PUBLIC_ROUTE_CACHE_CONTROL)
       const selection = readAnthonyRouteSelection()
       if (!selection) {
         response.json({ selectedRouteId: null, route: null })

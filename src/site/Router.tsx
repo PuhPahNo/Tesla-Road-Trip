@@ -1,8 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
-import App from '../App'
 import { AccountPage, ProtectedRoute } from './AccountPage'
-import { AdminPage } from './AdminPage'
 import { AuthProvider, useAuth } from './AuthContext'
 import { AuthPage } from './AuthPage'
 import { CommunityPage } from './CommunityPage'
@@ -11,9 +9,17 @@ import { PasswordChangePage } from './PasswordChangePage'
 import { NoIndexPage, NotFoundPage } from './SearchBoundaryPages'
 import { SeoPage } from './SeoPage'
 import { SiteShell } from './SiteShell'
-import { TrackAnthonyPage } from './TrackAnthonyPage'
 import { getSeoPageByPath } from '../seo/seoPages'
 
+const PlannerApp = lazy(() => import('../App'))
+const AdminPage = lazy(() =>
+  import('./AdminPage').then((module) => ({ default: module.AdminPage })),
+)
+const TrackAnthonyPage = lazy(() =>
+  import('./TrackAnthonyPage').then((module) => ({
+    default: module.TrackAnthonyPage,
+  })),
+)
 const AdminHotelsPage = lazy(() =>
   import('./AdminHotelsPage').then((module) => ({
     default: module.AdminHotelsPage,
@@ -28,7 +34,14 @@ export function ChargeQuestRouter() {
           <Route element={<SiteShell />}>
             <Route index element={<HomeRoute />} />
             <Route path="community" element={<CommunityPage />} />
-            <Route path="track-anthony" element={<TrackAnthonyPage />} />
+            <Route
+              path="track-anthony"
+              element={
+                <Suspense fallback={<RouteLoadingFallback label="Loading the public route…" />}>
+                  <TrackAnthonyPage />
+                </Suspense>
+              }
+            />
             <Route path="2026-tesla-supercharging-competition" element={<SeoRoutePage />} />
             <Route path="competition/:slug" element={<SeoRoutePage />} />
             <Route path="tesla-iconic-charger-badges" element={<SeoRoutePage />} />
@@ -54,7 +67,9 @@ export function ChargeQuestRouter() {
               element={
                 <NoIndexPage title="Admin">
                   <ProtectedRoute admin>
-                    <AdminPage />
+                    <Suspense fallback={<RouteLoadingFallback label="Loading admin tools…" />}>
+                      <AdminPage />
+                    </Suspense>
                   </ProtectedRoute>
                 </NoIndexPage>
               }
@@ -64,13 +79,7 @@ export function ChargeQuestRouter() {
               element={
                 <NoIndexPage title="Admin Hotels">
                   <ProtectedRoute admin>
-                    <Suspense
-                      fallback={
-                        <div className="min-h-[60vh] p-10 text-faint">
-                          Loading hotel planner…
-                        </div>
-                      }
-                    >
+                    <Suspense fallback={<RouteLoadingFallback label="Loading hotel planner…" />}>
                       <AdminHotelsPage />
                     </Suspense>
                   </ProtectedRoute>
@@ -83,7 +92,9 @@ export function ChargeQuestRouter() {
             element={
               <NoIndexPage title="CORE Route Planner">
                 <ProtectedRoute unauthenticatedTo="signup">
-                  <App />
+                  <Suspense fallback={<RouteLoadingFallback label="Loading CORE route planner…" fullScreen />}>
+                    <PlannerApp />
+                  </Suspense>
                 </ProtectedRoute>
               </NoIndexPage>
             }
@@ -103,7 +114,25 @@ function SeoRoutePage() {
 
 export function HomeRoute() {
   const { user, loading } = useAuth()
-  if (loading) return <div className="min-h-[60vh] p-10 text-faint">Checking your account…</div>
+  if (loading) return <div className="min-h-[calc(100svh-117px)] p-10 text-faint sm:min-h-[calc(100vh-78px)]">Checking your account…</div>
   if (user) return <Navigate to="/planner" replace />
   return <LandingPage />
+}
+
+export function RouteLoadingFallback({
+  label,
+  fullScreen = false,
+}: {
+  label: string
+  fullScreen?: boolean
+}) {
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className={`${fullScreen ? 'min-h-screen' : 'min-h-[calc(100svh-117px)] sm:min-h-[calc(100vh-78px)]'} bg-app p-10 text-faint`}
+    >
+      {label}
+    </div>
+  )
 }

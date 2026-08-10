@@ -4,15 +4,18 @@ import { Link } from 'react-router-dom'
 import { fetchCommunity, type CommunitySnapshot } from '../api/siteClient'
 import { useAuth } from './AuthContext'
 import { usePageMetadata } from './usePageMetadata'
+import { buildCustomPublicStructuredData, getCustomPublicPage } from '../seo/siteArchitecture'
+
+const HOME_METADATA = getCustomPublicPage('/')!
+const HOME_STRUCTURED_DATA = buildCustomPublicStructuredData(HOME_METADATA)
 
 export function LandingPage() {
   const { user } = useAuth()
   const [community, setCommunity] = useState<CommunitySnapshot>()
 
   usePageMetadata({
-    title: 'ChargeQuest CORE | Tesla Supercharger Route Planner for 2026',
-    description: 'Meet ChargeQuest CORE, the Charging Optimization & Route Engine for building and saving Tesla Supercharger routes around your vehicle, pace, badge targets, landmarks, and daily limits.',
-    path: '/',
+    ...HOME_METADATA,
+    structuredData: HOME_STRUCTURED_DATA,
   })
 
   useEffect(() => {
@@ -26,11 +29,29 @@ export function LandingPage() {
   return (
     <>
       <section className="cq-cinematic-hero relative min-h-[calc(100svh-117px)] overflow-hidden bg-black text-white sm:min-h-[calc(100vh-78px)]">
-        <img
-          src="/landing/desert-road.jpg"
-          alt="An open highway running through the painted desert"
-          className="absolute inset-0 h-full w-full object-cover"
-        />
+        <picture className="absolute inset-0 block h-full w-full">
+          <source
+            type="image/avif"
+            srcSet="/landing/desert-road-640.avif 640w, /landing/desert-road-960.avif 960w, /landing/desert-road-1280.avif 1280w, /landing/desert-road-1920.avif 1920w"
+            sizes="100vw"
+          />
+          <source
+            type="image/webp"
+            srcSet="/landing/desert-road-640.webp 640w, /landing/desert-road-960.webp 960w, /landing/desert-road-1280.webp 1280w, /landing/desert-road-1920.webp 1920w"
+            sizes="100vw"
+          />
+          <img
+            src="/landing/desert-road-1280.jpg"
+            srcSet="/landing/desert-road-640.jpg 640w, /landing/desert-road-960.jpg 960w, /landing/desert-road-1280.jpg 1280w, /landing/desert-road-1920.jpg 1920w"
+            sizes="100vw"
+            width={1280}
+            height={1600}
+            fetchPriority="high"
+            decoding="async"
+            alt="An open highway running through the painted desert"
+            className="h-full w-full object-cover"
+          />
+        </picture>
         <div className="cq-hero-shade absolute inset-0" />
         <div className="relative mx-auto flex min-h-[calc(100svh-117px)] max-w-[1440px] flex-col justify-between px-4 py-6 sm:min-h-[calc(100vh-78px)] sm:px-5 sm:py-8 lg:px-12 lg:py-12">
           <div className="flex items-start justify-between gap-5 font-mono uppercase">
@@ -56,14 +77,14 @@ export function LandingPage() {
                   className="group flex min-h-[60px] w-full max-w-[320px] flex-none items-center justify-between rounded-full bg-[#f4f0e8] py-2 pl-7 pr-2 text-[15px] font-semibold text-black no-underline shadow-[0_18px_55px_rgba(0,0,0,.38)] ring-2 ring-[#e82127] transition hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_22px_65px_rgba(0,0,0,.48)]"
                 >
                   <span>{plannerCta}</span>
-                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#e82127] text-white transition group-hover:translate-x-0.5">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#e51c23] text-white transition group-hover:translate-x-0.5">
                     <ArrowRight aria-hidden="true" size={19} strokeWidth={2.2} />
                   </span>
                 </Link>
                 {!user ? (
                   <div className="font-mono text-[8.5px] uppercase leading-[1.7] tracking-[0.11em] text-white/58">
                     <div>Free account · No email required</div>
-                    <div className="text-white/38">Save and refine multiple routes</div>
+                    <div className="text-white/60">Save and refine multiple routes</div>
                   </div>
                 ) : null}
               </div>
@@ -88,7 +109,7 @@ export function LandingPage() {
             </div>
           </div>
 
-          <div className="flex items-end justify-between gap-5 font-mono text-[8px] uppercase tracking-[0.13em] text-white/45">
+          <div className="flex items-end justify-between gap-5 font-mono text-[8px] uppercase tracking-[0.13em] text-white/60">
             <span>Photo · Pierre Jeanneret / Unsplash</span>
             <span>Scroll to explore ↓</span>
           </div>
@@ -99,7 +120,7 @@ export function LandingPage() {
         <div className="mx-auto max-w-[1320px]">
           <div className="grid gap-10 lg:grid-cols-[1.35fr_.65fr] lg:items-end">
             <div>
-              <div className="mb-5 font-mono text-[9px] uppercase tracking-[0.16em] text-black/45">How ChargeQuest began</div>
+              <div className="mb-5 font-mono text-[9px] uppercase tracking-[0.16em] text-black/65">How ChargeQuest began</div>
               <h2 className="max-w-[1040px] text-[clamp(42px,12vw,112px)] font-semibold leading-[0.9] tracking-[-0.06em] sm:leading-[0.86] sm:tracking-[-0.072em]">
                 The challenge started the journey. The road became the reward.
               </h2>
@@ -128,9 +149,9 @@ export function LandingPage() {
             <div className="mt-16 flex flex-col justify-between gap-6 border-t border-black/15 pt-8 sm:flex-row sm:items-center">
               <div>
                 <div className="text-[22px] font-semibold tracking-[-0.03em]">I may be taking the first ChargeQuest. I do not plan to take it alone.</div>
-                <div className="mt-2 text-[13px] text-black/50">Choose a username, add your Tesla, and start shaping a route of your own.</div>
+                <div className="mt-2 text-[13px] text-black/65">Choose a username, add your Tesla, and start shaping a route of your own.</div>
               </div>
-              <Link to="/signup?returnTo=%2Fplanner" className="flex min-h-12 w-full flex-none items-center justify-center rounded-full bg-[#e82127] px-7 py-4 text-center text-[13px] font-semibold text-white no-underline shadow-[0_12px_30px_rgba(232,33,39,.22)] sm:w-auto">
+              <Link to="/signup?returnTo=%2Fplanner" className="flex min-h-12 w-full flex-none items-center justify-center rounded-full bg-[#e51c23] px-7 py-4 text-center text-[13px] font-semibold text-white no-underline shadow-[0_12px_30px_rgba(232,33,39,.22)] sm:w-auto">
                 Start your quest
               </Link>
             </div>
@@ -159,6 +180,8 @@ export function LandingPage() {
               className="cq-photo-canyon"
               src="/landing/grand-canyon.jpg"
               alt="Grand Canyon at sunset"
+              width={1800}
+              height={1200}
               eyebrow="Arizona"
               title="Grand Canyon"
               credit="Steve Wrzeszczynski / Unsplash"
@@ -167,12 +190,14 @@ export function LandingPage() {
               className="cq-photo-bison"
               src="/landing/yellowstone-bison.jpg"
               alt="A herd of bison walking along a Yellowstone road"
+              width={1600}
+              height={1069}
               eyebrow="Wyoming"
               title="Yellowstone"
               credit="Zac Bowling / Unsplash"
             />
-            <div className="cq-gallery-statement flex flex-col justify-between bg-[#e82127] p-7 sm:p-9">
-              <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-white/60">Every state makes a case</div>
+            <div className="cq-gallery-statement flex flex-col justify-between bg-[#e51c23] p-7 sm:p-9">
+              <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-white">Every state makes a case</div>
               <div>
                 <div className="text-[clamp(52px,7vw,94px)] font-semibold leading-[.82] tracking-[-0.07em]">48</div>
                 <div className="mt-3 max-w-[260px] text-[16px] font-semibold leading-[1.2]">contiguous states full of reasons to change the plan</div>
@@ -182,6 +207,8 @@ export function LandingPage() {
               className="cq-photo-bridge"
               src="/landing/golden-gate.jpg"
               alt="Golden Gate Bridge with traffic at dusk"
+              width={1800}
+              height={2700}
               eyebrow="California"
               title="Golden Gate Bridge"
               credit="Leo_Visions / Unsplash"
@@ -190,18 +217,18 @@ export function LandingPage() {
         </div>
       </section>
 
-      <section className="cq-product-stage overflow-hidden bg-[#e82127] px-4 py-20 text-white sm:px-5 sm:py-24 lg:px-8 lg:py-32">
+      <section className="cq-product-stage overflow-hidden bg-[#e51c23] px-4 py-20 text-white sm:px-5 sm:py-24 lg:px-8 lg:py-32">
         <div className="mx-auto max-w-[1320px]">
           <div className="grid gap-12 lg:grid-cols-[.82fr_1.18fr] lg:items-end">
             <div className="max-w-[540px]">
-              <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-white/65">Under the hood</div>
+              <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-white">Under the hood</div>
               <h2 className="mt-5 text-[clamp(40px,11vw,88px)] font-semibold leading-[0.93] tracking-[-0.055em] sm:leading-[0.9] sm:tracking-[-0.062em]">
                 Meet CORE.
               </h2>
               <div className="mt-5 font-mono text-[11px] font-semibold uppercase tracking-[0.11em] text-white">
                 Charging Optimization &amp; Route Engine
               </div>
-              <p className="mt-7 text-[16px] leading-[1.7] text-white/78">
+              <p className="mt-7 text-[16px] leading-[1.7] text-white">
                 ChargeQuest CORE turns your Tesla, practical range, preferred pace,
                 required stops, and Iconic Charger targets into a multi-day route you
                 could actually drive. It connects the places that matter through the
@@ -225,11 +252,27 @@ export function LandingPage() {
 
       <section className="grid min-h-[720px] bg-black text-white lg:grid-cols-2">
         <div className="relative min-h-[360px] overflow-hidden sm:min-h-[520px] lg:min-h-full">
-          <img
-            src="/landing/tesla-chargers.jpg"
-            alt="Tesla Superchargers illuminated at night"
-            className="absolute inset-0 h-full w-full object-cover"
-          />
+          <picture className="absolute inset-0 block h-full w-full">
+            <source
+              type="image/avif"
+              srcSet="/landing/tesla-chargers-640.avif 640w, /landing/tesla-chargers-960.avif 960w, /landing/tesla-chargers-1280.avif 1280w"
+              sizes="100vw"
+            />
+            <source
+              type="image/webp"
+              srcSet="/landing/tesla-chargers-640.webp 640w, /landing/tesla-chargers-960.webp 960w, /landing/tesla-chargers-1280.webp 1280w"
+              sizes="100vw"
+            />
+            <img
+              src="/landing/tesla-chargers.jpg"
+              alt="Tesla Superchargers illuminated at night"
+              width={1800}
+              height={1201}
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-cover"
+            />
+          </picture>
           <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/10" />
           <div className="absolute bottom-6 left-6 font-mono text-[8px] uppercase tracking-[0.12em] text-white/55">
             Photo · Stephen Mease / Unsplash
@@ -242,7 +285,7 @@ export function LandingPage() {
             <h2 className="mt-5 text-[clamp(40px,11vw,82px)] font-semibold leading-[0.93] tracking-[-0.055em] sm:leading-[0.9] sm:tracking-[-0.062em]">
               Follow the quest. Help shape what comes next.
             </h2>
-            <p className="mt-7 max-w-[560px] text-[16px] leading-[1.7] text-white/60">
+            <p className="mt-7 max-w-[560px] text-[16px] leading-[1.7] text-white">
               Follow the decisions behind CORE and my route, then send a stop, warning,
               or better idea directly to me. When the trip begins, the same timeline becomes
               the live field log—with the wins, setbacks, detours, and evidence included.
@@ -267,7 +310,7 @@ export function LandingPage() {
         <div className="mx-auto max-w-[1320px]">
           <div className="grid gap-8 lg:grid-cols-[1fr_.72fr] lg:items-end">
             <div>
-              <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-black/42">ChargeQuest field guides</div>
+              <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-black/65">ChargeQuest field guides</div>
               <h2 className="mt-5 max-w-[860px] text-[clamp(42px,10vw,96px)] font-semibold leading-[0.9] tracking-[-0.06em] sm:leading-[0.86] sm:tracking-[-0.068em]">
                 Plan the challenge. Keep the journey.
               </h2>
@@ -309,7 +352,7 @@ export function LandingPage() {
 
       <section className="cq-editorial-light px-4 py-20 text-center sm:px-5 sm:py-36 lg:px-8 lg:py-44">
         <div className="mx-auto max-w-[1120px]">
-          <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-black/45">What ChargeQuest is becoming</div>
+          <div className="font-mono text-[9px] uppercase tracking-[0.15em] text-black/65">What ChargeQuest is becoming</div>
           <h2 className="mt-5 text-[clamp(44px,13vw,148px)] font-semibold leading-[0.88] tracking-[-0.062em] sm:leading-[0.82] sm:tracking-[-0.075em]">
             The road is the reward.
           </h2>
@@ -367,12 +410,12 @@ function FieldGuideCard({
 }) {
   return (
     <article className="border-b border-black/18 py-8 md:border-b-0 md:border-r md:px-8 md:first:pl-0 md:last:border-r-0">
-      <div className="flex items-center justify-between gap-5 font-mono text-[8px] font-semibold uppercase tracking-[0.12em] text-black/38">
+      <div className="flex items-center justify-between gap-5 font-mono text-[8px] font-semibold uppercase tracking-[0.12em] text-black/65">
         <span>{eyebrow}</span>
         <span>{number}</span>
       </div>
       <h3 className="mt-7 text-[28px] font-semibold leading-[1.02] tracking-[-0.045em]">{title}</h3>
-      <p className="mt-5 text-[14px] leading-[1.7] text-black/56">{body}</p>
+      <p className="mt-5 text-[14px] leading-[1.7] text-black/65">{body}</p>
       <Link to={to} className="mt-7 inline-flex items-center gap-2 text-[12px] font-semibold text-black no-underline hover:text-[#e82127]">
         {label} <ArrowRight aria-hidden="true" size={15} />
       </Link>
@@ -384,7 +427,7 @@ function EditorialFact({ number, label }: { number: string; label: string }) {
   return (
     <div>
       <div className="text-[clamp(42px,5vw,70px)] font-semibold leading-none tracking-[-0.055em]">{number}</div>
-      <div className="mt-3 max-w-[220px] text-[12px] font-medium uppercase tracking-[0.08em] text-black/45">{label}</div>
+      <div className="mt-3 max-w-[220px] text-[12px] font-medium uppercase tracking-[0.08em] text-black/65">{label}</div>
     </div>
   )
 }
@@ -420,10 +463,10 @@ function CoreStep({
 }) {
   return (
     <div className="grid grid-cols-[32px_1fr] gap-3 border-b border-white/15 py-3.5 last:border-b-0">
-      <span className="pt-0.5 font-mono text-[8px] tracking-[0.1em] text-white/45">{number}</span>
+      <span className="pt-0.5 font-mono text-[8px] tracking-[0.1em] text-white">{number}</span>
       <div>
         <div className="text-[12.5px] font-semibold text-white">{title}</div>
-        <div className="mt-1 text-[11.5px] leading-[1.5] text-white/60">{body}</div>
+        <div className="mt-1 text-[11.5px] leading-[1.5] text-white">{body}</div>
       </div>
     </div>
   )
@@ -433,6 +476,8 @@ function PhotoFigure({
   className,
   src,
   alt,
+  width,
+  height,
   eyebrow,
   title,
   credit,
@@ -440,20 +485,43 @@ function PhotoFigure({
   className: string
   src: string
   alt: string
+  width: number
+  height: number
   eyebrow: string
   title: string
   credit: string
 }) {
+  const responsiveBase = src.replace(/\.jpg$/i, '')
   return (
     <figure className={`${className} group relative m-0 overflow-hidden bg-panel`}>
-      <img src={src} alt={alt} loading="lazy" className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.025]" />
+      <picture className="block h-full w-full">
+        <source
+          type="image/avif"
+          srcSet={`${responsiveBase}-640.avif 640w, ${responsiveBase}-960.avif 960w, ${responsiveBase}-1280.avif 1280w`}
+          sizes="(min-width: 1024px) 42vw, (min-width: 640px) 55vw, 100vw"
+        />
+        <source
+          type="image/webp"
+          srcSet={`${responsiveBase}-640.webp 640w, ${responsiveBase}-960.webp 960w, ${responsiveBase}-1280.webp 1280w`}
+          sizes="(min-width: 1024px) 42vw, (min-width: 640px) 55vw, 100vw"
+        />
+        <img
+          src={src}
+          alt={alt}
+          width={width}
+          height={height}
+          loading="lazy"
+          decoding="async"
+          className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.025]"
+        />
+      </picture>
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/5 to-transparent" />
       <figcaption className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-5 p-5 sm:p-7">
         <div>
           <div className="font-mono text-[8px] uppercase tracking-[0.13em] text-white/55">{eyebrow}</div>
           <div className="mt-1 text-[22px] font-semibold tracking-[-0.03em] text-white">{title}</div>
         </div>
-        <div className="hidden max-w-[150px] text-right font-mono text-[7px] uppercase tracking-[0.08em] text-white/35 sm:block">{credit}</div>
+        <div className="hidden max-w-[150px] text-right font-mono text-[7px] uppercase tracking-[0.08em] text-white/60 sm:block">{credit}</div>
       </figcaption>
     </figure>
   )
@@ -467,7 +535,7 @@ function CorePreview() {
           <div className="font-mono text-[8px] uppercase tracking-[0.13em] text-[#23d7d1]">ChargeQuest CORE</div>
           <div className="mt-1 text-[17px] font-semibold">Create a custom route</div>
         </div>
-        <div className="font-mono text-[8px] uppercase tracking-[0.1em] text-white/35">Step 2 of 3</div>
+        <div className="font-mono text-[8px] uppercase tracking-[0.1em] text-white/55">Step 2 of 3</div>
       </div>
 
       <div className="grid grid-cols-3 border-b border-white/10 p-2">
@@ -488,10 +556,10 @@ function CorePreview() {
             <PreviewField label="Heading" value="Season-smart" />
           </div>
           <div className="mt-4 rounded-[11px] border border-white/10 bg-white/[.04] p-3">
-            <div className="font-mono text-[8px] uppercase tracking-[0.1em] text-white/35">Practical range</div>
+            <div className="font-mono text-[8px] uppercase tracking-[0.1em] text-white/55">Practical range</div>
             <div className="mt-2 flex items-center justify-between text-[12px]">
               <span className="font-semibold">230 miles</span>
-              <span className="text-white/35">Vehicle preset</span>
+              <span className="text-white/55">Vehicle preset</span>
             </div>
           </div>
         </div>
@@ -499,17 +567,17 @@ function CorePreview() {
         <div>
           <div className="flex items-center justify-between gap-3">
             <div className="text-[11px] font-semibold">Selected destinations</div>
-            <div className="font-mono text-[7.5px] uppercase tracking-[0.08em] text-white/35">4 anchors</div>
+            <div className="font-mono text-[7.5px] uppercase tracking-[0.08em] text-white/55">4 anchors</div>
           </div>
           <div className="mt-3 flex flex-col gap-2">
             {['Yellowstone', 'Grand Canyon', 'Tesla Diner', 'Miami Beach'].map((place, index) => (
               <div key={place} className="flex items-center gap-3 rounded-[10px] border border-white/10 bg-white/[.04] px-3 py-2.5">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#e82127] text-[9px] font-semibold">{index + 1}</span>
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#e51c23] text-[9px] font-semibold">{index + 1}</span>
                 <span className="text-[11.5px] font-semibold">{place}</span>
               </div>
             ))}
           </div>
-          <div className="mt-3 rounded-[9px] bg-[#e82127] px-4 py-3 text-center text-[11px] font-semibold">Review and optimize</div>
+          <div className="mt-3 rounded-[9px] bg-[#e51c23] px-4 py-3 text-center text-[11px] font-semibold">Review and optimize</div>
         </div>
       </div>
     </div>
@@ -519,7 +587,7 @@ function CorePreview() {
 function PreviewField({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-[10px] border border-white/10 bg-white/[.04] p-3">
-      <div className="font-mono text-[7.5px] uppercase tracking-[0.09em] text-white/35">{label}</div>
+      <div className="font-mono text-[7.5px] uppercase tracking-[0.09em] text-white/55">{label}</div>
       <div className="mt-1.5 truncate text-[11px] font-semibold text-white">{value}</div>
     </div>
   )
@@ -528,7 +596,7 @@ function PreviewField({ label, value }: { label: string; value: string }) {
 function DarkMetric({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="cq-mobile-metric border-r border-white/15 px-3 py-5 first:pl-0 last:border-r-0 sm:px-4">
-      <div className="font-mono text-[7.5px] uppercase tracking-[0.1em] text-white/35">{label}</div>
+      <div className="font-mono text-[7.5px] uppercase tracking-[0.1em] text-white/55">{label}</div>
       <div className="mt-2 text-[20px] font-semibold tracking-[-0.03em]">{value}</div>
     </div>
   )
@@ -539,7 +607,7 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
     <details className="group border-b border-black/15 py-6">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-5 text-[18px] font-semibold tracking-[-0.02em]">
         {question}
-        <span className="text-[24px] font-normal text-black/35 transition group-open:rotate-45">+</span>
+        <span className="text-[24px] font-normal text-black/65 transition group-open:rotate-45">+</span>
       </summary>
       <p className="mt-4 max-w-[700px] text-[14px] leading-[1.7] text-black/55">{answer}</p>
     </details>

@@ -25,6 +25,11 @@ describe('ChargeQuest community page', () => {
     )
 
     expect(screen.getByRole('heading', { name: 'Tell me what the map is missing' })).toBeTruthy()
+    const heroImage = screen.getByRole('img', { name: 'A long desert road stretching toward the mountains' })
+    expect(heroImage.closest('picture')).toBeTruthy()
+    expect(heroImage.getAttribute('src')).toBe('/landing/desert-road-1280.jpg')
+    expect(heroImage.getAttribute('width')).toBe('1280')
+    expect(heroImage.getAttribute('height')).toBe('1600')
     expect(screen.getByRole('link', { name: 'Create an account and send an idea' }).getAttribute('href')).toBe('/signup?returnTo=%2Fcommunity')
     expect(screen.getByRole('heading', { name: 'Three ways you can genuinely change the trip' })).toBeTruthy()
     expect(screen.getByRole('heading', { name: 'Make the case' })).toBeTruthy()

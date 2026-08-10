@@ -85,6 +85,33 @@ describe('public SEO content registry', () => {
     }
   })
 
+  it('states the reviewed competition rules conservatively and without hiding Tesla wording conflicts', () => {
+    const competition = SEO_PAGES.find((page) => page.path === '/2026-tesla-supercharging-competition')
+    const longestTrip = SEO_PAGES.find((page) => page.path === '/competition/longest-trip-strategy')
+    const copy = JSON.stringify([competition, longestTrip])
+
+    expect(competition?.updatedAt).toBe('2026-08-10')
+    expect(longestTrip?.updatedAt).toBe('2026-08-10')
+    expect(copy).toContain('August 10, 2026')
+    expect(copy).toContain('start-to-start')
+    expect(copy).toContain('previous session’s end')
+    expect(copy).toContain('repeat visit')
+    expect(copy).toContain('assigned region')
+    expect(copy).toContain('last time the participant opens the 2026 Passport')
+    expect(copy).toContain('missing')
+    expect(copy).toContain('tie-breaker')
+  })
+
+  it('describes the route library as 40 fixed templates, two conditional custom variants, and three public examples', () => {
+    const routes = SEO_PAGES.find((page) => page.path === '/tesla-road-trip-routes')
+    const copy = JSON.stringify(routes)
+
+    expect(copy).toContain('40 fixed templates')
+    expect(copy).toContain('two conditional custom variants')
+    expect(copy).toContain('three fixed CORE templates')
+    expect(copy).not.toContain('42 starting route ideas')
+  })
+
   it('uses a ProfilePage for the visible Anthony author page', () => {
     const about = SEO_PAGES.find((page) => page.path === '/about-anthony')
     expect(about).toBeTruthy()

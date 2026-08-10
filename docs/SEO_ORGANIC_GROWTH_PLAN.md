@@ -1,6 +1,6 @@
 # ChargeQuest Organic Growth Plan
 
-Updated: July 19, 2026
+Updated: August 10, 2026
 
 ## The position to own
 
@@ -25,7 +25,7 @@ CORE is the next step for all three. The content should answer the first questio
 - `noindex` controls for login, signup, account, admin, and planner pages.
 - A real HTTP 404 for unknown URLs instead of a soft-404 app shell.
 - Long-lived caching for hashed production assets.
-- A 13-page field-guide cluster covering the competition, four high-interest badge stops, and three route ideas.
+- A 14-page field-guide cluster covering the competition, three category guides, four high-interest badge stops, three route ideas, and Anthony's methodology page.
 - Homepage and footer links that make every content hub discoverable without relying on the sitemap alone.
 - Visible Anthony Pappano bylines, updated dates, and an author page that explains how the research and examples are produced.
 - A side-by-side competition category table and the complete 17-badge reference used by CORE.

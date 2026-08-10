@@ -34,6 +34,7 @@ vi.mock('../components/MapView', () => ({
 
 afterEach(() => {
   cleanup()
+  vi.useRealTimers()
   vi.unstubAllGlobals()
 })
 
@@ -70,7 +71,7 @@ describe('Track Anthony', () => {
 
     render(<MemoryRouter><AuthProvider><TrackAnthonyPage /></AuthProvider></MemoryRouter>)
 
-    expect(await screen.findByRole('heading', { name: 'I’m building the route in public' })).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: 'I’m building my 2026 Tesla Supercharging Competition route in public' })).toBeTruthy()
     expect(screen.getByText('Route 66 made the final three')).toBeTruthy()
     expect(screen.getByRole('link', { name: /Open the route comparison/ }).getAttribute('href')).toBe('https://example.com/route-map')
     expect(screen.getByText('September 1, 2026')).toBeTruthy()
@@ -78,6 +79,7 @@ describe('Track Anthony', () => {
   })
 
   it('lays out the published saved route by day and opens writing attached to a location', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
     const station = {
       id: 'station-1',
       sourceId: 'station-1',
@@ -214,12 +216,24 @@ describe('Track Anthony', () => {
       },
     })))
 
+    vi.setSystemTime(new Date(2026, 7, 1, 12))
     render(<MemoryRouter><AuthProvider><TrackAnthonyPage /></AuthProvider></MemoryRouter>)
 
-    expect(await screen.findByRole('region', { name: 'Live trip map' })).toBeTruthy()
+    expect(await screen.findByText('2026 competition route · pre-trip plan')).toBeTruthy()
     expect(screen.getByRole('heading', {
       level: 1,
-      name: 'Day 1: Grand Canyon Village, AZ',
+      name: 'My 2026 Tesla Supercharging Competition route, day by day',
+    })).toBeTruthy()
+    expect(screen.queryByRole('region', { name: /Live 2026 Tesla/ })).toBeNull()
+
+    cleanup()
+    vi.setSystemTime(new Date(2026, 7, 3, 12))
+    render(<MemoryRouter><AuthProvider><TrackAnthonyPage /></AuthProvider></MemoryRouter>)
+
+    expect(await screen.findByRole('region', { name: 'Live 2026 Tesla Supercharging Competition route map' })).toBeTruthy()
+    expect(screen.getByRole('heading', {
+      level: 1,
+      name: 'My 2026 Tesla Supercharging Competition route: Day 1 — Grand Canyon Village, AZ',
     })).toBeTruthy()
     expect(screen.getAllByText(/Map highlighting day 1\. Road points 3/)).toHaveLength(1)
     expect(screen.getByText(/Active day 1\. Wheel zoom off/)).toBeTruthy()
@@ -228,7 +242,7 @@ describe('Track Anthony', () => {
     expect(screen.getByText(/Zoom focus day 1/)).toBeTruthy()
     expect(screen.getByText('Current day 1')).toBeTruthy()
     expect(screen.getAllByText('ORS road-accurate route').length).toBeGreaterThan(0)
-    expect(screen.getByRole('heading', { name: 'Every day. Every stop. One mapped trip.' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'The complete 2026 competition route and day-by-day itinerary' })).toBeTruthy()
     await userEvent.click(screen.getByRole('button', { name: 'Open day 2, Grand Canyon' }))
     expect(screen.getByText(/Map highlighting day 2\. Road points 3/)).toBeTruthy()
     expect(screen.getByText(/Active day 1\. Wheel zoom off/)).toBeTruthy()
@@ -236,8 +250,19 @@ describe('Track Anthony', () => {
     expect(screen.getByText('Preview day 2')).toBeTruthy()
     expect(screen.getByRole('heading', {
       level: 1,
-      name: 'Day 2: Grand Canyon',
+      name: 'My 2026 Tesla Supercharging Competition route: Day 2 — Grand Canyon',
     })).toBeTruthy()
     expect(screen.getAllByText('What sunrise looked like from the rim').length).toBeGreaterThan(0)
+
+    cleanup()
+    vi.setSystemTime(new Date(2026, 7, 5, 12))
+    render(<MemoryRouter><AuthProvider><TrackAnthonyPage /></AuthProvider></MemoryRouter>)
+
+    expect(await screen.findByText('2026 competition route · planned itinerary archive')).toBeTruthy()
+    expect(screen.getByRole('heading', {
+      level: 1,
+      name: 'My planned 2026 Tesla Supercharging Competition route, preserved day by day',
+    })).toBeTruthy()
+    expect(screen.queryByRole('region', { name: /Live 2026 Tesla/ })).toBeNull()
   })
 })

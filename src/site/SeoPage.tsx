@@ -4,19 +4,26 @@ import {
   SEO_AUTHOR,
   formatSeoDate,
   getRelatedSeoPages,
-  seoPageStructuredData,
   type SeoPage as SeoPageContent,
 } from '../seo/seoPages'
+import {
+  buildSeoPageStructuredData,
+  getContextualPublicLinks,
+  getSeoBreadcrumbs,
+  getSeoPagePresentation,
+} from '../seo/siteArchitecture'
 import { usePageMetadata } from './usePageMetadata'
 
 export function SeoPage({ page }: { page: SeoPageContent }) {
   const relatedPages = getRelatedSeoPages(page)
+  const breadcrumbs = getSeoBreadcrumbs(page)
+  const contextualLinks = getContextualPublicLinks(page.path).filter(
+    (link) => !page.relatedPaths.includes(link.path),
+  )
 
   usePageMetadata({
-    title: page.title,
-    description: page.description,
-    path: page.path,
-    structuredData: seoPageStructuredData(page),
+    ...getSeoPagePresentation(page),
+    structuredData: buildSeoPageStructuredData(page),
   })
 
   return (
@@ -24,10 +31,19 @@ export function SeoPage({ page }: { page: SeoPageContent }) {
       <header className="relative overflow-hidden bg-[#090a0c] px-4 py-20 text-white sm:px-6 sm:py-28 lg:px-12 lg:py-36">
         <div className="pointer-events-none absolute -right-32 -top-40 h-[520px] w-[520px] rounded-full bg-[#e82127]/20 blur-[130px]" />
         <div className="relative mx-auto max-w-[1180px]">
-          <nav className="mb-14 flex flex-wrap items-center gap-2 font-mono text-[9px] uppercase tracking-[0.13em] text-white/42" aria-label="Breadcrumb">
-            <Link to="/" className="text-white/42 no-underline hover:text-white">ChargeQuest</Link>
-            <span aria-hidden="true">/</span>
-            <span>{page.eyebrow}</span>
+          <nav className="mb-14 flex flex-wrap items-center gap-2 font-mono text-[9px] uppercase tracking-[0.13em] text-white/55" aria-label="Breadcrumb">
+            {breadcrumbs.map((breadcrumb, index) => (
+              <span key={breadcrumb.path} className="contents">
+                {index > 0 ? <span aria-hidden="true">/</span> : null}
+                {index === breadcrumbs.length - 1 ? (
+                  <span aria-current="page" className="text-white/68">{breadcrumb.name}</span>
+                ) : (
+                  <Link to={breadcrumb.path} className="text-white/55 no-underline hover:text-white">
+                    {breadcrumb.name}
+                  </Link>
+                )}
+              </span>
+            ))}
           </nav>
           <div className="font-mono text-[9px] font-semibold uppercase tracking-[0.17em] text-[#23d7d1]">{page.eyebrow}</div>
           <h1 className="mt-5 max-w-[1050px] text-[clamp(44px,8.5vw,104px)] font-semibold leading-[0.9] tracking-[-0.058em] sm:leading-[0.87] sm:tracking-[-0.067em]">
@@ -36,7 +52,7 @@ export function SeoPage({ page }: { page: SeoPageContent }) {
           <p className="mt-8 max-w-[790px] text-[17px] leading-[1.72] text-white/68 sm:text-[20px]">
             {page.intro}
           </p>
-          <div className="mt-7 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[8.5px] uppercase tracking-[0.11em] text-white/42">
+          <div className="mt-7 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[8.5px] uppercase tracking-[0.11em] text-white/55">
             {page.kind === 'about' ? (
               <span>{SEO_AUTHOR.name}</span>
             ) : (
@@ -53,7 +69,7 @@ export function SeoPage({ page }: { page: SeoPageContent }) {
           <div className="mt-14 grid border-y border-white/15 sm:grid-cols-3">
             {page.facts.map((fact) => (
               <div key={fact.label} className="border-b border-white/15 px-0 py-6 last:border-b-0 sm:border-b-0 sm:border-r sm:px-6 sm:first:pl-0 sm:last:border-r-0">
-                <div className="font-mono text-[8px] uppercase tracking-[0.12em] text-white/35">{fact.label}</div>
+                <div className="font-mono text-[8px] uppercase tracking-[0.12em] text-white/55">{fact.label}</div>
                 <div className="mt-2 text-[18px] font-semibold tracking-[-0.025em]">{fact.value}</div>
               </div>
             ))}
@@ -66,7 +82,7 @@ export function SeoPage({ page }: { page: SeoPageContent }) {
           <div>
             {page.sections.map((section, index) => (
               <section key={section.heading} className={index > 0 ? 'mt-16 border-t border-black/14 pt-14' : ''}>
-                <div className="mb-5 font-mono text-[8px] font-semibold uppercase tracking-[0.14em] text-[#e82127]">{String(index + 1).padStart(2, '0')}</div>
+                <div className="mb-5 font-mono text-[8px] font-semibold uppercase tracking-[0.14em] text-[#c9161d]">{String(index + 1).padStart(2, '0')}</div>
                 <h2 className="max-w-[720px] text-[clamp(30px,5vw,50px)] font-semibold leading-[1] tracking-[-0.045em]">{section.heading}</h2>
                 <div className="mt-7 space-y-5">
                   {section.paragraphs.map((paragraph) => (
@@ -79,9 +95,9 @@ export function SeoPage({ page }: { page: SeoPageContent }) {
                   </ul>
                 ) : null}
                 {section.table ? (
-                  <div className="mt-9 overflow-x-auto border border-black/14 bg-white/42">
+                  <div className="mt-9 overflow-x-auto border border-black/14 bg-white">
                     <table className="w-full min-w-[720px] border-collapse text-left">
-                      <caption className="border-b border-black/14 px-5 py-4 text-left font-mono text-[8px] font-semibold uppercase tracking-[0.12em] text-black/45">
+                      <caption className="border-b border-black/14 px-5 py-4 text-left font-mono text-[8px] font-semibold uppercase tracking-[0.12em] text-black/65">
                         {section.table.caption}
                       </caption>
                       <thead>
@@ -93,11 +109,11 @@ export function SeoPage({ page }: { page: SeoPageContent }) {
                           ))}
                         </tr>
                       </thead>
-                      <tbody>
+                      <tbody className="bg-white">
                         {section.table.rows.map((row, rowIndex) => (
                           <tr key={`${section.table?.caption}-${rowIndex}`} className="border-b border-black/10 align-top last:border-b-0">
                             {row.map((cell, cellIndex) => (
-                              <td key={`${cellIndex}-${typeof cell === 'string' ? cell : cell.text}`} className={`px-4 py-4 text-[13px] leading-[1.55] text-black/62 ${cellIndex === 0 ? 'font-semibold text-black/82' : ''}`}>
+                              <td key={`${cellIndex}-${typeof cell === 'string' ? cell : cell.text}`} className={`px-4 py-4 text-[13px] leading-[1.55] text-black/75 ${cellIndex === 0 ? 'font-semibold text-black/82' : ''}`}>
                                 {typeof cell === 'string' ? cell : cell.links?.length ? (
                                   <span className="flex flex-wrap gap-x-3 gap-y-1">
                                     {cell.links.map((link) => (
@@ -124,14 +140,14 @@ export function SeoPage({ page }: { page: SeoPageContent }) {
 
             {page.note ? (
               <aside className="mt-16 border border-black/12 bg-white/55 p-6 sm:p-8">
-                <div className="font-mono text-[8px] font-semibold uppercase tracking-[0.14em] text-black/40">Important context</div>
+                <div className="font-mono text-[8px] font-semibold uppercase tracking-[0.14em] text-black/65">Important context</div>
                 <p className="mt-3 text-[14px] leading-[1.75] text-black/60">{page.note}</p>
               </aside>
             ) : null}
 
             {page.sources.length ? (
               <section className="mt-12">
-                <h2 className="font-mono text-[9px] font-semibold uppercase tracking-[0.14em] text-black/45">Official sources</h2>
+                <h2 className="font-mono text-[9px] font-semibold uppercase tracking-[0.14em] text-black/65">Sources and verification</h2>
                 <ul className="mt-4 space-y-3">
                   {page.sources.map((source) => (
                     <li key={source.url}>
@@ -144,23 +160,38 @@ export function SeoPage({ page }: { page: SeoPageContent }) {
                 </ul>
               </section>
             ) : null}
+
+            {contextualLinks.length ? (
+              <section className="mt-12 border-t border-black/14 pt-10">
+                <h2 className="font-mono text-[9px] font-semibold uppercase tracking-[0.14em] text-black/65">Connect the planning</h2>
+                <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {contextualLinks.map((link) => (
+                    <li key={link.path}>
+                      <Link to={link.path} className="text-[13px] font-semibold text-black underline decoration-black/20 underline-offset-4 hover:decoration-[#e82127]">
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
           </div>
 
           <aside className="lg:pt-1">
             <div className="lg:sticky lg:top-28">
-              <div className="font-mono text-[8px] font-semibold uppercase tracking-[0.14em] text-black/38">Keep exploring</div>
+              <div className="font-mono text-[8px] font-semibold uppercase tracking-[0.14em] text-black/65">Keep exploring</div>
               <div className="mt-4 border-t border-black/14">
                 {relatedPages.map((related) => (
                   <Link key={related.path} to={related.path} className="group block border-b border-black/14 py-5 text-black no-underline">
-                    <div className="font-mono text-[7.5px] uppercase tracking-[0.11em] text-black/35">{related.eyebrow}</div>
+                    <div className="font-mono text-[7.5px] uppercase tracking-[0.11em] text-black/65">{related.eyebrow}</div>
                     <div className="mt-2 text-[15px] font-semibold leading-[1.25] tracking-[-0.02em] group-hover:text-[#e82127]">{related.headline}</div>
                   </Link>
                 ))}
               </div>
-              <div className="mt-8 bg-[#e82127] p-6 text-white">
-                <div className="font-mono text-[8px] uppercase tracking-[0.13em] text-white/65">ChargeQuest CORE</div>
+              <div className="mt-8 bg-[#e51c23] p-6 text-white">
+                <div className="font-mono text-[8px] uppercase tracking-[0.13em] text-white">ChargeQuest CORE</div>
                 <h2 className="mt-3 text-[25px] font-semibold leading-[1] tracking-[-0.04em]">{page.cta.title}</h2>
-                <p className="mt-4 text-[13px] leading-[1.65] text-white/75">{page.cta.body}</p>
+                <p className="mt-4 text-[13px] leading-[1.65] text-white">{page.cta.body}</p>
                 {page.cta.path.startsWith('mailto:') ? (
                   <a href={page.cta.path} className="mt-6 flex min-h-11 items-center justify-between rounded-full bg-black px-5 py-3 text-[12px] font-semibold text-white no-underline">
                     {page.cta.label}

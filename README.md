@@ -30,10 +30,16 @@ The Vite app proxies `/api/*` to the local Express API on port `4177`. For singl
 npm test
 npm run build
 npm run lint
+npm run seo:budget
 npm run certify:ui
 npm run certify:community
 npm run certify:badges
 ```
+
+After starting the production build locally with `SERVE_CLIENT=1 PORT=4177 npm start`,
+run `npm run certify:seo` to verify the public sitemap routes, private `noindex`
+boundaries, canonical redirects, breadcrumbs, 404 behavior, API crawl headers, and
+release metadata as one contract. Set `SEO_BASE_URL` to certify a deployed host.
 
 ## What It Does
 
@@ -92,7 +98,7 @@ See `.env.example` for agent and routing configuration, and [docs/OSRM.md](docs/
 
 - Tesla defines unique sites by the Tesla app / vehicle navigation. Confirm close-together route targets in Tesla nav before driving.
 - Tesla's referenced contest page does not specify a minimum charging duration. This app exposes stop-time assumptions in configuration.
-- Longest Trip requires starting a charge at a new unique site within the 24-hour continuation window; the planner reserves streak days for must-visit stays accordingly.
+- Tesla's competition page used both previous-session **start** and **end** wording for the Longest Trip 24-hour window when last reviewed August 10, 2026. Until Tesla clarifies the conflict, ChargeQuest plans conservatively: start a charge at a new unique site within 24 hours of the previous qualifying session's start. Confirm the current rule in the Tesla app and on [Tesla's competition page](https://www.tesla.com/support/tesla-app/charging-badges/contest) before driving.
 - Supercharge.info is not Tesla official. It is a strong practical planning feed, but final verification should happen in the Tesla app.
 
 ## Docs

@@ -107,6 +107,19 @@ async function isRoadRoutingHealthy(): Promise<boolean> {
 const CACHE_TTL_MS = 1000 * 60 * 60
 const MAX_OSRM_COORDINATES = 32
 const PORT = Number(process.env.PORT ?? 4177)
+const RELEASE_REVISION = firstSafeReleaseValue(
+  process.env.RENDER_GIT_COMMIT,
+  process.env.RELEASE_SHA,
+  process.env.COMMIT_SHA,
+  process.env.GIT_COMMIT,
+  process.env.SOURCE_VERSION,
+)
+const RELEASE_DEPLOYED_AT = firstSafeReleaseValue(
+  process.env.RENDER_DEPLOYED_AT,
+  process.env.RELEASE_DEPLOYED_AT,
+  process.env.DEPLOYED_AT,
+  process.env.BUILD_TIME,
+)
 
 interface StationCache {
   fetchedAt: string
@@ -191,6 +204,9 @@ app.use((_request, response, next) => {
   response.setHeader('X-Frame-Options', 'SAMEORIGIN')
   response.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
   response.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+  if (_request.path === '/api' || _request.path.startsWith('/api/')) {
+    response.setHeader('X-Robots-Tag', 'noindex, nofollow')
+  }
   next()
 })
 
@@ -202,6 +218,10 @@ app.get('/api/health', async (_request, response) => {
     time: new Date().toISOString(),
     roadRouting: { enabled, provider: ROAD_PROVIDER },
     accounts: { enabled: true },
+    release: {
+      revision: RELEASE_REVISION,
+      deployedAt: RELEASE_DEPLOYED_AT,
+    },
   })
 })
 
@@ -694,6 +714,23 @@ if (process.env.SERVE_CLIENT) {
     '../dist',
   )
   const clientIndexHtml = await readFile(path.join(clientDir, 'index.html'), 'utf8')
+  app.use((request, response, next) => {
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+      next()
+      return
+    }
+    const redirectTarget = canonicalClientRedirect(
+      clientIndexHtml,
+      request.path,
+      request.originalUrl,
+    )
+    if (!redirectTarget) {
+      next()
+      return
+    }
+    setReleaseHeaders(response)
+    response.redirect(308, redirectTarget)
+  })
   app.use(express.static(clientDir, {
     index: false,
     setHeaders(response, filePath) {
@@ -714,11 +751,49 @@ if (process.env.SERVE_CLIENT) {
           ? 'no-store'
           : 'public, max-age=0, must-revalidate',
       )
+      setReleaseHeaders(response)
       response.type('html').send(rendered.html)
       return
     }
     response.status(404).json({ error: 'not_found' })
   })
+}
+
+function firstSafeReleaseValue(...values: Array<string | undefined>) {
+  for (const value of values) {
+    const normalized = value?.trim()
+    if (
+      normalized &&
+      normalized.length <= 160 &&
+      /^[A-Za-z0-9_.:+-]+$/.test(normalized)
+    ) {
+      return normalized
+    }
+  }
+  return 'unknown'
+}
+
+function setReleaseHeaders(response: {
+  setHeader(name: string, value: string): unknown
+}) {
+  response.setHeader('X-Release-Sha', RELEASE_REVISION)
+  response.setHeader('X-Release-Deployed-At', RELEASE_DEPLOYED_AT)
+}
+
+function canonicalClientRedirect(
+  indexHtml: string,
+  requestPath: string,
+  originalUrl: string,
+) {
+  const queryIndex = originalUrl.indexOf('?')
+  const search = queryIndex >= 0 ? originalUrl.slice(queryIndex) : ''
+  if (requestPath === '/index.html') return `/${search}`
+  if (requestPath === '/' || !requestPath.endsWith('/')) return undefined
+
+  const normalizedPath = requestPath.replace(/\/+$/, '')
+  if (!normalizedPath) return undefined
+  const rendered = renderClientDocument(indexHtml, normalizedPath)
+  return rendered.status === 200 ? `${normalizedPath}${search}` : undefined
 }
 
 const anthonyAdmin = await ensureAnthonyAdmin()

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from './AuthContext'
 import { cx } from '../ui/primitives'
+import { PUBLIC_ARCHITECTURE_LINKS } from '../seo/siteArchitecture'
 import { ANTHONY_EMAIL, ANTHONY_EMAIL_HREF } from './contact'
 import { LEGAL_OPERATOR_DISCLOSURE, LEGAL_OPERATOR_NAME } from './business'
 
@@ -38,6 +39,8 @@ export function SiteShell() {
             <img
               src="/chargequest-logo.png?v=4"
               alt="ChargeQuest"
+              width={1000}
+              height={158}
               className="h-[29px] w-auto max-w-[184px] flex-none object-contain transition-opacity group-hover:opacity-85 sm:h-[36px] sm:max-w-[228px] lg:h-[40px] lg:max-w-[253px]"
             />
           </NavLink>
@@ -68,7 +71,7 @@ export function SiteShell() {
                 {user.role === 'admin' ? (
                   <NavLink
                     to="/admin"
-                    className="hidden rounded-full border border-[#e82127]/50 bg-[#e82127]/12 px-4 py-2.5 text-[10.5px] font-semibold text-[#ff6b66] no-underline transition hover:bg-[#e82127] hover:text-white sm:block"
+                    className="hidden rounded-full border border-[#e82127]/50 bg-[#e82127]/12 px-4 py-2.5 text-[10.5px] font-semibold text-[#ff817d] no-underline transition hover:bg-[#e51c23] hover:text-white sm:block"
                   >
                     Admin
                   </NavLink>
@@ -82,7 +85,7 @@ export function SiteShell() {
                 <button
                   type="button"
                   onClick={() => void logout().then(() => navigate('/'))}
-                  className="hidden cursor-pointer border-0 bg-transparent px-1 py-2 font-mono text-[8.5px] uppercase tracking-[0.08em] text-white/35 hover:text-white sm:block"
+                  className="hidden cursor-pointer border-0 bg-transparent px-1 py-2 font-mono text-[8.5px] uppercase tracking-[0.08em] text-white/55 hover:text-white sm:block"
                 >
                   Sign out
                 </button>
@@ -97,7 +100,7 @@ export function SiteShell() {
                 </NavLink>
                 <NavLink
                   to="/signup"
-                  className="whitespace-nowrap rounded-full bg-[#e82127] px-3.5 py-2.5 text-[10px] font-semibold text-white no-underline shadow-[0_8px_28px_rgba(232,33,39,.3)] transition hover:bg-white hover:text-black sm:px-5 sm:py-3 sm:text-[11px]"
+                  className="whitespace-nowrap rounded-full bg-[#e51c23] px-3.5 py-2.5 text-[10px] font-semibold text-white no-underline shadow-[0_8px_28px_rgba(232,33,39,.3)] transition hover:bg-white hover:text-black sm:px-5 sm:py-3 sm:text-[11px]"
                 >
                   Start building
                 </NavLink>
@@ -130,8 +133,14 @@ export function SiteShell() {
         <div className="mx-auto max-w-[1320px]">
           <div className="grid gap-10 border-b border-white/10 pb-12 md:grid-cols-[1.4fr_repeat(3,1fr)] md:gap-8">
             <div className="max-w-[360px]">
-              <img src="/chargequest-logo.png?v=4" alt="ChargeQuest" className="h-8 w-auto object-contain" />
-              <p className="mt-5 text-[12px] leading-[1.7] text-white/42">
+              <img
+                src="/chargequest-logo.png?v=4"
+                alt="ChargeQuest"
+                width={1000}
+                height={158}
+                className="h-8 w-auto object-contain"
+              />
+              <p className="mt-5 text-[12px] leading-[1.7] text-white/55">
                 Competition-aware Tesla road trips built around places worth visiting.
                 {' '}{LEGAL_OPERATOR_DISCLOSURE} Independent from and not endorsed by Tesla.
               </p>
@@ -141,26 +150,27 @@ export function SiteShell() {
             </div>
 
             <FooterGroup title="Explore">
+              <FooterLink to={PUBLIC_ARCHITECTURE_LINKS.home.path}>{PUBLIC_ARCHITECTURE_LINKS.home.label}</FooterLink>
               <FooterLink to={user ? '/planner' : '/signup?returnTo=%2Fplanner'}>{user ? 'CORE planner' : 'Build a route'}</FooterLink>
-              <FooterLink to="/track-anthony">Track Anthony</FooterLink>
-              <FooterLink to="/community">Send a route idea</FooterLink>
+              <FooterLink to={PUBLIC_ARCHITECTURE_LINKS.track.path}>{PUBLIC_ARCHITECTURE_LINKS.track.label}</FooterLink>
+              <FooterLink to={PUBLIC_ARCHITECTURE_LINKS.community.path}>{PUBLIC_ARCHITECTURE_LINKS.community.label}</FooterLink>
             </FooterGroup>
 
             <FooterGroup title="Field guides">
-              <FooterLink to="/2026-tesla-supercharging-competition">2026 competition</FooterLink>
-              <FooterLink to="/tesla-iconic-charger-badges">Iconic Charger badges</FooterLink>
-              <FooterLink to="/tesla-road-trip-routes">Road-trip routes</FooterLink>
+              <FooterLink to={PUBLIC_ARCHITECTURE_LINKS.competition.path}>{PUBLIC_ARCHITECTURE_LINKS.competition.label}</FooterLink>
+              <FooterLink to={PUBLIC_ARCHITECTURE_LINKS.badges.path}>{PUBLIC_ARCHITECTURE_LINKS.badges.label}</FooterLink>
+              <FooterLink to={PUBLIC_ARCHITECTURE_LINKS.routes.path}>{PUBLIC_ARCHITECTURE_LINKS.routes.label}</FooterLink>
             </FooterGroup>
 
             <FooterGroup title="ChargeQuest">
-              <FooterLink to="/about-anthony">About Anthony</FooterLink>
-              <a href={ANTHONY_EMAIL_HREF} className="text-[11.5px] text-white/42 no-underline hover:text-white">Contact Anthony</a>
+              <FooterLink to={PUBLIC_ARCHITECTURE_LINKS.about.path}>{PUBLIC_ARCHITECTURE_LINKS.about.label}</FooterLink>
+              <a href={ANTHONY_EMAIL_HREF} className="text-[11.5px] text-white/55 no-underline hover:text-white">Contact Anthony</a>
               {user ? <FooterLink to="/account">Your account</FooterLink> : <FooterLink to="/login">Sign in</FooterLink>}
               {user?.role === 'admin' ? <FooterLink to="/admin">Admin</FooterLink> : null}
             </FooterGroup>
           </div>
 
-          <div className="flex flex-col gap-2 pt-6 font-mono text-[8px] uppercase tracking-[0.09em] text-white/25 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-2 pt-6 font-mono text-[8px] uppercase tracking-[0.09em] text-white/55 sm:flex-row sm:items-center sm:justify-between">
             <div>© {new Date().getFullYear()} {LEGAL_OPERATOR_NAME} · ChargeQuest · Built by Anthony Pappano</div>
             <div>Route estimates require current road, weather, and charging verification</div>
           </div>
@@ -173,12 +183,12 @@ export function SiteShell() {
 function FooterGroup({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div>
-      <div className="font-mono text-[8px] font-semibold uppercase tracking-[0.14em] text-white/28">{title}</div>
+      <div className="font-mono text-[8px] font-semibold uppercase tracking-[0.14em] text-white/55">{title}</div>
       <div className="mt-4 flex flex-col items-start gap-3">{children}</div>
     </div>
   )
 }
 
 function FooterLink({ to, children }: { to: string; children: ReactNode }) {
-  return <NavLink to={to} className="text-[11.5px] text-white/42 no-underline hover:text-white">{children}</NavLink>
+  return <NavLink to={to} className="text-[11.5px] text-white/55 no-underline hover:text-white">{children}</NavLink>
 }

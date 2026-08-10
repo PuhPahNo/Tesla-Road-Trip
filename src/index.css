@@ -447,7 +447,7 @@ body.modal-open {
   gap: 7px;
   border-radius: 8px;
   padding: 8px;
-  color: rgba(255, 255, 255, 0.35);
+  color: rgba(255, 255, 255, 0.55);
   font-size: 9px;
 }
 
@@ -475,8 +475,8 @@ body.modal-open {
 }
 
 .cq-preview-step-active span {
-  border-color: var(--accent);
-  background: var(--accent);
+  border-color: #e51c23;
+  background: #e51c23;
   color: #fff;
 }
 
