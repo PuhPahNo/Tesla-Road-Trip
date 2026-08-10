@@ -132,13 +132,29 @@ describe('server SEO rendering', () => {
     expect(rendered.html).toContain(`datetime="${lastStop.date}"`)
     expect(rendered.html).toContain(`datetime="${routeSnapshot.capturedAt.slice(0, 10)}"`)
     expect(rendered.html).toContain('not live trip status or an official Tesla competition score')
-    expect(rendered.html).not.toMatch(/\d[\d,]*\s+miles/)
+    const snapshotSection = rendered.html.match(
+      /<section>\s*<h2>The checked-in route snapshot<\/h2>([\s\S]*?)<\/section>/,
+    )?.[1] ?? ''
+    expect(snapshotSection).not.toMatch(/\d[\d,]*\s+miles/)
 
     const representativeList = rendered.html.match(/<ol data-route-summary-stops>([\s\S]*?)<\/ol>/)?.[1] ?? ''
     expect(representativeList.match(/<li>/g)).toHaveLength(8)
     expect(rendered.html).toContain('href="/2026-tesla-supercharging-competition"')
     expect(rendered.html).toContain('href="/tesla-road-trip-routes"')
     expect(rendered.html).toContain('href="/tesla-iconic-charger-badges"')
+    expect(rendered.html).toContain('data-published-field-note="73-day-route-not-finished"')
+    expect(rendered.html).toContain('The route is 73 days long. I’m still not calling it finished.')
+    expect(rendered.html).toContain('datetime="2026-08-10"')
+    expect(rendered.html).toContain('10,107.8 road-routed miles')
+    expect(rendered.html).toContain('href="/competition/longest-trip-strategy"')
+    expect(rendered.html).toContain('href="/signup?returnTo=%2Fplanner"')
+    expect(rendered.html).toContain('href="/community"')
+
+    const graph = readPageStructuredData(rendered.html)['@graph'] as Array<Record<string, unknown>>
+    expect(graph.find((item) => item['@type'] === 'Article')).toMatchObject({
+      headline: 'The route is 73 days long. I’m still not calling it finished.',
+      datePublished: '2026-08-10',
+    })
   })
 
   it('keeps every public page reachable through raw HTML fallback links', () => {

@@ -99,6 +99,25 @@ describe('public site architecture', () => {
     }
   })
 
+  it('publishes the dated Track field note as an Article inside the Track page schema', () => {
+    const track = CUSTOM_PUBLIC_PAGES.find((page) => page.path === '/track-anthony')!
+    const graph = buildCustomPublicStructuredData(track)['@graph'] as Array<Record<string, unknown>>
+    const webPage = graph.find((item) => item['@type'] === 'WebPage')!
+    const fieldNote = graph.find((item) => item['@type'] === 'Article')!
+
+    expect(webPage.hasPart).toEqual([
+      { '@id': `${SITE_ORIGIN}/track-anthony#journal-73-day-route-not-finished` },
+    ])
+    expect(fieldNote).toMatchObject({
+      '@id': `${SITE_ORIGIN}/track-anthony#journal-73-day-route-not-finished`,
+      headline: 'The route is 73 days long. I’m still not calling it finished.',
+      datePublished: '2026-08-10',
+      dateModified: '2026-08-10',
+      mainEntityOfPage: { '@id': `${SITE_ORIGIN}/track-anthony#webpage` },
+    })
+    expect(fieldNote.articleBody).toContain('10,107.8 road-routed miles')
+  })
+
   it('keeps custom-page metadata and contextual links in one public contract', () => {
     const community = CUSTOM_PUBLIC_PAGES.find((page) => page.path === '/community')!
     const track = CUSTOM_PUBLIC_PAGES.find((page) => page.path === '/track-anthony')!
@@ -111,6 +130,15 @@ describe('public site architecture', () => {
         expect(link.path, `${path} -> ${link.path}`).not.toBe(path)
         expect(publicPaths.has(link.path), `${path} -> ${link.path}`).toBe(true)
       }
+    }
+
+    for (const page of SEO_PAGES.filter((candidate) =>
+      ['guide', 'badge', 'route'].includes(candidate.kind),
+    )) {
+      expect(getContextualPublicLinks(page.path)).toContainEqual({
+        path: '/track-anthony',
+        label: 'Anthony’s 73-day competition route and field notes',
+      })
     }
   })
 })

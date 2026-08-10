@@ -36,7 +36,7 @@ describe('editorial page architecture', () => {
     )
 
     const section = screen.getByRole('heading', { name: 'Connect the planning' }).closest('section')!
-    expect(within(section).getByRole('link', { name: 'Anthony’s 2026 competition route' }).getAttribute('href')).toBe('/track-anthony')
+    expect(within(section).getByRole('link', { name: 'Anthony’s 73-day competition route and field notes' }).getAttribute('href')).toBe('/track-anthony')
     expect(within(section).getByRole('link', { name: 'Tesla Iconic Charger badge guides' }).getAttribute('href')).toBe('/tesla-iconic-charger-badges')
     expect(within(section).getByRole('link', { name: 'Send Anthony a route idea' }).getAttribute('href')).toBe('/community')
     expect(within(section).queryByRole('link', { name: 'Tesla Supercharger road-trip routes' })).toBeNull()

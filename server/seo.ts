@@ -2,6 +2,11 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
+  PUBLISHED_ANTHONY_FIELD_NOTES,
+  type AnthonyFieldNote,
+  type AnthonyFieldNoteInline,
+} from '../src/content/anthonyFieldNotes'
+import {
   SEO_PAGES,
   SEO_AUTHOR,
   SITE_ORIGIN,
@@ -306,8 +311,54 @@ function renderTrackAnthonyFallback(
       <h2>Representative dated stops</h2>
       <ol data-route-summary-stops>${representativeStops}</ol>
     </section>
+    ${renderPublishedFieldNotes(PUBLISHED_ANTHONY_FIELD_NOTES)}
     <section><h2>Plan and follow the quest</h2>${renderLinkList(links)}</section>
   </article></main>`
+}
+
+function renderPublishedFieldNotes(notes: readonly AnthonyFieldNote[]) {
+  if (!notes.length) return ''
+  const entries = notes.map((note) => {
+    const lede = note.lede.map((paragraph) => `<p>${renderFieldNoteInline(paragraph)}</p>`).join('')
+    const sections = note.sections.map((section) => {
+      const paragraphs = section.paragraphs
+        .map((paragraph) => `<p>${renderFieldNoteInline(paragraph)}</p>`)
+        .join('')
+      const bullets = section.bullets?.length
+        ? `<ul>${section.bullets.map((bullet) => `<li>${escapeHtml(bullet)}</li>`).join('')}</ul>`
+        : ''
+      const afterBullets = section.afterBullets
+        ?.map((paragraph) => `<p>${renderFieldNoteInline(paragraph)}</p>`)
+        .join('') ?? ''
+      return `<section><h4>${escapeHtml(section.heading)}</h4>${paragraphs}${bullets}${afterBullets}</section>`
+    }).join('')
+    const closingLinks = renderLinkList(note.closingLinks.map((link) => ({
+      path: link.href,
+      label: link.label,
+    })))
+    const sources = note.sources.map((source) => (
+      `<li><a href="${escapeAttribute(source.href)}" rel="noreferrer">${escapeHtml(source.label)}</a></li>`
+    )).join('')
+
+    return `<article id="journal-${escapeAttribute(note.id)}" data-published-field-note="${escapeAttribute(note.id)}">
+      <p>${escapeHtml(note.phaseLabel)} · <time datetime="${escapeAttribute(note.publishedAt)}">${escapeHtml(formatSeoDate(note.publishedAt))}</time></p>
+      <h3>${escapeHtml(note.title)}</h3>
+      <p><strong>${escapeHtml(note.excerpt)}</strong></p>
+      ${lede}
+      ${sections}
+      <nav aria-label="Continue reading after ${escapeAttribute(note.title)}"><h4>Continue through ChargeQuest</h4>${closingLinks}</nav>
+      <section><h4>Source checked for this note</h4><ul>${sources}</ul></section>
+    </article>`
+  }).join('')
+
+  return `<section id="journey-log"><h2>Trip journal</h2>${entries}</section>`
+}
+
+function renderFieldNoteInline(content: AnthonyFieldNoteInline[]) {
+  return content.map((part) => typeof part === 'string'
+    ? escapeHtml(part)
+    : `<a href="${escapeAttribute(part.href)}"${part.external ? ' rel="noreferrer"' : ''}>${escapeHtml(part.label)}</a>`)
+    .join('')
 }
 
 function renderBasicFallback(

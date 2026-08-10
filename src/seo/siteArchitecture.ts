@@ -8,6 +8,10 @@ import {
   type SeoPage,
   type SeoPageKind,
 } from './seoPages'
+import {
+  PUBLISHED_ANTHONY_FIELD_NOTES,
+  fieldNotePlainText,
+} from '../content/anthonyFieldNotes'
 
 export interface PublicArchitectureLink {
   path: string
@@ -75,7 +79,7 @@ export const PUBLIC_ARCHITECTURE_LINKS = {
   },
   track: {
     path: '/track-anthony',
-    label: 'Anthony’s 2026 competition route',
+    label: 'Anthony’s 73-day competition route and field notes',
   },
   routes: {
     path: '/tesla-road-trip-routes',
@@ -129,6 +133,9 @@ export function getCustomPublicPage(pathname: string) {
 export function buildCustomPublicStructuredData(page: CustomPublicPageMetadata) {
   const pageUrl = `${SITE_ORIGIN}${page.path}`
   const imageUrl = `${SITE_ORIGIN}${page.socialImage}`
+  const fieldNotes = page.path === '/track-anthony'
+    ? PUBLISHED_ANTHONY_FIELD_NOTES
+    : []
   const breadcrumbs = page.path === '/'
     ? [{ path: '/', name: 'ChargeQuest' }]
     : [
@@ -148,6 +155,13 @@ export function buildCustomPublicStructuredData(page: CustomPublicPageMetadata) 
         dateModified: page.updatedAt,
         isPartOf: { '@id': `${SITE_ORIGIN}/#website` },
         primaryImageOfPage: { '@id': `${pageUrl}#primaryimage` },
+        ...(fieldNotes.length
+          ? {
+              hasPart: fieldNotes.map((note) => ({
+                '@id': `${pageUrl}#journal-${note.id}`,
+              })),
+            }
+          : {}),
       },
       {
         '@type': 'BreadcrumbList',
@@ -168,6 +182,27 @@ export function buildCustomPublicStructuredData(page: CustomPublicPageMetadata) 
         height: 630,
         caption: page.socialImageAlt,
       },
+      ...fieldNotes.map((note) => ({
+        '@type': 'Article',
+        '@id': `${pageUrl}#journal-${note.id}`,
+        url: `${pageUrl}#journal-${note.id}`,
+        headline: note.title,
+        description: note.excerpt,
+        datePublished: note.publishedAt,
+        dateModified: note.updatedAt,
+        articleSection: 'Track Anthony trip journal',
+        articleBody: fieldNotePlainText(note),
+        mainEntityOfPage: { '@id': `${pageUrl}#webpage` },
+        isPartOf: { '@id': `${pageUrl}#webpage` },
+        author: {
+          '@type': 'Person',
+          '@id': `${SITE_ORIGIN}/about-anthony#person`,
+          name: 'Anthony Pappano',
+          url: `${SITE_ORIGIN}/about-anthony`,
+        },
+        publisher: { '@id': `${SITE_ORIGIN}/#organization` },
+        image: { '@id': `${pageUrl}#primaryimage` },
+      })),
     ],
   }
 }

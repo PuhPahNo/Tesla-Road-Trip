@@ -25,6 +25,11 @@ import {
   type PublishedAnthonyRoute,
 } from '../api/siteClient'
 import { MapView } from '../components/MapView'
+import {
+  PUBLISHED_ANTHONY_FIELD_NOTES,
+  type AnthonyFieldNote,
+  type AnthonyFieldNoteInline,
+} from '../content/anthonyFieldNotes'
 import { CHATTANOOGA_37405_START } from '../domain/config'
 import type { DayPlan, RoutePlan } from '../domain/types'
 import { STATE_CODE_TO_NAME } from '../domain/usStates'
@@ -107,6 +112,18 @@ export function TrackAnthonyPage() {
 
   const trip = community?.trip
   const updates = community?.updates ?? []
+  const journalEntries = [
+    ...PUBLISHED_ANTHONY_FIELD_NOTES.map((note) => ({
+      kind: 'field-note' as const,
+      date: note.publishedAt,
+      note,
+    })),
+    ...updates.map((update) => ({
+      kind: 'update' as const,
+      date: update.created_at,
+      update,
+    })),
+  ].sort((left, right) => right.date.localeCompare(left.date))
   const routePlan = publishedRoute?.route
   const publishedDays = routePlan?.totalDays ?? trip?.totalDays
   const departureDate =
@@ -322,10 +339,20 @@ export function TrackAnthonyPage() {
           </p>
 
           <div className="relative mt-12 border-t border-black/15">
-            {updates.map((update, index) => (
-              <TimelineEntry key={update.id} update={update} index={index} />
+            {journalEntries.map((entry, index) => entry.kind === 'field-note' ? (
+              <PublishedFieldNoteEntry
+                key={`field-note-${entry.note.id}`}
+                note={entry.note}
+                index={index}
+              />
+            ) : (
+              <TimelineEntry
+                key={entry.update.id}
+                update={entry.update}
+                index={index}
+              />
             ))}
-            {updates.length === 0 ? (
+            {journalEntries.length === 0 ? (
               <div className="border-b border-black/15 py-12">
                 <div className="font-mono text-[8px] uppercase tracking-[0.12em] text-[#c9161d]">
                   The first entry is coming
@@ -1051,6 +1078,143 @@ function TimelineEntry({ update, index }: { update: AnthonyUpdate; index: number
       </div>
     </article>
   )
+}
+
+function PublishedFieldNoteEntry({
+  note,
+  index,
+}: {
+  note: AnthonyFieldNote
+  index: number
+}) {
+  return (
+    <article
+      id={`journal-${note.id}`}
+      data-published-field-note={note.id}
+      className="grid scroll-mt-24 gap-4 border-b border-black/15 py-8 sm:grid-cols-[54px_minmax(0,1fr)] sm:py-10"
+    >
+      <div className="font-mono text-[9px] text-black/28">
+        {String(index + 1).padStart(2, '0')}
+      </div>
+      <div>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 font-mono text-[8px] uppercase tracking-[0.1em]">
+          <span className="text-[#e82127]">{note.phaseLabel}</span>
+          <time dateTime={note.publishedAt} className="text-black/45">
+            {formatTimestamp(`${note.publishedAt}T12:00:00`)}
+          </time>
+        </div>
+        <h3 className="mt-3 text-[clamp(30px,5vw,48px)] font-semibold leading-[0.98] tracking-[-0.05em]">
+          {note.title}
+        </h3>
+        <p className="mt-5 max-w-[760px] text-[16px] font-medium leading-[1.75] text-black/68">
+          {note.excerpt}
+        </p>
+        <div className="mt-8 max-w-[780px] space-y-5">
+          {note.lede.map((paragraph, paragraphIndex) => (
+            <FieldNoteParagraph key={`lede-${paragraphIndex}`} content={paragraph} />
+          ))}
+        </div>
+        {note.sections.map((section) => (
+          <section key={section.heading} className="mt-12 max-w-[820px]">
+            <h4 className="text-[clamp(24px,4vw,34px)] font-semibold leading-[1.04] tracking-[-0.04em]">
+              {section.heading}
+            </h4>
+            <div className="mt-5 space-y-5">
+              {section.paragraphs.map((paragraph, paragraphIndex) => (
+                <FieldNoteParagraph
+                  key={`${section.heading}-paragraph-${paragraphIndex}`}
+                  content={paragraph}
+                />
+              ))}
+            </div>
+            {section.bullets?.length ? (
+              <ul className="mt-6 space-y-3 border-l-2 border-[#e82127] pl-5">
+                {section.bullets.map((bullet) => (
+                  <li key={bullet} className="text-[14px] leading-[1.65] text-black/62">
+                    {bullet}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            {section.afterBullets?.length ? (
+              <div className="mt-7 space-y-5">
+                {section.afterBullets.map((paragraph, paragraphIndex) => (
+                  <FieldNoteParagraph
+                    key={`${section.heading}-after-${paragraphIndex}`}
+                    content={paragraph}
+                  />
+                ))}
+              </div>
+            ) : null}
+          </section>
+        ))}
+        <nav
+          aria-label={`Continue reading after ${note.title}`}
+          className="mt-12 max-w-[820px] border-y border-black/14 py-7"
+        >
+          <div className="font-mono text-[8px] font-semibold uppercase tracking-[0.13em] text-black/55">
+            Continue through ChargeQuest
+          </div>
+          <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+            {note.closingLinks.map((link) => (
+              <li key={`${link.href}-${link.label}`}>
+                <FieldNoteLink link={link} />
+              </li>
+            ))}
+          </ul>
+        </nav>
+        <div className="mt-7 max-w-[820px]">
+          <div className="font-mono text-[8px] font-semibold uppercase tracking-[0.13em] text-black/55">
+            Source checked for this note
+          </div>
+          <ul className="mt-3 space-y-2">
+            {note.sources.map((source) => (
+              <li key={source.href}>
+                <FieldNoteLink link={source} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </article>
+  )
+}
+
+function FieldNoteParagraph({ content }: { content: AnthonyFieldNoteInline[] }) {
+  return (
+    <p className="text-[14.5px] leading-[1.78] text-black/62">
+      {content.map((part, index) => typeof part === 'string' ? (
+        <span key={`${part.slice(0, 24)}-${index}`}>{part}</span>
+      ) : (
+        <FieldNoteLink key={`${part.href}-${index}`} link={part} inline />
+      ))}
+    </p>
+  )
+}
+
+function FieldNoteLink({
+  link,
+  inline = false,
+}: {
+  link: Exclude<AnthonyFieldNoteInline, string>
+  inline?: boolean
+}) {
+  const className = inline
+    ? 'font-semibold text-black underline decoration-[#e82127]/35 underline-offset-4 hover:decoration-[#e82127]'
+    : 'inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-black underline decoration-black/20 underline-offset-4 hover:decoration-[#e82127]'
+
+  if (link.external) {
+    return (
+      <a href={link.href} target="_blank" rel="noreferrer" className={className}>
+        {link.label}
+        {!inline ? <ArrowUpRight size={12} aria-hidden="true" /> : null}
+      </a>
+    )
+  }
+  if (link.href.startsWith('#')) {
+    return <a href={link.href} className={className}>{link.label}</a>
+  }
+  return <Link to={link.href} className={className}>{link.label}</Link>
 }
 
 function RouteStat({ label, value }: { label: string; value: string }) {

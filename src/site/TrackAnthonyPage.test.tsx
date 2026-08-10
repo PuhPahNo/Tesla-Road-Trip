@@ -75,6 +75,23 @@ describe('Track Anthony', () => {
     expect(screen.getByText('Route 66 made the final three')).toBeTruthy()
     expect(screen.getByRole('link', { name: /Open the route comparison/ }).getAttribute('href')).toBe('https://example.com/route-map')
     expect(screen.getByText('September 1, 2026')).toBeTruthy()
+    expect(screen.getByRole('heading', {
+      name: 'The route is 73 days long. I’m still not calling it finished.',
+    })).toBeTruthy()
+    for (const [name, href] of [
+      ['Understand the 2026 competition rules', '/2026-tesla-supercharging-competition'],
+      ['Read the Longest Trip strategy', '/competition/longest-trip-strategy'],
+      ['Compare other Tesla route ideas', '/tesla-road-trip-routes'],
+      ['Build your own route with CORE', '/signup?returnTo=%2Fplanner'],
+      ['Send me a route problem', '/community'],
+    ]) {
+      expect(screen.getByRole('link', { name }).getAttribute('href')).toBe(href)
+    }
+    expect(screen.getByRole('link', {
+      name: 'Tesla — 2026 Free Supercharging Competition rules',
+    }).getAttribute('href')).toBe(
+      'https://www.tesla.com/support/tesla-app/charging-badges/contest',
+    )
     expect(screen.queryByRole('button', { name: 'Send invite to Anthony' })).toBeNull()
   })
 

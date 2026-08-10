@@ -35,7 +35,7 @@ describe('public site navigation', () => {
     expect(plannerLinks[0].getAttribute('href')).toBe('/signup?returnTo=%2Fplanner')
     expect(screen.getByRole('link', { name: 'Contact Anthony' }).getAttribute('href')).toBe('mailto:anthony@antelligentprojects.dev')
     expect(screen.getByRole('link', { name: 'ChargeQuest home' }).getAttribute('href')).toBe('/')
-    expect(screen.getByRole('link', { name: 'Anthony’s 2026 competition route' }).getAttribute('href')).toBe('/track-anthony')
+    expect(screen.getByRole('link', { name: 'Anthony’s 73-day competition route and field notes' }).getAttribute('href')).toBe('/track-anthony')
     expect(screen.getByRole('link', { name: '2026 Tesla Supercharging Competition guide' }).getAttribute('href')).toBe('/2026-tesla-supercharging-competition')
     expect(screen.getByRole('link', { name: 'Tesla Supercharger road-trip routes' }).getAttribute('href')).toBe('/tesla-road-trip-routes')
     expect(screen.getByRole('link', { name: 'Tesla Iconic Charger badge guides' }).getAttribute('href')).toBe('/tesla-iconic-charger-badges')
