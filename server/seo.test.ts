@@ -66,6 +66,10 @@ describe('server SEO rendering', () => {
     expect(planner.status).toBe(200)
     expect(planner.html).toContain('content="noindex,nofollow"')
 
+    const dashboard = renderClientDocument(indexHtml, '/dashboard')
+    expect(dashboard.status).toBe(200)
+    expect(dashboard.html).toContain('content="noindex,nofollow"')
+
     const adminHotels = renderClientDocument(indexHtml, '/admin/hotels')
     expect(adminHotels.status).toBe(200)
     expect(adminHotels.html).toContain('content="noindex,nofollow"')

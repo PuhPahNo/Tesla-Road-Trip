@@ -14,6 +14,16 @@ export interface AuthUser {
   createdAt: string
 }
 
+export interface AccountSnapshot {
+  user: AuthUser
+  routes: SavedCustomRoute[]
+  routeCount: number
+  achievements: Array<Record<string, unknown>>
+  suggestions: Array<Record<string, unknown>>
+  meetups: Array<Record<string, unknown>>
+  stateVotes: Array<Record<string, unknown>>
+}
+
 export interface AnthonyTrip {
   active: boolean
   title: string
@@ -375,14 +385,7 @@ export async function createAchievement(input: {
 }
 
 export async function fetchAccount() {
-  return request<{
-    user: AuthUser
-    routeCount: number
-    achievements: Array<Record<string, unknown>>
-    suggestions: Array<Record<string, unknown>>
-    meetups: Array<Record<string, unknown>>
-    stateVotes: Array<Record<string, unknown>>
-  }>('/api/account')
+  return request<AccountSnapshot>('/api/account')
 }
 
 export async function fetchAdminCommunity() {

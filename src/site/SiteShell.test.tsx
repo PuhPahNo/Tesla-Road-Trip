@@ -44,7 +44,7 @@ describe('public site navigation', () => {
     expect(screen.getByText('Public homepage')).toBeTruthy()
   })
 
-  it('removes Home and sends the brand to the planner for signed-in members', async () => {
+  it('uses the dashboard as the signed-in home while keeping settings under the username', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
@@ -74,8 +74,10 @@ describe('public site navigation', () => {
 
     expect(await screen.findByRole('link', { name: 'roadtripper' })).toBeTruthy()
     expect(screen.queryByRole('link', { name: 'Home' })).toBeNull()
-    expect(screen.getByRole('link', { name: 'ChargeQuest' }).getAttribute('href')).toBe('/planner')
+    expect(screen.getByRole('link', { name: 'ChargeQuest' }).getAttribute('href')).toBe('/dashboard')
+    expect(screen.getByRole('link', { name: 'roadtripper' }).getAttribute('href')).toBe('/account')
+    expect(screen.getAllByRole('link', { name: 'Dashboard' })).toHaveLength(2)
     expect(screen.getAllByRole('link', { name: 'CORE' })).toHaveLength(2)
-    expect(screen.getByRole('navigation', { name: 'Mobile navigation' }).className).toContain('grid-cols-3')
+    expect(screen.getByRole('navigation', { name: 'Mobile navigation' }).className).toContain('grid-cols-4')
   })
 })

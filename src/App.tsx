@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   fetchHealth,
   fetchStations,
@@ -95,6 +95,8 @@ function App() {
   const isMobile = useIsMobile()
   const contestStatus = useContestStatus()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const requestedRouteId = searchParams.get('route') ?? undefined
   const { user, loading: authLoading } = useAuth()
 
   // ---- planner data state (preserved from the original app) ----
@@ -195,7 +197,12 @@ function App() {
       const sanitized = sanitizePlannerConfig(activeConfig)
       if (user && persistPreferences) await savePreferences(sanitized)
       const response = await optimizeRoutes(sanitized)
-      applyOptimizationResult(response)
+      applyOptimizationResult(
+        response,
+        requestedRouteId && response.routes.some((route) => route.id === requestedRouteId)
+          ? requestedRouteId
+          : undefined,
+      )
       showToast(
         sanitized.plannerMode === 'longest_trip'
           ? `Longest Trip planned · ${response.routes[0]?.totalDays.toLocaleString() ?? 0} streak days`
@@ -436,6 +443,7 @@ function App() {
   // ---- handlers ----
   const handleSelectRoute = (id: string) => {
     setSelectedRouteId(id)
+    setSearchParams({ route: id }, { replace: true })
     setSelectedStateCode(undefined)
     setHoveredDayIndex(undefined)
     setCurDay(0)

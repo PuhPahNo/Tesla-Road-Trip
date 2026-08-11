@@ -6,6 +6,7 @@ const privatePaths = [
   '/login',
   '/signup',
   '/change-password',
+  '/dashboard',
   '/account',
   '/admin',
   '/admin/hotels',

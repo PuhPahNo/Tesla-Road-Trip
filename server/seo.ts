@@ -80,6 +80,7 @@ const privatePaths = new Set([
   '/login',
   '/signup',
   '/change-password',
+  '/dashboard',
   '/account',
   '/admin',
   '/admin/hotels',

@@ -129,5 +129,5 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
 }
 
 function safeReturnTo(value: string | null) {
-  return value?.startsWith('/') && !value.startsWith('//') ? value : '/account'
+  return value?.startsWith('/') && !value.startsWith('//') ? value : '/dashboard'
 }

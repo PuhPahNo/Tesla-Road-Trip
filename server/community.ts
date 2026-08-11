@@ -119,12 +119,11 @@ export function registerCommunityRoutes(
   app.get('/api/account', (request, response) => {
     const user = requireUser(request, response)
     if (!user) return
+    const routes = readSavedCustomRoutes(user.id)
     response.json({
       user,
-      routeCount: Number(
-        (db.prepare('SELECT COUNT(*) AS count FROM custom_routes WHERE user_id = ?')
-          .get(user.id) as unknown as { count: number }).count,
-      ),
+      routes,
+      routeCount: routes.length,
       achievements: readAchievements(user.id),
       suggestions: db.prepare(`
         SELECT id, category, title, body, state_code, status, created_at

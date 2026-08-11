@@ -19,7 +19,7 @@ describe('ChargeQuest home route', () => {
     expect(status.className).toContain('min-h-[calc(100svh-117px)]')
   })
 
-  it('redirects signed-in members from the landing page to the planner', async () => {
+  it('redirects signed-in members from the landing page to their dashboard', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
@@ -40,13 +40,13 @@ describe('ChargeQuest home route', () => {
         <AuthProvider>
           <Routes>
             <Route index element={<HomeRoute />} />
-            <Route path="planner" element={<div>Private planner</div>} />
+            <Route path="dashboard" element={<div>Signed-in dashboard</div>} />
           </Routes>
         </AuthProvider>
       </MemoryRouter>,
     )
 
-    expect(await screen.findByText('Private planner')).toBeTruthy()
+    expect(await screen.findByText('Signed-in dashboard')).toBeTruthy()
     expect(screen.queryByRole('heading', { name: 'I’m building a route. Want to beat it?' })).toBeNull()
   })
 })

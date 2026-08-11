@@ -6,8 +6,15 @@ import { PUBLIC_ARCHITECTURE_LINKS } from '../seo/siteArchitecture'
 import { ANTHONY_EMAIL, ANTHONY_EMAIL_HREF } from './contact'
 import { LEGAL_OPERATOR_DISCLOSURE, LEGAL_OPERATOR_NAME } from './business'
 
-const NAV_ITEMS = [
+const PUBLIC_NAV_ITEMS = [
   { to: '/', label: 'Home' },
+  { to: '/signup?returnTo=%2Fplanner', label: 'Build a route' },
+  { to: '/community', label: 'Send an idea' },
+  { to: '/track-anthony', label: 'Track Anthony' },
+]
+
+const MEMBER_NAV_ITEMS = [
+  { to: '/dashboard', label: 'Dashboard' },
   { to: '/planner', label: 'CORE' },
   { to: '/community', label: 'Send an idea' },
   { to: '/track-anthony', label: 'Track Anthony' },
@@ -16,13 +23,7 @@ const NAV_ITEMS = [
 export function SiteShell() {
   const { user, loading, logout } = useAuth()
   const navigate = useNavigate()
-  const navItems = NAV_ITEMS
-    .filter((item) => !user || item.to !== '/')
-    .map((item) =>
-      item.to === '/planner' && !user
-        ? { to: '/signup?returnTo=%2Fplanner', label: 'Build a route' }
-        : item,
-    )
+  const navItems = [...(user ? MEMBER_NAV_ITEMS : PUBLIC_NAV_ITEMS)]
   if (user?.role === 'admin') {
     navItems.push({ to: '/admin/hotels', label: 'Hotels' })
   }
@@ -35,7 +36,7 @@ export function SiteShell() {
     <div className="site-page min-h-screen bg-app text-ink">
       <header className="site-nav sticky top-0 z-50 border-b border-white/10 bg-black text-white">
         <div className="mx-auto flex h-[68px] max-w-[1440px] items-center gap-2 px-3 sm:h-[78px] sm:gap-6 sm:px-5 lg:px-12">
-          <NavLink to={user ? '/planner' : '/'} className="group flex min-w-0 items-center gap-2 no-underline sm:gap-3">
+          <NavLink to={user ? '/dashboard' : '/'} className="group flex min-w-0 items-center gap-2 no-underline sm:gap-3">
             <img
               src="/chargequest-logo.png?v=4"
               alt="ChargeQuest"
@@ -108,7 +109,7 @@ export function SiteShell() {
             )}
           </div>
         </div>
-        <nav className={cx('grid gap-1 border-t border-white/10 bg-black/35 px-2 py-2 md:hidden', !user || user.role === 'admin' ? 'grid-cols-4' : 'grid-cols-3')} aria-label="Mobile navigation">
+        <nav className={cx('grid gap-1 border-t border-white/10 bg-black/35 px-2 py-2 md:hidden', user?.role === 'admin' ? 'grid-cols-5' : 'grid-cols-4')} aria-label="Mobile navigation">
           {navItems.map((item) => (
             <NavLink
               key={item.to}
@@ -151,6 +152,7 @@ export function SiteShell() {
 
             <FooterGroup title="Explore">
               <FooterLink to={PUBLIC_ARCHITECTURE_LINKS.home.path}>{PUBLIC_ARCHITECTURE_LINKS.home.label}</FooterLink>
+              {user ? <FooterLink to="/dashboard">Your dashboard</FooterLink> : null}
               <FooterLink to={user ? '/planner' : '/signup?returnTo=%2Fplanner'}>{user ? 'CORE planner' : 'Build a route'}</FooterLink>
               <FooterLink to={PUBLIC_ARCHITECTURE_LINKS.track.path}>{PUBLIC_ARCHITECTURE_LINKS.track.label}</FooterLink>
               <FooterLink to={PUBLIC_ARCHITECTURE_LINKS.community.path}>{PUBLIC_ARCHITECTURE_LINKS.community.label}</FooterLink>

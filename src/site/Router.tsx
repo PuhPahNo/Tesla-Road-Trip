@@ -12,6 +12,9 @@ import { SiteShell } from './SiteShell'
 import { getSeoPageByPath } from '../seo/seoPages'
 
 const PlannerApp = lazy(() => import('../App'))
+const DashboardPage = lazy(() =>
+  import('./DashboardPage').then((module) => ({ default: module.DashboardPage })),
+)
 const AdminPage = lazy(() =>
   import('./AdminPage').then((module) => ({ default: module.AdminPage })),
 )
@@ -53,9 +56,21 @@ export function ChargeQuestRouter() {
             <Route path="signup" element={<NoIndexPage title="Create an account"><AuthPage mode="signup" /></NoIndexPage>} />
             <Route path="change-password" element={<NoIndexPage title="Change password"><PasswordChangePage /></NoIndexPage>} />
             <Route
+              path="dashboard"
+              element={
+                <NoIndexPage title="Dashboard">
+                  <ProtectedRoute>
+                    <Suspense fallback={<RouteLoadingFallback label="Loading your dashboard…" />}>
+                      <DashboardPage />
+                    </Suspense>
+                  </ProtectedRoute>
+                </NoIndexPage>
+              }
+            />
+            <Route
               path="account"
               element={
-                <NoIndexPage title="Account">
+                <NoIndexPage title="Account settings">
                   <ProtectedRoute>
                     <AccountPage />
                   </ProtectedRoute>
@@ -115,7 +130,7 @@ function SeoRoutePage() {
 export function HomeRoute() {
   const { user, loading } = useAuth()
   if (loading) return <div className="min-h-[calc(100svh-117px)] p-10 text-faint sm:min-h-[calc(100vh-78px)]">Checking your account…</div>
-  if (user) return <Navigate to="/planner" replace />
+  if (user) return <Navigate to="/dashboard" replace />
   return <LandingPage />
 }
 
