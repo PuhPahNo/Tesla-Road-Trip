@@ -20,17 +20,28 @@ export function SeoPage({ page }: { page: SeoPageContent }) {
   const contextualLinks = getContextualPublicLinks(page.path).filter(
     (link) => !page.relatedPaths.includes(link.path),
   )
+  const presentation = getSeoPagePresentation(page)
 
   usePageMetadata({
-    ...getSeoPagePresentation(page),
+    ...presentation,
     structuredData: buildSeoPageStructuredData(page),
   })
 
   return (
     <article className="bg-[#f4f0e8] text-black">
-      <header className="relative overflow-hidden bg-[#090a0c] px-4 py-20 text-white sm:px-6 sm:py-28 lg:px-12 lg:py-36">
-        <div className="pointer-events-none absolute -right-32 -top-40 h-[520px] w-[520px] rounded-full bg-[#e82127]/20 blur-[130px]" />
-        <div className="relative mx-auto max-w-[1180px]">
+      <header className="relative isolate overflow-hidden bg-[#090a0c] px-4 py-20 text-white sm:px-6 sm:py-28 lg:min-h-[760px] lg:px-12 lg:py-36">
+        <img
+          src={presentation.socialImage}
+          alt={presentation.socialImageAlt}
+          className="absolute inset-0 z-0 h-full w-full object-cover"
+          width={1200}
+          height={630}
+          fetchPriority="high"
+        />
+        <div className="absolute inset-0 z-[1] bg-[linear-gradient(90deg,rgba(3,3,4,.98)_0%,rgba(3,3,4,.86)_52%,rgba(3,3,4,.24)_100%)]" />
+        <div className="absolute inset-0 z-[1] bg-[linear-gradient(0deg,#090a0c_0%,transparent_58%,rgba(0,0,0,.2)_100%)]" />
+        <div className="pointer-events-none absolute -right-32 -top-40 z-[2] h-[520px] w-[520px] rounded-full bg-[#e82127]/20 blur-[130px]" />
+        <div className="relative z-10 mx-auto max-w-[1180px]">
           <nav className="mb-14 flex flex-wrap items-center gap-2 font-mono text-[9px] uppercase tracking-[0.13em] text-white/55" aria-label="Breadcrumb">
             {breadcrumbs.map((breadcrumb, index) => (
               <span key={breadcrumb.path} className="contents">

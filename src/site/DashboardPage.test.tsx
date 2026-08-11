@@ -76,6 +76,9 @@ describe('signed-in dashboard', () => {
     expect(screen.getAllByRole('link', { name: /^Read (?!the field note)/ })).toHaveLength(3)
     expect(screen.getByRole('link', { name: 'Account settings' }).getAttribute('href')).toBe('/account')
     expect(screen.getByText('route suggestions for Anthony')).toBeTruthy()
+    expect(screen.getAllByRole('img', { name: 'Tesla Superchargers illuminated at night' })).toHaveLength(2)
+    expect(screen.getByRole('img', { name: 'Sunlight over the Grand Canyon on a ChargeQuest road trip' })).toBeTruthy()
+    expect(screen.getByRole('img', { name: 'The Golden Gate Bridge on a Tesla Iconic Charger road trip' })).toBeTruthy()
     expect(screen.queryByRole('heading', { name: 'Change password' })).toBeNull()
   })
 

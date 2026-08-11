@@ -25,6 +25,9 @@ describe('editorial page architecture', () => {
     ).toBe('/tesla-iconic-charger-badges')
     expect(within(breadcrumb).getByText('Grand Canyon Tesla Iconic Charger Badge Guide').getAttribute('aria-current')).toBe('page')
     expect(within(breadcrumb).queryByText('Badges')).toBeNull()
+    expect(screen.getByRole('img', {
+      name: 'The Golden Gate Bridge on a Tesla Iconic Charger road trip',
+    })).toBeTruthy()
   })
 
   it('adds useful public planning bridges without duplicating curated related links', () => {
