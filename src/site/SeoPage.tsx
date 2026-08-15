@@ -172,6 +172,25 @@ export function SeoPage({ page }: { page: SeoPageContent }) {
               </section>
             ) : null}
 
+            {page.furtherReading?.length ? (
+              <section className="mt-12 border-t border-black/14 pt-10">
+                <h2 className="font-mono text-[9px] font-semibold uppercase tracking-[0.14em] text-black/65">Further reading</h2>
+                <p className="mt-3 max-w-[620px] text-[14px] leading-[1.7] text-black/60">
+                  Good reporting and different perspectives on the 2026 competition.
+                </p>
+                <ul className="mt-5 space-y-3">
+                  {page.furtherReading.map((article) => (
+                    <li key={article.url}>
+                      <a href={article.url} target="_blank" rel="noreferrer" className="text-[13px] font-semibold text-black underline decoration-black/20 underline-offset-4 hover:decoration-[#e82127]">
+                        <span>{article.label}</span>
+                        <ExternalLink aria-hidden="true" size={13} className="ml-2 inline-block align-[-0.12em]" />
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+
             {contextualLinks.length ? (
               <section className="mt-12 border-t border-black/14 pt-10">
                 <h2 className="font-mono text-[9px] font-semibold uppercase tracking-[0.14em] text-black/65">Connect the planning</h2>

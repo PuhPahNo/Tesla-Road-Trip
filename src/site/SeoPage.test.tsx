@@ -44,4 +44,19 @@ describe('editorial page architecture', () => {
     expect(within(section).getByRole('link', { name: 'Send Anthony a route idea' }).getAttribute('href')).toBe('/community')
     expect(within(section).queryByRole('link', { name: 'Tesla Supercharger road-trip routes' })).toBeNull()
   })
+
+  it('presents independent coverage as further reading, not official verification', () => {
+    const page = SEO_PAGES.find((candidate) => candidate.path === '/2026-tesla-supercharging-competition')!
+    render(
+      <MemoryRouter initialEntries={[page.path]}>
+        <SeoPage page={page} />
+      </MemoryRouter>,
+    )
+
+    const section = screen.getByRole('heading', { name: 'Further reading' }).closest('section')!
+    expect(within(section).getByText('Good reporting and different perspectives on the 2026 competition.')).toBeTruthy()
+    expect(within(section).getAllByRole('link')).toHaveLength(4)
+    expect(within(section).getByRole('link', { name: /InsideEVs/i }).getAttribute('href'))
+      .toBe('https://insideevs.com/news/799674/tesla-free-supercharging-competition-2026/')
+  })
 })

@@ -90,7 +90,7 @@ describe('public SEO content registry', () => {
     const longestTrip = SEO_PAGES.find((page) => page.path === '/competition/longest-trip-strategy')
     const copy = JSON.stringify([competition, longestTrip])
 
-    expect(competition?.updatedAt).toBe('2026-08-10')
+    expect(competition?.updatedAt).toBe('2026-08-14')
     expect(longestTrip?.updatedAt).toBe('2026-08-10')
     expect(copy).toContain('August 10, 2026')
     expect(copy).toContain('start-to-start')
@@ -100,6 +100,22 @@ describe('public SEO content registry', () => {
     expect(copy).toContain('last time the participant opens the 2026 Passport')
     expect(copy).toContain('missing')
     expect(copy).toContain('tie-breaker')
+  })
+
+  it('keeps independent competition coverage separate from official verification sources', () => {
+    const competition = SEO_PAGES.find((page) => page.path === '/2026-tesla-supercharging-competition')
+
+    expect(competition?.sources).toEqual([{
+      label: 'Tesla — 2026 Free Supercharging Competition rules',
+      url: 'https://www.tesla.com/support/tesla-app/charging-badges/contest',
+    }])
+    expect(competition?.furtherReading).toHaveLength(4)
+    expect(competition?.furtherReading?.map((article) => article.url)).toEqual([
+      'https://insideevs.com/news/799674/tesla-free-supercharging-competition-2026/',
+      'https://driveteslacanada.ca/news/tesla-free-supercharging-competition-2026/',
+      'https://www.teslarati.com/tesla-gets-another-layer-gamification-free-supercharging/',
+      'https://evxl.co/2026/06/23/tesla-2026-free-supercharging-competition/',
+    ])
   })
 
   it('describes the route library as 40 fixed templates, two conditional custom variants, and three public examples', () => {

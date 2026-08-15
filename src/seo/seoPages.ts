@@ -5,7 +5,8 @@ import { LEGAL_OPERATOR_DISCLOSURE, LEGAL_OPERATOR_NAME } from '../site/business
 export const SITE_ORIGIN = 'https://www.teslachargequest.com'
 export const SEO_UPDATED_AT = '2026-07-19'
 export const SEO_PUBLISHED_AT = '2026-07-19'
-const COMPETITION_UPDATED_AT = '2026-08-10'
+const COMPETITION_HUB_UPDATED_AT = '2026-08-14'
+const COMPETITION_STRATEGY_UPDATED_AT = '2026-08-10'
 const COMPETITION_SOURCE_REVIEWED = 'August 10, 2026'
 export const SEO_AUTHOR = {
   name: 'Anthony Pappano',
@@ -57,6 +58,7 @@ export interface SeoPage {
   sections: SeoSection[]
   note?: string
   sources: SeoSource[]
+  furtherReading?: SeoSource[]
   relatedPaths: string[]
   cta: {
     title: string
@@ -95,6 +97,25 @@ const yosemiteConditionsSource: SeoSource = {
   label: 'National Park Service — Yosemite current conditions',
   url: 'https://www.nps.gov/yose/planyourvisit/conditions.htm',
 }
+
+const competitionFurtherReading: SeoSource[] = [
+  {
+    label: 'InsideEVs — Tesla Is Giving Away Free Supercharging. Here’s How To Win.',
+    url: 'https://insideevs.com/news/799674/tesla-free-supercharging-competition-2026/',
+  },
+  {
+    label: 'Drive Tesla Canada — Tesla Improves Charging Passport and Launches Free Supercharging Competition For 2026',
+    url: 'https://driveteslacanada.ca/news/tesla-free-supercharging-competition-2026/',
+  },
+  {
+    label: 'Teslarati — Tesla gets another layer of gamification with Free Supercharging on the line',
+    url: 'https://www.teslarati.com/tesla-gets-another-layer-gamification-free-supercharging/',
+  },
+  {
+    label: 'EVXL — Tesla Will Give Nine Drivers Free Supercharging For Life, And It Has Been Counting Your Sessions Since January',
+    url: 'https://evxl.co/2026/06/23/tesla-2026-free-supercharging-competition/',
+  },
+]
 
 const buildRouteCta = {
   title: 'Turn the idea into your route',
@@ -181,7 +202,7 @@ export const SEO_PAGES: SeoPage[] = [
     description: 'A plain-English guide to the 2026 Tesla Free Supercharging Competition rules, eligibility, regions, enrollment, winner selection, and route planning.',
     headline: '2026 Tesla Free Supercharging Competition: rules, categories, and route planning',
     intro: `The 2026 competition is what pushed me to build ChargeQuest. I last reviewed Tesla’s official page on ${COMPETITION_SOURCE_REVIEWED}. This guide separates what Tesla currently confirms from the conservative planning assumptions I use when the published wording leaves room for doubt.`,
-    updatedAt: COMPETITION_UPDATED_AT,
+    updatedAt: COMPETITION_HUB_UPDATED_AT,
     facts: [
       { label: 'Competition window', value: 'January 1–December 31, 2026' },
       { label: 'Prize categories', value: '3 per region · 9 winners worldwide' },
@@ -243,6 +264,7 @@ export const SEO_PAGES: SeoPage[] = [
     ],
     note: `ChargeQuest is independent and is not affiliated with or endorsed by Tesla. Source language was last reviewed ${COMPETITION_SOURCE_REVIEWED}; Tesla controls eligibility, scoring, official results, and rule changes.`,
     sources: [competitionSource],
+    furtherReading: competitionFurtherReading,
     relatedPaths: [
       '/competition/longest-trip-strategy',
       '/competition/most-unique-supercharger-sites',
@@ -259,7 +281,7 @@ export const SEO_PAGES: SeoPage[] = [
     description: 'Plan for Tesla’s 2026 Longest Trip category using the stricter start-to-start 24-hour clock, route backups, sustainable pacing, and clear rule caveats.',
     headline: 'How the 2026 Tesla Longest Trip rule changes the route',
     intro: `The route only works if the continuity clock survives real days. Tesla’s official page contained conflicting start-time and end-time language when I reviewed it on ${COMPETITION_SOURCE_REVIEWED}, so I plan to the stricter start-to-start clock until Tesla clarifies the rule.`,
-    updatedAt: COMPETITION_UPDATED_AT,
+    updatedAt: COMPETITION_STRATEGY_UPDATED_AT,
     facts: [
       { label: 'Planning clock', value: 'Start-to-start until Tesla clarifies' },
       { label: 'Primary priority', value: 'Continuity and recovery' },
