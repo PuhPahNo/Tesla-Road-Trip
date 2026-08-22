@@ -26,8 +26,10 @@ describe('editorial page architecture', () => {
     expect(within(breadcrumb).getByText('Grand Canyon Tesla Iconic Charger Badge Guide').getAttribute('aria-current')).toBe('page')
     expect(within(breadcrumb).queryByText('Badges')).toBeNull()
     expect(screen.getByRole('img', {
-      name: 'The Golden Gate Bridge on a Tesla Iconic Charger road trip',
+      name: 'The Grand Canyon stretching into the distance from the South Rim',
     })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Photo by Brad Weaver on Unsplash' }).getAttribute('href'))
+      .toBe('https://unsplash.com/photos/6WDdCJnbiPQ')
   })
 
   it('adds useful public planning bridges without duplicating curated related links', () => {

@@ -91,7 +91,10 @@ async function checkPublicPage(pathname) {
   record(robots.toLowerCase() === 'index,follow', `${pathname} robots was ${robots || 'missing'}`)
   record(Boolean(title), `${pathname} did not contain a title`)
   record(Boolean(h1), `${pathname} did not contain a server-delivered H1`)
-  record(socialImage.startsWith(`${expectedOrigin}/social/`), `${pathname} has an invalid social image: ${socialImage || 'missing'}`)
+  record(
+    socialImage.startsWith(`${expectedOrigin}/social/`) || socialImage.startsWith(`${expectedOrigin}/editorial/`),
+    `${pathname} has an invalid social image: ${socialImage || 'missing'}`,
+  )
   record(Boolean(schema), `${pathname} did not contain valid page structured data`)
   if (pathname === '/track-anthony') {
     record(body.includes('data-track-route-summary'), '/track-anthony did not contain the static route summary')

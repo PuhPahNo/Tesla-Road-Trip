@@ -34,8 +34,8 @@ export function SeoPage({ page }: { page: SeoPageContent }) {
           src={presentation.socialImage}
           alt={presentation.socialImageAlt}
           className="absolute inset-0 z-0 h-full w-full object-cover"
-          width={1200}
-          height={630}
+          width={presentation.socialImageWidth}
+          height={presentation.socialImageHeight}
           fetchPriority="high"
         />
         <div className="absolute inset-0 z-[1] bg-[linear-gradient(90deg,rgba(3,3,4,.98)_0%,rgba(3,3,4,.86)_52%,rgba(3,3,4,.24)_100%)]" />
@@ -76,6 +76,19 @@ export function SeoPage({ page }: { page: SeoPageContent }) {
             )}
             <span aria-hidden="true">·</span>
             <time dateTime={page.updatedAt}>Updated {formatSeoDate(page.updatedAt)}</time>
+            {presentation.photoCredit ? (
+              <>
+                <span aria-hidden="true">·</span>
+                <a
+                  href={presentation.photoCredit.sourceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-white/55 no-underline hover:text-white"
+                >
+                  Photo by {presentation.photoCredit.photographer} on Unsplash
+                </a>
+              </>
+            ) : null}
           </div>
           <div className="mt-14 grid border-y border-white/15 sm:grid-cols-3">
             {page.facts.map((fact) => (

@@ -23,6 +23,17 @@ export interface SeoBreadcrumb {
   name: string
 }
 
+interface EditorialImage {
+  socialImage: string
+  socialImageAlt: string
+  socialImageWidth: number
+  socialImageHeight: number
+  photoCredit?: {
+    photographer: string
+    sourceUrl: string
+  }
+}
+
 export interface CustomPublicPageMetadata {
   path: '/' | '/community' | '/track-anthony'
   title: string
@@ -104,6 +115,159 @@ type PublicArchitectureLinkKey = keyof typeof PUBLIC_ARCHITECTURE_LINKS
 const customPageByPath = new Map<string, CustomPublicPageMetadata>(
   CUSTOM_PUBLIC_PAGES.map((page) => [page.path, page]),
 )
+
+const DEFAULT_SEO_EDITORIAL_IMAGE: EditorialImage = {
+  socialImage: '/social/chargequest-home.jpg',
+  socialImageAlt: 'An open highway crossing the painted desert',
+  socialImageWidth: 1200,
+  socialImageHeight: 630,
+}
+
+// Keep editorial pages visually independent from the fixed landing-page image system.
+// Every published story has its own licensed Unsplash cover, so a page can never quietly
+// inherit the same image as its hub, card, or home-page section.
+const SEO_EDITORIAL_IMAGES: Readonly<Record<string, EditorialImage>> = {
+  '/2026-tesla-supercharging-competition': {
+    socialImage: '/editorial/competition-supercharger-row.jpg',
+    socialImageAlt: 'Tesla Superchargers glowing in a row at night',
+    socialImageWidth: 1600,
+    socialImageHeight: 1000,
+    photoCredit: {
+      photographer: 'Jonathan Ikemura',
+      sourceUrl: 'https://unsplash.com/photos/b6pS6OCmewc',
+    },
+  },
+  '/competition/longest-trip-strategy': {
+    socialImage: '/editorial/longest-trip-night-highway.jpg',
+    socialImageAlt: 'A car traveling a dark highway at night',
+    socialImageWidth: 1600,
+    socialImageHeight: 1000,
+    photoCredit: {
+      photographer: 'Kristaps Solims',
+      sourceUrl: 'https://unsplash.com/photos/dDJIv_kNr_g',
+    },
+  },
+  '/competition/most-unique-supercharger-sites': {
+    socialImage: '/editorial/unique-sites-interchange.jpg',
+    socialImageAlt: 'A city freeway interchange illuminated at night',
+    socialImageWidth: 1600,
+    socialImageHeight: 1000,
+    photoCredit: {
+      photographer: 'Pang Yuhao',
+      sourceUrl: 'https://unsplash.com/photos/X00ZafKUdBo',
+    },
+  },
+  '/competition/most-energy-supercharged': {
+    socialImage: '/editorial/most-energy-charging.jpg',
+    socialImageAlt: 'Tesla Superchargers in a parking lot after dark',
+    socialImageWidth: 1600,
+    socialImageHeight: 1000,
+    photoCredit: {
+      photographer: 'Prometheus',
+      sourceUrl: 'https://unsplash.com/photos/OcFDX9_kfLg',
+    },
+  },
+  '/tesla-iconic-charger-badges': {
+    socialImage: '/editorial/badge-hub-red-rock-road.jpg',
+    socialImageAlt: 'A winding road through red desert rock',
+    socialImageWidth: 1600,
+    socialImageHeight: 1000,
+    photoCredit: {
+      photographer: 'Daniel Shapiro',
+      sourceUrl: 'https://unsplash.com/photos/Fu5KC8bxgeg',
+    },
+  },
+  '/badges/grand-canyon': {
+    socialImage: '/editorial/grand-canyon-south-rim.jpg',
+    socialImageAlt: 'The Grand Canyon stretching into the distance from the South Rim',
+    socialImageWidth: 1600,
+    socialImageHeight: 1000,
+    photoCredit: {
+      photographer: 'Brad Weaver',
+      sourceUrl: 'https://unsplash.com/photos/6WDdCJnbiPQ',
+    },
+  },
+  '/badges/yellowstone': {
+    socialImage: '/editorial/yellowstone-bison.jpg',
+    socialImageAlt: 'A bison standing in a Yellowstone field at golden hour',
+    socialImageWidth: 1600,
+    socialImageHeight: 1000,
+    photoCredit: {
+      photographer: 'Leon LEE',
+      sourceUrl: 'https://unsplash.com/photos/gyJuGLI0JFw',
+    },
+  },
+  '/badges/yosemite': {
+    socialImage: '/editorial/yosemite-valley-road.jpg',
+    socialImageAlt: 'A road through Yosemite Valley beneath granite cliffs',
+    socialImageWidth: 1600,
+    socialImageHeight: 1000,
+    photoCredit: {
+      photographer: 'Jay Carpio',
+      sourceUrl: 'https://unsplash.com/photos/0vdIGGJPd9A',
+    },
+  },
+  '/badges/tesla-diner': {
+    socialImage: '/editorial/tesla-diner-neon.jpg',
+    socialImageAlt: 'A classic diner sign glowing at night',
+    socialImageWidth: 1600,
+    socialImageHeight: 1000,
+    photoCredit: {
+      photographer: 'John Matychuk',
+      sourceUrl: 'https://unsplash.com/photos/fX2WyHHeAUY',
+    },
+  },
+  '/tesla-road-trip-routes': {
+    socialImage: '/editorial/route-hub-coastal-drive.jpg',
+    socialImageAlt: 'A car driving beside the ocean on a coastal road',
+    socialImageWidth: 1600,
+    socialImageHeight: 1000,
+    photoCredit: {
+      photographer: 'Luke Miller',
+      sourceUrl: 'https://unsplash.com/photos/p9uN_1sNyTM',
+    },
+  },
+  '/routes/tesla-route-66-supercharger-road-trip': {
+    socialImage: '/editorial/route-66-neon-motel.jpg',
+    socialImageAlt: 'A vintage Route 66 motel sign shining at night',
+    socialImageWidth: 1600,
+    socialImageHeight: 1000,
+    photoCredit: {
+      photographer: 'Jacob Brogdon',
+      sourceUrl: 'https://unsplash.com/photos/teG3fkUvXTk',
+    },
+  },
+  '/routes/tesla-national-parks-road-trip': {
+    socialImage: '/editorial/national-parks-desert-drive.jpg',
+    socialImageAlt: 'The view through a windshield on a desert highway',
+    socialImageWidth: 1600,
+    socialImageHeight: 1000,
+    photoCredit: {
+      photographer: 'Alex Holt',
+      sourceUrl: 'https://unsplash.com/photos/wCzA3s4k--0',
+    },
+  },
+  '/routes/great-american-icons': {
+    socialImage: '/editorial/great-american-icons-golden-gate-night.jpg',
+    socialImageAlt: 'The Golden Gate Bridge illuminated above San Francisco at night',
+    socialImageWidth: 1600,
+    socialImageHeight: 1000,
+    photoCredit: {
+      photographer: 'Stefan Petersen',
+      sourceUrl: 'https://unsplash.com/photos/T5b1ARmXtFY',
+    },
+  },
+  '/about-anthony': {
+    socialImage: '/editorial/about-desert-highway.jpg',
+    socialImageAlt: 'A car following a long desert highway',
+    socialImageWidth: 1600,
+    socialImageHeight: 1000,
+    photoCredit: {
+      photographer: 'Tobias Pfeifer',
+      sourceUrl: 'https://unsplash.com/photos/l-EgL6BA5r0',
+    },
+  },
+}
 
 const parentHubByKind: Partial<Record<SeoPageKind, string>> = {
   guide: PUBLIC_ARCHITECTURE_LINKS.competition.path,
@@ -304,8 +468,8 @@ export function buildSeoPageStructuredData(page: SeoPage): Record<string, unknow
         '@id': `${pageUrl}#primaryimage`,
         url: imageUrl,
         contentUrl: imageUrl,
-        width: 1200,
-        height: 630,
+        width: presentation.socialImageWidth,
+        height: presentation.socialImageHeight,
         caption: presentation.socialImageAlt,
       },
     ],
@@ -313,25 +477,7 @@ export function buildSeoPageStructuredData(page: SeoPage): Record<string, unknow
 }
 
 export function getSeoPagePresentation(page: SeoPage) {
-  const social = page.kind === 'badge' || page.path === '/tesla-iconic-charger-badges'
-    ? {
-        socialImage: '/social/chargequest-badges.jpg',
-        socialImageAlt: 'The Golden Gate Bridge on a Tesla Iconic Charger road trip',
-      }
-    : page.kind === 'route' || page.path === '/tesla-road-trip-routes'
-      ? {
-          socialImage: '/social/chargequest-routes.jpg',
-          socialImageAlt: 'Sunlight over the Grand Canyon on a ChargeQuest road trip',
-        }
-      : page.kind === 'guide' || page.path === '/2026-tesla-supercharging-competition'
-        ? {
-            socialImage: '/social/chargequest-competition.jpg',
-            socialImageAlt: 'Tesla Superchargers illuminated at night',
-          }
-        : {
-            socialImage: '/social/chargequest-home.jpg',
-            socialImageAlt: 'An open highway crossing the painted desert',
-          }
+  const social = SEO_EDITORIAL_IMAGES[page.path] ?? DEFAULT_SEO_EDITORIAL_IMAGE
 
   return {
     title: page.title,

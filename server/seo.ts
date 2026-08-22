@@ -35,6 +35,8 @@ interface PageMetadata {
   type?: 'website' | 'article' | 'profile'
   socialImage?: string
   socialImageAlt?: string
+  socialImageWidth?: number
+  socialImageHeight?: number
   updatedAt?: string
   preloadHomepageHero?: boolean
   structuredData?: Record<string, unknown>
@@ -154,6 +156,8 @@ function applyMetadata(indexHtml: string, metadata: PageMetadata) {
   const canonical = `${SITE_ORIGIN}${metadata.path}`
   const socialImage = `${SITE_ORIGIN}${metadata.socialImage ?? '/social/chargequest-home.jpg'}`
   const socialImageAlt = metadata.socialImageAlt ?? 'An open highway crossing the painted desert'
+  const socialImageWidth = String(metadata.socialImageWidth ?? 1200)
+  const socialImageHeight = String(metadata.socialImageHeight ?? 630)
   let html = indexHtml
     .replace(/<title>[\s\S]*?<\/title>/i, `<title>${escapeHtml(metadata.title)}</title>`)
     .replace(/<link\s+rel="canonical"[\s\S]*?>/i, `<link rel="canonical" href="${escapeAttribute(canonical)}" />`)
@@ -168,8 +172,8 @@ function applyMetadata(indexHtml: string, metadata: PageMetadata) {
     ['property', 'og:type', metadata.type === 'profile' ? 'profile' : metadata.type ?? 'website'],
     ['property', 'og:image', socialImage],
     ['property', 'og:image:alt', socialImageAlt],
-    ['property', 'og:image:width', '1200'],
-    ['property', 'og:image:height', '630'],
+    ['property', 'og:image:width', socialImageWidth],
+    ['property', 'og:image:height', socialImageHeight],
     ['property', 'og:image:type', 'image/jpeg'],
     ['property', 'og:locale', 'en_US'],
     ['name', 'twitter:card', 'summary_large_image'],

@@ -104,7 +104,7 @@ describe('server SEO rendering', () => {
     }
   })
 
-  it('preloads the responsive LCP image on home only and uses cluster social images', () => {
+  it('preloads the responsive LCP image on home only and uses dedicated editorial social images', () => {
     const home = renderClientDocument(indexHtml, '/')
     const competition = renderClientDocument(indexHtml, '/2026-tesla-supercharging-competition')
     const competitionArticle = renderClientDocument(indexHtml, '/competition/longest-trip-strategy')
@@ -114,9 +114,11 @@ describe('server SEO rendering', () => {
     expect(home.html).toContain('data-page-preload')
     expect(home.html).toContain('imagesrcset="/landing/desert-road-640.avif 640w')
     expect(competition.html).not.toContain('data-page-preload')
-    expect(competition.html).toContain('/social/chargequest-competition.jpg')
-    expect(badges.html).toContain('/social/chargequest-badges.jpg')
-    expect(routes.html).toContain('/social/chargequest-routes.jpg')
+    expect(competition.html).toContain('/editorial/competition-supercharger-row.jpg')
+    expect(competition.html).toContain('property="og:image:width" content="1600"')
+    expect(competition.html).toContain('property="og:image:height" content="1000"')
+    expect(badges.html).toContain('/editorial/badge-hub-red-rock-road.jpg')
+    expect(routes.html).toContain('/editorial/route-hub-coastal-drive.jpg')
     expect(competitionArticle.html).toContain('property="article:modified_time"')
   })
 

@@ -425,8 +425,8 @@ function ArticleCoverCard({ page, featured }: { page: SeoPage; featured: boolean
         src={presentation.socialImage}
         alt={presentation.socialImageAlt}
         className="absolute inset-0 -z-20 h-full w-full object-cover transition duration-700 group-hover:scale-[1.035]"
-        width={1200}
-        height={630}
+        width={presentation.socialImageWidth}
+        height={presentation.socialImageHeight}
         loading="lazy"
       />
       <div className="absolute inset-0 -z-10 bg-[linear-gradient(0deg,rgba(4,5,6,.98)_0%,rgba(4,5,6,.68)_58%,rgba(4,5,6,.04)_100%)]" />

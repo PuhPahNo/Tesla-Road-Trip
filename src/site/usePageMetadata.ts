@@ -9,6 +9,8 @@ export function usePageMetadata({
   type = 'website',
   socialImage = '/social/chargequest-home.jpg',
   socialImageAlt = 'An open highway crossing the painted desert',
+  socialImageWidth = 1200,
+  socialImageHeight = 630,
   updatedAt,
   structuredData,
 }: {
@@ -19,6 +21,8 @@ export function usePageMetadata({
   type?: 'website' | 'article' | 'profile'
   socialImage?: string
   socialImageAlt?: string
+  socialImageWidth?: number
+  socialImageHeight?: number
   updatedAt?: string
   structuredData?: Record<string, unknown>
 }) {
@@ -33,8 +37,8 @@ export function usePageMetadata({
     setMeta('meta[property="og:type"]', 'property', 'og:type', type === 'profile' ? 'profile' : type)
     setMeta('meta[property="og:image"]', 'property', 'og:image', socialImageUrl)
     setMeta('meta[property="og:image:alt"]', 'property', 'og:image:alt', socialImageAlt)
-    setMeta('meta[property="og:image:width"]', 'property', 'og:image:width', '1200')
-    setMeta('meta[property="og:image:height"]', 'property', 'og:image:height', '630')
+    setMeta('meta[property="og:image:width"]', 'property', 'og:image:width', String(socialImageWidth))
+    setMeta('meta[property="og:image:height"]', 'property', 'og:image:height', String(socialImageHeight))
     setMeta('meta[property="og:image:type"]', 'property', 'og:image:type', 'image/jpeg')
     setMeta('meta[property="og:locale"]', 'property', 'og:locale', 'en_US')
     setMeta('meta[name="twitter:card"]', 'name', 'twitter:card', 'summary_large_image')
@@ -63,7 +67,7 @@ export function usePageMetadata({
     } else {
       schema?.remove()
     }
-  }, [description, path, robots, socialImage, socialImageAlt, structuredData, title, type, updatedAt])
+  }, [description, path, robots, socialImage, socialImageAlt, socialImageHeight, socialImageWidth, structuredData, title, type, updatedAt])
 }
 
 function setMeta(

@@ -7,6 +7,7 @@ import {
   buildSeoPageStructuredData,
   getContextualPublicLinks,
   getSeoBreadcrumbs,
+  getSeoPagePresentation,
 } from './siteArchitecture'
 
 describe('public site architecture', () => {
@@ -75,9 +76,19 @@ describe('public site architecture', () => {
     expect(graph[2]).toMatchObject({
       '@type': 'ImageObject',
       '@id': `${SITE_ORIGIN}${page.path}#primaryimage`,
-      width: 1200,
-      height: 630,
+      url: `${SITE_ORIGIN}/editorial/grand-canyon-south-rim.jpg`,
+      width: 1600,
+      height: 1000,
     })
+  })
+
+  it('assigns every published editorial page a distinct cover outside the landing-page image system', () => {
+    const presentations = SEO_PAGES.map(getSeoPagePresentation)
+    const socialImages = presentations.map((presentation) => presentation.socialImage)
+
+    expect(new Set(socialImages).size).toBe(SEO_PAGES.length)
+    expect(socialImages.every((image) => image.startsWith('/editorial/'))).toBe(true)
+    expect(presentations.every((presentation) => presentation.photoCredit?.sourceUrl.startsWith('https://unsplash.com/photos/'))).toBe(true)
   })
 
   it('builds custom-page schema and cluster-specific social metadata from the same records', () => {
