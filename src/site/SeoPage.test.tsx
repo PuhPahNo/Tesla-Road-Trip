@@ -61,4 +61,31 @@ describe('editorial page architecture', () => {
     expect(within(section).getByRole('link', { name: /InsideEVs/i }).getAttribute('href'))
       .toBe('https://insideevs.com/news/799674/tesla-free-supercharging-competition-2026/')
   })
+
+  it('renders an accessible original route diagram and keeps internal comparison links inside the app', () => {
+    const nationalParks = SEO_PAGES.find((candidate) => candidate.path === '/routes/tesla-national-parks-road-trip')!
+    render(
+      <MemoryRouter initialEntries={[nationalParks.path]}>
+        <SeoPage page={nationalParks} />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('img', { name: /Western national parks Tesla route anchor map/i })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Western national parks Tesla route anchor map' })).toBeTruthy()
+    expect(screen.getByText('Rocky Mountain')).toBeTruthy()
+    const badgeLink = screen.getByRole('link', { name: 'Grand Canyon Iconic Charger badge' })
+    expect(badgeLink.getAttribute('href')).toBe('/badges/grand-canyon')
+    expect(badgeLink.getAttribute('target')).toBeNull()
+
+    cleanup()
+    const routeHub = SEO_PAGES.find((candidate) => candidate.path === '/tesla-road-trip-routes')!
+    render(
+      <MemoryRouter initialEntries={[routeHub.path]}>
+        <SeoPage page={routeHub} />
+      </MemoryRouter>,
+    )
+    const routeLink = screen.getByRole('link', { name: 'National Parks and Western Icons' })
+    expect(routeLink.getAttribute('href')).toBe('/routes/tesla-national-parks-road-trip')
+    expect(routeLink.getAttribute('target')).toBeNull()
+  })
 })

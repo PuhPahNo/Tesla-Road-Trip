@@ -7,6 +7,10 @@ import {
   type AnthonyFieldNoteInline,
 } from '../src/content/anthonyFieldNotes'
 import {
+  ANTHONY_ROUTE_PUBLIC_SUMMARY,
+  formatAnthonyRouteMiles,
+} from '../src/content/anthonyRouteSummary'
+import {
   SEO_PAGES,
   SEO_AUTHOR,
   SITE_ORIGIN,
@@ -208,6 +212,9 @@ function applyMetadata(indexHtml: string, metadata: PageMetadata) {
 }
 
 function renderSeoFallback(page: SeoPage) {
+  const routeMap = page.routeMap
+    ? `<section data-route-anchor-map><h2>${escapeHtml(page.routeMap.title)}</h2><p>${escapeHtml(page.routeMap.summary)}</p><ol>${page.routeMap.stops.map((stop) => `<li>${escapeHtml(stop.label)}</li>`).join('')}</ol><p>${escapeHtml(page.routeMap.note)}</p></section>`
+    : ''
   const sections = page.sections.map((section) => {
     const paragraphs = section.paragraphs.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join('\n')
     const bullets = section.bullets?.length
@@ -244,6 +251,7 @@ function renderSeoFallback(page: SeoPage) {
       ? escapeHtml(SEO_AUTHOR.name)
       : `Written by <a href="${escapeAttribute(SEO_AUTHOR.path)}">${escapeHtml(SEO_AUTHOR.name)}</a>`} · <time datetime="${escapeAttribute(page.updatedAt)}">Updated ${escapeHtml(formatSeoDate(page.updatedAt))}</time></p>
     <ul>${facts}</ul>
+    ${routeMap}
     ${sections}
     ${page.note ? `<aside><strong>Important context:</strong> ${escapeHtml(page.note)}</aside>` : ''}
     ${sources}
@@ -310,7 +318,7 @@ function renderTrackAnthonyFallback(
     <section>
       <h2>The checked-in route snapshot</h2>
       <p><strong>${escapeHtml(snapshot.routeName)}</strong> currently contains ${orderedStops.length} dated Supercharger stops across ${plannedDays} planned days, from <time datetime="${escapeAttribute(firstStop.date)}">${escapeHtml(formatSeoDate(firstStop.date))}</time> through <time datetime="${escapeAttribute(lastStop.date)}">${escapeHtml(formatSeoDate(lastStop.date))}</time>. It starts at ${escapeHtml(firstStop.stationName)}, ends at ${escapeHtml(lastStop.stationName)}, and passes through ${stateCodes.size} states.</p>
-      <p>This is a planning snapshot captured <time datetime="${escapeAttribute(capturedDate)}">${escapeHtml(formatSeoDate(capturedDate))}</time>, not live trip status or an official Tesla competition score. The snapshot does not contain verified route mileage, so no mileage is claimed here.</p>
+      <p>This is a planning snapshot captured <time datetime="${escapeAttribute(capturedDate)}">${escapeHtml(formatSeoDate(capturedDate))}</time>, not live trip status or an official Tesla competition score. The same published route run covers ${escapeHtml(formatAnthonyRouteMiles())} road-routed miles and about ${ANTHONY_ROUTE_PUBLIC_SUMMARY.driveHours} hours of driving.</p>
     </section>
     <section>
       <h2>Representative dated stops</h2>

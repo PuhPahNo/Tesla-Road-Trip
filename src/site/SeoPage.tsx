@@ -4,6 +4,7 @@ import {
   SEO_AUTHOR,
   formatSeoDate,
   getRelatedSeoPages,
+  type SeoRouteMap,
   type SeoPage as SeoPageContent,
 } from '../seo/seoPages'
 import {
@@ -103,9 +104,10 @@ export function SeoPage({ page }: { page: SeoPageContent }) {
 
       <div className="px-4 py-20 sm:px-6 sm:py-28 lg:px-12 lg:py-36">
         <div className="mx-auto grid max-w-[1180px] gap-14 lg:grid-cols-[minmax(0,760px)_280px] lg:justify-between lg:gap-20">
-          <div>
+          <div className="min-w-0">
+            {page.routeMap ? <RouteAnchorMap routeMap={page.routeMap} /> : null}
             {page.sections.map((section, index) => (
-              <section key={section.heading} className={index > 0 ? 'mt-16 border-t border-black/14 pt-14' : ''}>
+              <section key={section.heading} className={index > 0 || page.routeMap ? 'mt-16 border-t border-black/14 pt-14' : ''}>
                 <div className="mb-5 font-mono text-[8px] font-semibold uppercase tracking-[0.14em] text-[#c9161d]">{String(index + 1).padStart(2, '0')}</div>
                 <h2 className="max-w-[720px] text-[clamp(30px,5vw,50px)] font-semibold leading-[1] tracking-[-0.045em]">{section.heading}</h2>
                 <div className="mt-7 space-y-5">
@@ -147,9 +149,15 @@ export function SeoPage({ page }: { page: SeoPageContent }) {
                                     ))}
                                   </span>
                                 ) : cell.href ? (
-                                  <a href={cell.href} target="_blank" rel="noreferrer" className="font-semibold text-black underline decoration-black/20 underline-offset-4 hover:decoration-[#e82127]">
-                                    {cell.text}
-                                  </a>
+                                  isExternalHref(cell.href) ? (
+                                    <a href={cell.href} target="_blank" rel="noreferrer" className="font-semibold text-black underline decoration-black/20 underline-offset-4 hover:decoration-[#e82127]">
+                                      {cell.text}
+                                    </a>
+                                  ) : (
+                                    <Link to={cell.href} className="font-semibold text-black underline decoration-black/20 underline-offset-4 hover:decoration-[#e82127]">
+                                      {cell.text}
+                                    </Link>
+                                  )
                                 ) : cell.text}
                               </td>
                             ))}
@@ -253,4 +261,75 @@ export function SeoPage({ page }: { page: SeoPageContent }) {
       </div>
     </article>
   )
+}
+
+function RouteAnchorMap({ routeMap }: { routeMap: SeoRouteMap }) {
+  const points = routeMap.stops.map((stop) => ({ ...stop, ...projectSeoMapPoint(stop) }))
+  const routePath = points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(' ')
+  const hasHawaiiInset = routeMap.stops.some((stop) => stop.lon < -140 && stop.lat < 25)
+
+  return (
+    <figure className="overflow-hidden border border-black/14 bg-[#0b0d0f] text-white">
+      <figcaption className="border-b border-white/14 px-5 py-5 sm:px-7">
+        <div className="font-mono text-[8px] font-semibold uppercase tracking-[0.14em] text-[#23d7d1]">Original ChargeQuest route diagram</div>
+        <h2 className="mt-2 text-[clamp(25px,4vw,38px)] font-semibold leading-[1] tracking-[-0.04em]">{routeMap.title}</h2>
+        <p className="mt-3 max-w-[680px] text-[14px] leading-[1.7] text-white/62">{routeMap.summary}</p>
+      </figcaption>
+      <div className="bg-[radial-gradient(circle_at_50%_40%,rgba(35,215,209,.12),transparent_58%)] p-3 sm:p-6">
+        <svg
+          viewBox="0 0 900 410"
+          role="img"
+          aria-label={`${routeMap.title}. ${routeMap.stops.map((stop) => stop.label).join(routeMap.connectStops === false ? ', ' : ' to ')}.`}
+          className="h-auto w-full"
+        >
+          <rect x="18" y="16" width="864" height="372" rx="18" fill="rgba(255,255,255,.025)" stroke="rgba(255,255,255,.12)" />
+          {[160, 300, 440, 580, 720].map((x) => (
+            <line key={`vertical-${x}`} x1={x} y1="28" x2={x} y2="376" stroke="rgba(255,255,255,.055)" strokeDasharray="4 8" />
+          ))}
+          {[100, 188, 276].map((y) => (
+            <line key={`horizontal-${y}`} x1="30" y1={y} x2="870" y2={y} stroke="rgba(255,255,255,.055)" strokeDasharray="4 8" />
+          ))}
+          {hasHawaiiInset ? (
+            <g>
+              <rect x="42" y="298" width="100" height="72" rx="12" fill="rgba(35,215,209,.04)" stroke="rgba(35,215,209,.32)" strokeDasharray="4 6" />
+              <text x="92" y="362" textAnchor="middle" fill="rgba(255,255,255,.5)" fontSize="8" fontWeight="700">HAWAII</text>
+            </g>
+          ) : null}
+          {routeMap.connectStops === false ? null : (
+            <>
+              <path d={routePath} fill="none" stroke="rgba(35,215,209,.42)" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
+              <path d={routePath} fill="none" stroke="#23d7d1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            </>
+          )}
+          {points.map((point, index) => (
+            <g key={`${point.label}-${index}`} transform={`translate(${point.x.toFixed(1)} ${point.y.toFixed(1)})`}>
+              <circle r="11" fill="#0b0d0f" stroke="#e82127" strokeWidth="3" />
+              <text y="3.5" textAnchor="middle" fill="white" fontSize="9" fontWeight="700">{index + 1}</text>
+            </g>
+          ))}
+        </svg>
+      </div>
+      <ol className="grid border-t border-white/12 sm:grid-cols-2 lg:grid-cols-3">
+        {routeMap.stops.map((stop, index) => (
+          <li key={`${stop.label}-${index}`} className="flex gap-3 border-b border-white/10 px-4 py-3 text-[12px] leading-[1.4] text-white/68 sm:border-r sm:px-5">
+            <span className="font-mono text-[9px] font-semibold text-[#23d7d1]">{String(index + 1).padStart(2, '0')}</span>
+            <span>{stop.label}</span>
+          </li>
+        ))}
+      </ol>
+      <p className="border-t border-white/12 px-5 py-4 text-[11px] leading-[1.65] text-white/48 sm:px-7">{routeMap.note}</p>
+    </figure>
+  )
+}
+
+function isExternalHref(href: string) {
+  return /^https?:\/\//i.test(href)
+}
+
+function projectSeoMapPoint({ lat, lon }: { lat: number; lon: number }) {
+  if (lon < -140 && lat < 25) return { x: 92, y: 329 }
+  return {
+    x: Math.min(872, Math.max(28, 28 + ((lon + 125) / 59) * 844)),
+    y: Math.min(376, Math.max(24, 24 + ((50 - lat) / 26) * 352)),
+  }
 }

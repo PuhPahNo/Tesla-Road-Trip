@@ -67,9 +67,10 @@ export function LandingPage() {
             </h1>
             <div className="mt-7 max-w-[760px]">
               <p className="max-w-[690px] text-[16px] leading-[1.6] text-white/88 sm:text-[18px] sm:leading-[1.6]">
-                ChargeQuest began with one ambitious competition route. Now it is a
-                place to plan yours—around your Tesla, your pace, and the stops that
-                make the drive worth remembering.
+                ChargeQuest CORE is a multi-day Tesla Supercharger route planner built
+                around your car, your pace, and the stops that make the drive worth
+                remembering. I started it for one ambitious competition route. Now you
+                can build yours.
               </p>
               <div className="mt-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-5">
                 <Link

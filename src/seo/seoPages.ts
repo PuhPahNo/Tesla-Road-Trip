@@ -40,6 +40,20 @@ export interface SeoFact {
   value: string
 }
 
+export interface SeoRouteMapStop {
+  label: string
+  lat: number
+  lon: number
+}
+
+export interface SeoRouteMap {
+  title: string
+  summary: string
+  stops: SeoRouteMapStop[]
+  note: string
+  connectStops?: boolean
+}
+
 export interface SeoSource {
   label: string
   url: string
@@ -55,6 +69,7 @@ export interface SeoPage {
   intro: string
   updatedAt: string
   facts: SeoFact[]
+  routeMap?: SeoRouteMap
   sections: SeoSection[]
   note?: string
   sources: SeoSource[]
@@ -191,6 +206,84 @@ function coreExampleTable({
       ['Average site spacing', averageMilesPerDay, 'Average route distance associated with each planned unique site.'],
     ],
   }
+}
+
+const route66AnchorMap: SeoRouteMap = {
+  title: 'Route 66 and Desert Icons anchor map',
+  summary: 'A westbound planning spine from St. Louis to Los Angeles, with Santa Fe, Grand Canyon, and Las Vegas kept in the story.',
+  stops: [
+    { label: 'St. Louis', lat: 38.627, lon: -90.1994 },
+    { label: 'Oklahoma City', lat: 35.4676, lon: -97.5164 },
+    { label: 'Amarillo', lat: 35.222, lon: -101.8313 },
+    { label: 'Albuquerque', lat: 35.0844, lon: -106.6504 },
+    { label: 'Santa Fe', lat: 35.687, lon: -105.9378 },
+    { label: 'Flagstaff', lat: 35.1983, lon: -111.6513 },
+    { label: 'Grand Canyon', lat: 36.1069, lon: -112.1129 },
+    { label: 'Las Vegas', lat: 36.1699, lon: -115.1398 },
+    { label: 'Los Angeles', lat: 34.0522, lon: -118.2437 },
+  ],
+  note: 'This diagram shows the editorial anchors, not the final Supercharger sequence or turn-by-turn road route. CORE adds charging stops after the driver supplies the vehicle, practical range, dates, and daily limits.',
+}
+
+const nationalParksAnchorMap: SeoRouteMap = {
+  title: 'Western national parks Tesla route anchor map',
+  summary: 'The full fixed template crosses the Rockies, canyon country, California, the Pacific Northwest, Yellowstone, and the Badlands before returning through the upper Midwest.',
+  stops: [
+    { label: 'St. Louis', lat: 38.627, lon: -90.1994 },
+    { label: 'Denver', lat: 39.7392, lon: -104.9903 },
+    { label: 'Rocky Mountain', lat: 40.3428, lon: -105.6836 },
+    { label: 'Moab', lat: 38.5733, lon: -109.5498 },
+    { label: 'Zion', lat: 37.2982, lon: -113.0263 },
+    { label: 'Grand Canyon', lat: 36.1069, lon: -112.1129 },
+    { label: 'Las Vegas', lat: 36.1699, lon: -115.1398 },
+    { label: 'Yosemite', lat: 37.8651, lon: -119.5383 },
+    { label: 'Lake Tahoe', lat: 39.0968, lon: -120.0324 },
+    { label: 'Portland', lat: 45.5152, lon: -122.6784 },
+    { label: 'Seattle', lat: 47.6062, lon: -122.3321 },
+    { label: 'Yellowstone', lat: 44.428, lon: -110.5885 },
+    { label: 'Badlands', lat: 43.8554, lon: -102.3397 },
+    { label: 'Minneapolis', lat: 44.9778, lon: -93.265 },
+    { label: 'Chicago', lat: 41.8781, lon: -87.6298 },
+  ],
+  note: 'The straight lines connect route intentions, not roads. Park access, the charging sequence, and the best direction can change with the season and the driver’s settings.',
+}
+
+const greatAmericanIconsAnchorMap: SeoRouteMap = {
+  title: 'Great American Icons Tesla route anchor map',
+  summary: 'A broad national loop joining music cities, the Rockies, the Southwest, California, the Pacific Northwest, Yellowstone, Chicago, Washington, and the Southeast return.',
+  stops: [
+    { label: 'Nashville', lat: 36.1627, lon: -86.7816 },
+    { label: 'St. Louis', lat: 38.627, lon: -90.1994 },
+    { label: 'Kansas City', lat: 39.0997, lon: -94.5786 },
+    { label: 'Denver', lat: 39.7392, lon: -104.9903 },
+    { label: 'Santa Fe', lat: 35.687, lon: -105.9378 },
+    { label: 'Grand Canyon', lat: 36.1069, lon: -112.1129 },
+    { label: 'Las Vegas', lat: 36.1699, lon: -115.1398 },
+    { label: 'Los Angeles', lat: 34.0522, lon: -118.2437 },
+    { label: 'San Francisco', lat: 37.7749, lon: -122.4194 },
+    { label: 'Portland', lat: 45.5152, lon: -122.6784 },
+    { label: 'Seattle', lat: 47.6062, lon: -122.3321 },
+    { label: 'Yellowstone', lat: 44.428, lon: -110.5885 },
+    { label: 'Rapid City', lat: 44.0805, lon: -103.231 },
+    { label: 'Chicago', lat: 41.8781, lon: -87.6298 },
+    { label: 'Canton', lat: 40.8212, lon: -81.3978 },
+    { label: 'Washington', lat: 38.9072, lon: -77.0369 },
+    { label: 'Charlotte', lat: 35.2271, lon: -80.8431 },
+    { label: 'Nashville return', lat: 36.1627, lon: -86.7816 },
+  ],
+  note: 'This is the fixed template’s planning shape. It is not a promise that every anchor belongs in one driver’s route, and it is not a live charging or navigation map.',
+}
+
+const iconicChargerBadgeMap: SeoRouteMap = {
+  title: 'All 17 Tesla Iconic Charger badge targets',
+  summary: 'The qualifying Supercharger coordinates currently mapped in ChargeQuest, including the two Canadian targets and Waikiki.',
+  stops: TESLA_ICONIC_BADGES.map((badge) => ({
+    label: `${badge.label} · ${badge.state}`,
+    lat: badge.position.lat,
+    lon: badge.position.lon,
+  })),
+  note: 'These markers use the qualifying Supercharger coordinates in the ChargeQuest catalog, not attraction centroids. Waikiki appears in a separate Hawaii inset. Tesla controls current eligibility, so every target still needs to be verified in Tesla’s live location and badge records.',
+  connectStops: false,
 }
 
 export const SEO_PAGES: SeoPage[] = [
@@ -418,14 +511,15 @@ export const SEO_PAGES: SeoPage[] = [
     eyebrow: 'Iconic Charger field guide',
     title: 'Tesla Iconic Charger Badges and Road Trip Planning | ChargeQuest',
     description: 'Plan a Tesla road trip around Iconic Charger badges, understand the location caveats, and explore badge stops near Grand Canyon, Yellowstone, Yosemite, and Hollywood.',
-    headline: 'A charging stop can be part of the destination',
-    intro: 'Tesla’s Iconic Charger badges are one of my favorite route-planning constraints. They turn a necessary stop into a reason to choose one road over another. ChargeQuest currently maps 17 North American badge locations, then lets you place those targets beside the parks, cities, and landmarks you already want to see.',
-    updatedAt: SEO_UPDATED_AT,
+    headline: 'Tesla Iconic Charger badges: 17 stops worth planning around',
+    intro: 'A charging stop can be part of the destination. Tesla’s Iconic Charger badges are one of my favorite route-planning constraints because they turn a necessary stop into a reason to choose one road over another. ChargeQuest maps all 17 North American targets, then lets you place them beside the parks, cities, and landmarks you already want to see.',
+    updatedAt: '2026-08-26',
     facts: [
       { label: 'Mapped in CORE', value: '17 North American badges' },
       { label: 'Mainland planning', value: 'Lower 48 plus optional Canada' },
       { label: 'Official source', value: 'Tesla app and location pages' },
     ],
+    routeMap: iconicChargerBadgeMap,
     sections: [
       {
         heading: 'How the badge layer works in ChargeQuest',
@@ -651,17 +745,47 @@ export const SEO_PAGES: SeoPage[] = [
     path: '/tesla-road-trip-routes',
     kind: 'hub',
     eyebrow: 'ChargeQuest route library',
-    title: 'Tesla Supercharger Road Trips: 3 Detailed Route Ideas',
-    description: 'Explore Tesla road trip route ideas built around Route 66, national parks, American icons, Supercharger access, and places worth remembering.',
-    headline: 'Three detailed Tesla road-trip routes from a larger CORE library',
-    intro: 'This public guide develops three fixed CORE templates in detail: Route 66 and Desert Icons, National Parks and Western Icons, and Great American Icons. The planner contains 40 fixed templates across its two competition modes, plus two conditional custom variants that appear only after a driver adds personal waypoints. The three routes below are examples, not a claim that all 42 variants are published here.',
-    updatedAt: '2026-08-10',
+    title: 'Tesla Supercharger Road Trip Routes: Maps, Stops & Ideas',
+    description: 'Compare three Tesla Supercharger road-trip routes with original anchor maps, fixed CORE mileage examples, major stops, badge opportunities, and seasonal tradeoffs.',
+    headline: 'Tesla Supercharger road-trip routes',
+    intro: 'I built these three routes to answer different versions of the same question: what would make the miles worth driving? Route 66 follows road history into the desert. The western parks route follows the season. Great American Icons starts with the whole country, then asks what actually belongs in your trip.',
+    updatedAt: '2026-08-26',
     facts: [
-      { label: 'Fixed CORE templates', value: '40 across two competition modes' },
-      { label: 'Conditional custom variants', value: '2 after personal waypoints are added' },
-      { label: 'Detailed on this page', value: '3 fixed route examples' },
+      { label: 'Published route guides', value: '3 with original anchor maps' },
+      { label: 'Fixed example distance', value: '6,077–7,890 planning miles' },
+      { label: 'Inside CORE', value: '40 fixed templates · 2 conditional variants' },
     ],
     sections: [
+      {
+        heading: 'Compare the three published Tesla route templates',
+        paragraphs: [
+          'The mileage below comes from the same disclosed 60-day CORE setup used on each detailed guide. It is useful for comparing the size and shape of the templates. It is not a quote for your trip, a turn-by-turn route, or a reason to spend 60 days sightseeing if your schedule says otherwise.',
+        ],
+        table: {
+          caption: 'ChargeQuest Tesla Supercharger road-trip route comparison',
+          columns: ['Route', 'Fixed CORE example', 'What gives it a story', 'Constraint to solve first'],
+          rows: [
+            [
+              { text: 'Route 66 and Desert Icons', href: '/routes/tesla-route-66-supercharger-road-trip' },
+              '6,077 miles · 60 planned charging days',
+              'Historic-road cities, Grand Canyon, Las Vegas, and Southern California.',
+              'Heat, long desert gaps, and deciding how closely to follow Route 66.',
+            ],
+            [
+              { text: 'National Parks and Western Icons', href: '/routes/tesla-national-parks-road-trip' },
+              '6,587 miles · 60 planned charging days',
+              'The Rockies, canyon country, Yosemite, the Pacific Northwest, and Yellowstone.',
+              'Seasonal roads and leaving enough time to be out of the car.',
+            ],
+            [
+              { text: 'Great American Icons', href: '/routes/great-american-icons' },
+              '7,890 miles · 60 planned charging days',
+              'Music cities, parks, both coasts, road history, and a broad national loop.',
+              'Removing famous stops that belong to someone else’s trip.',
+            ],
+          ],
+        },
+      },
       {
         heading: 'Route 66 and Desert Icons',
         paragraphs: [
@@ -684,7 +808,7 @@ export const SEO_PAGES: SeoPage[] = [
         ],
       },
     ],
-    note: 'Every route idea needs live validation for road access, weather, charger status, vehicle range, and current travel conditions.',
+    note: 'The planner contains 40 fixed templates across its two competition modes, plus two conditional custom variants that appear only after a driver adds personal waypoints. These three fixed CORE templates are detailed public examples, not a claim that all 42 variants are published guides. Every route still needs live road, weather, charger, and vehicle validation.',
     sources: [stationDataSource],
     relatedPaths: [
       '/routes/tesla-route-66-supercharger-road-trip',
@@ -708,6 +832,7 @@ export const SEO_PAGES: SeoPage[] = [
       { label: 'Major anchors', value: 'Route 66 cities plus Grand Canyon and Vegas' },
       { label: 'Best for', value: 'Road history, desert scenery, badge stops' },
     ],
+    routeMap: route66AnchorMap,
     sections: [
       {
         heading: 'The anchors in the current ChargeQuest template',
@@ -758,19 +883,20 @@ export const SEO_PAGES: SeoPage[] = [
     path: '/routes/tesla-national-parks-road-trip',
     kind: 'route',
     eyebrow: 'Route idea',
-    title: 'Tesla National Parks Supercharger Road Trip Idea | ChargeQuest',
-    description: 'A western Tesla national parks route idea connecting the Rockies, Moab, Zion, Grand Canyon, Yosemite, Yellowstone, the Pacific Northwest, and Badlands.',
-    headline: 'A western parks route should follow the season, not fight it',
-    intro: 'The National Parks and Western Icons template is the most scenery-heavy route in ChargeQuest. It connects a huge wish list across the Rockies, canyon country, California, the Pacific Northwest, Yellowstone, and the Badlands. Its first job is to inspire. Its second is to be edited.',
-    updatedAt: '2026-08-10',
+    title: 'Tesla National Parks Road Trip: Western Supercharger Route',
+    description: 'Plan a western Tesla national parks road trip through the Rockies, Moab, Zion, Grand Canyon, Yosemite, Yellowstone, and a season-aware Supercharger route.',
+    headline: 'Tesla National Parks road trip: a season-smart western route',
+    intro: 'A western parks route should follow the season, not fight it. This fixed ChargeQuest template connects a huge wish list across the Rockies, canyon country, California, the Pacific Northwest, Yellowstone, and the Badlands. Its first job is to show the full shape. Its second is to help you decide what deserves real time.',
+    updatedAt: '2026-08-26',
     facts: [
-      { label: 'Park anchors', value: 'Rocky Mountain, Zion, Grand Canyon, Yosemite, Yellowstone' },
-      { label: 'Western cities', value: 'Denver, Las Vegas, Portland, Seattle' },
+      { label: 'Fixed CORE example', value: '6,587 planning miles' },
+      { label: 'Major park anchors', value: 'Rocky Mountain · Zion · Grand Canyon · Yosemite · Yellowstone' },
       { label: 'Main constraint', value: 'Seasonal access and realistic park time' },
     ],
+    routeMap: nationalParksAnchorMap,
     sections: [
       {
-        heading: 'The full template is intentionally bigger than one easy trip',
+        heading: 'Start with the sequence, then decide what deserves time',
         paragraphs: [
           'ChargeQuest starts this idea with St. Louis, Denver, Rocky Mountain National Park, Moab, Zion, Grand Canyon, Las Vegas, Yosemite, Lake Tahoe, Portland, Seattle, Yellowstone, Badlands, Minneapolis, and Chicago. CORE then connects the selected anchors through the charging network.',
           'You can treat that as a grand loop or as three smaller journeys: Rockies and canyon country, California and the Pacific Northwest, or Yellowstone and the northern return. Cutting the route is not giving up. It is deciding what deserves real time.',
@@ -787,6 +913,32 @@ export const SEO_PAGES: SeoPage[] = [
           'Grand Canyon, Yellowstone, and Yosemite each have mapped Iconic Charger targets. Moab can support the Arches badge, and the wider region opens Bryce Canyon and other possibilities. Required targets keep those chargers in the plan when a shorter alternative appears.',
           'Tesla can change badge eligibility. Park roads can close. A route created today should be checked again before departure, and a mountain itinerary should never depend on a seasonal road simply because it made the preview shorter.',
         ],
+        table: {
+          caption: 'Mapped Iconic Charger decisions inside the western parks route',
+          columns: ['Badge guide', 'Mapped target', 'Route decision'],
+          rows: [
+            [
+              { text: 'Grand Canyon Iconic Charger badge', href: '/badges/grand-canyon' },
+              'Tusayan, Arizona',
+              'Keep enough time for the South Rim instead of treating the charging stop as the park visit.',
+            ],
+            [
+              { text: 'Yellowstone Iconic Charger badge', href: '/badges/yellowstone' },
+              'West Yellowstone, Montana',
+              'Choose the gateway around the park plan and road season, not only the next charging leg.',
+            ],
+            [
+              { text: 'Yosemite Iconic Charger badge', href: '/badges/yosemite' },
+              'El Portal or Fish Camp, California',
+              'Pick the gateway that fits the direction, lodging, and current park access.',
+            ],
+            [
+              { text: 'All 17 mapped badge targets', href: '/tesla-iconic-charger-badges' },
+              'North American reference',
+              'Verify the official Tesla location before making any badge a required route stop.',
+            ],
+          ],
+        },
       },
       {
         heading: 'Budget days for being out of the car',
@@ -828,6 +980,7 @@ export const SEO_PAGES: SeoPage[] = [
       { label: 'Themes', value: 'Music, parks, cities, road history, badges' },
       { label: 'Best use', value: 'Choose a spine, then make it yours' },
     ],
+    routeMap: greatAmericanIconsAnchorMap,
     sections: [
       {
         heading: 'What the current template connects',

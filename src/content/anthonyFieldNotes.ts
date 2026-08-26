@@ -1,3 +1,8 @@
+import {
+  ANTHONY_ROUTE_PUBLIC_SUMMARY,
+  formatAnthonyRouteMiles,
+} from './anthonyRouteSummary'
+
 export interface AnthonyFieldNoteLink {
   label: string
   href: string
@@ -30,8 +35,7 @@ export const PUBLISHED_ANTHONY_FIELD_NOTES: readonly AnthonyFieldNote[] = [
   {
     id: '73-day-route-not-finished',
     title: 'The route is 73 days long. I’m still not calling it finished.',
-    excerpt:
-      'I’ve mapped 73 unique Superchargers across 10,107.8 road miles. The numbers currently work. Now I’m checking whether the route works for an actual person driving it for 73 straight days.',
+    excerpt: `I’ve mapped ${ANTHONY_ROUTE_PUBLIC_SUMMARY.uniqueSuperchargers} unique Superchargers across ${formatAnthonyRouteMiles()} road miles. The numbers currently work. Now I’m checking whether the route works for an actual person driving it for ${ANTHONY_ROUTE_PUBLIC_SUMMARY.plannedDays} straight days.`,
     phaseLabel: 'Planning the quest',
     publishedAt: '2026-08-10',
     updatedAt: '2026-08-10',
@@ -42,7 +46,7 @@ export const PUBLISHED_ANTHONY_FIELD_NOTES: readonly AnthonyFieldNote[] = [
         '.',
       ],
       [
-        'The current route covers 10,107.8 road-routed miles and about 187 hours of driving. Day 1 is a short run to Cleveland, Tennessee. Day 73 brings me back to the Manufacturers Road Supercharger in Chattanooga.',
+        `The current route covers ${formatAnthonyRouteMiles()} road-routed miles and about ${ANTHONY_ROUTE_PUBLIC_SUMMARY.driveHours} hours of driving. Day 1 is a short run to Cleveland, Tennessee. Day ${ANTHONY_ROUTE_PUBLIC_SUMMARY.plannedDays} brings me back to the Manufacturers Road Supercharger in Chattanooga.`,
       ],
       [
         'All 73 stations currently show as open in the Supercharge.info data, and CORE does not flag any of the planned charging legs as outside its modeled range.',

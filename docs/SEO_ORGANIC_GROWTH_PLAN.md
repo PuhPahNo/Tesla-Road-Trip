@@ -1,6 +1,6 @@
 # ChargeQuest Organic Growth Plan
 
-Updated: August 10, 2026
+Updated: August 26, 2026
 
 ## The position to own
 
@@ -30,6 +30,102 @@ CORE is the next step for all three. The content should answer the first questio
 - Visible Anthony Pappano bylines, updated dates, and an author page that explains how the research and examples are produced.
 - A side-by-side competition category table and the complete 17-badge reference used by CORE.
 - Fixed, reproducible CORE examples on the three main route guides, with their vehicle, range, pace, date, and station-feed assumptions disclosed.
+- A route-library comparison page that helps a search visitor choose among Route 66, the western parks, and the broad national loop before asking them to open CORE.
+- Original, crawlable route diagrams for all three published route guides and a mapped reference for all 17 Iconic Charger badge targets.
+- A deeper National Parks guide with the route sequence, realistic park-time constraint, seasonal caveats, and contextual links to the Grand Canyon, Yellowstone, and Yosemite badge guides.
+- A first-screen homepage description that says plainly what CORE is while preserving the campaign headline.
+- One shared public route-summary source for Track Anthony and its search fallback so the published 73-day, 73-site, 10,107.8-mile planning snapshot cannot contradict itself.
+
+## Earned-link sprint
+
+The linkable assets now exist. Outreach should be a small, article-specific reader contribution—not a founder profile, a generic product announcement, a rewrite request, or an explicit backlink ask. Every note below needs one last article and contact check immediately before it is sent.
+
+### Priority targets
+
+| Priority | Existing article or channel | The useful addition | ChargeQuest resource |
+| --- | --- | --- | --- |
+| 1 | [Drive Tesla Canada — 2026 competition explainer](https://driveteslacanada.ca/news/tesla-free-supercharging-competition-2026/) | A practical bridge from the changed Longest Trip rule to route continuity and recovery. | `/2026-tesla-supercharging-competition` and `/track-anthony` |
+| 1 | [Teslarati — competition and Charging Passport gamification](https://www.teslarati.com/tesla-gets-another-layer-gamification-free-supercharging/) | The original 17-stop Iconic Charger map for readers interested in the collectible side. | `/tesla-iconic-charger-badges` |
+| 1 | [InsideEVs — how to win the free-Supercharging competition](https://insideevs.com/news/799674/tesla-free-supercharging-competition-2026/) | The stricter 24-hour planning interpretation and a public 73-day route snapshot. | `/competition/longest-trip-strategy` and `/track-anthony` |
+| 1 | [EVXL — 2026 competition and already-counted sessions](https://evxl.co/2026/06/23/tesla-2026-free-supercharging-competition/) | A category-by-category route-planning comparison for readers deciding what they can realistically pursue. | `/2026-tesla-supercharging-competition` |
+| 2 | [ChargeHub — national parks of the American West by EV](https://chargehub.com/en/ev-charging-news/ev-road-trip-us-national-parks) | A concrete western Tesla route diagram and the argument for cutting stops to protect real park time. | `/routes/tesla-national-parks-road-trip` |
+| 2 | [Qmerit — EV charging around national parks](https://qmerit.com/blog/do-national-parks-have-ev-chargers/) | The difference between a mapped gateway/badge charger and the park visit itself. | `/routes/tesla-national-parks-road-trip` |
+| 2 | [Camp and Charge — I-70 in Utah and Colorado](https://campandcharge.com/guides/ev-charging-i70-utah-colorado/) | The Denver–Moab section inside a larger season-aware western loop. | `/routes/tesla-national-parks-road-trip` |
+| 2 | [Electric Route 66 — EV road-tripping](https://www.electricroute66.com/p/ev-road-tripping.html) | An original Tesla Route 66 anchor diagram that keeps enough freedom to leave the historic road. | `/routes/tesla-route-66-supercharger-road-trip` |
+| 3 | [Vegas Tesla Family — 2,000 miles along Route 66](https://www.youtube.com/watch?v=N-pPP6NYtnw) | A viewer resource for turning the filmed experience into a route shaped around their own Tesla and pace. | `/routes/tesla-route-66-supercharger-road-trip` |
+| 3 | [Travel4HK — driving a Tesla in Yellowstone](https://travel4hk.blogspot.com/2026/06/how-to-ev-car-or-tesla-in-yellowstone.html) | The West Yellowstone badge/gateway decision inside a broader western route. | `/badges/yellowstone` and `/routes/tesla-national-parks-road-trip` |
+
+### First four outreach drafts
+
+These are deliberately short. Personalize the opening against the current article, use the author’s public contact channel, and send them one at a time.
+
+#### Drive Tesla Canada / Matt Wilson
+
+**Subject:** A small planning resource for your 2026 Supercharging competition story
+
+Hi Matt — your piece does a good job explaining the part of Longest Trip that matters most: this is now a continuous sequence of unique sites, not a line that merely looks long on a map.
+
+I’m building a 73-day route around that rule, and I published a free comparison that turns all three competition categories into actual route decisions. I also left the route snapshot public so readers can see the assumptions and the places where I’m still being cautious.
+
+If you update the story or write a follow-up, it may be a useful addition for the reader whose next question is, “What would planning this actually involve?”
+
+`https://www.teslachargequest.com/2026-tesla-supercharging-competition`
+
+I’m independent from Tesla, and ChargeQuest CORE is my own route builder. Happy to answer questions as I keep pressure-testing the route.
+
+— Anthony
+
+#### Teslarati / Joey Klender
+
+**Subject:** A mapped reader companion for the Iconic Charger side of Passport
+
+Hi Joey — I liked that your article treated Charging Passport as more than a contest. The collectible part is what can turn a charging stop into a reason to take a different road.
+
+I mapped all 17 Iconic Charger badge targets shown in the Tesla app and added short guides for the stops where the charger and the actual destination are easy to confuse. It is a small, independent reader reference—not live availability and not an official Tesla map.
+
+If you revisit the badge side of Passport, this may be a useful addition for readers who want to turn the list into a trip:
+
+`https://www.teslachargequest.com/tesla-iconic-charger-badges`
+
+— Anthony
+
+#### InsideEVs
+
+**Subject:** The route-planning layer behind “how to win” Longest Trip
+
+Hi — your competition story explains the prize and the categories well. The hard part for Longest Trip begins one step later: keeping a new-site sequence alive through sleep, weather, charger problems, and Tesla’s conflicting timing language.
+
+I published the stricter planning interpretation I’m using, plus the public snapshot of my 73-day route. It is not a claim that I’ve solved the competition; it shows the assumptions, backups, and unresolved parts that a real attempt has to survive.
+
+This may be a useful practical companion if you update the piece:
+
+`https://www.teslachargequest.com/competition/longest-trip-strategy`
+
+— Anthony
+
+#### EVXL
+
+**Subject:** A practical comparison for readers entering Tesla’s competition late
+
+Hi — the part of your article that stuck with me is that Tesla has been counting sessions since January. A driver discovering the competition now needs to decide quickly which category actually fits the way they drive.
+
+I built a plain-language comparison of Longest Trip, Most Unique Sites, and Most Energy, then connected each category to the route decision it changes. It is independent from Tesla and keeps estimates clearly separate from official scoring.
+
+If it helps a future update or related story, the reader resource is here:
+
+`https://www.teslachargequest.com/2026-tesla-supercharging-competition`
+
+— Anthony
+
+### Send gate
+
+Before any note goes out:
+
+1. Re-open the article and confirm the author, angle, and public contact route are still current.
+2. Replace one sentence with a specific observation from the article so the note could not have been sent to anyone else.
+3. Check that the linked ChargeQuest page is live and that every time-sensitive claim still matches Tesla’s current rules or charger details.
+4. Send one note, record the date and response, then wait. Do not automate a mass sequence.
+5. Ask for Anthony’s explicit confirmation before sending or posting any message.
 
 ## The next 90 days
 

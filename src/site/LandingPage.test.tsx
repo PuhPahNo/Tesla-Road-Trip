@@ -60,6 +60,7 @@ describe('ChargeQuest landing page', () => {
     expect(document.querySelector('source[type="image/webp"]')?.getAttribute('srcset'))
       .toContain('desert-road-960.webp 960w')
     expect(screen.getByText('One shared challenge. Countless possible journeys.')).toBeTruthy()
+    expect(screen.getByText(/ChargeQuest CORE is a multi-day Tesla Supercharger route planner built around your car/i)).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Build Your Route' }).getAttribute('href')).toBe('/signup?returnTo=%2Fplanner')
     expect(screen.queryByRole('link', { name: 'Follow the quest' })).toBeNull()
     expect(screen.getByText('Map the stops that matter')).toBeTruthy()

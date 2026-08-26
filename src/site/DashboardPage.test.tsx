@@ -78,7 +78,7 @@ describe('signed-in dashboard', () => {
     expect(screen.getByText('route suggestions for Anthony')).toBeTruthy()
     expect(screen.getAllByRole('img', { name: 'Tesla Superchargers illuminated at night' })).toHaveLength(1)
     expect(screen.getByRole('img', { name: 'A car traveling a dark highway at night' })).toBeTruthy()
-    expect(screen.getByRole('img', { name: 'A vintage Route 66 motel sign shining at night' })).toBeTruthy()
+    expect(screen.getByRole('img', { name: 'The view through a windshield on a desert highway' })).toBeTruthy()
     expect(screen.getByRole('img', { name: 'The Grand Canyon stretching into the distance from the South Rim' })).toBeTruthy()
     expect(screen.queryByRole('heading', { name: 'Change password' })).toBeNull()
   })

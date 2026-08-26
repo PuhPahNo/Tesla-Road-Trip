@@ -3,6 +3,10 @@ import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { SEO_PAGES, SITE_ORIGIN } from '../src/seo/seoPages'
 import {
+  ANTHONY_ROUTE_PUBLIC_SUMMARY,
+  formatAnthonyRouteMiles,
+} from '../src/content/anthonyRouteSummary'
+import {
   CUSTOM_PUBLIC_PAGES,
   PUBLIC_INDEXABLE_PATHS,
   getSeoBreadcrumbs,
@@ -57,6 +61,13 @@ describe('server SEO rendering', () => {
       }
       if (page.kind !== 'about') {
         expect(rendered.html).toContain('Written by <a href="/about-anthony">Anthony Pappano</a>')
+      }
+      if (page.routeMap) {
+        expect(rendered.html).toContain('data-route-anchor-map')
+        expect(rendered.html).toContain(page.routeMap.title)
+        for (const stop of page.routeMap.stops) {
+          expect(rendered.html).toContain(`<li>${stop.label}</li>`)
+        }
       }
     }
   })
@@ -141,7 +152,9 @@ describe('server SEO rendering', () => {
     const snapshotSection = rendered.html.match(
       /<section>\s*<h2>The checked-in route snapshot<\/h2>([\s\S]*?)<\/section>/,
     )?.[1] ?? ''
-    expect(snapshotSection).not.toMatch(/\d[\d,]*\s+miles/)
+    expect(snapshotSection).toContain(`${formatAnthonyRouteMiles()} road-routed miles`)
+    expect(snapshotSection).toContain(`about ${ANTHONY_ROUTE_PUBLIC_SUMMARY.driveHours} hours of driving`)
+    expect(snapshotSection).not.toContain('does not contain verified route mileage')
 
     const representativeList = rendered.html.match(/<ol data-route-summary-stops>([\s\S]*?)<\/ol>/)?.[1] ?? ''
     expect(representativeList.match(/<li>/g)).toHaveLength(8)

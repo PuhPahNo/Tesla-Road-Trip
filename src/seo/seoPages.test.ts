@@ -122,10 +122,49 @@ describe('public SEO content registry', () => {
     const routes = SEO_PAGES.find((page) => page.path === '/tesla-road-trip-routes')
     const copy = JSON.stringify(routes)
 
+    expect(routes?.title).toBe('Tesla Supercharger Road Trip Routes: Maps, Stops & Ideas')
+    expect(routes?.headline).toBe('Tesla Supercharger road-trip routes')
     expect(copy).toContain('40 fixed templates')
     expect(copy).toContain('two conditional custom variants')
     expect(copy).toContain('three fixed CORE templates')
     expect(copy).not.toContain('42 starting route ideas')
+    expect(routes?.sections[0].table?.rows).toHaveLength(3)
+    expect(routes?.sections[0].table?.rows.map((row) => row[0])).toEqual([
+      { text: 'Route 66 and Desert Icons', href: '/routes/tesla-route-66-supercharger-road-trip' },
+      { text: 'National Parks and Western Icons', href: '/routes/tesla-national-parks-road-trip' },
+      { text: 'Great American Icons', href: '/routes/great-american-icons' },
+    ])
+  })
+
+  it('publishes bounded original anchor maps for every detailed route without presenting them as navigation', () => {
+    const routes = SEO_PAGES.filter((page) => page.kind === 'route')
+
+    expect(routes).toHaveLength(3)
+    for (const route of routes) {
+      expect(route.routeMap?.stops.length, route.path).toBeGreaterThanOrEqual(9)
+      expect(route.routeMap?.note, route.path).toMatch(/not (the final Supercharger sequence|roads|a live charging or navigation map)/i)
+      for (const stop of route.routeMap?.stops ?? []) {
+        expect(stop.lat, `${route.path} ${stop.label} latitude`).toBeGreaterThanOrEqual(24)
+        expect(stop.lat, `${route.path} ${stop.label} latitude`).toBeLessThanOrEqual(50)
+        expect(stop.lon, `${route.path} ${stop.label} longitude`).toBeGreaterThanOrEqual(-125)
+        expect(stop.lon, `${route.path} ${stop.label} longitude`).toBeLessThanOrEqual(-66)
+      }
+    }
+
+    const nationalParks = routes.find((route) => route.path === '/routes/tesla-national-parks-road-trip')!
+    expect(nationalParks.title).toBe('Tesla National Parks Road Trip: Western Supercharger Route')
+    expect(nationalParks.headline).toContain('Tesla National Parks road trip')
+    expect(nationalParks.routeMap?.stops.map((stop) => stop.label)).toEqual(expect.arrayContaining([
+      'Rocky Mountain',
+      'Grand Canyon',
+      'Yosemite',
+      'Yellowstone',
+    ]))
+
+    const badgeHub = SEO_PAGES.find((page) => page.path === '/tesla-iconic-charger-badges')!
+    expect(badgeHub.routeMap?.connectStops).toBe(false)
+    expect(badgeHub.routeMap?.stops).toHaveLength(17)
+    expect(badgeHub.routeMap?.stops.map((stop) => stop.label)).toContain('Waikiki · HI')
   })
 
   it('uses a ProfilePage for the visible Anthony author page', () => {
