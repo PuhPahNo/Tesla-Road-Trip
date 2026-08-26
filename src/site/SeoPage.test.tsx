@@ -62,7 +62,7 @@ describe('editorial page architecture', () => {
       .toBe('https://insideevs.com/news/799674/tesla-free-supercharging-competition-2026/')
   })
 
-  it('renders an accessible original route diagram and keeps internal comparison links inside the app', () => {
+  it('renders an accessible geographic route map and keeps internal comparison links inside the app', () => {
     const nationalParks = SEO_PAGES.find((candidate) => candidate.path === '/routes/tesla-national-parks-road-trip')!
     render(
       <MemoryRouter initialEntries={[nationalParks.path]}>
@@ -70,7 +70,11 @@ describe('editorial page architecture', () => {
       </MemoryRouter>,
     )
 
-    expect(screen.getByRole('img', { name: /Western national parks Tesla route anchor map/i })).toBeTruthy()
+    const map = screen.getByRole('img', { name: /Western national parks Tesla route anchor map/i })
+    expect(map).toBeTruthy()
+    expect(map.querySelector('[data-map-layer="lower-48-outline"]')).toBeTruthy()
+    expect(within(map).getByText('UNITED STATES')).toBeTruthy()
+    expect(screen.getByText('Geographic ChargeQuest route map')).toBeTruthy()
     expect(screen.getByRole('heading', { name: 'Western national parks Tesla route anchor map' })).toBeTruthy()
     expect(screen.getByText('Rocky Mountain')).toBeTruthy()
     const badgeLink = screen.getByRole('link', { name: 'Grand Canyon Iconic Charger badge' })
