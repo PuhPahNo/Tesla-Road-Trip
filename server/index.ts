@@ -50,7 +50,8 @@ const OSRM_BASE_URL = process.env.OSRM_BASE_URL ?? OSRM_DEMO_URL
 const OSRM_REAL = OSRM_BASE_URL.length > 0 && OSRM_BASE_URL !== OSRM_DEMO_URL
 
 const ORS_API_KEY = process.env.ORS_API_KEY ?? ''
-const ORS_BASE_URL = process.env.ORS_BASE_URL ?? 'https://api.openrouteservice.org'
+const ORS_BASE_URL =
+  process.env.ORS_BASE_URL ?? 'https://api.heigit.org/openrouteservice'
 const MAX_ORS_COORDINATES = 48 // ORS free directions waypoint cap is ~50
 // ORS free caps each request's route distance at 6,000 km; chunk well under that
 // (straight-line, since the actual road route runs ~20-40% longer).
