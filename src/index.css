@@ -652,6 +652,10 @@ body.modal-open {
   background: var(--canvas-bg);
   font-family: var(--font-sans);
 }
+
+.map-tiles-dark-fallback {
+  filter: brightness(0.48) grayscale(0.65) invert(1) hue-rotate(180deg);
+}
 .leaflet-control-attribution {
   background: transparent !important;
   color: var(--faint) !important;

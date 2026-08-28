@@ -22,6 +22,7 @@ import type {
 import { haversineMiles, simplifyPolyline } from '../domain/geo'
 import { stationHighlights } from '../domain/highlights'
 import { formatStationAddress } from '../domain/stationAddress'
+import { resolveBasemap } from '../domain/basemap'
 import { StationStatusBadge } from './StationStatusBadge'
 import { STATE_NAME_TO_CODE } from '../domain/usStates'
 import { useIsMobile } from '../hooks/useMediaQuery'
@@ -66,11 +67,6 @@ const BADGE_MARKER_STROKE = '#facc15'
 const ACTIVE_DAY_COLOR = '#23d7d1'
 const PREVIEW_DAY_COLOR = '#facc15'
 
-const TILE_URL = {
-  tesla: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-  dash: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-} as const
-
 export const MapView = memo(function MapView({
   stations,
   route,
@@ -91,6 +87,10 @@ export const MapView = memo(function MapView({
   const { theme, isDark } = useTheme()
   const isMobile = useIsMobile()
   const cooperativeTouchMode = pageScrollOnMobile && isMobile
+  const basemap = useMemo(
+    () => resolveBasemap(theme, import.meta.env.VITE_CARTO_BASEMAP_KEY),
+    [theme],
+  )
   // preferCanvas means Leaflet vector strokes/fills are painted to <canvas>,
   // which cannot resolve CSS var(), so theme colors are picked here in JS.
   const ink = isDark ? '#e9edf2' : '#171a20'
@@ -149,11 +149,12 @@ export const MapView = memo(function MapView({
       touchZoom
     >
       <TileLayer
-        key={theme}
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        key={`${theme}-${basemap.provider}`}
+        attribution={basemap.attribution}
+        className={basemap.provider === 'osm' && isDark ? 'map-tiles-dark-fallback' : undefined}
         detectRetina
-        subdomains="abcd"
-        url={isDark ? TILE_URL.dash : TILE_URL.tesla}
+        subdomains={basemap.subdomains}
+        url={basemap.url}
       />
       <ZoomControl
         focusPositions={zoomFocusPositions}
