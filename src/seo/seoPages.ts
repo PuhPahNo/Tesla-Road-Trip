@@ -1134,7 +1134,6 @@ export function seoPageStructuredData(page: SeoPage) {
         headline: page.headline,
         description: page.description,
         url: `${SITE_ORIGIN}${page.path}`,
-        dateModified: page.updatedAt,
         inLanguage: 'en-US',
         mainEntity: author,
         publisher: {

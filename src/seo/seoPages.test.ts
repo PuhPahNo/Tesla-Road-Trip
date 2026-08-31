@@ -170,7 +170,8 @@ describe('public SEO content registry', () => {
   it('uses a ProfilePage for the visible Anthony author page', () => {
     const about = SEO_PAGES.find((page) => page.path === '/about-anthony')
     expect(about).toBeTruthy()
-    expect(seoPageStructuredData(about!)['@graph'][0]).toMatchObject({
+    const profilePage = seoPageStructuredData(about!)['@graph'][0]
+    expect(profilePage).toMatchObject({
       '@type': 'ProfilePage',
       mainEntity: {
         '@type': 'Person',
@@ -178,5 +179,6 @@ describe('public SEO content registry', () => {
         url: 'https://www.teslachargequest.com/about-anthony',
       },
     })
+    expect(profilePage).not.toHaveProperty('dateModified')
   })
 })

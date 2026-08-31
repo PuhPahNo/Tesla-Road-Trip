@@ -424,7 +424,7 @@ export function buildSeoPageStructuredData(page: SeoPage): Record<string, unknow
         ...primaryPage,
         '@id': isArticle ? `${pageUrl}#article` : pageUrl,
         ...(isArticle ? { datePublished: SEO_PUBLISHED_AT } : {}),
-        dateModified: page.updatedAt,
+        ...(page.kind === 'about' ? {} : { dateModified: page.updatedAt }),
         image: { '@id': `${pageUrl}#primaryimage` },
         ...(page.kind === 'about'
           ? {

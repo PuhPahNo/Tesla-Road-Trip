@@ -82,6 +82,18 @@ describe('public site architecture', () => {
     })
   })
 
+  it('omits the optional ProfilePage modification time when only a date is known', () => {
+    const about = SEO_PAGES.find((candidate) => candidate.path === '/about-anthony')!
+    const graph = buildSeoPageStructuredData(about)['@graph'] as Array<Record<string, unknown>>
+
+    expect(graph[0]).toMatchObject({
+      '@type': 'ProfilePage',
+      '@id': `${SITE_ORIGIN}/about-anthony`,
+      mainEntity: { '@id': `${SITE_ORIGIN}/about-anthony#person` },
+    })
+    expect(graph[0]).not.toHaveProperty('dateModified')
+  })
+
   it('assigns every published editorial page a distinct cover outside the landing-page image system', () => {
     const presentations = SEO_PAGES.map(getSeoPagePresentation)
     const socialImages = presentations.map((presentation) => presentation.socialImage)
