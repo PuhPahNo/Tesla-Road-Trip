@@ -71,13 +71,15 @@ const ROAD_PROVIDER: 'ors' | 'osrm' | 'none' = ORS_API_KEY
 // validate the key with a cheap cached probe. Full-route failures are handled as
 // route-specific fallbacks unless ORS explicitly rejects the credentials.
 const ORS_HEALTH_TTL_MS = 1000 * 60 * 5
+const ORS_PROBE_TIMEOUT_MS = 3_000
 // Two close, reliably-routable points (downtown SF -> Oakland) used only to probe
 // whether the ORS key authenticates and still has quota.
 const ORS_PROBE_COORDS: LatLon[] = [
   { lat: 37.7749, lon: -122.4194 },
   { lat: 37.8044, lon: -122.2712 },
 ]
-let orsHealth = { ok: true, checkedAt: 0, reason: '' }
+let orsHealth = { ok: false, checkedAt: 0, reason: '' }
+let orsHealthProbe: Promise<boolean> | null = null
 
 function markOrsHealth(ok: boolean, reason = ''): void {
   orsHealth = { ok, checkedAt: Date.now(), reason }
@@ -89,9 +91,11 @@ function disablesOrsHealth(error: unknown): boolean {
 }
 
 /** One cheap ORS request to confirm the key authenticates and has quota. */
-async function probeOrsKey(): Promise<boolean> {
+async function runOrsProbe(): Promise<boolean> {
   try {
-    await requestOrsChunk(ORS_PROBE_COORDS, () => {}, 1)
+    await requestOrsChunk(
+      ORS_PROBE_COORDS, () => {}, 1, AbortSignal.timeout(ORS_PROBE_TIMEOUT_MS),
+    )
     markOrsHealth(true)
     return true
   } catch (error) {
@@ -100,13 +104,21 @@ async function probeOrsKey(): Promise<boolean> {
   }
 }
 
-/** Whether road routing is actually usable right now (presence AND validity). */
-async function isRoadRoutingHealthy(): Promise<boolean> {
+/** Share one bounded probe between startup and concurrent health checks. */
+function probeOrsKey(): Promise<boolean> {
+  if (!orsHealthProbe) {
+    orsHealthProbe = runOrsProbe().finally(() => { orsHealthProbe = null })
+  }
+  return orsHealthProbe
+}
+
+/** Report cached provider status without delaying instance health checks. */
+function isRoadRoutingHealthy(): boolean {
   if (ROAD_PROVIDER === 'none') return false
   if (ROAD_PROVIDER === 'osrm') return true
-  // ORS: serve cached health, refreshing with a cheap probe when stale.
-  if (Date.now() - orsHealth.checkedAt < ORS_HEALTH_TTL_MS) return orsHealth.ok
-  return probeOrsKey()
+  // Provider outages must not make Render restart an otherwise healthy app.
+  if (Date.now() - orsHealth.checkedAt >= ORS_HEALTH_TTL_MS) void probeOrsKey()
+  return orsHealth.ok
 }
 
 const CACHE_TTL_MS = 1000 * 60 * 60
@@ -218,8 +230,8 @@ app.use((_request, response, next) => {
   next()
 })
 
-app.get('/api/health', async (_request, response) => {
-  const enabled = await isRoadRoutingHealthy()
+app.get('/api/health', (_request, response) => {
+  const enabled = isRoadRoutingHealthy()
   const databaseHealthy = databaseIsHealthy()
   response.status(databaseHealthy ? 200 : 503)
   response.json({
@@ -569,6 +581,7 @@ async function requestOrsChunk(
   coordinates: LatLon[],
   countRequest: () => void,
   maxAttempts = 2,
+  signal?: AbortSignal,
 ): Promise<RoadSegment> {
   const url = `${ORS_BASE_URL.replace(/\/$/, '')}/v2/directions/driving-car/geojson`
   let lastError: unknown
@@ -576,6 +589,7 @@ async function requestOrsChunk(
     countRequest()
     try {
       const res = await fetch(url, {
+        signal,
         method: 'POST',
         headers: {
           Authorization: ORS_API_KEY,
@@ -878,10 +892,11 @@ if (anthonyAdmin) {
   )
 }
 
-app.listen(PORT, () => {
-  console.log(`ChargeQuest API listening on http://localhost:${PORT}`)
+const server = app.listen(PORT, () => {
+  const address = server.address()
+  const listeningPort = address && typeof address !== 'string' ? address.port : PORT
+  console.log(`ChargeQuest API listening on http://localhost:${listeningPort}`)
   console.log(`ChargeQuest data: ${databasePath()}`)
-  // Warm the ORS health cache so the first /api/health reflects key validity
-  // immediately (and the UI shows estimate mode right away if the key is bad).
+  // Warm routing status in the background; use estimates until verified.
   if (ROAD_PROVIDER === 'ors') void probeOrsKey()
 })
