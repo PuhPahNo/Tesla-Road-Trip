@@ -265,7 +265,7 @@ for (const [index, stop] of stops.entries()) {
         evCharging: h.evCharging ?? { status: 'unverified' },
         bookingUrl: bookingUrl(
           h.name,
-          station.address.city,
+          h.address || station.address.city,
           station.address.state,
           stop.date,
           day.checkOut,

@@ -576,7 +576,7 @@ function HotelCard({
     ? `1 night · checked ${shortDateTime(rate.observedAt)}`
     : rate.availability === 'unavailable'
       ? 'Unavailable on Booking.com'
-      : 'No confident Booking.com match'
+      : 'Rate not checked for these dates'
   return (
     <article className="admin-surface flex min-h-full flex-col overflow-hidden">
       <div className="relative h-[132px] overflow-hidden bg-[linear-gradient(135deg,color-mix(in_srgb,var(--accent-2)_18%,var(--panel-2)),var(--panel-2)_55%,color-mix(in_srgb,var(--accent)_14%,var(--panel-2)))]">
