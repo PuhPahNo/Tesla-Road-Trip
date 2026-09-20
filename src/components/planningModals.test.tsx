@@ -316,3 +316,26 @@ describe('planning modal responsibilities', () => {
     expect(screen.getByRole('button', { name: 'Delete Saved Test' })).toBeTruthy()
   })
 })
+
+describe('reviewed itinerary editing', () => {
+  it('preserves reviewed days for date edits and only releases them after choosing to rebuild', () => {
+    const onSave = vi.fn()
+    const route: SavedCustomRoute = {
+      id: 'reviewed', name: 'Reviewed trip', color: '#e82127',
+      waypoints: [{ id: 'city-nashville', label: 'Nashville', position: { lat: 36.16, lon: -86.78 }, radiusMiles: 40 }],
+      targetDays: 2, dailyStationIds: ['sci-1', 'sci-2'],
+      startDate: '2026-09-27', createdAt: '2026-09-20', updatedAt: '2026-09-20',
+    }
+    render(<CustomRouteModal open isSaving={false} route={route} defaultTargetDays={60} preferences={defaultPlannerConfig} onClose={vi.fn()} onSave={onSave} />)
+    expect(screen.getByText('Reviewed daily itinerary')).toBeTruthy()
+    expect(screen.queryByLabelText('Custom route trip days')).toBeNull()
+    fireEvent.change(screen.getByLabelText('Trip start date'), { target: { value: '2026-09-28' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save itinerary' }))
+    expect(onSave).toHaveBeenLastCalledWith(expect.objectContaining({ dailyStationIds: route.dailyStationIds, startDate: '2026-09-28' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Rebuild from destinations' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Continue to destinations' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Review route' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Update and optimize' }))
+    expect(onSave).toHaveBeenLastCalledWith(expect.objectContaining({ dailyStationIds: [] }))
+  })
+})

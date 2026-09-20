@@ -1,0 +1,143 @@
+{
+  "reviewedAt": "2026-09-20",
+  "routeId": "saved-2026-competition",
+  "startDate": "2026-09-27",
+  "dailyStationIds": [
+    "sci-5990",
+    "sci-4039",
+    "sci-6051",
+    "sci-657",
+    "sci-3382",
+    "sci-1734",
+    "sci-4033",
+    "sci-7723",
+    "sci-1296",
+    "sci-180",
+    "sci-1851",
+    "sci-206",
+    "sci-5633",
+    "sci-1439",
+    "sci-1596",
+    "sci-1158",
+    "sci-1029",
+    "sci-901",
+    "sci-857",
+    "sci-2376",
+    "sci-332",
+    "sci-6073",
+    "sci-9115",
+    "sci-2099",
+    "sci-7714",
+    "sci-3643",
+    "sci-853",
+    "sci-7645",
+    "sci-170",
+    "sci-9795",
+    "sci-1373",
+    "sci-1854",
+    "sci-1980",
+    "sci-1899",
+    "sci-6071",
+    "sci-3380",
+    "sci-8178",
+    "sci-1725",
+    "sci-7603",
+    "sci-513",
+    "sci-738",
+    "sci-2052",
+    "sci-2566",
+    "sci-4272",
+    "sci-993",
+    "sci-4301",
+    "sci-1509",
+    "sci-8607",
+    "sci-2027",
+    "sci-918",
+    "sci-10636",
+    "sci-2627",
+    "sci-7772",
+    "sci-189",
+    "sci-4511",
+    "sci-190",
+    "sci-8090",
+    "sci-10113",
+    "sci-8903",
+    "sci-7745",
+    "sci-9794",
+    "sci-9501",
+    "sci-6902",
+    "sci-5923",
+    "sci-4073",
+    "sci-1263",
+    "sci-4421",
+    "sci-4424",
+    "sci-1081",
+    "sci-6164"
+  ],
+  "stayDayCaps": [
+    {
+      "placeId": "landmark-ut-arches",
+      "maxDays": 3
+    },
+    {
+      "placeId": "landmark-or-crater-lake",
+      "maxDays": 2
+    },
+    {
+      "placeId": "landmark-ca-golden-gate",
+      "maxDays": 1
+    },
+    {
+      "placeId": "landmark-az-grand-canyon",
+      "maxDays": 3
+    },
+    {
+      "placeId": "landmark-wa-mount-rainier",
+      "maxDays": 2
+    },
+    {
+      "placeId": "landmark-co-rocky-mountain",
+      "maxDays": 3
+    },
+    {
+      "placeId": "landmark-wy-yellowstone",
+      "maxDays": 3
+    },
+    {
+      "placeId": "landmark-ut-zion",
+      "maxDays": 3
+    },
+    {
+      "placeId": "landmark-ca-yosemite",
+      "maxDays": 2
+    },
+    {
+      "placeId": "landmark-ca-lake-tahoe",
+      "maxDays": 1
+    },
+    {
+      "placeId": "city-los-angeles",
+      "maxDays": 1
+    },
+    {
+      "placeId": "city-san-antonio",
+      "maxDays": 1
+    },
+    {
+      "placeId": "landmark-la-poverty-point",
+      "maxDays": 1
+    },
+    {
+      "placeId": "city-st-louis",
+      "maxDays": 1
+    },
+    {
+      "placeId": "landmark-sd-badlands",
+      "maxDays": 1
+    },
+    {
+      "placeId": "city-jackson-ms",
+      "maxDays": 1
+    }
+  ]
+}

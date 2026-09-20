@@ -941,3 +941,39 @@ describe('route optimizer', () => {
     expect(hasDirectGulfJump).toBe(false)
   })
 })
+
+describe('reviewed daily itineraries', () => {
+  const route: SavedCustomRoute = {
+    id: 'reviewed', name: 'Reviewed route', color: '#e82127',
+    waypoints: [{ id: 'anchor', label: 'Anchor', position: { lat: 35, lon: -85 }, radiusMiles: 50 }],
+    targetDays: 3, reverseLoop: true,
+    dailyStationIds: ['test-2', 'test-0', 'test-1'],
+    startDate: '2026-09-27', createdAt: '2026-09-20', updatedAt: '2026-09-20',
+  }
+
+  it('preserves the reviewed sequence through optimization and road refinement', () => {
+    const stations = buildStationGrid()
+    const config = { ...defaultPlannerConfig, savedCustomRoutes: [route] }
+    const result = optimizeRoutes(stations, config).routes.find((r) => r.id === route.id)!
+    expect(result.visits.map((v) => v.station.id)).toEqual(route.dailyStationIds)
+    expect(result.totalDays).toBe(3)
+    expect(result.tripStartDate).toBe('2026-09-27')
+    expect(result.distanceSource).toBe('estimate')
+    const road = refineRouteWithRoadLegs(result.visits.map((v) => v.station), config, result, [150, 90, 310, 0], [2.5, 1.5, 5.2, 0])
+    expect(road.visits.map((v) => v.station.id)).toEqual(route.dailyStationIds)
+    expect(road.days.map((d) => d.driveHours)).toEqual([2.5, 1.5, 5.2])
+    expect(road.visits[2].rangeWarning).toBe(true)
+    expect(road.warnings.some((w) => w.includes('60-day'))).toBe(false)
+  })
+
+  it('does not silently replace a missing stop and reports closures after road refinement', () => {
+    const stations = buildStationGrid()
+    const config = { savedCustomRoutes: [route] }
+    expect(() => optimizeRoutes(stations.filter((s) => s.id !== 'test-2'), config)).toThrow('missing from the station feed')
+    stations[2].status = 'CLOSED'
+    const result = optimizeRoutes(stations, config).routes.find((r) => r.id === route.id)!
+    expect(result.visits[0].station.status).toBe('CLOSED')
+    const road = refineRouteWithRoadLegs(result.visits.map((v) => v.station), config, result, [50, 50, 50, 0])
+    expect(road.warnings.some((w) => w.includes('CLOSED'))).toBe(true)
+  })
+})

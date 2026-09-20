@@ -53,3 +53,14 @@ describe('public beta planner limits', () => {
     ).toThrow()
   })
 })
+
+describe('reviewed daily itineraries', () => {
+  it('keeps a reviewed sequence and rejects duplicate or oversized stop lists', () => {
+    const route = { ...savedRoute(1), dailyStationIds: ['sci-22', 'sci-11'] }
+    expect(sanitizePlannerConfig({ savedCustomRoutes: [route] }).savedCustomRoutes[0].dailyStationIds)
+      .toEqual(['sci-22', 'sci-11'])
+    for (const ids of [['sci-22', 'sci-22'], Array.from({ length: 366 }, (_, i) => `sci-${i}`)]) {
+      expect(() => sanitizePlannerConfig({ savedCustomRoutes: [{ ...route, dailyStationIds: ids }] })).toThrow()
+    }
+  })
+})

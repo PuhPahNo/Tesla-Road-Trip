@@ -1013,6 +1013,7 @@ function summarizeConfig(config: PlannerConfig) {
       startDate: route.startDate,
       directionPreference: route.directionPreference,
       stayDayCaps: route.stayDayCaps ?? [],
+      reviewedDailyStops: route.dailyStationIds?.length ?? 0,
     })),
     longestTripTargets: config.longestTripTargets,
   }

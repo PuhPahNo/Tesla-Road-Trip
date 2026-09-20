@@ -103,6 +103,8 @@ export interface SavedCustomRoute {
   travelPreferences?: RouteTravelPreferences
   /** Route-specific caps for consecutive streak days inside selected basecamps. */
   stayDayCaps?: RouteStayDayCap[]
+  /** Reviewed daily charging stops, in order. Empty/absent uses automatic planning. */
+  dailyStationIds?: string[]
   createdAt: string
   updatedAt: string
 }

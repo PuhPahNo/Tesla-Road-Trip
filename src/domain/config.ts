@@ -96,7 +96,12 @@ const routeWaypointSchema = z.object({
   reason: z.string().max(240).optional(),
 })
 
+export const dailyStationIdsSchema = z.array(z.string().min(1).max(96))
+  .max(365)
+  .refine((ids) => new Set(ids).size === ids.length, 'Each daily stop must be a unique Supercharger.')
+
 const savedCustomRouteSchema = z.object({
+  dailyStationIds: dailyStationIdsSchema.optional(),
   id: z.string().min(1).max(96),
   name: z.string().min(1).max(80),
   color: z.string().min(1).max(32),

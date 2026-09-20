@@ -70,6 +70,7 @@ export interface CustomRouteDraft {
   directionPreference: RouteDirectionPreference
   travelPreferences?: RouteTravelPreferences | null
   stayDayCaps: RouteStayDayCap[]
+  dailyStationIds?: string[]
 }
 
 export interface CustomRouteModalProps {
@@ -108,6 +109,7 @@ export function CustomRouteModal({
 }: CustomRouteModalProps) {
   const titleId = useId()
   const [step, setStep] = useState<RouteWizardStep>(1)
+  const [preserveDailyItinerary, setPreserveDailyItinerary] = useState(false)
   const [name, setName] = useState('')
   const [targetDays, setTargetDays] = useState(String(defaultTargetDays))
   const [query, setQuery] = useState('')
@@ -132,6 +134,7 @@ export function CustomRouteModal({
   useEffect(() => {
     if (!open) return
     setStep(1)
+    setPreserveDailyItinerary(Boolean(route?.dailyStationIds?.length))
     setName(route?.name ?? '')
     setTargetDays(String(route?.targetDays ?? defaultTargetDays))
     setQuery('')
@@ -257,6 +260,9 @@ export function CustomRouteModal({
           ? null
           : undefined,
       stayDayCaps,
+      ...(route?.dailyStationIds?.length
+        ? { dailyStationIds: preserveDailyItinerary ? route.dailyStationIds : [] }
+        : {}),
     })
   }
 
@@ -285,6 +291,29 @@ export function CustomRouteModal({
       ...current.filter((cap) => cap.placeId !== placeId),
       { placeId, maxDays },
     ])
+  }
+
+  if (preserveDailyItinerary && route?.dailyStationIds?.length) {
+    return (
+      <Overlay open={open} onClose={onClose} size="wide" labelledBy={titleId}>
+        <OverlayHeader titleId={titleId} kicker="Route builder" title="Reviewed daily itinerary" onClose={onClose} />
+        <div className="space-y-4 p-5 text-sm text-dim">
+          <p>{route.dailyStationIds.length} daily stops are saved in order. Refreshing the station feed updates availability and driving estimates while keeping this itinerary.</p>
+          <label className="block">Route name
+            <input aria-label="Route name" value={name} onChange={(event) => setName(event.target.value)} className="mt-2 block w-full rounded-lg border border-edge bg-panel2 p-3 text-ink" />
+          </label>
+          <label className="block">Trip start date
+            <input aria-label="Trip start date" type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} className="mt-2 block rounded-lg border border-edge bg-panel2 p-3 text-ink" />
+          </label>
+          <p>To change destinations or the number of days, rebuild from your destination list. Rebuilding replaces the reviewed daily stops when you save.</p>
+          {error ? <p role="alert">{error}</p> : null}
+          <div className="flex flex-wrap gap-3">
+            <Button onClick={() => setPreserveDailyItinerary(false)}>Rebuild from destinations</Button>
+            <Button onClick={submit} disabled={isSaving || !name.trim() || !startDate}>Save itinerary</Button>
+          </div>
+        </div>
+      </Overlay>
+    )
   }
 
   return (

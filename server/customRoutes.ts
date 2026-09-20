@@ -4,6 +4,7 @@ import type { Express } from 'express'
 import { z } from 'zod'
 import {
   MAX_SAVED_ROUTE_WAYPOINTS,
+  dailyStationIdsSchema,
   PLANNER_NUMERIC_LIMITS,
 } from '../src/domain/config'
 import type { RouteWaypoint, SavedCustomRoute } from '../src/domain/types'
@@ -71,6 +72,7 @@ const stayDayCapsSchema = z
   .max(16)
 
 const savedRouteSchema = z.object({
+  dailyStationIds: dailyStationIdsSchema.optional(),
   id: z.string().min(1).max(96),
   name: z.string().min(1).max(80),
   color: z.string().min(1).max(32),
@@ -90,6 +92,7 @@ const savedRouteSchema = z.object({
 })
 
 const createRouteSchema = z.object({
+  dailyStationIds: dailyStationIdsSchema.optional(),
   name: z.string().min(1).max(80),
   color: z.string().min(1).max(32).optional(),
   waypoints: z.array(waypointSchema).min(1).max(MAX_SAVED_ROUTE_WAYPOINTS),
@@ -158,6 +161,16 @@ export function updateSavedCustomRoute(
   if (routeIndex < 0) return undefined
 
   const current = existing[routeIndex]
+  // A broad route edit must explicitly release its reviewed stop sequence.
+  // Otherwise an AI or API caller could report a change that never takes effect.
+  if (current.dailyStationIds?.length && parsed.dailyStationIds === undefined) {
+    const planningFields = ['waypoints', 'targetDays', 'keepOrder', 'reverseLoop',
+      'directionPreference', 'stayDayCaps', 'travelPreferences'] as const
+    if (planningFields.some((key) => parsed[key] !== undefined &&
+      JSON.stringify(parsed[key]) !== JSON.stringify(current[key]))) {
+      throw new Error('This route has a reviewed daily itinerary. Choose Rebuild from destinations in the route editor before changing its planning settings.')
+    }
+  }
   const route: SavedCustomRoute = {
     ...current,
     ...(parsed.name !== undefined ? { name: parsed.name.trim() } : {}),
@@ -179,8 +192,10 @@ export function updateSavedCustomRoute(
     ...(parsed.stayDayCaps !== undefined
       ? { stayDayCaps: parsed.stayDayCaps }
       : {}),
+    ...(parsed.dailyStationIds !== undefined ? { dailyStationIds: parsed.dailyStationIds } : {}),
     updatedAt: new Date().toISOString(),
   }
+  if (route.dailyStationIds?.length) route.targetDays = route.dailyStationIds.length
   if (parsed.travelPreferences === null) delete route.travelPreferences
   const routes = existing.slice()
   routes[routeIndex] = route
@@ -229,10 +244,12 @@ export function registerCustomRouteRoutes(app: Express) {
         ...(parsed.stayDayCaps?.length
           ? { stayDayCaps: parsed.stayDayCaps }
           : {}),
+        ...(parsed.dailyStationIds !== undefined ? { dailyStationIds: parsed.dailyStationIds } : {}),
         createdAt: now,
         updatedAt: now,
       }
 
+      if (route.dailyStationIds?.length) route.targetDays = route.dailyStationIds.length
       const routes = [...existing, route]
       writeSavedCustomRoutes(user.id, routes)
       response.status(201).json({ route, routes, storage: 'account' })

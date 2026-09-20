@@ -3770,11 +3770,15 @@ function finalizeDay(
  * `legMiles` length must be orderedStations.length + 1 (the last is the return leg).
  */
 function plannerConfigForRoute(config: PlannerConfig, routeId: string) {
-  const routePreferences = config.savedCustomRoutes.find(
-    (route) => route.id === routeId,
-  )?.travelPreferences
-  return routePreferences
-    ? sanitizePlannerConfig({ ...config, ...routePreferences })
+  const savedRoute = config.savedCustomRoutes.find((route) => route.id === routeId)
+  return savedRoute
+    ? sanitizePlannerConfig({
+        ...config,
+        ...savedRoute.travelPreferences,
+        ...(savedRoute.dailyStationIds?.length
+          ? { longestTripDays: savedRoute.dailyStationIds.length }
+          : {}),
+      })
     : config
 }
 
@@ -3836,7 +3840,11 @@ export function refineRouteWithRoadLegs(
     stationsPerDay: round(uniqueStations / totalDays, 1),
     days: plans.days,
     visits: plans.visits,
-    warnings: plans.totals.warnings,
+    warnings: [
+      ...plans.totals.warnings,
+      ...orderedStations.filter((station) => station.status !== 'OPEN')
+        .map((station) => `${station.name} is ${station.status}; replace this stop before travel.`),
+    ],
     advisories: plans.totals.advisories,
     longDays: plans.totals.longDays,
     routeLine: buildDisplayRouteLine(scored, config.start),
@@ -3882,6 +3890,28 @@ export function optimizeRoutes(
       routeConfig.plannerMode === 'longest_trip'
         ? variant.targetDays ?? defaultRouteTarget
         : defaultRouteTarget
+    const dailyStationIds = config.savedCustomRoutes.find(
+      (route) => route.id === variant.id,
+    )?.dailyStationIds
+    if (routeConfig.plannerMode === 'longest_trip' && dailyStationIds?.length) {
+      const byId = new Map(allStations.map((station) => [station.id, station]))
+      const reviewedStations = dailyStationIds.map((id) => {
+        const station = byId.get(id)
+        if (!station) {
+          throw new Error(`A reviewed daily stop (${id}) is missing from the station feed. Review the saved itinerary before rebuilding it.`)
+        }
+        return station
+      })
+      const reviewed = refineRouteWithRoadLegs(
+        reviewedStations,
+        routeConfig,
+        { ...variant, strategy: `Reviewed daily itinerary: ${dailyStationIds.length} unique Superchargers in saved order.` },
+        [],
+        undefined,
+        'estimate',
+      )
+      return reviewed
+    }
     const autoStayTargets =
       routeConfig.plannerMode === 'longest_trip'
         ? planAutoStays(variant.anchors, variant.corridorMiles, routeConfig)
