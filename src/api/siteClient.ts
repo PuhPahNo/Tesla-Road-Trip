@@ -136,6 +136,10 @@ export interface AdminHotelRecommendation {
   address: string
   distanceFromSuperchargerMiles: number
   routeDetourMiles: number
+  driveMinutesFromSupercharger?: number
+  routeDetourMinutes?: number
+  distanceSource?: 'road'
+  routedAt?: string
   evCharging: {
     status: 'nearby' | 'unverified'
     distanceMiles?: number
@@ -170,6 +174,7 @@ export interface AdminHotelDay {
     state: string
     position: Coordinate
   } | null
+  overnightRequired?: boolean
   recommendations: AdminHotelRecommendation[]
   researchStatus: 'current' | 'needs_refresh'
 }

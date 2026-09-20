@@ -27,7 +27,7 @@ import type { SavedCustomRoute } from '../domain/types'
 import { formatStationAddress } from '../domain/stationAddress'
 import { cx } from '../ui/primitives'
 
-type DistanceFilter = 'any' | '5' | '15'
+type DistanceFilter = 'any' | '10' | '20'
 
 export function AdminHotelsPage() {
   const [routes, setRoutes] = useState<SavedCustomRoute[]>([])
@@ -123,7 +123,7 @@ export function AdminHotelsPage() {
         if (onlyUnique && !hotel.isUnique) return false
         if (
           maxDistance !== 'any' &&
-          hotel.distanceFromSuperchargerMiles > Number(maxDistance)
+          (hotel.driveMinutesFromSupercharger ?? Infinity) > Number(maxDistance)
         ) {
           return false
         }
@@ -168,7 +168,7 @@ export function AdminHotelsPage() {
             >
               {routes.map((route) => (
                 <option key={route.id} value={route.id}>
-                  {route.name} · {route.targetDays ?? '—'} nights
+                  {route.name} · {route.targetDays ?? '—'} days
                 </option>
               ))}
             </select>
@@ -200,10 +200,12 @@ export function AdminHotelsPage() {
           <HotelStats plan={plan} />
 
           <div className="mt-5 rounded-[13px] border border-info-bd bg-info-bg px-4 py-3 text-[11.5px] leading-[1.55] text-info">
+            Driving miles and minutes use road routes without live traffic. Detour means
+            extra driving via the hotel toward tomorrow’s Supercharger.
             Each displayed price is a one-room, one-adult Booking.com snapshot for
             this exact night—not a quote or a range. Taxes and fees may be excluded,
-            and rates can change. “EV nearby” means a charger is mapped within 0.3
-            miles; confirm overnight access with the hotel before booking.
+            and rates can change. “EV nearby” is mapped proximity within 0.3
+            miles, not driving distance; confirm overnight access with the hotel before booking.
           </div>
 
           <div className="mt-6 grid gap-6 lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start">
@@ -309,6 +311,14 @@ export function AdminHotelsPage() {
                     </div>
                   ) : null}
 
+                  {day.researchStatus === 'current' && day.overnightRequired !== false &&
+                    day.recommendations.length > 0 &&
+                    day.recommendations.every(hotel => (hotel.driveMinutesFromSupercharger ?? Infinity) > 20) ? (
+                    <div className="mt-4 rounded-[12px] border border-warn-bd bg-warn-bg p-4 text-[12px] text-warn">
+                      No researched hotel is within a 20-minute drive. These are the nearby alternatives.
+                    </div>
+                  ) : null}
+
                   <div className="mt-4 grid gap-4 xl:grid-cols-2">
                     {visibleHotels.map((hotel, index) => (
                       <HotelCard
@@ -318,7 +328,12 @@ export function AdminHotelsPage() {
                       />
                     ))}
                   </div>
-                  {visibleHotels.length === 0 ? (
+                  {day.overnightRequired === false ? (
+                    <div className="admin-surface mt-4 p-8 text-center text-ink">
+                      Home in Chattanooga — no hotel needed tonight.
+                    </div>
+                  ) : null}
+                  {visibleHotels.length === 0 && day.overnightRequired !== false ? (
                     <div className="admin-surface mt-4 p-8 text-center">
                       <div className="text-[14px] font-semibold text-ink">
                         No hotels match every filter
@@ -347,8 +362,7 @@ export function AdminHotelsPage() {
           </div>
 
           <footer className="mt-8 border-t border-edge py-5 font-mono text-[8.5px] leading-[1.7] text-faint">
-            Route captured {longDateTime(plan.research.capturedAt)} · Hotel and EV
-            map research {longDateTime(plan.research.researchedAt)} · Booking.com
+            Route captured {longDateTime(plan.research.capturedAt)} · Hotel routes refreshed {longDateTime(plan.research.researchedAt)} · Booking.com
             prices checked{' '}
             {plan.research.bookingResearchedAt
               ? longDateTime(plan.research.bookingResearchedAt)
@@ -363,7 +377,7 @@ export function AdminHotelsPage() {
 
 function HotelStats({ plan }: { plan: AdminHotelPlan }) {
   const stats = [
-    { label: 'Nights covered', value: `${plan.stats.researchedDays}/${plan.route.totalDays}`, icon: <CalendarDays size={15} /> },
+    { label: 'Nights covered', value: `${plan.days.filter(d => d.overnightRequired !== false && d.researchStatus === 'current').length}/${plan.days.filter(d => d.overnightRequired !== false).length}`, icon: <CalendarDays size={15} /> },
     { label: 'Hotel shortlists', value: plan.stats.totalRecommendations, icon: <Hotel size={15} /> },
     { label: 'Dated prices', value: plan.stats.pricedOptions, icon: <CircleDollarSign size={15} /> },
     { label: 'Property photos', value: plan.stats.withPhotos, icon: <ImageIcon size={15} /> },
@@ -465,7 +479,7 @@ function NightHeader({
               : 'Trip complete'}
           </div>
           <div className="mt-1 text-[10.5px] text-faint">
-            {day.nextStation?.name ?? 'Final night in Chattanooga'}
+            {day.nextStation?.name ?? 'Home in Chattanooga — no hotel needed'}
           </div>
         </div>
       </div>
@@ -513,11 +527,11 @@ function HotelFilters({
         value={maxDistance}
         onChange={(event) => setMaxDistance(event.target.value as DistanceFilter)}
         className="h-8 rounded-full border border-edge bg-panel2 px-3 font-mono text-[8.5px] text-dim outline-none"
-        aria-label="Maximum distance from Supercharger"
+        aria-label="Maximum drive time from Supercharger"
       >
-        <option value="any">Any distance</option>
-        <option value="5">Within 5 miles</option>
-        <option value="15">Within 15 miles</option>
+        <option value="any">Any drive time</option>
+        <option value="10">Within 10 minutes</option>
+        <option value="20">Within 20 minutes</option>
       </select>
     </div>
   )
@@ -631,9 +645,9 @@ function HotelCard({
           />
           <HotelMetric
             icon={<MapPin size={13} />}
-            label="From Supercharger"
-            value={`${hotel.distanceFromSuperchargerMiles} mi`}
-            meta={`+${hotel.routeDetourMiles} mi route detour`}
+            label="Drive from Supercharger"
+            value={hotel.distanceSource === 'road' ? `${hotel.distanceFromSuperchargerMiles} mi · ${hotel.driveMinutesFromSupercharger} min` : 'Drive not verified'}
+            meta={hotel.distanceSource === 'road' ? `+${hotel.routeDetourMiles} mi / +${hotel.routeDetourMinutes} min via hotel${(hotel.driveMinutesFromSupercharger ?? 0) > 20 ? ' · Over 20 minutes' : ''}` : 'Refresh road distances'}
           />
         </div>
 

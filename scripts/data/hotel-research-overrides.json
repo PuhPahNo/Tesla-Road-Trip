@@ -1,0 +1,28 @@
+{
+  "hotels": [
+    {
+      "sourceKey": "curated-laytonville-budget-inn",
+      "name": "Budget Inn - Laytonville",
+      "tier": "basic",
+      "tierLabel": "Practical",
+      "isUnique": false,
+      "position": {
+        "lat": 39.684476,
+        "lon": -123.479533
+      },
+      "address": "44700 Highway 101, Laytonville, CA 95454",
+      "officialUrl": "https://laytonvillebudgetinn.com/",
+      "evCharging": {
+        "status": "unverified"
+      },
+      "curatorNote": "Basic local motel; check current reviews and room availability before booking.",
+      "locationSource": "https://www.visitmendocino.com/listing/budget-inn/",
+      "geocodeSource": "ArcGIS World Geocoding Service: matching POI and street address, checked 2026-09-20"
+    }
+  ],
+  "excludedNames": [
+    "Wasta Hotel",
+    "The Snake Pit - Enaville Resort"
+  ],
+  "note": "Omit these map entries because current lodging operation was not verified; use established nearby hotels."
+}

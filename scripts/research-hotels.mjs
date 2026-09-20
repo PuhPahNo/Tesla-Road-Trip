@@ -1,4 +1,5 @@
 import { readFile, writeFile } from 'node:fs/promises'
+import { pathToFileURL } from 'node:url'
 import { bestBookingProperty } from './research-booking-snapshots.mjs'
 
 const ROUTE_FILE = new URL('./data/2026-competition-stops.json', import.meta.url)
@@ -577,4 +578,6 @@ async function main() {
   }
 }
 
-await main()
+export { hotelPosition, hotelWebsite, qualityPresentation, haversineMiles, bookingUrl, mapsUrl, addDays }
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) await main()

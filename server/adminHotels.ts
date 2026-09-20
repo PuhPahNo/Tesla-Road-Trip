@@ -20,6 +20,10 @@ interface HotelRecommendation {
   address: string
   distanceFromSuperchargerMiles: number
   routeDetourMiles: number
+  driveMinutesFromSupercharger?: number
+  routeDetourMinutes?: number
+  distanceSource?: 'road'
+  routedAt?: string
   evCharging: {
     status: 'nearby' | 'unverified'
     distanceMiles?: number
@@ -56,6 +60,7 @@ interface HotelResearchDay {
     state: string
     position: { lat: number; lon: number }
   } | null
+  overnightRequired?: boolean
   recommendations: HotelRecommendation[]
 }
 
@@ -88,7 +93,16 @@ export function matchHotelResearchToRoute(route: RoutePlan) {
       return (
         research?.day === day.day &&
         research.date === tripDateForDay(route.tripStartDate, day.day) &&
-        research.station.sourceId === station?.sourceId
+        research.station.sourceId === station?.sourceId &&
+        (research.overnightRequired === false ||
+          (research.recommendations.length > 0 &&
+            research.recommendations.every((hotel) =>
+              hotel.distanceSource === 'road' &&
+              Number.isFinite(hotel.driveMinutesFromSupercharger) &&
+              Number.isFinite(hotel.distanceFromSuperchargerMiles) &&
+              Number.isFinite(hotel.routeDetourMinutes) &&
+              Number.isFinite(hotel.routeDetourMiles),
+            )))
       )
     })
   const byExactStop = new Map(
@@ -117,6 +131,7 @@ export function matchHotelResearchToRoute(route: RoutePlan) {
           }
         : null,
       nextStation: research?.nextStation ?? null,
+      overnightRequired: research?.overnightRequired,
       recommendations: research?.recommendations ?? [],
       researchStatus: research ? 'current' : 'needs_refresh',
     }

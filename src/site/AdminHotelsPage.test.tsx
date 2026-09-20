@@ -99,6 +99,9 @@ describe('admin hotel planner', () => {
                         position: { lat: 35.21, lon: -84.87 },
                         address: '100 Main St Cleveland TN',
                         distanceFromSuperchargerMiles: 0.8,
+                        driveMinutesFromSupercharger: 7,
+                        routeDetourMinutes: 2,
+                        distanceSource: 'road',
                         routeDetourMiles: 0.4,
                         evCharging: {
                           status: 'nearby',
@@ -156,7 +159,7 @@ describe('admin hotel planner', () => {
     ).toBeTruthy()
     expect(await screen.findByText('Hyatt Regency Cleveland')).toBeTruthy()
     expect(screen.getByText('Historic Cleveland Inn')).toBeTruthy()
-    expect(screen.getByText('73/73')).toBeTruthy()
+    expect(screen.getByText('1/1')).toBeTruthy()
     expect(screen.getByText('$114')).toBeTruthy()
     expect(screen.getByText('No dated rate')).toBeTruthy()
     expect(screen.queryByText('$230–$430')).toBeNull()
@@ -171,6 +174,11 @@ describe('admin hotel planner', () => {
         .getAttribute('href'),
     ).toContain('checkin=2026-09-27')
 
+    expect(screen.getByText('0.8 mi · 7 min')).toBeTruthy()
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Maximum drive time from Supercharger' }), '20')
+    expect(screen.getByText('Hyatt Regency Cleveland')).toBeTruthy()
+    expect(screen.queryByText('Historic Cleveland Inn')).toBeNull()
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Maximum drive time from Supercharger' }), 'any')
     await userEvent.click(screen.getByRole('button', { name: /ev nearby/i }))
     expect(screen.getByText('Hyatt Regency Cleveland')).toBeTruthy()
     expect(screen.queryByText('Historic Cleveland Inn')).toBeNull()

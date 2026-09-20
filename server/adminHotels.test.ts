@@ -55,24 +55,31 @@ function route(startDate: string, exact = true) {
 
 describe('admin hotel research matching', () => {
   it('returns current recommendations only for the exact route day, date, and station', () => {
-    const days = matchHotelResearchToRoute(route('2026-09-27'))
+    const days = matchHotelResearchToRoute(route('2026-10-05'))
     const day = days[0]
 
     expect(day.researchStatus).toBe('current')
     expect(day.recommendations.length).toBeGreaterThanOrEqual(3)
-    expect(day.station?.sourceId).toBe('9531')
-    expect(days).toHaveLength(73)
+    expect(day.station?.sourceId).toBe('5990')
+    expect(days).toHaveLength(70)
+    expect(days.at(-1)?.overnightRequired).toBe(false)
+    expect(days.at(-1)?.recommendations).toEqual([])
+    for (const hotel of days.flatMap(d => d.recommendations)) {
+      expect(hotel.distanceSource).toBe('road')
+      expect(hotel.driveMinutesFromSupercharger).toBeGreaterThanOrEqual(0)
+      expect(hotel.rateSnapshot.nightlyUsd).toBeNull()
+    }
   })
 
   it('marks a changed route date for refresh instead of serving stale booking links', () => {
-    const [day] = matchHotelResearchToRoute(route('2026-09-28'))
+    const [day] = matchHotelResearchToRoute(route('2026-10-06'))
 
     expect(day.researchStatus).toBe('needs_refresh')
     expect(day.recommendations).toEqual([])
   })
 
   it('does not attach the 2026 research to another or partial CORE route', () => {
-    const [day] = matchHotelResearchToRoute(route('2026-09-27', false))
+    const [day] = matchHotelResearchToRoute(route('2026-10-05', false))
 
     expect(day.researchStatus).toBe('needs_refresh')
     expect(day.recommendations).toEqual([])
