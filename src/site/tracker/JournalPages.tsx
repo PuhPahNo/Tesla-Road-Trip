@@ -1,5 +1,6 @@
 import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft, ArrowUpRight, MapPin } from 'lucide-react'
+import { instagramHandle } from '../contact'
 import { usePageMetadata } from '../usePageMetadata'
 import { PUBLIC_PAGES } from '../sitePages'
 import { NotFoundPage } from '../SearchBoundaryPages'
@@ -18,7 +19,8 @@ import { useTripData } from './TripData'
 
 export function JournalPage() {
   usePageMetadata(PUBLIC_PAGES.journal)
-  const { journal, loading } = useTripData()
+  const { community, journal, loading } = useTripData()
+  const instagramUrl = community?.trip.instagramUrl
   if (loading) return <LoadingBlock label="Loading the journal…" />
 
   return (
@@ -28,8 +30,18 @@ export function JournalPage() {
         Notes from the road
       </h1>
       <p className="mt-3 text-[16px] leading-[1.6] text-dim">
-        Updates, photos and videos from the trip, newest first. Most videos also live on my Instagram.
+        Updates, photos and videos from the trip, newest first.
       </p>
+      {instagramUrl ? (
+        <a
+          href={instagramUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-4 inline-flex min-h-11 items-center gap-1.5 rounded-full border border-edge2 px-4 text-[14px] font-medium text-ink no-underline hover:bg-chip"
+        >
+          More videos at {instagramHandle(instagramUrl)} <ArrowUpRight size={15} aria-hidden="true" />
+        </a>
+      ) : null}
       <div className="mt-8 flex flex-col gap-5">
         {journal.map((entry) => (
           <JournalCard key={entry.id} entry={entry} />

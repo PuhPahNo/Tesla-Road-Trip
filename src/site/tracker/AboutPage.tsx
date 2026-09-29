@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { ArrowUpRight } from 'lucide-react'
 import { usePageMetadata } from '../usePageMetadata'
 import { PUBLIC_PAGES } from '../sitePages'
-import { ANTHONY_EMAIL, ANTHONY_EMAIL_HREF, ANTHONY_INSTAGRAM_URL } from '../contact'
+import { ANTHONY_EMAIL, ANTHONY_EMAIL_HREF, instagramHandle } from '../contact'
 import { LEGAL_OPERATOR_DISCLOSURE } from '../business'
 import { Kicker, PageContainer } from './components'
 import { useTripData } from './TripData'
@@ -12,8 +12,9 @@ const COMPETITION_RULES_URL = 'https://www.tesla.com/support/tesla-app/charging-
 
 export function AboutPage() {
   usePageMetadata(PUBLIC_PAGES.about)
-  const { published, progress } = useTripData()
+  const { community, published, progress } = useTripData()
   const route = published?.route
+  const instagramUrl = community?.trip.instagramUrl
 
   return (
     <PageContainer className="max-w-[760px] pb-16 pt-8 sm:pt-12">
@@ -73,14 +74,14 @@ export function AboutPage() {
       </Section>
 
       <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-        {ANTHONY_INSTAGRAM_URL ? (
+        {instagramUrl ? (
           <a
-            href={ANTHONY_INSTAGRAM_URL}
+            href={instagramUrl}
             target="_blank"
             rel="noreferrer"
             className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-accent px-6 text-[15px] font-semibold text-on-accent no-underline"
           >
-            Instagram <ArrowUpRight size={16} aria-hidden="true" />
+            {instagramHandle(instagramUrl) ?? 'Instagram'} on Instagram <ArrowUpRight size={16} aria-hidden="true" />
           </a>
         ) : null}
         <a

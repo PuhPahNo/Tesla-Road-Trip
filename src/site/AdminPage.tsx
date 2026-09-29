@@ -22,6 +22,7 @@ import {
 import type { DayPlan, SavedCustomRoute } from '../domain/types'
 import { AdminAccountsSection } from './AdminAccountsSection'
 import { AdminRoadLog } from './AdminRoadLog'
+import { instagramProfileUrl } from './contact'
 
 interface PendingMeetup {
   id: string
@@ -47,6 +48,7 @@ const EMPTY_TRIP: Omit<AnthonyTrip, 'updatedAt'> = {
   longitude: null,
   startedAt: null,
   departureDate: null,
+  instagramUrl: '',
 }
 
 const EMPTY_UPDATE = {
@@ -96,6 +98,7 @@ export function AdminPage() {
         longitude: current.longitude ?? null,
         startedAt: current.startedAt ?? null,
         departureDate: current.departureDate ?? null,
+        instagramUrl: current.instagramUrl ?? '',
       })
       if (current.selectedRouteId) {
         setRoutePreviewLoading(true)
@@ -124,8 +127,14 @@ export function AdminPage() {
 
   const saveTrip = async (event: FormEvent) => {
     event.preventDefault()
+    const instagramUrl = trip.instagramUrl ? instagramProfileUrl(trip.instagramUrl) : ''
+    if (instagramUrl === undefined) {
+      setError('Instagram should be a handle like @yourname or a profile link.')
+      return
+    }
     try {
-      const result = await saveAnthonyTrip(trip)
+      const result = await saveAnthonyTrip({ ...trip, instagramUrl })
+      setTrip((current) => ({ ...current, instagramUrl }))
       setCommunity(result.community)
       setNotice(
         trip.selectedRouteId
@@ -510,6 +519,24 @@ export function AdminPage() {
                   <textarea rows={5} className="site-input resize-y" value={trip.body ?? ''} onChange={(event) => setTrip((current) => ({ ...current, body: event.target.value }))} placeholder="What should the public know right now?" />
                 </label>
               </div>
+            </fieldset>
+
+            <fieldset className="border-0 border-t border-edge p-0 pt-7">
+              <legend className="admin-fieldset-title">Instagram</legend>
+              <label className="site-field-label mt-4">
+                Your handle or profile link
+                <input
+                  className="site-input"
+                  value={trip.instagramUrl ?? ''}
+                  onChange={(event) => setTrip((current) => ({ ...current, instagramUrl: event.target.value }))}
+                  placeholder="@yourhandle"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                />
+              </label>
+              <p className="mt-2 text-[12px] leading-[1.5] text-faint">
+                Shows as a button on the About and Journal pages. Leave empty to hide it.
+              </p>
             </fieldset>
 
             <button type="submit" className="site-primary-button min-h-12 w-full">Save tracker profile</button>

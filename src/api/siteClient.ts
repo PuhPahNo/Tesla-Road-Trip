@@ -38,6 +38,7 @@ export interface AnthonyTrip {
   longitude?: number | null
   startedAt?: string | null
   departureDate?: string | null
+  instagramUrl?: string | null
   updatedAt: string
 }
 

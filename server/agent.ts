@@ -24,7 +24,7 @@ import { preferredRouteId } from '../src/domain/routeReadiness'
 import { buildTripComposition } from '../src/domain/tripComposition'
 import { TESLA_ICONIC_BADGES, searchTeslaIconicBadges } from '../src/domain/teslaBadges'
 import { readSavedCustomRoutes, updateSavedCustomRoute } from './customRoutes'
-import { requireUser } from './auth'
+import { requireAdmin } from './auth'
 import {
   OpenAiBudgetError,
   openAiBudgetLedger,
@@ -174,7 +174,7 @@ export function registerAgentRoutes(
   loadStations: () => Promise<StationCache>,
 ) {
   app.post('/api/agent', async (request, response) => {
-    const user = requireUser(request, response)
+    const user = requireAdmin(request, response)
     if (!user) return
 
     const apiKey = process.env.OPENAI_API_KEY

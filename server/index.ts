@@ -14,7 +14,7 @@ import {
 } from './customRoutes'
 import {
   ensureAnthonyAdmin,
-  requireUser,
+  requireAdmin,
   registerAuthRoutes,
 } from './auth'
 import { registerCommunityRoutes } from './community'
@@ -254,7 +254,7 @@ app.get('/api/stations', async (request, response) => {
   try {
     const forceRefresh = request.query.refresh === 'true'
     if (forceRefresh) {
-      const user = requireUser(request, response)
+      const user = requireAdmin(request, response)
       if (!user) return
       enforcePlannerApiRateLimit(request, user.id, 'station refresh', 2)
     }
@@ -291,7 +291,7 @@ app.get('/api/stations', async (request, response) => {
 })
 
 app.post('/api/optimize', async (request, response) => {
-  const user = requireUser(request, response)
+  const user = requireAdmin(request, response)
   if (!user) return
   try {
     enforcePlannerApiRateLimit(request, user.id, 'route optimization', 6)
@@ -322,7 +322,7 @@ app.post('/api/optimize', async (request, response) => {
 })
 
 app.post('/api/road-route', async (request, response) => {
-  const user = requireUser(request, response)
+  const user = requireAdmin(request, response)
   if (!user) return
   try {
     enforcePlannerApiRateLimit(request, user.id, 'road routing', 12)
@@ -365,7 +365,7 @@ app.post('/api/road-route', async (request, response) => {
 })
 
 app.post('/api/refine-route', async (request, response) => {
-  const user = requireUser(request, response)
+  const user = requireAdmin(request, response)
   if (!user) return
   try {
     enforcePlannerApiRateLimit(request, user.id, 'route refinement', 6)

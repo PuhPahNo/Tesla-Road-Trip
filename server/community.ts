@@ -61,6 +61,14 @@ const tripSchema = z.object({
   longitude: z.coerce.number().min(-180).max(180).optional().nullable(),
   startedAt: z.string().datetime().optional().nullable(),
   departureDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+  instagramUrl: z
+    .string()
+    .trim()
+    .max(200)
+    .regex(/^https:\/\/(www\.)?instagram\.com\/[A-Za-z0-9_.]+\/?$/, 'Use an Instagram profile link or @handle.')
+    .optional()
+    .nullable()
+    .or(z.literal('')),
 })
 
 const updateSchema = z.object({
@@ -419,6 +427,7 @@ export function registerCommunityRoutes(
           longitude = ?,
           started_at = ?,
           departure_date = ?,
+          instagram_url = ?,
           updated_at = ?
         WHERE id = 1
       `).run(
@@ -436,6 +445,7 @@ export function registerCommunityRoutes(
         parsed.longitude ?? null,
         parsed.startedAt ?? null,
         selectedRoute?.startDate ?? parsed.departureDate ?? null,
+        parsed.instagramUrl || null,
         now,
       )
       response.json({ ok: true, community: readCommunity() })
@@ -709,6 +719,7 @@ function readCommunity() {
           longitude: trip.longitude,
           startedAt: trip.started_at,
           departureDate: trip.departure_date,
+          instagramUrl: trip.instagram_url ?? null,
           updatedAt: trip.updated_at,
         }
       : undefined,
