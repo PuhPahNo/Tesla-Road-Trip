@@ -153,7 +153,8 @@ export const MapView = memo(function MapView({
         attribution={basemap.attribution}
         className={basemap.provider === 'osm' && isDark ? 'map-tiles-dark-fallback' : undefined}
         detectRetina
-        subdomains={basemap.subdomains}
+        // Leaflet crashes on an explicit `subdomains={undefined}`; omit it instead.
+        {...(basemap.subdomains ? { subdomains: basemap.subdomains } : {})}
         url={basemap.url}
       />
       <ZoomControl

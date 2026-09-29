@@ -1,137 +1,106 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, type ReactNode } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
-import { AccountPage, ProtectedRoute } from './AccountPage'
-import { AuthProvider, useAuth } from './AuthContext'
+import { ProtectedRoute } from './AccountPage'
+import { AuthProvider } from './AuthContext'
 import { AuthPage } from './AuthPage'
-import { CommunityPage } from './CommunityPage'
-import { LandingPage } from './LandingPage'
 import { PasswordChangePage } from './PasswordChangePage'
 import { NoIndexPage, NotFoundPage } from './SearchBoundaryPages'
-import { SeoPage } from './SeoPage'
 import { SiteShell } from './SiteShell'
-import { getSeoPageByPath } from '../seo/seoPages'
+import { legacyRedirectTarget } from './sitePages'
+import { TripDataProvider } from './tracker/TripData'
+import { TrackerHomePage } from './tracker/TrackerHomePage'
+import { JournalPage, JournalPostPage } from './tracker/JournalPages'
+import { AboutPage } from './tracker/AboutPage'
+
+// Member-product pages (dashboard, account, community, signup) are kept in
+// the codebase for a possible future product but are not routed: the public
+// site is a read-only tracker and only Anthony signs in.
 
 const PlannerApp = lazy(() => import('../App'))
-const DashboardPage = lazy(() =>
-  import('./DashboardPage').then((module) => ({ default: module.DashboardPage })),
+const PublicRoutePage = lazy(() =>
+  import('./tracker/PublicRoutePage').then((module) => ({ default: module.PublicRoutePage })),
 )
 const AdminPage = lazy(() =>
   import('./AdminPage').then((module) => ({ default: module.AdminPage })),
 )
-const TrackAnthonyPage = lazy(() =>
-  import('./TrackAnthonyPage').then((module) => ({
-    default: module.TrackAnthonyPage,
-  })),
-)
 const AdminHotelsPage = lazy(() =>
-  import('./AdminHotelsPage').then((module) => ({
-    default: module.AdminHotelsPage,
-  })),
+  import('./AdminHotelsPage').then((module) => ({ default: module.AdminHotelsPage })),
 )
 
 export function ChargeQuestRouter() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Routes>
-          <Route element={<SiteShell />}>
-            <Route index element={<HomeRoute />} />
-            <Route path="community" element={<CommunityPage />} />
+        <TripDataProvider>
+          <Routes>
+            <Route element={<SiteShell />}>
+              <Route index element={<TrackerHomePage />} />
+              <Route path="journal" element={<JournalPage />} />
+              <Route path="journal/:postId" element={<JournalPostPage />} />
+              <Route path="about" element={<AboutPage />} />
+              <Route path="login" element={<NoIndexPage title="Sign in"><AuthPage mode="login" /></NoIndexPage>} />
+              <Route path="change-password" element={<NoIndexPage title="Change password"><PasswordChangePage /></NoIndexPage>} />
+              <Route
+                path="admin"
+                element={
+                  <AdminOnly title="Admin" label="Loading admin tools…">
+                    <AdminPage />
+                  </AdminOnly>
+                }
+              />
+              <Route
+                path="admin/hotels"
+                element={
+                  <AdminOnly title="Admin Hotels" label="Loading hotel planner…">
+                    <AdminHotelsPage />
+                  </AdminOnly>
+                }
+              />
+            </Route>
             <Route
-              path="track-anthony"
+              path="route"
               element={
-                <Suspense fallback={<RouteLoadingFallback label="Loading the public route…" />}>
-                  <TrackAnthonyPage />
+                <Suspense fallback={<RouteLoadingFallback label="Loading the route…" fullScreen />}>
+                  <PublicRoutePage />
                 </Suspense>
               }
             />
-            <Route path="2026-tesla-supercharging-competition" element={<SeoRoutePage />} />
-            <Route path="competition/:slug" element={<SeoRoutePage />} />
-            <Route path="tesla-iconic-charger-badges" element={<SeoRoutePage />} />
-            <Route path="badges/:slug" element={<SeoRoutePage />} />
-            <Route path="tesla-road-trip-routes" element={<SeoRoutePage />} />
-            <Route path="routes/:slug" element={<SeoRoutePage />} />
-            <Route path="about-anthony" element={<SeoRoutePage />} />
-            <Route path="login" element={<NoIndexPage title="Sign in"><AuthPage mode="login" /></NoIndexPage>} />
-            <Route path="signup" element={<NoIndexPage title="Create an account"><AuthPage mode="signup" /></NoIndexPage>} />
-            <Route path="change-password" element={<NoIndexPage title="Change password"><PasswordChangePage /></NoIndexPage>} />
             <Route
-              path="dashboard"
+              path="planner"
               element={
-                <NoIndexPage title="Dashboard">
-                  <ProtectedRoute>
-                    <Suspense fallback={<RouteLoadingFallback label="Loading your dashboard…" />}>
-                      <DashboardPage />
-                    </Suspense>
-                  </ProtectedRoute>
-                </NoIndexPage>
-              }
-            />
-            <Route
-              path="account"
-              element={
-                <NoIndexPage title="Account settings">
-                  <ProtectedRoute>
-                    <AccountPage />
-                  </ProtectedRoute>
-                </NoIndexPage>
-              }
-            />
-            <Route
-              path="admin"
-              element={
-                <NoIndexPage title="Admin">
+                <NoIndexPage title="CORE Route Planner">
                   <ProtectedRoute admin>
-                    <Suspense fallback={<RouteLoadingFallback label="Loading admin tools…" />}>
-                      <AdminPage />
+                    <Suspense fallback={<RouteLoadingFallback label="Loading CORE route planner…" fullScreen />}>
+                      <PlannerApp />
                     </Suspense>
                   </ProtectedRoute>
                 </NoIndexPage>
               }
             />
-            <Route
-              path="admin/hotels"
-              element={
-                <NoIndexPage title="Admin Hotels">
-                  <ProtectedRoute admin>
-                    <Suspense fallback={<RouteLoadingFallback label="Loading hotel planner…" />}>
-                      <AdminHotelsPage />
-                    </Suspense>
-                  </ProtectedRoute>
-                </NoIndexPage>
-              }
-            />
-          </Route>
-          <Route
-            path="planner"
-            element={
-              <NoIndexPage title="CORE Route Planner">
-                <ProtectedRoute unauthenticatedTo="signup">
-                  <Suspense fallback={<RouteLoadingFallback label="Loading CORE route planner…" fullScreen />}>
-                    <PlannerApp />
-                  </Suspense>
-                </ProtectedRoute>
-              </NoIndexPage>
-            }
-          />
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
+            <Route path="*" element={<LegacyOrNotFound />} />
+          </Routes>
+        </TripDataProvider>
       </AuthProvider>
     </BrowserRouter>
   )
 }
 
-function SeoRoutePage() {
-  const location = useLocation()
-  const page = getSeoPageByPath(location.pathname)
-  return page ? <SeoPage page={page} /> : <NotFoundPage />
+function AdminOnly({ title, label, children }: { title: string; label: string; children: ReactNode }) {
+  return (
+    <NoIndexPage title={title}>
+      <ProtectedRoute admin>
+        <Suspense fallback={<RouteLoadingFallback label={label} />}>{children}</Suspense>
+      </ProtectedRoute>
+    </NoIndexPage>
+  )
 }
 
-export function HomeRoute() {
-  const { user, loading } = useAuth()
-  if (loading) return <div className="min-h-[calc(100svh-117px)] p-10 text-faint sm:min-h-[calc(100vh-78px)]">Checking your account…</div>
-  if (user) return <Navigate to="/dashboard" replace />
-  return <LandingPage />
+/** Old SEO and member URLs forward to the closest tracker page. */
+function LegacyOrNotFound() {
+  const location = useLocation()
+  const target = legacyRedirectTarget(location.pathname)
+  if (target) return <Navigate to={target} replace />
+  return <NotFoundPage />
 }
 
 export function RouteLoadingFallback({
@@ -145,7 +114,7 @@ export function RouteLoadingFallback({
     <div
       role="status"
       aria-live="polite"
-      className={`${fullScreen ? 'min-h-screen' : 'min-h-[calc(100svh-117px)] sm:min-h-[calc(100vh-78px)]'} bg-app p-10 text-faint`}
+      className={`${fullScreen ? 'min-h-screen' : 'min-h-[60vh]'} bg-app p-10 text-faint`}
     >
       {label}
     </div>

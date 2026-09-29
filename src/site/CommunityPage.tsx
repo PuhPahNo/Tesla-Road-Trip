@@ -6,10 +6,7 @@ import { STATE_CODE_TO_NAME } from '../domain/usStates'
 import { useAuth } from './AuthContext'
 import { ANTHONY_EMAIL_HREF } from './contact'
 import { usePageMetadata } from './usePageMetadata'
-import { buildCustomPublicStructuredData, getCustomPublicPage } from '../seo/siteArchitecture'
 
-const COMMUNITY_METADATA = getCustomPublicPage('/community')!
-const COMMUNITY_STRUCTURED_DATA = buildCustomPublicStructuredData(COMMUNITY_METADATA)
 
 const STATE_OPTIONS = Object.entries(STATE_CODE_TO_NAME).sort((a, b) =>
   a[1].localeCompare(b[1]),
@@ -28,8 +25,10 @@ export function CommunityPage() {
   })
 
   usePageMetadata({
-    ...COMMUNITY_METADATA,
-    structuredData: COMMUNITY_STRUCTURED_DATA,
+    title: 'Community · ChargeQuest',
+    description: 'Send Anthony a route idea.',
+    path: '/community',
+    robots: 'noindex,nofollow',
   })
 
   const submitSuggestion = async (event: FormEvent) => {

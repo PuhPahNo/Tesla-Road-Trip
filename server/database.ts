@@ -181,6 +181,14 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS achievements_user_idx
     ON achievements(user_id, created_at DESC);
+
+  CREATE TABLE IF NOT EXISTS trip_day_log (
+    day_number INTEGER PRIMARY KEY,
+    completed INTEGER NOT NULL DEFAULT 0,
+    energy_kwh REAL,
+    note TEXT,
+    updated_at TEXT NOT NULL
+  );
 `)
 
 ensureColumn('anthony_trip', 'departure_date', 'TEXT')

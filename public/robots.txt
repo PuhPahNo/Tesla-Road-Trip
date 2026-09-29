@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
-
-Sitemap: https://www.teslachargequest.com/sitemap.xml
+Disallow: /admin
+Disallow: /planner
+Disallow: /login

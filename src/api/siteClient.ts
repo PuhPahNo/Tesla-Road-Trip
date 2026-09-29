@@ -58,14 +58,25 @@ export interface AnthonyUpdate {
   visiting?: string | null
   artifact_url?: string | null
   artifact_label?: string | null
-  artifact_type?: 'image' | 'video' | 'link' | null
+  artifact_type?: AnthonyArtifactType | null
   created_at: string
   updated_at?: string | null
+}
+
+export type AnthonyArtifactType = 'image' | 'video' | 'link' | 'instagram'
+
+export interface TripDayLogEntry {
+  dayNumber: number
+  completed: boolean
+  energyKwh?: number | null
+  note?: string | null
+  updatedAt: string
 }
 
 export interface CommunitySnapshot {
   trip: AnthonyTrip
   updates: AnthonyUpdate[]
+  dayLog: TripDayLogEntry[]
   stateVotes: Array<{ state_code: string; votes: number }>
   meetups: Array<{
     id: string
@@ -481,7 +492,7 @@ export async function publishAnthonyUpdate(input: {
   visiting?: string
   artifactUrl?: string
   artifactLabel?: string
-  artifactType?: 'image' | 'video' | 'link'
+  artifactType?: AnthonyArtifactType
 }) {
   return request<{ ok: true; community: CommunitySnapshot }>(
     '/api/admin/trip-updates',
@@ -500,13 +511,31 @@ export async function updateAnthonyUpdate(
     visiting?: string
     artifactUrl?: string
     artifactLabel?: string
-    artifactType?: 'image' | 'video' | 'link'
+    artifactType?: AnthonyArtifactType
   },
 ) {
   return request<{ ok: true; community: CommunitySnapshot }>(
     `/api/admin/trip-updates/${encodeURIComponent(id)}`,
     { method: 'PATCH', body: JSON.stringify(input) },
   )
+}
+
+export async function saveTripDayLog(
+  dayNumber: number,
+  input: {
+    completed: boolean
+    energyKwh?: number | null
+    note?: string | null
+    advanceTrip?: boolean
+    currentLocation?: string
+    latitude?: number
+    longitude?: number
+  },
+) {
+  return request<{ ok: true; community: CommunitySnapshot }>(`/api/admin/trip-days/${dayNumber}`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  })
 }
 
 export async function deleteAnthonyUpdate(id: string) {

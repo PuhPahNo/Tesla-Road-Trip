@@ -10,7 +10,7 @@ import {
   type StationSnapshot,
 } from './anthonyRoute'
 import { readSavedCustomRoutes } from './customRoutes'
-import { db } from './database'
+import { db, transaction } from './database'
 
 const STATE_CODES = Object.keys(STATE_CODE_TO_NAME)
 const PUBLIC_COMMUNITY_CACHE_CONTROL = 'public, max-age=30, s-maxage=60, stale-while-revalidate=300'
@@ -68,11 +68,27 @@ const updateSchema = z.object({
   dayNumber: z.coerce.number().int().min(1).max(365).optional(),
   location: z.string().trim().max(120).optional(),
   title: z.string().trim().min(3).max(140),
-  body: z.string().trim().min(10).max(4000),
+  // Body is optional so a post can be just an Instagram reel or photo link.
+  body: z.string().trim().max(4000).default(''),
   visiting: z.string().trim().max(240).optional(),
   artifactUrl: z.string().trim().url().max(500).optional(),
   artifactLabel: z.string().trim().max(120).optional(),
-  artifactType: z.enum(['image', 'video', 'link']).optional(),
+  artifactType: z.enum(['image', 'video', 'link', 'instagram']).optional(),
+}).refine(
+  (value) => value.body.length > 0 || Boolean(value.artifactUrl),
+  { message: 'Add some text or a link.', path: ['body'] },
+)
+
+const dayLogSchema = z.object({
+  completed: z.boolean(),
+  energyKwh: z.coerce.number().min(0).max(2000).optional().nullable(),
+  note: z.string().trim().max(240).optional().nullable(),
+  // When finishing a day, optionally move the public "current day" forward
+  // and set where Anthony is now (the finished day's last stop).
+  advanceTrip: z.boolean().optional(),
+  currentLocation: z.string().trim().max(120).optional(),
+  latitude: z.coerce.number().min(-90).max(90).optional(),
+  longitude: z.coerce.number().min(-180).max(180).optional(),
 })
 
 const moderationSchema = z.object({
@@ -461,10 +477,58 @@ export function registerCommunityRoutes(
           body = ?,
           updated_at = ?
         WHERE id = 1
-      `).run(parsed.dayNumber ?? null, parsed.location ?? null, parsed.title, parsed.body, now)
+      `).run(parsed.dayNumber ?? null, parsed.location ?? null, parsed.title, parsed.body || null, now)
       response.status(201).json({ ok: true, id, community: readCommunity() })
     } catch (error) {
       sendError(response, error, 'Unable to publish the trip update.')
+    }
+  })
+
+  app.put('/api/admin/trip-days/:day', (request, response) => {
+    try {
+      if (!requireAdmin(request, response)) return
+      const dayNumber = z.coerce.number().int().min(1).max(365).parse(request.params.day)
+      const parsed = dayLogSchema.parse(request.body)
+      const now = new Date().toISOString()
+      transaction(() => {
+        db.prepare(`
+          INSERT INTO trip_day_log (day_number, completed, energy_kwh, note, updated_at)
+          VALUES (?, ?, ?, ?, ?)
+          ON CONFLICT(day_number) DO UPDATE SET
+            completed = excluded.completed,
+            energy_kwh = excluded.energy_kwh,
+            note = excluded.note,
+            updated_at = excluded.updated_at
+        `).run(
+          dayNumber,
+          parsed.completed ? 1 : 0,
+          parsed.energyKwh ?? null,
+          parsed.note ?? null,
+          now,
+        )
+        if (parsed.completed && parsed.advanceTrip) {
+          db.prepare(`
+            UPDATE anthony_trip SET
+              day_number = MIN(?, COALESCE(total_days, ?)),
+              current_location = COALESCE(?, current_location),
+              latitude = COALESCE(?, latitude),
+              longitude = COALESCE(?, longitude),
+              updated_at = ?
+            WHERE id = 1 AND COALESCE(day_number, 0) <= ?
+          `).run(
+            dayNumber + 1,
+            dayNumber + 1,
+            parsed.currentLocation ?? null,
+            parsed.latitude ?? null,
+            parsed.longitude ?? null,
+            now,
+            dayNumber,
+          )
+        }
+      })
+      response.json({ ok: true, community: readCommunity() })
+    } catch (error) {
+      sendError(response, error, 'Unable to save the day log.')
     }
   })
 
@@ -584,8 +648,18 @@ function readCommunity() {
   const updates = db.prepare(`
     SELECT id, day_number, location, title, body, visiting, phase,
       artifact_url, artifact_label, artifact_type, created_at, updated_at
-    FROM trip_updates ORDER BY created_at DESC LIMIT 50
+    FROM trip_updates ORDER BY created_at DESC LIMIT 200
   `).all()
+  const dayLog = db.prepare(`
+    SELECT day_number, completed, energy_kwh, note, updated_at
+    FROM trip_day_log ORDER BY day_number ASC
+  `).all() as unknown as Array<{
+    day_number: number
+    completed: number
+    energy_kwh: number | null
+    note: string | null
+    updated_at: string
+  }>
   const stateVotes = db.prepare(`
     SELECT state_code, COUNT(*) AS votes
     FROM state_votes GROUP BY state_code ORDER BY votes DESC, state_code ASC
@@ -639,6 +713,13 @@ function readCommunity() {
         }
       : undefined,
     updates,
+    dayLog: dayLog.map((row) => ({
+      dayNumber: row.day_number,
+      completed: Boolean(row.completed),
+      energyKwh: row.energy_kwh,
+      note: row.note,
+      updatedAt: row.updated_at,
+    })),
     stateVotes,
     meetups,
     suggestions: [],

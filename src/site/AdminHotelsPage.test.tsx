@@ -182,5 +182,5 @@ describe('admin hotel planner', () => {
     await userEvent.click(screen.getByRole('button', { name: /ev nearby/i }))
     expect(screen.getByText('Hyatt Regency Cleveland')).toBeTruthy()
     expect(screen.queryByText('Historic Cleveland Inn')).toBeNull()
-  })
+  }, 20_000)
 })

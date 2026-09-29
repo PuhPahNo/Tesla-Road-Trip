@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { Hotel } from 'lucide-react'
+import { Hotel, Route as RouteIcon } from 'lucide-react'
 import {
   deleteAnthonyUpdate,
   deleteSuggestion,
@@ -11,6 +11,7 @@ import {
   reviewSuggestion,
   saveAnthonyTrip,
   updateAnthonyUpdate,
+  type AnthonyArtifactType,
   type AnthonyUpdate,
   type AnthonyUpdatePhase,
   type AnthonyTrip,
@@ -20,6 +21,7 @@ import {
 } from '../api/siteClient'
 import type { DayPlan, SavedCustomRoute } from '../domain/types'
 import { AdminAccountsSection } from './AdminAccountsSection'
+import { AdminRoadLog } from './AdminRoadLog'
 
 interface PendingMeetup {
   id: string
@@ -48,7 +50,7 @@ const EMPTY_TRIP: Omit<AnthonyTrip, 'updatedAt'> = {
 }
 
 const EMPTY_UPDATE = {
-  phase: 'planning' as AnthonyUpdatePhase,
+  phase: 'on-the-road' as AnthonyUpdatePhase,
   dayNumber: '',
   location: '',
   title: '',
@@ -56,7 +58,7 @@ const EMPTY_UPDATE = {
   visiting: '',
   artifactUrl: '',
   artifactLabel: '',
-  artifactType: 'link' as 'image' | 'video' | 'link',
+  artifactType: 'instagram' as AnthonyArtifactType,
 }
 
 export function AdminPage() {
@@ -127,7 +129,7 @@ export function AdminPage() {
       setCommunity(result.community)
       setNotice(
         trip.selectedRouteId
-          ? `${trip.routeName} now powers the full Track Anthony route.`
+          ? `${trip.routeName} is now the route visitors see.`
           : trip.active
             ? 'The live tracker is active and updated.'
             : 'The live tracker is now parked.',
@@ -158,7 +160,7 @@ export function AdminPage() {
       setCommunity(result.community)
       setUpdate(EMPTY_UPDATE)
       setEditingUpdateId(undefined)
-      setNotice(editingUpdateId ? 'Journey entry updated.' : 'Journey entry published.')
+      setNotice(editingUpdateId ? 'Journal post updated.' : 'Posted to the journal.')
       await load()
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Unable to publish update.')
@@ -294,27 +296,35 @@ export function AdminPage() {
     <div className="mx-auto max-w-[1320px] px-4 py-7 sm:px-7 sm:py-9 lg:px-10 lg:py-10">
       <header className="flex flex-col justify-between gap-5 border-b border-edge pb-6 lg:flex-row lg:items-center">
         <div>
-          <div className="site-kicker">Anthony admin</div>
+          <div className="site-kicker">Only you can see this</div>
           <h1 className="mt-2 text-[34px] font-semibold leading-none tracking-[-0.04em] sm:text-[42px]">
-            ChargeQuest admin
+            Trip admin
           </h1>
           <p className="mt-3 max-w-[680px] text-[12.5px] leading-[1.6] text-dim">
-            Manage users and their route activity, publish the full ChargeQuest journey,
-            review private suggestions, and switch the tracker into live-trip mode when you leave.
+            Finish each day, post to the journal and keep the tracker current. Route changes happen in CORE
+            and show up on the public route automatically.
           </p>
         </div>
 
         <div className="flex w-full flex-col gap-3 lg:w-auto lg:items-end">
-          <Link
-            to="/admin/hotels"
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-accent px-5 text-[11px] font-semibold text-on-accent no-underline shadow-[0_10px_30px_color-mix(in_srgb,var(--accent)_20%,transparent)]"
-          >
-            <Hotel size={14} /> Open hotel planner
-          </Link>
+          <div className="flex w-full gap-2 lg:w-auto">
+            <Link
+              to="/planner"
+              className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-full bg-accent px-5 text-[11px] font-semibold text-on-accent no-underline shadow-[0_10px_30px_color-mix(in_srgb,var(--accent)_20%,transparent)] lg:flex-none"
+            >
+              <RouteIcon size={14} /> Open CORE
+            </Link>
+            <Link
+              to="/admin/hotels"
+              className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-full border border-edge2 px-5 text-[11px] font-semibold text-ink no-underline lg:flex-none"
+            >
+              <Hotel size={14} /> Hotels
+            </Link>
+          </div>
           <div className="grid w-full grid-cols-3 overflow-hidden rounded-[14px] border border-edge bg-panel2 lg:w-auto">
             <AdminStat label="Tracker" value={trip.active ? 'Live' : 'Parked'} accent={trip.active} />
-            <AdminStat label="Updates" value={community?.updates.length ?? 0} />
-            <AdminStat label="Inbox" value={suggestionInbox.filter((item) => item.review_status === 'pending').length + pendingMeetups.length} />
+            <AdminStat label="Days done" value={community?.dayLog?.filter((entry) => entry.completed).length ?? 0} />
+            <AdminStat label="Posts" value={community?.updates.length ?? 0} />
           </div>
         </div>
       </header>
@@ -322,12 +332,37 @@ export function AdminPage() {
       {error ? <div className="mt-6 rounded-[11px] border border-warn-bd bg-warn-bg px-4 py-3 text-[13px] text-warn">{error}</div> : null}
       {notice ? <div className="mt-6 rounded-[11px] border border-good-bd bg-good-bg px-4 py-3 text-[13px] text-good">{notice}</div> : null}
 
-      <AdminAccountsSection />
+      {routePreview && community ? (
+        <section className="admin-surface mt-8 overflow-hidden">
+          <div className="border-b border-edge px-5 py-5 sm:px-7">
+            <AdminSectionTitle number="01" kicker="Road log" title="Finish today" />
+          </div>
+          <div className="p-5 sm:p-7">
+            <AdminRoadLog
+              route={routePreview}
+              community={community}
+              onSaved={(next, message) => {
+                setCommunity(next)
+                setTrip((current) => ({
+                  ...current,
+                  dayNumber: next.trip.dayNumber ?? current.dayNumber,
+                  currentLocation: next.trip.currentLocation ?? current.currentLocation,
+                  latitude: next.trip.latitude ?? current.latitude,
+                  longitude: next.trip.longitude ?? current.longitude,
+                }))
+                setNotice(message)
+                setError(undefined)
+              }}
+              onError={setError}
+            />
+          </div>
+        </section>
+      ) : null}
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(350px,.85fr)] lg:items-start">
         <form className="admin-surface overflow-hidden" onSubmit={saveTrip}>
           <div className="flex flex-col justify-between gap-5 border-b border-edge px-5 py-5 sm:flex-row sm:items-center sm:px-7">
-            <AdminSectionTitle number="01" kicker="Tracker control" title="Public trip profile" />
+            <AdminSectionTitle number="02" kicker="Tracker" title="Status and route" />
             <label className={`flex cursor-pointer items-center justify-between gap-4 rounded-full border px-4 py-2.5 text-[11.5px] font-semibold ${trip.active ? 'border-good-bd bg-good-bg text-good' : 'border-edge bg-chip text-dim'}`}>
               <span className={`h-2 w-2 rounded-full ${trip.active ? 'animate-pulse bg-good' : 'bg-faint'}`} />
               {trip.active ? 'Tracker live' : 'Tracker parked'}
@@ -350,10 +385,10 @@ export function AdminPage() {
                   <input required className="site-input" value={trip.title} onChange={(event) => setTrip((current) => ({ ...current, title: event.target.value }))} />
                 </label>
                 <label className="site-field-label sm:col-span-2">
-                  Route shown on Track Anthony
+                  Route visitors see
                   <select
                     className="site-input"
-                    aria-label="Route shown on Track Anthony"
+                    aria-label="Route visitors see"
                     data-testid="track-anthony-route-select"
                     value={trip.selectedRouteId ?? ''}
                     onChange={(event) => void selectPublishedRoute(event.target.value)}
@@ -417,8 +452,8 @@ export function AdminPage() {
                           : 'Road provider unavailable · preview uses estimates'}
                       </div>
                     </div>
-                    <a href="/track-anthony" target="_blank" rel="noreferrer" className="site-secondary-button flex min-h-10 items-center justify-center no-underline">
-                      Preview Track Anthony
+                    <a href="/route" target="_blank" rel="noreferrer" className="site-secondary-button flex min-h-10 items-center justify-center no-underline">
+                      Preview public route
                     </a>
                   </div>
                   <div className="grid grid-cols-2 divide-x divide-y divide-edge sm:grid-cols-4 sm:divide-y-0">
@@ -484,17 +519,17 @@ export function AdminPage() {
         <div className="space-y-6 lg:sticky lg:top-24">
           <form id="journey-publisher" className="admin-surface overflow-hidden" onSubmit={publishUpdate}>
             <div className="border-b border-edge px-5 py-5 sm:px-6">
-              <AdminSectionTitle number="02" kicker="Journey publisher" title={editingUpdateId ? 'Edit timeline entry' : 'Publish progress'} />
+              <AdminSectionTitle number="03" kicker="Journal" title={editingUpdateId ? 'Edit post' : 'New post'} />
             </div>
             <div className="space-y-4 p-5 sm:p-6">
               <label className="site-field-label">
                 Entry type
                 <select className="site-input" value={update.phase} onChange={(event) => setUpdate((current) => ({ ...current, phase: event.target.value as AnthonyUpdatePhase }))}>
-                  <option value="planning">Planning the quest</option>
-                  <option value="route-decision">Route decision</option>
-                  <option value="build-note">Building CORE</option>
-                  <option value="milestone">Milestone</option>
                   <option value="on-the-road">On the road</option>
+                  <option value="milestone">Milestone</option>
+                  <option value="planning">Planning</option>
+                  <option value="route-decision">Route decision</option>
+                  <option value="build-note">Behind the scenes</option>
                 </select>
               </label>
               <div className="grid gap-4 sm:grid-cols-[110px_1fr]">
@@ -524,7 +559,7 @@ export function AdminPage() {
               </label>
               <label className="site-field-label">
                 Update
-                <textarea required minLength={10} maxLength={4000} rows={7} className="site-input resize-y" value={update.body} onChange={(event) => setUpdate((current) => ({ ...current, body: event.target.value }))} placeholder="What changed, what did you decide, or what should people see?" />
+                <textarea maxLength={4000} rows={6} className="site-input resize-y" value={update.body} onChange={(event) => setUpdate((current) => ({ ...current, body: event.target.value }))} placeholder="Optional if you’re just sharing a video" />
               </label>
               <label className="site-field-label">
                 Visiting
@@ -532,58 +567,57 @@ export function AdminPage() {
               </label>
               <fieldset className="grid gap-4 border-0 border-t border-edge p-0 pt-4 sm:grid-cols-[130px_1fr]">
                 <label className="site-field-label">
-                  Artifact type
-                  <select className="site-input" value={update.artifactType} onChange={(event) => setUpdate((current) => ({ ...current, artifactType: event.target.value as 'image' | 'video' | 'link' }))}>
-                    <option value="link">Link</option>
+                  Media type
+                  <select className="site-input" value={update.artifactType} onChange={(event) => setUpdate((current) => ({ ...current, artifactType: event.target.value as AnthonyArtifactType }))}>
+                    <option value="instagram">Instagram</option>
+                    <option value="video">YouTube / video</option>
                     <option value="image">Image</option>
-                    <option value="video">Video / vlog</option>
+                    <option value="link">Other link</option>
                   </select>
                 </label>
                 <label className="site-field-label">
-                  Artifact URL
+                  Link (Instagram, YouTube, photo…)
                   <input type="url" maxLength={500} className="site-input" value={update.artifactUrl} onChange={(event) => setUpdate((current) => ({ ...current, artifactUrl: event.target.value }))} placeholder="https://…" />
                 </label>
                 <label className="site-field-label sm:col-span-2">
-                  Artifact label
-                  <input maxLength={120} className="site-input" value={update.artifactLabel} onChange={(event) => setUpdate((current) => ({ ...current, artifactLabel: event.target.value }))} placeholder="Open the route comparison map" />
+                  Link label (optional)
+                  <input maxLength={120} className="site-input" value={update.artifactLabel} onChange={(event) => setUpdate((current) => ({ ...current, artifactLabel: event.target.value }))} placeholder="Sunrise at the Badlands" />
                 </label>
               </fieldset>
               <div className="flex flex-col gap-2 sm:flex-row">
-                <button type="submit" className="site-primary-button min-h-12 flex-1">{editingUpdateId ? 'Save timeline entry' : 'Publish to Track Anthony'}</button>
+                <button type="submit" className="site-primary-button min-h-12 flex-1">{editingUpdateId ? 'Save post' : 'Post to the journal'}</button>
                 {editingUpdateId ? <button type="button" onClick={() => { setEditingUpdateId(undefined); setUpdate(EMPTY_UPDATE) }} className="site-secondary-button min-h-12">Cancel edit</button> : null}
               </div>
             </div>
           </form>
 
-          {community ? (
-            <div className="admin-surface p-5 sm:p-6">
-              <div className="font-mono text-[8.5px] uppercase tracking-[0.12em] text-faint">Public snapshot</div>
-              <div className="mt-4 grid grid-cols-3 divide-x divide-edge">
-                <SnapshotStat label="Inbox" value={suggestionInbox.filter((item) => item.review_status === 'pending').length} />
-                <SnapshotStat label="Meetups" value={pendingMeetups.length} />
-                <SnapshotStat label="Updates" value={community.updates.length} />
-              </div>
-            </div>
-          ) : null}
         </div>
       </div>
 
       <section className="mt-12 border-t border-edge pt-10">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-          <AdminSectionTitle number="03" kicker="Published journey" title="Manage the Track Anthony timeline" />
+          <AdminSectionTitle number="04" kicker="Journal" title="Published posts" />
           <div className="rounded-full border border-edge bg-chip px-4 py-2 font-mono text-[9px] text-faint">{community?.updates.length ?? 0} entries</div>
         </div>
         <div className="mt-6 border-t border-edge">
           {(community?.updates ?? []).map((entry) => (
             <JourneyAdminRow key={entry.id} entry={entry} onEdit={() => editUpdate(entry)} onDelete={() => removeUpdate(entry.id)} />
           ))}
-          {community?.updates.length === 0 ? <div className="border-b border-edge py-10 text-[13px] text-faint">No public journey entries yet.</div> : null}
+          {community?.updates.length === 0 ? <div className="border-b border-edge py-10 text-[13px] text-faint">No journal posts yet.</div> : null}
         </div>
       </section>
 
+      <details className="mt-12 border-t border-edge pt-8">
+        <summary className="cursor-pointer text-[13px] font-semibold text-dim">
+          Dormant member features (accounts, suggestions, meetups)
+        </summary>
+        <p className="mt-3 max-w-[720px] text-[12.5px] leading-[1.6] text-faint">
+          Signups are off and these pages aren’t linked from the public site. They’re kept for a possible future version.
+        </p>
+      <AdminAccountsSection />
       <section className="mt-12 border-t border-edge pt-10">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-          <AdminSectionTitle number="04" kicker="Private community inbox" title="Route ideas sent to you" />
+          <AdminSectionTitle number="05" kicker="Private community inbox" title="Route ideas sent to you" />
           <div className="rounded-full border border-edge bg-chip px-4 py-2 font-mono text-[9px] text-faint">
             {suggestionInbox.filter((item) => item.review_status === 'pending').length} unread
           </div>
@@ -599,7 +633,7 @@ export function AdminPage() {
 
       <section className="mt-12 border-t border-edge pt-10">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-          <AdminSectionTitle number="05" kicker="Meetup moderation" title="Pending coffee invites" />
+          <AdminSectionTitle number="06" kicker="Meetup moderation" title="Pending coffee invites" />
           <div className="rounded-full border border-edge bg-chip px-4 py-2 font-mono text-[9px] text-faint">
             {pendingMeetups.length} waiting
           </div>
@@ -628,6 +662,7 @@ export function AdminPage() {
           ) : null}
         </div>
       </section>
+      </details>
     </div>
   )
 }
@@ -649,15 +684,6 @@ function AdminStat({ label, value, accent = false }: { label: string; value: str
     <div className="min-w-[92px] border-r border-edge px-4 py-3 last:border-r-0">
       <div className="font-mono text-[7.5px] uppercase tracking-[0.1em] text-faint">{label}</div>
       <div className={`mt-1.5 text-[15px] font-semibold ${accent ? 'text-good' : 'text-ink'}`}>{value}</div>
-    </div>
-  )
-}
-
-function SnapshotStat({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="px-3 text-center first:pl-0 last:pr-0">
-      <div className="text-[23px] font-semibold tracking-[-0.035em]">{value}</div>
-      <div className="mt-1 font-mono text-[7.5px] uppercase tracking-[0.1em] text-faint">{label}</div>
     </div>
   )
 }

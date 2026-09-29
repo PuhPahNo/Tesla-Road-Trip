@@ -36,6 +36,6 @@ describe('ChargeQuest community page', () => {
     expect(screen.getByRole('link', { name: 'Email me' }).getAttribute('href')).toBe('mailto:anthony@antelligentprojects.dev')
     expect(screen.queryByText('Take the Million Dollar Highway')).toBeNull()
     expect(screen.getByText(/Suggestions go to a private admin inbox/)).toBeTruthy()
-    expect(document.title).toBe('Send Anthony a Route Idea | ChargeQuest Community')
+    expect(document.title).toBe('Community · ChargeQuest')
   })
 })

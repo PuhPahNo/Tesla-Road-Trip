@@ -1,52 +1,35 @@
 import { cleanup, render, screen } from '@testing-library/react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import { AuthProvider } from './AuthContext'
-import { HomeRoute, RouteLoadingFallback } from './Router'
+import { afterEach, describe, expect, it } from 'vitest'
+import { RouteLoadingFallback } from './Router'
+import { legacyRedirectTarget } from './sitePages'
 
 afterEach(() => {
   cleanup()
-  vi.unstubAllGlobals()
 })
 
-describe('ChargeQuest home route', () => {
-  it('announces route-level lazy loading without collapsing the page', () => {
-    render(<RouteLoadingFallback label="Loading the public route…" />)
+describe('ChargeQuest router', () => {
+  it('announces route-level lazy loading', () => {
+    render(<RouteLoadingFallback label="Loading the route…" />)
 
     const status = screen.getByRole('status')
-    expect(status.textContent).toBe('Loading the public route…')
+    expect(status.textContent).toBe('Loading the route…')
     expect(status.getAttribute('aria-live')).toBe('polite')
-    expect(status.className).toContain('min-h-[calc(100svh-117px)]')
   })
 
-  it('redirects signed-in members from the landing page to their dashboard', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          user: {
-            id: 'member-1',
-            username: 'roadtripper',
-            role: 'member',
-            mustChangePassword: false,
-          },
-        }),
-      }),
-    )
+  it('sends retired SEO and member URLs to the closest tracker page', () => {
+    expect(legacyRedirectTarget('/track-anthony')).toBe('/')
+    expect(legacyRedirectTarget('/about-anthony')).toBe('/about')
+    expect(legacyRedirectTarget('/competition/longest-trip-strategy')).toBe('/')
+    expect(legacyRedirectTarget('/routes/tesla-route-66-supercharger-road-trip')).toBe('/route')
+    expect(legacyRedirectTarget('/badges/yosemite')).toBe('/')
+    expect(legacyRedirectTarget('/signup')).toBe('/')
+    expect(legacyRedirectTarget('/dashboard')).toBe('/admin')
+    expect(legacyRedirectTarget('/community/')).toBe('/')
+  })
 
-    render(
-      <MemoryRouter initialEntries={['/']}>
-        <AuthProvider>
-          <Routes>
-            <Route index element={<HomeRoute />} />
-            <Route path="dashboard" element={<div>Signed-in dashboard</div>} />
-          </Routes>
-        </AuthProvider>
-      </MemoryRouter>,
-    )
-
-    expect(await screen.findByText('Signed-in dashboard')).toBeTruthy()
-    expect(screen.queryByRole('heading', { name: 'I’m building a route. Want to beat it?' })).toBeNull()
+  it('leaves live pages alone', () => {
+    for (const path of ['/', '/route', '/journal', '/journal/abc', '/about', '/admin', '/planner', '/login']) {
+      expect(legacyRedirectTarget(path)).toBeUndefined()
+    }
   })
 })

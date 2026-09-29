@@ -67,6 +67,12 @@ export function registerAuthRoutes(app: Express) {
   })
 
   app.post('/api/auth/signup', async (request, response) => {
+    // The public site is a read-only trip tracker. Member signups stay in the
+    // codebase for a possible future product but are off unless opted in.
+    if (process.env.ALLOW_SIGNUPS !== 'true') {
+      response.status(403).json({ message: 'New accounts are not open right now.' })
+      return
+    }
     try {
       enforceAuthRateLimit(request)
       const parsed = authSchema.parse(request.body)

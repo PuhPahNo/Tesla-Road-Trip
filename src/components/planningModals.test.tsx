@@ -19,7 +19,7 @@ describe('planning modal responsibilities', () => {
     )
 
     expect(screen.getByRole('img', { name: 'ChargeQuest' })).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'Open ChargeQuest account and navigation' }).getAttribute('href')).toBe('/account')
+    expect(screen.getByRole('link', { name: 'Open ChargeQuest admin' }).getAttribute('href')).toBe('/admin')
     expect(screen.queryByText('Quest Planner')).toBeNull()
   })
 

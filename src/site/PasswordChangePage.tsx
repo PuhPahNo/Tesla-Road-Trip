@@ -23,7 +23,7 @@ export function PasswordChangePage() {
     try {
       const result = await changePassword({ currentPassword, newPassword })
       await refresh()
-      navigate(result.user.role === 'admin' ? '/admin' : '/dashboard', { replace: true })
+      navigate(result.user.role === 'admin' ? '/admin' : '/', { replace: true })
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Unable to change password.')
     } finally {

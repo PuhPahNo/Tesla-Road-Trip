@@ -40,8 +40,9 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
   const signupMode = mode === 'signup'
 
   return (
-    <div className="mx-auto grid min-h-[calc(100svh-117px)] max-w-[1080px] items-center gap-8 px-4 py-8 sm:min-h-[calc(100vh-170px)] sm:px-5 sm:py-14 lg:grid-cols-[.9fr_1.1fr] lg:px-8">
-      <div className="hidden lg:block">
+    <div className={`mx-auto grid min-h-[70vh] max-w-[1080px] items-center gap-8 px-4 py-8 sm:px-5 sm:py-14 lg:px-8 ${signupMode ? 'lg:grid-cols-[.9fr_1.1fr]' : ''}`}>
+      {/* Signup marketing stays for a possible future product; the tracker only uses login. */}
+      {signupMode ? <div className="hidden lg:block">
         <div className="site-kicker">Your competition starts here</div>
         <h1 className="mt-4 text-[56px] font-semibold leading-[.98] tracking-[-0.05em]">
           Build a route around your Tesla, your pace, and the places worth the drive.
@@ -55,12 +56,12 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
             <div key={item} className="rounded-[12px] border border-edge bg-chip p-4 text-[12px] font-medium text-dim">{item}</div>
           ))}
         </div>
-      </div>
+      </div> : null}
 
       <div className="site-card mx-auto w-full max-w-[500px] p-5 sm:p-8">
         <div className="site-kicker">{signupMode ? 'Create your account' : 'Welcome back'}</div>
         <h1 className="mt-3 text-[30px] font-semibold leading-[1.02] tracking-[-0.04em] sm:text-[34px]">
-          {signupMode ? 'See where your route could go.' : 'Continue your quest.'}
+          {signupMode ? 'See where your route could go.' : 'Sign in'}
         </h1>
         <p className="mt-3 text-[13px] leading-[1.6] text-dim">
           {signupMode
@@ -105,29 +106,28 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
           </button>
         </form>
 
-        <div className="mt-5 rounded-[11px] border border-edge bg-chip p-3 text-[10.5px] leading-[1.5] text-faint">
+        {signupMode ? <div className="mt-5 rounded-[11px] border border-edge bg-chip p-3 text-[10.5px] leading-[1.5] text-faint">
           ChargeQuest never asks for your email and has no automated password reset.
           Keep your username and password somewhere safe;{' '}
           <a href={`${ANTHONY_EMAIL_HREF}?subject=ChargeQuest%20account%20help`} className="font-semibold text-accent no-underline">
             contact Anthony
           </a>{' '}
           if an account is locked out.
-        </div>
+        </div> : null}
 
-        <div className="mt-6 text-center text-[12px] text-dim">
-          {signupMode ? 'Already have an account?' : 'New to ChargeQuest?'}{' '}
-          <Link
-            to={signupMode ? '/login' : '/signup'}
-            className="font-semibold text-accent no-underline"
-          >
-            {signupMode ? 'Sign in' : 'Create one'}
-          </Link>
-        </div>
+        {signupMode ? (
+          <div className="mt-6 text-center text-[12px] text-dim">
+            Already have an account?{' '}
+            <Link to="/login" className="font-semibold text-accent no-underline">
+              Sign in
+            </Link>
+          </div>
+        ) : null}
       </div>
     </div>
   )
 }
 
 function safeReturnTo(value: string | null) {
-  return value?.startsWith('/') && !value.startsWith('//') ? value : '/dashboard'
+  return value?.startsWith('/') && !value.startsWith('//') ? value : '/admin'
 }

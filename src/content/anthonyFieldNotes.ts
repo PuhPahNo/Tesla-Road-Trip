@@ -42,7 +42,7 @@ export const PUBLISHED_ANTHONY_FIELD_NOTES: readonly AnthonyFieldNote[] = [
     lede: [
       [
         'On September 27, I plan to leave Chattanooga and begin a ',
-        { label: '73-day loop through 73 different Tesla Superchargers', href: '#full-route' },
+        { label: '73-day loop through 73 different Tesla Superchargers', href: '/route' },
         '.',
       ],
       [
@@ -90,7 +90,8 @@ export const PUBLISHED_ANTHONY_FIELD_NOTES: readonly AnthonyFieldNote[] = [
             'Tesla’s ',
             {
               label: '2026 competition rules',
-              href: '/2026-tesla-supercharging-competition',
+              href: 'https://www.tesla.com/support/tesla-app/charging-badges/contest',
+              external: true,
             },
             ' describe the Longest Trip category as a continuous streak of unique Supercharger locations.',
           ],
@@ -100,10 +101,7 @@ export const PUBLISHED_ANTHONY_FIELD_NOTES: readonly AnthonyFieldNote[] = [
           ['Those are not the same rule.'],
           [
             'I’m planning around the ',
-            {
-              label: 'stricter start-to-start interpretation',
-              href: '/competition/longest-trip-strategy',
-            },
+            'stricter start-to-start interpretation',
             '. If I begin charging at 3 p.m. on one day, I want the next qualifying session at a new site to begin before 3 p.m. the following day.',
           ],
           [
@@ -176,18 +174,7 @@ export const PUBLISHED_ANTHONY_FIELD_NOTES: readonly AnthonyFieldNote[] = [
       },
     ],
     closingLinks: [
-      { label: 'Explore the complete 73-day route', href: '#full-route' },
-      {
-        label: 'Understand the 2026 competition rules',
-        href: '/2026-tesla-supercharging-competition',
-      },
-      {
-        label: 'Read the Longest Trip strategy',
-        href: '/competition/longest-trip-strategy',
-      },
-      { label: 'Compare other Tesla route ideas', href: '/tesla-road-trip-routes' },
-      { label: 'Build your own route with CORE', href: '/signup?returnTo=%2Fplanner' },
-      { label: 'Send me a route problem', href: '/community' },
+      { label: 'See the current route', href: '/route' },
     ],
     sources: [
       {

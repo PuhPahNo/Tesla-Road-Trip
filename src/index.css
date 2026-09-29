@@ -120,7 +120,8 @@
   --color-info-bd: var(--info-bd);
   --color-glass-bd: var(--glass-bd);
 
-  --font-sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-sans: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-display: 'Inter Tight', 'Inter', 'Helvetica Neue', Arial, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
 
   --shadow-card: var(--shadow);

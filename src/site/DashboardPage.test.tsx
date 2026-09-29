@@ -10,7 +10,7 @@ afterEach(() => {
 })
 
 describe('signed-in dashboard', () => {
-  it('makes saved routes primary and connects members to Anthony and recent field guides', async () => {
+  it('makes saved routes primary and connects members to Anthony', async () => {
     vi.stubGlobal('fetch', vi.fn().mockImplementation(async (input: string) => ({
       ok: true,
       json: async () => input === '/api/auth/session'
@@ -73,13 +73,9 @@ describe('signed-in dashboard', () => {
       name: 'The route is 73 days long. I’m still not calling it finished.',
     })).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Challenge the route' }).getAttribute('href')).toBe('/community')
-    expect(screen.getAllByRole('link', { name: /^Read (?!the field note)/ })).toHaveLength(3)
     expect(screen.getByRole('link', { name: 'Account settings' }).getAttribute('href')).toBe('/account')
     expect(screen.getByText('route suggestions for Anthony')).toBeTruthy()
     expect(screen.getAllByRole('img', { name: 'Tesla Superchargers illuminated at night' })).toHaveLength(1)
-    expect(screen.getByRole('img', { name: 'A car traveling a dark highway at night' })).toBeTruthy()
-    expect(screen.getByRole('img', { name: 'The view through a windshield on a desert highway' })).toBeTruthy()
-    expect(screen.getByRole('img', { name: 'The Grand Canyon stretching into the distance from the South Rim' })).toBeTruthy()
     expect(screen.queryByRole('heading', { name: 'Change password' })).toBeNull()
   })
 

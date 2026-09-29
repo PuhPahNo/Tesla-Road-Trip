@@ -39,14 +39,8 @@ describe('published Anthony field notes', () => {
     const internalLinks = [...inlineLinks, ...note.closingLinks]
       .filter((link) => !link.external)
 
-    expect(new Set(internalLinks.map((link) => link.href))).toEqual(new Set([
-      '#full-route',
-      '/2026-tesla-supercharging-competition',
-      '/competition/longest-trip-strategy',
-      '/tesla-road-trip-routes',
-      '/signup?returnTo=%2Fplanner',
-      '/community',
-    ]))
+    // Internal links only point at live tracker pages.
+    expect(new Set(internalLinks.map((link) => link.href))).toEqual(new Set(['/route']))
 
     const copy = fieldNotePlainText(note).toLowerCase()
     for (const phrase of [

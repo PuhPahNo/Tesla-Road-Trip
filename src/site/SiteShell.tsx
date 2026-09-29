@@ -1,124 +1,61 @@
 import type { ReactNode } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { BookOpen, Compass, Info, Map as MapIcon } from 'lucide-react'
 import { useAuth } from './AuthContext'
 import { cx } from '../ui/primitives'
-import { PUBLIC_ARCHITECTURE_LINKS } from '../seo/siteArchitecture'
+import { useTheme } from '../theme/theme'
+import { MoonIcon, SunIcon } from '../ui/icons'
 import { ANTHONY_EMAIL, ANTHONY_EMAIL_HREF } from './contact'
-import { LEGAL_OPERATOR_DISCLOSURE, LEGAL_OPERATOR_NAME } from './business'
+import { LEGAL_OPERATOR_DISCLOSURE } from './business'
 
-const PUBLIC_NAV_ITEMS = [
-  { to: '/', label: 'Home' },
-  { to: '/signup?returnTo=%2Fplanner', label: 'Build a route' },
-  { to: '/community', label: 'Send an idea' },
-  { to: '/track-anthony', label: 'Track Anthony' },
-]
-
-const MEMBER_NAV_ITEMS = [
-  { to: '/dashboard', label: 'Dashboard' },
-  { to: '/planner', label: 'CORE' },
-  { to: '/community', label: 'Send an idea' },
-  { to: '/track-anthony', label: 'Track Anthony' },
+export const PUBLIC_NAV_ITEMS = [
+  { to: '/', label: 'Tracker', icon: Compass },
+  { to: '/route', label: 'Route', icon: MapIcon },
+  { to: '/journal', label: 'Journal', icon: BookOpen },
+  { to: '/about', label: 'About', icon: Info },
 ]
 
 export function SiteShell() {
-  const { user, loading, logout } = useAuth()
-  const navigate = useNavigate()
-  const navItems = [...(user ? MEMBER_NAV_ITEMS : PUBLIC_NAV_ITEMS)]
-  if (user?.role === 'admin') {
-    navItems.push({ to: '/admin/hotels', label: 'Hotels' })
-  }
+  return (
+    <div className="site-page flex min-h-screen flex-col bg-app text-ink">
+      <SiteHeader />
+      <main className="flex-1 pb-[76px] md:pb-0">
+        <Outlet />
+      </main>
+      <SiteFooter />
+      <MobileNav />
+    </div>
+  )
+}
 
-  if (loading) {
-    return <div className="min-h-screen bg-app p-10 text-faint">Checking your account…</div>
-  }
+function SiteHeader() {
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+  const isAdmin = user?.role === 'admin'
 
   return (
-    <div className="site-page min-h-screen bg-app text-ink">
-      <header className="site-nav sticky top-0 z-50 border-b border-white/10 bg-black text-white">
-        <div className="mx-auto flex h-[68px] max-w-[1440px] items-center gap-2 px-3 sm:h-[78px] sm:gap-6 sm:px-5 lg:px-12">
-          <NavLink to={user ? '/dashboard' : '/'} className="group flex min-w-0 items-center gap-2 no-underline sm:gap-3">
-            <img
-              src="/chargequest-logo.png?v=4"
-              alt="ChargeQuest"
-              width={1000}
-              height={158}
-              className="h-[29px] w-auto max-w-[184px] flex-none object-contain transition-opacity group-hover:opacity-85 sm:h-[36px] sm:max-w-[228px] lg:h-[40px] lg:max-w-[253px]"
-            />
-          </NavLink>
+    <header className="sticky top-0 z-50 border-b border-edge bg-app/85 backdrop-blur-xl">
+      <div className="mx-auto flex h-16 max-w-[1200px] items-center gap-4 px-4 sm:px-6">
+        <NavLink to="/" className="flex flex-none items-center no-underline" aria-label="ChargeQuest tracker home">
+          <img
+            src="/chargequest-logo.png?v=4"
+            alt="ChargeQuest"
+            width={1000}
+            height={158}
+            className="h-[26px] w-auto object-contain sm:h-[30px]"
+          />
+        </NavLink>
 
-          <nav className="ml-auto hidden items-center gap-6 md:flex" aria-label="Main navigation">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to === '/'}
-                className={({ isActive }) =>
-                  cx(
-                    'relative py-2 font-mono text-[9px] font-semibold uppercase tracking-[0.11em] no-underline transition after:absolute after:inset-x-0 after:-bottom-1 after:h-[2px] after:origin-left after:bg-[#e82127] after:transition-transform',
-                    isActive
-                      ? 'text-white after:scale-x-100'
-                      : 'text-white/48 after:scale-x-0 hover:text-white hover:after:scale-x-100',
-                  )
-                }
-              >
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
-
-          <div className="ml-auto flex min-w-0 items-center gap-1.5 border-l border-white/10 pl-2 sm:gap-2.5 sm:pl-4 md:ml-2">
-            {user ? (
-              <>
-                {user.role === 'admin' ? (
-                  <NavLink
-                    to="/admin"
-                    className="hidden rounded-full border border-[#e82127]/50 bg-[#e82127]/12 px-4 py-2.5 text-[10.5px] font-semibold text-[#ff817d] no-underline transition hover:bg-[#e51c23] hover:text-white sm:block"
-                  >
-                    Admin
-                  </NavLink>
-                ) : null}
-                <NavLink
-                  to={user.mustChangePassword ? '/change-password' : '/account'}
-                  className="max-w-[116px] truncate rounded-full border border-white/18 bg-white/[.06] px-3 py-2.5 text-[10px] font-semibold text-white no-underline transition hover:border-white/40 sm:max-w-none sm:px-4 sm:text-[10.5px]"
-                >
-                  {user.username}
-                </NavLink>
-                <button
-                  type="button"
-                  onClick={() => void logout().then(() => navigate('/'))}
-                  className="hidden cursor-pointer border-0 bg-transparent px-1 py-2 font-mono text-[8.5px] uppercase tracking-[0.08em] text-white/55 hover:text-white sm:block"
-                >
-                  Sign out
-                </button>
-              </>
-            ) : (
-              <>
-                <NavLink
-                  to="/login"
-                  className="hidden px-1 py-2 text-[11px] font-medium text-white/55 no-underline hover:text-white sm:block"
-                >
-                  Sign in
-                </NavLink>
-                <NavLink
-                  to="/signup"
-                  className="whitespace-nowrap rounded-full bg-[#e51c23] px-3.5 py-2.5 text-[10px] font-semibold text-white no-underline shadow-[0_8px_28px_rgba(232,33,39,.3)] transition hover:bg-white hover:text-black sm:px-5 sm:py-3 sm:text-[11px]"
-                >
-                  Start building
-                </NavLink>
-              </>
-            )}
-          </div>
-        </div>
-        <nav className={cx('grid gap-1 border-t border-white/10 bg-black/35 px-2 py-2 md:hidden', user?.role === 'admin' ? 'grid-cols-5' : 'grid-cols-4')} aria-label="Mobile navigation">
-          {navItems.map((item) => (
+        <nav className="ml-6 hidden items-center gap-1 md:flex" aria-label="Main navigation">
+          {PUBLIC_NAV_ITEMS.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.to === '/'}
               className={({ isActive }) =>
                 cx(
-                  'min-w-0 truncate rounded-full px-1.5 py-2 text-center font-mono text-[7.5px] font-semibold uppercase tracking-[0.04em] no-underline sm:px-3.5 sm:text-[8.5px] sm:tracking-[0.08em]',
-                  isActive ? 'bg-white text-black' : 'text-white/50',
+                  'rounded-full px-3.5 py-2 text-[13.5px] font-medium no-underline transition',
+                  isActive ? 'bg-chip text-ink' : 'text-dim hover:text-ink',
                 )
               }
             >
@@ -126,71 +63,99 @@ export function SiteShell() {
             </NavLink>
           ))}
         </nav>
-      </header>
-      <main>
-        <Outlet />
-      </main>
-      <footer className="border-t border-white/10 bg-[#090a0c] px-5 py-14 text-white sm:py-16">
-        <div className="mx-auto max-w-[1320px]">
-          <div className="grid gap-10 border-b border-white/10 pb-12 md:grid-cols-[1.4fr_repeat(3,1fr)] md:gap-8">
-            <div className="max-w-[360px]">
-              <img
-                src="/chargequest-logo.png?v=4"
-                alt="ChargeQuest"
-                width={1000}
-                height={158}
-                className="h-8 w-auto object-contain"
-              />
-              <p className="mt-5 text-[12px] leading-[1.7] text-white/55">
-                Competition-aware Tesla road trips built around places worth visiting.
-                {' '}{LEGAL_OPERATOR_DISCLOSURE} Independent from and not endorsed by Tesla.
-              </p>
-              <a href={ANTHONY_EMAIL_HREF} className="mt-5 inline-block text-[11.5px] font-semibold text-white/72 no-underline hover:text-white">
-                {ANTHONY_EMAIL}
-              </a>
-            </div>
 
-            <FooterGroup title="Explore">
-              <FooterLink to={PUBLIC_ARCHITECTURE_LINKS.home.path}>{PUBLIC_ARCHITECTURE_LINKS.home.label}</FooterLink>
-              {user ? <FooterLink to="/dashboard">Your dashboard</FooterLink> : null}
-              <FooterLink to={user ? '/planner' : '/signup?returnTo=%2Fplanner'}>{user ? 'CORE planner' : 'Build a route'}</FooterLink>
-              <FooterLink to={PUBLIC_ARCHITECTURE_LINKS.track.path}>{PUBLIC_ARCHITECTURE_LINKS.track.label}</FooterLink>
-              <FooterLink to={PUBLIC_ARCHITECTURE_LINKS.community.path}>{PUBLIC_ARCHITECTURE_LINKS.community.label}</FooterLink>
-            </FooterGroup>
-
-            <FooterGroup title="Field guides">
-              <FooterLink to={PUBLIC_ARCHITECTURE_LINKS.competition.path}>{PUBLIC_ARCHITECTURE_LINKS.competition.label}</FooterLink>
-              <FooterLink to={PUBLIC_ARCHITECTURE_LINKS.badges.path}>{PUBLIC_ARCHITECTURE_LINKS.badges.label}</FooterLink>
-              <FooterLink to={PUBLIC_ARCHITECTURE_LINKS.routes.path}>{PUBLIC_ARCHITECTURE_LINKS.routes.label}</FooterLink>
-            </FooterGroup>
-
-            <FooterGroup title="ChargeQuest">
-              <FooterLink to={PUBLIC_ARCHITECTURE_LINKS.about.path}>{PUBLIC_ARCHITECTURE_LINKS.about.label}</FooterLink>
-              <a href={ANTHONY_EMAIL_HREF} className="text-[11.5px] text-white/55 no-underline hover:text-white">Contact Anthony</a>
-              {user ? <FooterLink to="/account">Your account</FooterLink> : <FooterLink to="/login">Sign in</FooterLink>}
-              {user?.role === 'admin' ? <FooterLink to="/admin">Admin</FooterLink> : null}
-            </FooterGroup>
-          </div>
-
-          <div className="flex flex-col gap-2 pt-6 font-mono text-[8px] uppercase tracking-[0.09em] text-white/55 sm:flex-row sm:items-center sm:justify-between">
-            <div>© {new Date().getFullYear()} {LEGAL_OPERATOR_NAME} · ChargeQuest · Built by Anthony Pappano</div>
-            <div>Route estimates require current road, weather, and charging verification</div>
-          </div>
+        <div className="ml-auto flex items-center gap-1.5">
+          {isAdmin ? (
+            <>
+              <NavLink
+                to="/planner"
+                className="rounded-full border border-edge2 px-3 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-accent2 no-underline hover:bg-chip"
+              >
+                CORE
+              </NavLink>
+              <NavLink
+                to="/admin"
+                className="rounded-full bg-accent px-3 py-1.5 text-[12px] font-semibold text-on-accent no-underline hover:brightness-110"
+              >
+                Admin
+              </NavLink>
+              <button
+                type="button"
+                onClick={() => void logout().then(() => navigate('/'))}
+                className="hidden cursor-pointer rounded-full border-0 bg-transparent px-2 py-1.5 text-[12px] text-faint hover:text-ink sm:block"
+              >
+                Sign out
+              </button>
+            </>
+          ) : null}
+          <ThemeToggle />
         </div>
-      </footer>
-    </div>
+      </div>
+    </header>
   )
 }
 
-function FooterGroup({ title, children }: { title: string; children: ReactNode }) {
+export function ThemeToggle({ className }: { className?: string }) {
+  const { isDark, toggleTheme } = useTheme()
   return (
-    <div>
-      <div className="font-mono text-[8px] font-semibold uppercase tracking-[0.14em] text-white/55">{title}</div>
-      <div className="mt-4 flex flex-col items-start gap-3">{children}</div>
-    </div>
+    <button
+      type="button"
+      onClick={toggleTheme}
+      aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
+      className={cx(
+        'flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-edge bg-transparent text-dim transition hover:text-ink',
+        className,
+      )}
+    >
+      {isDark ? <SunIcon size={15} /> : <MoonIcon size={15} />}
+    </button>
   )
 }
 
-function FooterLink({ to, children }: { to: string; children: ReactNode }) {
-  return <NavLink to={to} className="text-[11.5px] text-white/55 no-underline hover:text-white">{children}</NavLink>
+function MobileNav() {
+  return (
+    <nav
+      className="pb-safe fixed inset-x-0 bottom-0 z-50 grid grid-cols-4 border-t border-edge bg-app/92 px-2 pt-1.5 backdrop-blur-xl md:hidden"
+      aria-label="Mobile navigation"
+    >
+      {PUBLIC_NAV_ITEMS.map((item) => {
+        const Icon = item.icon
+        return (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.to === '/'}
+            className={({ isActive }) =>
+              cx(
+                'flex min-h-[52px] flex-col items-center justify-center gap-1 rounded-xl text-[11px] font-medium no-underline',
+                isActive ? 'text-accent' : 'text-faint',
+              )
+            }
+          >
+            <Icon size={20} strokeWidth={1.8} aria-hidden="true" />
+            {item.label}
+          </NavLink>
+        )
+      })}
+    </nav>
+  )
+}
+
+function SiteFooter() {
+  return (
+    <footer className="border-t border-edge px-4 pb-24 pt-10 sm:px-6 md:pb-10">
+      <div className="mx-auto flex max-w-[1200px] flex-col gap-4 text-[12.5px] text-faint sm:flex-row sm:items-center sm:justify-between">
+        <FooterText>
+          {LEGAL_OPERATOR_DISCLOSURE} Independent from and not endorsed by Tesla.
+        </FooterText>
+        <a href={ANTHONY_EMAIL_HREF} className="text-dim no-underline hover:text-ink">
+          {ANTHONY_EMAIL}
+        </a>
+      </div>
+    </footer>
+  )
+}
+
+function FooterText({ children }: { children: ReactNode }) {
+  return <p className="m-0 max-w-[560px] leading-[1.6]">{children}</p>
 }

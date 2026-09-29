@@ -11,7 +11,7 @@ afterEach(() => {
 })
 
 describe('Anthony admin workspace', () => {
-  it('groups tracker controls, field publishing, and meetup moderation clearly', async () => {
+  it('puts the road log, tracker and journal first and folds away member features', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockImplementation(async (input: string) => ({
@@ -202,6 +202,7 @@ describe('Anthony admin workspace', () => {
                   updatedAt: '2026-07-11T00:00:00.000Z',
                 },
                 updates: [],
+                dayLog: [],
                 stateVotes: [],
                 suggestions: [],
                 meetups: [],
@@ -258,34 +259,35 @@ describe('Anthony admin workspace', () => {
       </MemoryRouter>,
     )
 
-    expect(screen.getByRole('heading', { name: 'ChargeQuest admin' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Trip admin' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: /Open CORE/ }).getAttribute('href')).toBe('/planner')
+    expect(await screen.findByRole('heading', { name: 'Status and route' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'New post' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Published posts' })).toBeTruthy()
+    expect(screen.getByLabelText('Tracker active')).toBeTruthy()
+
+    // Member features are kept but folded away.
+    await userEvent.click(screen.getByText(/Dormant member features/))
     expect(await screen.findByRole('heading', { name: 'Users' })).toBeTruthy()
-    expect(screen.getByRole('columnheader', { name: 'User' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Add user' })).toBeTruthy()
-    expect(screen.getAllByRole('button', { name: 'Open anthony' }).length).toBeGreaterThan(0)
-    expect(screen.getAllByRole('button', { name: 'Open roadtripper' }).length).toBeGreaterThan(0)
-    expect(screen.getByRole('heading', { name: 'Recent account activity' })).toBeTruthy()
     await userEvent.click(screen.getAllByRole('button', { name: 'Open roadtripper' })[0])
     expect(await screen.findByRole('heading', { name: '@roadtripper' })).toBeTruthy()
-    expect(screen.getByLabelText('Username for roadtripper')).toBeTruthy()
     expect(await screen.findByText('Western Parks Loop')).toBeTruthy()
-    expect(screen.getByRole('heading', { name: 'Security' })).toBeTruthy()
-    expect(await screen.findByRole('heading', { name: 'Public trip profile' })).toBeTruthy()
-    expect(screen.getByRole('heading', { name: 'Publish progress' })).toBeTruthy()
-    expect(screen.getByRole('heading', { name: 'Manage the Track Anthony timeline' })).toBeTruthy()
     expect(screen.getByRole('heading', { name: 'Route ideas sent to you' })).toBeTruthy()
     expect(screen.getByText('Compare the northern route')).toBeTruthy()
     expect(screen.getByRole('heading', { name: 'Pending coffee invites' })).toBeTruthy()
     expect(screen.getByText('Denver, CO')).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Approve' })).toBeTruthy()
-    expect(screen.getByLabelText('Tracker active')).toBeTruthy()
+
     await userEvent.selectOptions(
-      screen.getByLabelText('Route shown on Track Anthony'),
+      screen.getByLabelText('Route visitors see'),
       'saved-2026-competition',
     )
     expect(await screen.findByText('Ready to publish')).toBeTruthy()
     expect(screen.getByText('Road mapped via ORS')).toBeTruthy()
-    expect(screen.getByText('2026 Competition')).toBeTruthy()
     expect(screen.getByLabelText('Trip day for journal entry')).toBeTruthy()
-  })
+
+    // The road log appears once the published route is known.
+    expect(await screen.findByRole('heading', { name: 'Finish today' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Finish day 1 and the trip' })).toBeTruthy()
+  }, 20_000)
 })

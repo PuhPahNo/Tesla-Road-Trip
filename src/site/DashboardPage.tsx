@@ -13,15 +13,7 @@ import { Link } from 'react-router-dom'
 import { fetchAccount, type AccountSnapshot } from '../api/siteClient'
 import { PUBLISHED_ANTHONY_FIELD_NOTES } from '../content/anthonyFieldNotes'
 import type { SavedCustomRoute } from '../domain/types'
-import { SEO_PAGES, type SeoPage, type SeoPageKind } from '../seo/seoPages'
-import { getSeoPagePresentation } from '../seo/siteArchitecture'
 import { useAuth } from './AuthContext'
-
-const EDITORIAL_KIND_LABELS: Partial<Record<SeoPageKind, string>> = {
-  guide: 'Competition strategy',
-  route: 'Road-trip field guide',
-  badge: 'Iconic Charger guide',
-}
 
 const ROUTE_COVERS = [
   {
@@ -69,7 +61,6 @@ export function DashboardPage() {
   )
   const leadRoute = routes[0]
   const latestFieldNote = PUBLISHED_ANTHONY_FIELD_NOTES[0]
-  const editorialItems = latestEditorialItems()
 
   if (!data && !error) {
     return (
@@ -268,30 +259,6 @@ export function DashboardPage() {
           </div>
         </section>
 
-        <section className="mt-32 sm:mt-40" aria-labelledby="dashboard-latest-heading">
-          <SectionIntro
-            eyebrow="02 / Recently published"
-            heading="Stories for the drive."
-            copy="Competition strategy, routes worth stealing, and places that deserve more than a charging stop."
-            action={(
-              <Link to="/2026-tesla-supercharging-competition" className="inline-flex items-center gap-2 text-[11px] font-semibold text-white no-underline">
-                Explore the Field Guide
-                <ArrowRight size={13} aria-hidden="true" />
-              </Link>
-            )}
-          />
-
-          <div className="mt-12 grid gap-5 lg:grid-cols-12">
-            {editorialItems.map((page, index) => (
-              <ArticleCoverCard
-                key={page.path}
-                page={page}
-                featured={index === 0}
-              />
-            ))}
-          </div>
-        </section>
-
         <section className="mt-32 border-t border-white/12 pt-12 sm:mt-40 sm:pt-16" aria-labelledby="quick-actions-heading">
           <div className="font-mono text-[8px] font-semibold uppercase tracking-[0.16em] text-[#ff5149]">03 / Keep moving</div>
           <h2 id="quick-actions-heading" className="mt-4 text-[clamp(46px,8vw,92px)] font-semibold leading-[0.85] tracking-[-0.065em]">
@@ -416,40 +383,6 @@ function EmptyRoutes({ heading, copy }: { heading: string; copy: string }) {
   )
 }
 
-function ArticleCoverCard({ page, featured }: { page: SeoPage; featured: boolean }) {
-  const presentation = getSeoPagePresentation(page)
-
-  return (
-    <article className={`group relative isolate min-h-[520px] overflow-hidden rounded-[22px] border border-white/12 bg-[#101115] ${featured ? 'lg:col-span-6' : 'lg:col-span-3'}`}>
-      <img
-        src={presentation.socialImage}
-        alt={presentation.socialImageAlt}
-        className="absolute inset-0 -z-20 h-full w-full object-cover transition duration-700 group-hover:scale-[1.035]"
-        width={presentation.socialImageWidth}
-        height={presentation.socialImageHeight}
-        loading="lazy"
-      />
-      <div className="absolute inset-0 -z-10 bg-[linear-gradient(0deg,rgba(4,5,6,.98)_0%,rgba(4,5,6,.68)_58%,rgba(4,5,6,.04)_100%)]" />
-      <Link to={page.path} aria-label={`Read ${page.headline}`} className="flex min-h-[520px] flex-col justify-between p-6 text-white no-underline sm:p-8">
-        <div className="flex items-center justify-between gap-4 font-mono text-[7px] font-semibold uppercase tracking-[0.13em] text-white/72">
-          <span>{EDITORIAL_KIND_LABELS[page.kind]}</span>
-          <span>{compactDate(page.updatedAt)}</span>
-        </div>
-        <div>
-          <h3 className={`${featured ? 'text-[clamp(40px,5.2vw,70px)]' : 'text-[clamp(34px,3.5vw,49px)]'} font-semibold leading-[0.9] tracking-[-0.055em]`}>
-            {page.headline}
-          </h3>
-          <p className="mt-5 line-clamp-3 text-[12.5px] leading-[1.65] text-white/55">{page.intro}</p>
-          <div className="mt-6 inline-flex items-center gap-2 text-[11px] font-semibold text-white">
-            Read the story
-            <ArrowRight size={13} className="transition group-hover:translate-x-1" aria-hidden="true" />
-          </div>
-        </div>
-      </Link>
-    </article>
-  )
-}
-
 function QuickAction({ to, number, title, detail, icon }: { to: string; number: string; title: string; detail: string; icon: ReactNode }) {
   return (
     <Link to={to} className="group flex min-h-[250px] flex-col justify-between bg-[#0b0c0f] p-6 text-white no-underline transition hover:bg-[#111318] sm:p-8">
@@ -466,13 +399,6 @@ function QuickAction({ to, number, title, detail, icon }: { to: string; number: 
       </div>
     </Link>
   )
-}
-
-function latestEditorialItems(): SeoPage[] {
-  const byRecency = [...SEO_PAGES].sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
-  return (['guide', 'route', 'badge'] as const)
-    .map((kind) => byRecency.find((page) => page.kind === kind))
-    .filter((page): page is SeoPage => Boolean(page))
 }
 
 function plannerRouteHref(routeId: string) {

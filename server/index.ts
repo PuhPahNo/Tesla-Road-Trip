@@ -18,7 +18,7 @@ import {
   registerAuthRoutes,
 } from './auth'
 import { registerCommunityRoutes } from './community'
-import { databaseIsHealthy, databasePath } from './database'
+import { databaseIsHealthy, databasePath, db } from './database'
 import {
   defaultPlannerConfig,
   plannerConfigSchema,
@@ -34,7 +34,9 @@ import {
   normalizeSuperchargeSites,
 } from '../src/domain/stations'
 import type { PlannerConfig, Station } from '../src/domain/types'
-import { renderClientDocument } from './seo'
+import { renderClientDocument, type JournalPostPreview } from './pageDocument'
+import { legacyRedirectTarget } from '../src/site/sitePages'
+import { PUBLISHED_ANTHONY_FIELD_NOTES } from '../src/content/anthonyFieldNotes'
 import {
   RequestRateLimitError,
   enforceRequestRateLimit,
@@ -831,7 +833,7 @@ if (process.env.SERVE_CLIENT) {
   }))
   app.use((request, response) => {
     if ((request.method === 'GET' || request.method === 'HEAD') && !request.path.startsWith('/api')) {
-      const rendered = renderClientDocument(clientIndexHtml, request.path)
+      const rendered = renderClientDocument(clientIndexHtml, request.path, findJournalPost)
       response.status(rendered.status)
       response.setHeader(
         'Cache-Control',
@@ -869,19 +871,29 @@ function setReleaseHeaders(response: {
 }
 
 function canonicalClientRedirect(
-  indexHtml: string,
+  _indexHtml: string,
   requestPath: string,
   originalUrl: string,
 ) {
   const queryIndex = originalUrl.indexOf('?')
   const search = queryIndex >= 0 ? originalUrl.slice(queryIndex) : ''
-  if (requestPath === '/index.html') return `/${search}`
+  if (requestPath === '/index.html') return '/'
+  if (requestPath.startsWith('/api/')) return undefined
+  // Retired SEO and member pages go to their closest tracker page.
+  const legacyTarget = legacyRedirectTarget(requestPath)
+  if (legacyTarget) return legacyTarget
   if (requestPath === '/' || !requestPath.endsWith('/')) return undefined
-
   const normalizedPath = requestPath.replace(/\/+$/, '')
-  if (!normalizedPath) return undefined
-  const rendered = renderClientDocument(indexHtml, normalizedPath)
-  return rendered.status === 200 ? `${normalizedPath}${search}` : undefined
+  return normalizedPath ? `${normalizedPath}${search}` : undefined
+}
+
+function findJournalPost(id: string): JournalPostPreview | undefined {
+  const note = PUBLISHED_ANTHONY_FIELD_NOTES.find((entry) => entry.id === id)
+  if (note) return { title: note.title, body: note.excerpt }
+  const row = db.prepare('SELECT title, body FROM trip_updates WHERE id = ?').get(id) as
+    | { title: string; body: string }
+    | undefined
+  return row
 }
 
 const anthonyAdmin = await ensureAnthonyAdmin()

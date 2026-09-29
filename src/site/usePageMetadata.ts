@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { SITE_ORIGIN } from '../seo/seoPages'
+import { SITE_ORIGIN } from './sitePages'
 
 export function usePageMetadata({
   title,

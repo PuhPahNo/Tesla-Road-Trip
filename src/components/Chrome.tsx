@@ -42,7 +42,7 @@ export function BrandIsland({
     // Below sm the island yields to the actions island (~108px + gap) so the
     // two never overlap; the route chip shrinks and truncates instead.
     <div className="glass fixed left-3 top-3 z-40 flex h-11 max-w-[calc(100vw-152px)] items-center gap-1.5 rounded-[12px] py-0 pl-2 pr-1 sm:left-4 sm:top-4 sm:h-12 sm:max-w-none sm:gap-2.5 sm:rounded-[13px] sm:pl-3 sm:pr-1.5">
-      <a href="/account" aria-label="Open ChargeQuest account and navigation" className="flex flex-none rounded-[8px]">
+      <a href="/admin" aria-label="Open ChargeQuest admin" className="flex flex-none rounded-[8px]">
         <img
           src="/chargequest-logo.png?v=4"
           alt="ChargeQuest"
@@ -141,13 +141,15 @@ export function ActionsIsland({
 export function IconRail({
   activePanel,
   onSelect,
+  items = RAIL_ITEMS,
 }: {
   activePanel: PanelKey | null
   onSelect: (key: PanelKey) => void
+  items?: typeof RAIL_ITEMS
 }) {
   return (
     <div className="glass fixed left-4 top-20 z-[38] flex flex-col gap-1 rounded-[13px] p-1.5">
-      {RAIL_ITEMS.map((item) => {
+      {items.map((item) => {
         const active = activePanel === item.key
         const Icon = item.icon
         return (
@@ -176,7 +178,7 @@ export function IconRail({
 /* ------------------------------------------------------------------ */
 export type MobileTab = 'trip' | 'days' | 'coverage' | 'copilot' | null
 
-const MOBILE_TABS: Array<{
+export const MOBILE_TABS: Array<{
   key: Exclude<MobileTab, null>
   label: string
   icon: typeof GridIcon
@@ -190,9 +192,11 @@ const MOBILE_TABS: Array<{
 export function MobileTabBar({
   active,
   onSelect,
+  tabs = MOBILE_TABS,
 }: {
   active: MobileTab
   onSelect: (tab: MobileTab) => void
+  tabs?: typeof MOBILE_TABS
 }) {
   const tab = (key: Exclude<MobileTab, null> | null, label: string, icon: ReactNode) => {
     const isActive = active === key
@@ -214,9 +218,12 @@ export function MobileTabBar({
   }
 
   return (
-    <nav className="glass pb-safe fixed inset-x-2 bottom-2 z-40 grid grid-cols-5 rounded-[15px] px-1 py-1 sm:inset-x-3 sm:bottom-3 sm:px-1.5">
+    <nav
+      className="glass pb-safe fixed inset-x-2 bottom-2 z-40 grid rounded-[15px] px-1 py-1 sm:inset-x-3 sm:bottom-3 sm:px-1.5"
+      style={{ gridTemplateColumns: `repeat(${tabs.length + 1}, minmax(0, 1fr))` }}
+    >
       {tab(null, 'Map', <CompassIcon size={19} />)}
-      {MOBILE_TABS.map((t) => {
+      {tabs.map((t) => {
         const Icon = t.icon
         return tab(t.key, t.label, <Icon size={19} />)
       })}

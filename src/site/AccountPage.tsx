@@ -171,7 +171,7 @@ export function ProtectedRoute({
   if (loading) return <div className="min-h-[60vh] p-10 text-faint">Checking your account…</div>
   if (!user) return <Navigate to={`/${unauthenticatedTo}?returnTo=${encodeURIComponent(location.pathname)}`} replace />
   if (user.mustChangePassword) return <Navigate to="/change-password" replace />
-  if (admin && user.role !== 'admin') return <Navigate to="/account" replace />
+  if (admin && user.role !== 'admin') return <Navigate to="/" replace />
   return children
 }
 
