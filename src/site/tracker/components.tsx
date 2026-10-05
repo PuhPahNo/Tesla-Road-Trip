@@ -136,6 +136,12 @@ export function JournalMeta({ entry }: { entry: JournalEntry }) {
       <span className="font-semibold text-accent">{entry.label}</span>
       <span aria-hidden="true">·</span>
       <time dateTime={entry.date}>{entry.date.includes('T') ? formatRelativeTime(entry.date) : formatLongDate(entry.date)}</time>
+      {entry.fieldNote && entry.fieldNote.updatedAt !== entry.fieldNote.publishedAt ? (
+        <>
+          <span aria-hidden="true">·</span>
+          <span>Updated <time dateTime={entry.fieldNote.updatedAt}>{formatLongDate(entry.fieldNote.updatedAt)}</time></span>
+        </>
+      ) : null}
       {entry.location ? (
         <>
           <span aria-hidden="true">·</span>

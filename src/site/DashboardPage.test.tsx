@@ -70,7 +70,7 @@ describe('signed-in dashboard', () => {
     )
     expect(screen.getByText('Chattanooga → Glacier National Park')).toBeTruthy()
     expect(screen.getByRole('heading', {
-      name: 'The route is 73 days long. I’m still not calling it finished.',
+      name: 'I called an audible. The trip is underway.',
     })).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Challenge the route' }).getAttribute('href')).toBe('/community')
     expect(screen.getByRole('link', { name: 'Account settings' }).getAttribute('href')).toBe('/account')

@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { defaultPlannerConfig } from '../domain/config'
+import { defaultPlannerConfig, MAX_SAVED_ROUTE_WAYPOINTS } from '../domain/config'
 import type { RoutePlan, SavedCustomRoute } from '../domain/types'
 import { ConfigModal } from './ConfigModal'
 import { BrandIsland } from './Chrome'
@@ -227,7 +227,7 @@ describe('planning modal responsibilities', () => {
     fireEvent.click(
       within(dialog).getByRole('button', { name: 'Continue to destinations' }),
     )
-    expect(within(dialog).getByText('22/32 stops')).toBeTruthy()
+    expect(within(dialog).getByText(`22/${MAX_SAVED_ROUTE_WAYPOINTS} stops`)).toBeTruthy()
     fireEvent.click(within(dialog).getByRole('button', { name: 'Review route' }))
     const sanFranciscoCap = within(dialog).getByLabelText(
       'Maximum days at Golden Gate / San Francisco',

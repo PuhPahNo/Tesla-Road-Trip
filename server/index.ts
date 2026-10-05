@@ -19,6 +19,7 @@ import {
 } from './auth'
 import { registerCommunityRoutes } from './community'
 import { databaseIsHealthy, databasePath, db } from './database'
+import { applyDepartureRevision } from './departureRevision'
 import {
   defaultPlannerConfig,
   plannerConfigSchema,
@@ -903,6 +904,8 @@ if (anthonyAdmin) {
     `Anthony admin ready${migratedRoutes ? ` · migrated ${migratedRoutes} saved routes` : ''}`,
   )
 }
+
+if (applyDepartureRevision()) console.log('Applied October 4 departure revision · 69 reviewed days')
 
 const server = app.listen(PORT, () => {
   const address = server.address()

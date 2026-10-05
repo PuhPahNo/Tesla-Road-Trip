@@ -1,8 +1,8 @@
-import { Link, useParams } from 'react-router-dom'
+import { Link, Navigate, useParams } from 'react-router-dom'
 import { ArrowLeft, ArrowUpRight, MapPin } from 'lucide-react'
 import { instagramHandle } from '../contact'
 import { usePageMetadata } from '../usePageMetadata'
-import { PUBLIC_PAGES } from '../sitePages'
+import { legacyRedirectTarget, PUBLIC_PAGES } from '../sitePages'
 import { NotFoundPage } from '../SearchBoundaryPages'
 import {
   FieldNoteLink,
@@ -60,7 +60,9 @@ export function JournalPostPage() {
   const { postId } = useParams()
   const { journal, loading } = useTripData()
   const entry = journal.find((candidate) => candidate.id === postId)
+  const redirect = legacyRedirectTarget(`/journal/${postId}`)
 
+  if (redirect) return <Navigate to={redirect} replace />
   if (loading) return <LoadingBlock label="Loading the post…" />
   if (!entry) return <NotFoundPage />
   return <JournalPost entry={entry} />

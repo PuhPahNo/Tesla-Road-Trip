@@ -44,6 +44,7 @@ export const PRIVATE_PATHS = new Set([
 ])
 
 const LEGACY_EXACT: Record<string, string> = {
+  '/journal/73-day-route-not-finished': '/journal/route-audible-october-2026',
   '/track-anthony': '/',
   '/about-anthony': '/about',
   '/community': '/',

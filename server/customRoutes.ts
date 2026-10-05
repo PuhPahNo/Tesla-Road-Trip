@@ -71,7 +71,7 @@ const stayDayCapsSchema = z
   )
   .max(16)
 
-const savedRouteSchema = z.object({
+export const savedRouteSchema = z.object({
   dailyStationIds: dailyStationIdsSchema.optional(),
   id: z.string().min(1).max(96),
   name: z.string().min(1).max(80),

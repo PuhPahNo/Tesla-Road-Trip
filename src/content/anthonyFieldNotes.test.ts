@@ -10,21 +10,15 @@ function linksIn(content: AnthonyFieldNoteInline[]) {
 }
 
 describe('published Anthony field notes', () => {
-  it('publishes the approved 73-day route note as substantial first-person evidence', () => {
-    const note = PUBLISHED_ANTHONY_FIELD_NOTES.find(
-      (candidate) => candidate.id === '73-day-route-not-finished',
-    )
-    expect(note).toBeTruthy()
-    const copy = fieldNotePlainText(note!)
-
-    expect(note?.title).toBe(
-      'The route is 73 days long. I’m still not calling it finished.',
-    )
-    expect(copy).toContain('10,107.8 road-routed miles')
-    expect(copy).toContain('all 73 planned sites show as open')
-    expect(copy).toContain('289.7 miles')
-    expect(copy).toContain('Those are not the same rule.')
-    expect(copy.trim().split(/\s+/).length).toBeGreaterThanOrEqual(850)
+  it('updates the route note without presenting retired itinerary totals as current', () => {
+    const note = PUBLISHED_ANTHONY_FIELD_NOTES[0]
+    const copy = fieldNotePlainText(note)
+    expect(note.id).toBe('route-audible-october-2026')
+    expect(note.updatedAt).toBe('2026-10-04')
+    expect(copy).toContain('Day 6 · October 9: Omaha')
+    expect(copy).toContain('Kentucky Derby Museum')
+    expect(copy).toContain('tentative stop')
+    expect(copy).not.toMatch(/73|10,107|September 27|October 3|48 days/)
   })
 
   it('uses intentional internal links and avoids generic AI copy', () => {

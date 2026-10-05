@@ -74,7 +74,7 @@ export const PLANNER_NUMERIC_LIMITS = {
 // Saved routes are intentionally bounded, but the route builder and every
 // persistence/agent schema must share the same ceiling. A previous server-only
 // limit of 16 allowed larger drafts in the UI and rejected them only on save.
-export const MAX_SAVED_ROUTE_WAYPOINTS = 32
+export const MAX_SAVED_ROUTE_WAYPOINTS = 40
 
 export type PlannerNumericSettingKey = keyof typeof PLANNER_NUMERIC_LIMITS
 
