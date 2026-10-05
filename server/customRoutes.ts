@@ -6,6 +6,7 @@ import {
   MAX_SAVED_ROUTE_WAYPOINTS,
   dailyStationIdsSchema,
   reviewedDayStopCountsSchema,
+  reviewedDayDetailsSchema,
   validReviewedDayStops,
   PLANNER_NUMERIC_LIMITS,
 } from '../src/domain/config'
@@ -76,6 +77,7 @@ const stayDayCapsSchema = z
 export const savedRouteSchema = z.object({
   dailyStationIds: dailyStationIdsSchema.optional(),
   reviewedDayStopCounts: reviewedDayStopCountsSchema.optional(),
+  reviewedDayDetails: reviewedDayDetailsSchema.optional(),
   id: z.string().min(1).max(96),
   name: z.string().min(1).max(80),
   color: z.string().min(1).max(32),
@@ -92,11 +94,12 @@ export const savedRouteSchema = z.object({
   stayDayCaps: stayDayCapsSchema.optional(),
   createdAt: z.string().min(1).max(48),
   updatedAt: z.string().min(1).max(48),
-}).refine(validReviewedDayStops, 'Reviewed day counts must include every reviewed charging stop exactly once.')
+}).refine(validReviewedDayStops, 'Reviewed day counts must include every reviewed charging stop exactly once; overnight details must match those days and their charge indices.')
 
 const createRouteSchema = z.object({
   dailyStationIds: dailyStationIdsSchema.optional(),
   reviewedDayStopCounts: reviewedDayStopCountsSchema.optional(),
+  reviewedDayDetails: reviewedDayDetailsSchema.optional(),
   name: z.string().min(1).max(80),
   color: z.string().min(1).max(32).optional(),
   waypoints: z.array(waypointSchema).min(1).max(MAX_SAVED_ROUTE_WAYPOINTS),
@@ -198,10 +201,15 @@ export function updateSavedCustomRoute(
       : {}),
     ...(parsed.dailyStationIds !== undefined ? { dailyStationIds: parsed.dailyStationIds } : {}),
     ...(parsed.reviewedDayStopCounts !== undefined ? { reviewedDayStopCounts: parsed.reviewedDayStopCounts } : {}),
+    ...(parsed.reviewedDayDetails !== undefined ? { reviewedDayDetails: parsed.reviewedDayDetails } : {}),
     updatedAt: new Date().toISOString(),
   }
   if (parsed.dailyStationIds !== undefined && parsed.reviewedDayStopCounts === undefined &&
     JSON.stringify(parsed.dailyStationIds) !== JSON.stringify(current.dailyStationIds)) delete route.reviewedDayStopCounts
+  if (parsed.reviewedDayDetails === undefined && (
+    JSON.stringify(route.dailyStationIds) !== JSON.stringify(current.dailyStationIds) ||
+    JSON.stringify(route.reviewedDayStopCounts) !== JSON.stringify(current.reviewedDayStopCounts)
+  )) delete route.reviewedDayDetails
   savedRouteSchema.parse(route)
   if (route.dailyStationIds?.length) route.targetDays = route.reviewedDayStopCounts?.length ?? route.dailyStationIds.length
   if (parsed.travelPreferences === null) delete route.travelPreferences
@@ -254,6 +262,7 @@ export function registerCustomRouteRoutes(app: Express) {
           : {}),
         ...(parsed.dailyStationIds !== undefined ? { dailyStationIds: parsed.dailyStationIds } : {}),
         ...(parsed.reviewedDayStopCounts !== undefined ? { reviewedDayStopCounts: parsed.reviewedDayStopCounts } : {}),
+        ...(parsed.reviewedDayDetails !== undefined ? { reviewedDayDetails: parsed.reviewedDayDetails } : {}),
         createdAt: now,
         updatedAt: now,
       }

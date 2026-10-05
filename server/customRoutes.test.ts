@@ -61,3 +61,17 @@ it('preserves reviewed day boundaries through metadata edits and validates expli
   expect(rebuilt.reviewedDayStopCounts).toBeUndefined()
   expect(rebuilt.targetDays).toBe(4)
 })
+
+it('validates and preserves overnight details, and clears them on an explicit itinerary rebuild', () => {
+  const route: SavedCustomRoute = {
+    id: 'flexible', name: 'Flexible', color: '#e82127',
+    waypoints: [{id: 'park', label: 'Park', position: {lat: 35, lon: -85}, radiusMiles: 50}],
+    dailyStationIds: ['sci-1', 'sci-2'], reviewedDayStopCounts: [2],
+    reviewedDayDetails: [{primaryChargeIndex: 1, overnight: {label: 'Hotel area', position: {lat: 35.5, lon: -85}}}],
+    createdAt: '2026-10-04', updatedAt: '2026-10-04',
+  }
+  routes.writeSavedCustomRoutes('owner', [route])
+  expect(routes.updateSavedCustomRoute(route.id, {name: 'Updated'}, 'owner')?.route.reviewedDayDetails).toEqual(route.reviewedDayDetails)
+  expect(() => routes.updateSavedCustomRoute(route.id, {reviewedDayDetails: [{...route.reviewedDayDetails![0], primaryChargeIndex: 2}]}, 'owner')).toThrow()
+  expect(routes.updateSavedCustomRoute(route.id, {dailyStationIds: [], targetDays: 3}, 'owner')?.route.reviewedDayDetails).toBeUndefined()
+})

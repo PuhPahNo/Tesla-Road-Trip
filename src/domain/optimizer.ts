@@ -1,4 +1,5 @@
 import { defaultPlannerConfig, sanitizePlannerConfig } from './config'
+import { aggregateReviewedRoadLegs, applyReviewedDayDetails, buildReviewedRoadPlan } from './reviewedItinerary'
 import { DRIVE_TIME_MULTIPLIER, planningDriveHours } from './driveTime'
 import {
   haversineMiles,
@@ -2445,6 +2446,7 @@ function buildLongestTripDayPlans(
   precomputedDriveHours?: number[],
   ratingTargets: RatingPlaceTarget[] = [],
   reviewedDayStopCounts?: number[],
+  chargeLegMiles?: number[],
 ) {
   const days: DayPlan[] = []
   const visits: RouteStationVisit[] = []
@@ -2479,9 +2481,10 @@ function buildLongestTripDayPlans(
           config.roadDistanceFactor,
         )
       : 0
+    const arrivalChargeMiles = chargeLegMiles?.[index] ?? legMiles
     const activeStopMinutes = stopMinutesForVisit(
-      legMiles,
-      nextLegMiles,
+      arrivalChargeMiles,
+      chargeLegMiles?.[index + 1] ?? nextLegMiles,
       chargingState,
       config,
     )
@@ -2491,9 +2494,10 @@ function buildLongestTripDayPlans(
       day: day.day,
       station: scoredStation.station,
       legMiles: round(legMiles),
+      ...(chargeLegMiles ? {chargeLegMiles: round(arrivalChargeMiles)} : {}),
       driveHours: round(driveHours, 2),
       stopMinutes: activeStopMinutes,
-      rangeWarning: legMiles > config.practicalRangeMiles,
+      rangeWarning: arrivalChargeMiles > config.practicalRangeMiles,
       connectorStop: scoredStation.connectorStop,
     }
     const startToStartHours = previousStopMinutes / 60 + driveHours
@@ -2506,12 +2510,12 @@ function buildLongestTripDayPlans(
 
     if (index > 0 && startToStartHours > 24) {
       day.warnings.push(
-        `${round(startToStartHours, 1)} hours from the previous charge start exceeds the 24-hour streak window.`,
+        `${round(startToStartHours, 1)} hours of modeled travel and charging alone exceed the 24-hour streak window.`,
       )
     } else if (index > 0 && startToStartHours > 21) {
       day.advisories.push({
         severity: 'medium',
-        message: `${round(startToStartHours, 1)} hours from the previous charge start leaves little buffer for the 24-hour streak window.`,
+        message: `${round(startToStartHours, 1)} hours of modeled travel and charging alone leave little buffer for the 24-hour streak window.`,
       })
     }
 
@@ -2540,7 +2544,7 @@ function buildLongestTripDayPlans(
       severity: 'info',
       message:
         reviewedDayStopCounts
-          ? `${routeName} has a reviewed calendar schedule with one or more unique Superchargers per day. Multiple charges on one date still count as one streak day.`
+          ? `${routeName} has a reviewed calendar schedule with one or more unique Superchargers per day. Actual unique-site charging sessions and their timestamps determine the streak; calendar days are a planning guide.`
           : `${routeName} targets one new unique Supercharger per streak day. Repeat Superchargers should be treated as backup charging only.`,
     },
   ]
@@ -2611,6 +2615,7 @@ function buildRouteDayPlans(
   precomputedDriveHours?: number[],
   ratingTargets: RatingPlaceTarget[] = [],
   reviewedDayStopCounts?: number[],
+  chargeLegMiles?: number[],
 ) {
   const plans =
     config.plannerMode === 'longest_trip'
@@ -2622,6 +2627,7 @@ function buildRouteDayPlans(
           precomputedDriveHours,
           ratingTargets,
           reviewedDayStopCounts,
+          chargeLegMiles,
         )
       : buildDayPlans(
           selectedStations,
@@ -3803,6 +3809,7 @@ export function refineRouteWithRoadLegs(
   /** Raw provider drive hours per leg; the shared planning proxy is applied once. */
   driveHours?: number[],
   distanceSource: RoutePlan['distanceSource'] = 'road',
+  chargeLegMiles?: number[],
 ): RoutePlan {
   const baseConfig = sanitizePlannerConfig(partialConfig)
   const config = plannerConfigForRoute(baseConfig, meta.id)
@@ -3813,6 +3820,16 @@ export function refineRouteWithRoadLegs(
     segmentIndex: 0,
     segmentProgress: 0,
   }))
+  const savedRoute = config.savedCustomRoutes.find(route => route.id === meta.id)
+  const roadPlan = buildReviewedRoadPlan(config.start, orderedStations, savedRoute)
+  if (savedRoute?.reviewedDayDetails && !legMiles.length) {
+    const miles = roadPlan.coordinates.slice(1).map((point, index) =>
+      roadLegMiles(roadPlan.coordinates[index], point, config.roadDistanceFactor))
+    const estimated = aggregateReviewedRoadLegs(roadPlan, miles, miles.map(miles => miles / config.averageMph))
+    legMiles = estimated.legMiles
+    driveHours = estimated.driveHours
+    chargeLegMiles = estimated.chargeLegMiles
+  }
   const ratingTargets = ratingTargetsForRefinedRoute(config, meta.id)
   const plans = buildRouteDayPlans(
     scored,
@@ -3821,8 +3838,10 @@ export function refineRouteWithRoadLegs(
     legMiles,
     driveHours,
     ratingTargets,
-    config.savedCustomRoutes.find((route) => route.id === meta.id)?.reviewedDayStopCounts,
+    savedRoute?.reviewedDayStopCounts,
+    chargeLegMiles,
   )
+  plans.days = applyReviewedDayDetails(plans.days, savedRoute?.reviewedDayDetails)
   const totalDays = Math.max(1, plans.days.length)
   const uniqueStations = plans.totals.uniqueStationCount
   const chargeStops = plans.visits.length
@@ -3838,6 +3857,7 @@ export function refineRouteWithRoadLegs(
     strategy: meta.strategy,
     color: meta.color,
     uniqueStations,
+    ...(savedRoute?.reviewedDayDetails ? {dailyChargeSuggestions: totalDays} : {}),
     totalMiles: plans.totals.totalMiles,
     totalDriveHours: plans.totals.totalDriveHours,
     totalStopHours: plans.totals.totalStopHours,
@@ -3857,7 +3877,7 @@ export function refineRouteWithRoadLegs(
     ],
     advisories: plans.totals.advisories,
     longDays: plans.totals.longDays,
-    routeLine: buildDisplayRouteLine(scored, config.start),
+    routeLine: savedRoute?.reviewedDayDetails ? roadPlan.coordinates : buildDisplayRouteLine(scored, config.start),
     rating: buildRouteRating(plans.days, ratingTargets),
   }
 }
@@ -3914,7 +3934,9 @@ export function optimizeRoutes(
       const reviewed = refineRouteWithRoadLegs(
         reviewedStations,
         routeConfig,
-        { ...variant, strategy: `Reviewed daily itinerary: ${dailyStationIds.length} unique Superchargers across ${reviewedRoute?.reviewedDayStopCounts?.length ?? dailyStationIds.length} days in saved order.` },
+        { ...variant, strategy: reviewedRoute?.reviewedDayDetails
+          ? `Reviewed calendar itinerary: ${reviewedRoute.reviewedDayDetails.length} days with one suggested new charge per day and flexible additional charging.`
+          : `Reviewed daily itinerary: ${dailyStationIds.length} unique Superchargers across ${reviewedRoute?.reviewedDayStopCounts?.length ?? dailyStationIds.length} days in saved order.` },
         [],
         undefined,
         'estimate',

@@ -107,6 +107,8 @@ export interface SavedCustomRoute {
   dailyStationIds?: string[]
   /** Visits per reviewed calendar day; absent means one charging stop per day. */
   reviewedDayStopCounts?: number[]
+  /** Reviewed overnight areas and one highlighted charge per calendar day. */
+  reviewedDayDetails?: ReviewedDayDetail[]
   createdAt: string
   updatedAt: string
 }
@@ -114,6 +116,13 @@ export interface SavedCustomRoute {
 export interface RouteStayDayCap {
   placeId: string
   maxDays: number
+}
+
+export interface ReviewedDayDetail {
+  overnight: { label: string; position: Coordinate }
+  primaryChargeIndex: number
+  note?: string
+  stay?: DayStay
 }
 
 export interface RouteTravelPreferences {
@@ -142,6 +151,8 @@ export interface RouteStationVisit {
   day: number
   station: Station
   legMiles: number
+  /** Charge-to-charge mileage, including any intervening overnight detour. */
+  chargeLegMiles?: number
   driveHours: number
   stopMinutes: number
   rangeWarning: boolean
@@ -182,6 +193,8 @@ export interface DayStay {
   rating: number
   night: number
   totalNights: number
+  /** False denotes a regional visit day, rather than an actual overnight stay. */
+  isOvernight?: boolean
 }
 
 export interface DayPlan {
@@ -198,6 +211,9 @@ export interface DayPlan {
   longDayReason?: string
   rating: SegmentRating
   stay?: DayStay
+  overnight?: ReviewedDayDetail['overnight']
+  primaryChargeIndex?: number
+  note?: string
 }
 
 export interface RoutePlan {
@@ -211,6 +227,7 @@ export interface RoutePlan {
   strategy: string
   color: string
   uniqueStations: number
+  dailyChargeSuggestions?: number
   totalMiles: number
   totalDriveHours: number
   totalStopHours: number

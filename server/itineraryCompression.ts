@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { sanitizePlannerConfig } from '../src/domain/config'
-import type { RouteStayDayCap, SavedCustomRoute } from '../src/domain/types'
+import type { ReviewedDayDetail, RouteStayDayCap, SavedCustomRoute } from '../src/domain/types'
 import { db, transaction } from './database'
 import { savedRouteSchema } from './customRoutes'
 
@@ -12,6 +12,7 @@ interface ReviewedRevisionPlan {
   beforeReviewedDayStopCounts?: number[]
   dailyStationIds: string[]
   reviewedDayStopCounts: number[]
+  reviewedDayDetails?: ReviewedDayDetail[]
   stayDayCaps?: RouteStayDayCap[]
   driveLimits?: { dailyDriveTargetHours: number; dailyDriveMaxHours: number }
 }
@@ -19,6 +20,8 @@ const plan = JSON.parse(readFileSync(new URL('../scripts/data/2026-competition-c
 export const NOVEMBER_REVISION_ID = '2026-10-04-november-25-return'
 export const NOVEMBER_DRIVE_CAP_REVISION_ID = '2026-10-04-reviewed-five-hour-drive-cap'
 const novemberPlan = JSON.parse(readFileSync(new URL('../scripts/data/2026-competition-november-return.json', import.meta.url), 'utf8')) as ReviewedRevisionPlan
+export const FLEXIBLE_REVISION_ID = '2026-10-04-flexible-49-day-overnights'
+const flexiblePlan = JSON.parse(readFileSync(new URL('../scripts/data/2026-competition-flexible-return.json', import.meta.url), 'utf8')) as ReviewedRevisionPlan
 export const NOVEMBER_RETURN_IDS = novemberPlan.dailyStationIds
 export const NOVEMBER_DAY_COUNTS = novemberPlan.reviewedDayStopCounts
 export const BEFORE_CONSOLIDATION_IDS = plan.beforeDailyStationIds
@@ -41,6 +44,7 @@ function applyReviewedRevision(revisionId: string, plan: ReviewedRevisionPlan, f
       JSON.stringify(current.reviewedDayStopCounts) !== JSON.stringify(plan.beforeReviewedDayStopCounts) ||
       current.dailyStationIds?.length !== plan.beforeDailyStationIds.length ||
       !plan.beforeDailyStationIds.every((id, index) => current.dailyStationIds?.[index] === id) ||
+      (plan.reviewedDayDetails && current.reviewedDayDetails) ||
       (trip.day_number ?? 1) >= firstChangedDay ||
       db.prepare('SELECT day_number FROM trip_day_log WHERE day_number >= ? LIMIT 1').get(firstChangedDay) ||
       db.prepare('SELECT id FROM trip_updates WHERE day_number >= ? LIMIT 1').get(firstChangedDay)) return false
@@ -63,6 +67,7 @@ function applyReviewedRevision(revisionId: string, plan: ReviewedRevisionPlan, f
     // Retain every waypoint, unrelated preference, and already-travelled opening day.
     const revised = savedRouteSchema.parse({
       ...current, dailyStationIds: plan.dailyStationIds, reviewedDayStopCounts: plan.reviewedDayStopCounts,
+      ...(plan.reviewedDayDetails ? {reviewedDayDetails: plan.reviewedDayDetails} : {}),
       ...(plan.stayDayCaps ? {stayDayCaps: [
         ...(current.stayDayCaps ?? []).filter((cap) => !plan.stayDayCaps!.some((update) => update.placeId === cap.placeId)),
         ...plan.stayDayCaps,
@@ -86,6 +91,10 @@ export function applyItineraryCompression(): boolean {
 
 export function applyNovemberReturnRevision(): boolean {
   return applyReviewedRevision(NOVEMBER_REVISION_ID, novemberPlan, 12)
+}
+
+export function applyFlexibleItineraryRevision(): boolean {
+  return applyReviewedRevision(FLEXIBLE_REVISION_ID, flexiblePlan, 11)
 }
 
 /** Align this reviewed route's warning threshold with the authorized return pace. */

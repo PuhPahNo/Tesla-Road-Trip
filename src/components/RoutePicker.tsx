@@ -117,8 +117,8 @@ export function RoutePicker({
                             : 'Estimate · road check pending'}
                     </span>
                     <span className="mt-[5px] block font-mono text-[11px] text-faint">
-                      {route.uniqueStations.toLocaleString()}{' '}
-                      {route.plannerMode === 'longest_trip' ? 'stops' : 'sites'} ·{' '}
+                      {(route.dailyChargeSuggestions ?? route.uniqueStations).toLocaleString()}{' '}
+                      {route.dailyChargeSuggestions ? 'suggestions' : route.plannerMode === 'longest_trip' ? 'stops' : 'sites'} ·{' '}
                       {route.totalDays} days · {route.totalMiles.toLocaleString()}{' '}
                       {readiness.distanceSource === 'road' ? 'road mi' : 'est. mi'} ·{' '}
                       {route.averageDriveHoursPerDay}h/day · ★ {route.rating.score}

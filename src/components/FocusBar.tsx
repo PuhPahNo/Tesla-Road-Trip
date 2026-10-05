@@ -1,3 +1,4 @@
+import { dayDestination, stayLabel } from '../domain/reviewedItinerary'
 import type { RoutePlan } from '../domain/types'
 import { cx, scoreColor } from '../ui/primitives'
 import {
@@ -41,7 +42,7 @@ export function FocusBar({
   if (!day) return null
 
   const cities = [...new Set(day.visits.map((visit) => visit.station.address.city))]
-  const title = cities.slice(0, 3).join(' → ') || 'Open road'
+  const title = day.overnight ? dayDestination(day) : cities.slice(0, 3).join(' → ') || 'Open road'
 
   return (
     <div
@@ -102,10 +103,10 @@ export function FocusBar({
             <span style={{ color: scoreColor(day.rating.score) }}>★ {day.rating.score}</span>
             {day.stay && (
               <span className="text-accent2">
-                ⛺ N{day.stay.night}/{day.stay.totalNights}
+                ⛺ {stayLabel(day)}
               </span>
             )}
-            {!isMobile && <span>{day.uniqueStations} sites</span>}
+            {!isMobile && <span>{day.primaryChargeIndex === undefined ? `${day.uniqueStations} sites` : '1 suggestion'}</span>}
             <span>{day.miles.toLocaleString()} mi</span>
             {!isMobile && <span>{day.driveHours.toFixed(1)}h</span>}
           </div>

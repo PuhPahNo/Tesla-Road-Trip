@@ -147,7 +147,7 @@ export function RouteCopilotPanel({
               </div>
               <div className="mt-1 font-mono text-[10.5px] text-faint">
                 {route
-                  ? `${route.totalDays} days · ${route.totalMiles.toLocaleString()} mi · ${route.uniqueStations.toLocaleString()} stops`
+                  ? `${route.totalDays} days · ${route.totalMiles.toLocaleString()} mi · ${(route.dailyChargeSuggestions ?? route.uniqueStations).toLocaleString()} ${route.dailyChargeSuggestions ? 'charge suggestions' : 'stops'}`
                   : 'Run Optimize to give CORE route context.'}
               </div>
             </div>

@@ -1,3 +1,4 @@
+import { aggregateReviewedRoadLegs, buildReviewedRoadPlan } from '../src/domain/reviewedItinerary'
 import { sanitizePlannerConfig } from '../src/domain/config'
 import { haversineMiles, simplifyPolyline } from '../src/domain/geo'
 import {
@@ -103,11 +104,8 @@ export async function buildAnthonyRoute(
     let road: PublishedAnthonyRoute['road'] = null
     if (loadRoadRoute) {
       const orderedStations = estimatedRoute.visits.map((visit) => visit.station)
-      const coordinates = [
-        config.start,
-        ...orderedStations.map((station) => station.position),
-        config.start,
-      ]
+      const roadPlan = buildReviewedRoadPlan(config.start, orderedStations, config.savedCustomRoutes.find(route => route.id === routeId))
+      const coordinates = roadPlan.coordinates
       try {
         const routed = await loadRoadRoute(coordinates)
         const expectedLegs = Math.max(0, coordinates.length - 1)
@@ -122,6 +120,7 @@ export async function buildAnthonyRoute(
           (_, index) =>
             routed.legDriveHours[index] ?? legMiles[index] / 60,
         )
+        const grouped = aggregateReviewedRoadLegs(roadPlan, legMiles, driveHours)
         route = refineRouteWithRoadLegs(
           orderedStations,
           config,
@@ -131,9 +130,10 @@ export async function buildAnthonyRoute(
             strategy: estimatedRoute.strategy,
             color: estimatedRoute.color,
           },
-          legMiles,
-          driveHours,
+          grouped.legMiles,
+          grouped.driveHours,
           routed.degraded ? 'estimate' : 'road',
+          grouped.chargeLegMiles,
         )
         road = {
           provider: routed.provider.toUpperCase(),

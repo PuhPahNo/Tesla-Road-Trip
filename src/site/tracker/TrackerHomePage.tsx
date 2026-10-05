@@ -80,7 +80,7 @@ export function TrackerHomePage() {
 
       {route ? (
         <PageContainer className="mt-8">
-          <StatsGrid progress={progress} />
+          <StatsGrid progress={progress} route={route} />
         </PageContainer>
       ) : null}
 
@@ -191,7 +191,7 @@ function StatusHero({
       </h1>
       <p className="mt-4 max-w-[680px] text-[17px] leading-[1.6] text-dim">
         {route
-          ? `A ${route.totalDays}-day loop through ${route.uniqueStations} Tesla Superchargers and about ${formatMiles(route.totalMiles)} miles, starting and ending in Chattanooga. Follow along here.`
+          ? `A ${route.totalDays}-day loop with ${route.dailyChargeSuggestions ?? route.uniqueStations} ${route.dailyChargeSuggestions ? 'daily charge suggestions and flexible extra charging' : 'Tesla Superchargers'} and about ${formatMiles(route.totalMiles)} miles, starting and ending in Chattanooga. Follow along here.`
           : 'A long loop of Tesla Superchargers, starting and ending in Chattanooga. Follow along here.'}
       </p>
       {trip?.headline ? <p className="mt-3 max-w-[680px] text-[16px] font-medium">{trip.headline}</p> : null}
@@ -207,15 +207,16 @@ function countdownHeadline(days: number | undefined) {
   return 'Getting ready to roll'
 }
 
-function StatsGrid({ progress }: { progress: TripProgress }) {
+function StatsGrid({ progress, route }: { progress: TripProgress; route: RoutePlan }) {
   const started = progress.phase !== 'pre_trip'
   const { planned } = progress
   return (
     <section aria-label="Trip numbers" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       <StatBlock
-        label="Superchargers visited"
-        value={started ? String(progress.superchargersVisited) : '0'}
-        of={String(planned.superchargers)}
+        label={route.dailyChargeSuggestions ? 'Daily charge suggestions' : 'Superchargers visited'}
+        value={route.dailyChargeSuggestions ? String(route.dailyChargeSuggestions) : started ? String(progress.superchargersVisited) : '0'}
+        of={route.dailyChargeSuggestions ? undefined : String(planned.superchargers)}
+        hint={route.dailyChargeSuggestions ? 'Additional charging is flexible' : undefined}
         accent
       />
       <StatBlock label="Miles driven" value={started ? formatMiles(progress.milesDriven) : '0'} of={formatMiles(planned.miles)} />

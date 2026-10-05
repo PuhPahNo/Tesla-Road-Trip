@@ -1029,3 +1029,26 @@ describe('reviewed calendar day grouping', () => {
     expect(road.days[0].visits.at(-1)?.station.id).toBe(stations[1].id)
   })
 })
+
+it('keeps overnight mileage in calendar driving while checking range between charging options', () => {
+  const stations = [makeStation(201, 35, -85), makeStation(202, 35.1, -85)]
+  const saved: SavedCustomRoute = {
+    id: 'overnights', name: 'Overnights', color: '#e82127',
+    waypoints: [{id: 'park', label: 'Park', position: stations[1].position, radiusMiles: 35}],
+    dailyStationIds: stations.map(s => s.id), reviewedDayStopCounts: [1, 1],
+    reviewedDayDetails: [
+      {primaryChargeIndex: 0, overnight: {label: 'Park gateway', position: {lat: 35.05, lon: -85}}, stay: {placeId: 'park', label: 'Park', rating: 90, night: 1, totalNights: 2, isOvernight: true}},
+      {primaryChargeIndex: 0, overnight: {label: 'Home', position: defaultPlannerConfig.start}},
+    ], createdAt: '2026-10-04', updatedAt: '2026-10-04',
+  }
+  const config = {...defaultPlannerConfig, practicalRangeMiles: 150, savedCustomRoutes: [saved]}
+  const road = refineRouteWithRoadLegs(stations, config, {...saved, strategy: 'Reviewed'}, [180, 90, 0], [3, 1, 0], 'road', [100, 170, 20])
+  expect(road.days.map(d => d.driveHours)).toEqual([2.7, .9])
+  expect(road.visits.map(v => v.rangeWarning)).toEqual([false, true])
+  expect(road.dailyChargeSuggestions).toBe(2)
+  expect(road.days[0].overnight?.label).toBe('Park gateway')
+  expect(road.days[0].stay).toEqual(saved.reviewedDayDetails![0].stay)
+  expect(road.days[1].stay).toBeUndefined()
+  expect(optimizeRoutes(stations, config).routes.find(r => r.id === saved.id)?.days[0].overnight?.label).toBe('Park gateway')
+  expect(road.advisories.every(a => !a.message.includes('one streak day'))).toBe(true)
+})

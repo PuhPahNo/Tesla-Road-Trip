@@ -1,3 +1,4 @@
+import { dayDestination, stayLabel, suggestedVisits } from '../domain/reviewedItinerary'
 import { useId } from 'react'
 import type { DayPlan, RoutePlan } from '../domain/types'
 import { Overlay, OverlayHeader } from '../ui/Overlay'
@@ -41,7 +42,7 @@ function DayTile({
   onOpen: () => void
 }) {
   const cities = [...new Set(day.visits.map((visit) => visit.station.address.city))]
-  const finalStation = day.visits.at(-1)?.station
+  const finalStation = suggestedVisits(day).at(-1)?.station
   const star = stars(day.rating.score)
   const presentation = calendarDayPresentation(day)
   const tone = CALENDAR_DAY_STYLES[presentation.tone]
@@ -79,8 +80,8 @@ function DayTile({
         </span>
       </div>
       {date ? <div className="font-mono text-[9px] text-faint">{date}</div> : null}
-      <div className="truncate text-[12px] font-medium text-ink">
-        {cities.slice(0, 2).join(' → ') || 'Open road'}
+      <div className="truncate text-[12px] font-medium text-ink" title={dayDestination(day)}>
+        {day.overnight ? dayDestination(day) : cities.slice(0, 2).join(' → ') || 'Open road'}
       </div>
       {finalStation ? (
         <div className="min-w-0">
@@ -100,7 +101,7 @@ function DayTile({
       ) : null}
       {day.stay && (
         <div className="truncate font-mono text-[9.5px] text-accent2">
-          ⛺ {day.stay.label} · N{day.stay.night}/{day.stay.totalNights}
+          ⛺ {day.stay.label} · {stayLabel(day)}
         </div>
       )}
       <div className="mt-auto flex flex-wrap gap-1">
@@ -125,7 +126,7 @@ function DayTile({
         })}
       </div>
       <div className="font-mono text-[9.5px] text-faint">
-        {day.uniqueStations} sites · {day.miles.toLocaleString()} mi ·{' '}
+        {day.primaryChargeIndex === undefined ? `${day.uniqueStations} sites` : '1 suggestion'} · {day.miles.toLocaleString()} mi ·{' '}
         {day.driveHours.toFixed(1)}h
       </div>
       {badgeGoals.length > 0 ? (
@@ -170,7 +171,7 @@ export function CalendarModal({
       <OverlayHeader
         kicker={`Trip calendar · ${isLongestTrip ? 'Longest Trip' : 'Most Unique Sites'}`}
         title={route.name}
-        meta={`${route.totalDays} days · ${route.uniqueStations.toLocaleString()} sites · ${route.tripStartDate ? `starts ${route.tripStartDate}` : 'start date not set'} · Chattanooga, TN 37405`}
+        meta={`${route.totalDays} days · ${(route.dailyChargeSuggestions ?? route.uniqueStations).toLocaleString()} ${route.dailyChargeSuggestions ? 'charge suggestions' : 'sites'} · ${route.tripStartDate ? `starts ${route.tripStartDate}` : 'start date not set'} · Chattanooga, TN 37405`}
         titleId={titleId}
         onClose={onClose}
       />

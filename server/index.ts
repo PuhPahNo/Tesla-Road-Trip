@@ -1,4 +1,5 @@
 import 'dotenv/config'
+import { aggregateReviewedRoadLegs, buildReviewedRoadPlan } from '../src/domain/reviewedItinerary'
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
@@ -20,7 +21,7 @@ import {
 import { registerCommunityRoutes } from './community'
 import { databaseIsHealthy, databasePath, db } from './database'
 import { applyDepartureRevision } from './departureRevision'
-import { applyItineraryCompression, applyNovemberReturnRevision, applyNovemberDriveCapRevision } from './itineraryCompression'
+import { applyItineraryCompression, applyNovemberReturnRevision, applyNovemberDriveCapRevision, applyFlexibleItineraryRevision } from './itineraryCompression'
 import {
   defaultPlannerConfig,
   plannerConfigSchema,
@@ -380,11 +381,8 @@ app.post('/api/refine-route', async (request, response) => {
     })
     const orderedStations = stations as unknown as Station[]
 
-    const coordinates = [
-      sanitized.start,
-      ...orderedStations.map((station) => station.position),
-      sanitized.start,
-    ]
+    const roadPlan = buildReviewedRoadPlan(sanitized.start, orderedStations, sanitized.savedCustomRoutes.find(saved => saved.id === route.id))
+    const coordinates = roadPlan.coordinates
     const road = await fetchRoadProvider(coordinates)
 
     // One value per leg. If the engine came up short
@@ -398,13 +396,15 @@ app.post('/api/refine-route', async (request, response) => {
       (_, i) => road.legDriveHours[i] ?? legMiles[i] / 60,
     )
 
+    const grouped = aggregateReviewedRoadLegs(roadPlan, legMiles, driveHours)
     const refined = refineRouteWithRoadLegs(
       orderedStations,
       sanitized,
       route,
-      legMiles,
-      driveHours,
+      grouped.legMiles,
+      grouped.driveHours,
       road.degraded ? 'estimate' : 'road',
+      grouped.chargeLegMiles,
     )
 
     response.json({
@@ -910,6 +910,7 @@ if (applyDepartureRevision()) console.log('Applied October 4 departure revision 
 if (applyItineraryCompression()) console.log('Applied reviewed calendar schedule · 59 days, 67 charging stops')
 if (applyNovemberReturnRevision()) console.log('Applied November return revision · 53 days, 71 charging stops')
 if (applyNovemberDriveCapRevision()) console.log('Updated reviewed route driving preferences · 4-hour target, 5-hour maximum')
+if (applyFlexibleItineraryRevision()) console.log('Applied flexible overnight itinerary · 49 days, one daily charge suggestion')
 
 const server = app.listen(PORT, () => {
   const address = server.address()

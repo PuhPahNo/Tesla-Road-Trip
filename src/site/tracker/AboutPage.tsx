@@ -30,7 +30,7 @@ export function AboutPage() {
         </p>
         {route ? (
           <p>
-            The plan: {route.totalDays} days, {route.uniqueStations} Superchargers and about{' '}
+            The plan: {route.totalDays} days, {route.dailyChargeSuggestions ?? route.uniqueStations} {route.dailyChargeSuggestions ? 'daily charge suggestions, flexible extra charging' : 'Superchargers'} and about{' '}
             {formatMiles(route.totalMiles)} miles, starting and ending in Chattanooga
             {progress.departureDate ? `, leaving ${formatLongDate(progress.departureDate)}` : ''}.
           </p>

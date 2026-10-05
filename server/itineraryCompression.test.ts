@@ -163,3 +163,47 @@ describe('November return revision', () => {
     expect(after.travelPreferences).toEqual({vehicleProfileId:'model-s-awd',practicalRangeMiles:300,manualPracticalRange:true,tripPace:'savor',dailyDriveTargetHours:4,dailyDriveMaxHours:5})
   })
 })
+
+function prepare53DayRoute() {
+  expect(revision.applyItineraryCompression()).toBe(true)
+  expect(revision.applyNovemberReturnRevision()).toBe(true)
+  expect(revision.applyNovemberDriveCapRevision()).toBe(true)
+  return JSON.parse((database.db.prepare('SELECT route_json FROM custom_routes').get() as {route_json: string}).route_json) as SavedCustomRoute
+}
+
+it('shortens the future itinerary to 49 days with real two-night park stays and one daily suggestion', () => {
+  const baseline = prepare53DayRoute()
+  database.db.prepare("INSERT INTO trip_day_log (day_number,completed,note,updated_at) VALUES (1,1,'Mammoth Cave','2026-10-04')").run()
+  const progress = database.db.prepare('SELECT day_number,current_location,latitude,longitude,departure_date FROM anthony_trip').get()
+  expect(revision.applyFlexibleItineraryRevision()).toBe(true)
+  const after = JSON.parse((database.db.prepare('SELECT route_json FROM custom_routes').get() as {route_json: string}).route_json) as SavedCustomRoute
+  expect(after.targetDays).toBe(49)
+  expect(after.reviewedDayDetails).toHaveLength(49)
+  expect(after.reviewedDayStopCounts!.reduce((a, b) => a + b, 0)).toBe(after.dailyStationIds!.length)
+  expect(new Set(after.dailyStationIds).size).toBe(after.dailyStationIds!.length)
+  expect(after.reviewedDayDetails!.every((d, i) => d.primaryChargeIndex < after.reviewedDayStopCounts![i])).toBe(true)
+  expect(after.dailyStationIds!.slice(0, 6)).toEqual(baseline.dailyStationIds!.slice(0, 6))
+  expect(after.reviewedDayDetails![16].stay).toMatchObject({label: 'Glacier National Park', totalNights: 1, isOvernight: true})
+  for (const placeId of ['landmark-co-rocky-mountain', 'landmark-az-grand-canyon']) {
+    expect(after.reviewedDayDetails!.filter(d => d.stay?.placeId === placeId && d.stay.isOvernight).map(d => d.stay!.night)).toEqual([1, 2])
+  }
+  expect(after.waypoints).toEqual(baseline.waypoints)
+  expect(after.travelPreferences).toEqual(baseline.travelPreferences)
+  expect(tripDateForDay(after.startDate!, 49)).toBe('2026-11-21')
+  expect(database.db.prepare('SELECT day_number,current_location,latitude,longitude,departure_date FROM anthony_trip').get()).toEqual(progress)
+  expect(database.db.prepare('SELECT note FROM trip_day_log').get()).toMatchObject({note: 'Mammoth Cave'})
+  const backup = database.db.prepare('SELECT before_json FROM data_revisions WHERE id = ?').get(revision.FLEXIBLE_REVISION_ID) as {before_json: string}
+  expect(JSON.parse(backup.before_json).route).toEqual(baseline)
+  expect(revision.applyFlexibleItineraryRevision()).toBe(false)
+})
+
+it.each(['travelled', 'future-log', 'reviewed-details', 'reordered'])('does not overwrite %s future data with the flexible revision', scenario => {
+  const baseline = prepare53DayRoute()
+  if (scenario === 'travelled') database.db.prepare('UPDATE anthony_trip SET day_number = 11').run()
+  if (scenario === 'future-log') database.db.prepare("INSERT INTO trip_day_log (day_number,completed,updated_at) VALUES (11,1,'2026-10-14')").run()
+  if (scenario === 'reviewed-details') database.db.prepare('UPDATE custom_routes SET route_json = ?').run(JSON.stringify({...baseline, reviewedDayDetails: []}))
+  if (scenario === 'reordered') database.db.prepare('UPDATE custom_routes SET route_json = ?').run(JSON.stringify({...baseline,dailyStationIds:[...baseline.dailyStationIds!].reverse()}))
+  const unchanged = database.db.prepare('SELECT route_json FROM custom_routes').get()
+  expect(revision.applyFlexibleItineraryRevision()).toBe(false)
+  expect(database.db.prepare('SELECT route_json FROM custom_routes').get()).toEqual(unchanged)
+})

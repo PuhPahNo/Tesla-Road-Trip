@@ -71,7 +71,7 @@ export function buildTripProgress(
     hasEnergyData: energyEntries.length > 0,
     planned: {
       miles: route?.totalMiles ?? 0,
-      superchargers: route?.uniqueStations ?? 0,
+      superchargers: route?.dailyChargeSuggestions ?? route?.uniqueStations ?? 0,
       states: route ? countStates(route) : 0,
       driveHours: route?.totalDriveHours ?? 0,
     },
@@ -89,6 +89,7 @@ export function countStates(route: RoutePlan) {
 }
 
 export function dayEndLabel(day: DayPlan) {
+  if (day.overnight) return day.overnight.label
   const finalStop = day.visits.at(-1)?.station
   if (!finalStop) return day.stay?.label ?? `Day ${day.day}`
   return `${finalStop.address.city}, ${finalStop.address.state}`

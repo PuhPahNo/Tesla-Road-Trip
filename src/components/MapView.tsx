@@ -1,3 +1,4 @@
+import { suggestedVisits } from '../domain/reviewedItinerary'
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import {
   CircleMarker,
@@ -105,8 +106,8 @@ export const MapView = memo(function MapView({
     [stateStats],
   )
   const routeVisits = useMemo(
-    () => selectRouteMarkers(route?.visits ?? [], MAX_ROUTE_MARKERS),
-    [route?.visits],
+    () => selectRouteMarkers(route?.dailyChargeSuggestions ? route.days.flatMap(suggestedVisits) : route?.visits ?? [], MAX_ROUTE_MARKERS),
+    [route],
   )
   const routeFitPositions = useMemo(
     () =>
@@ -122,12 +123,14 @@ export const MapView = memo(function MapView({
     const day = route.days[zoomFocusDayIndex]
     if (!day?.visits.length) return []
     const previousStop =
+      route.days[zoomFocusDayIndex - 1]?.overnight?.position ??
       route.days[zoomFocusDayIndex - 1]?.visits.at(-1)?.station.position ??
       start
     const positions = [
       previousStop,
       ...day.visits.map((visit) => visit.station.position),
     ]
+    if (day.overnight) positions.push(day.overnight.position)
     if (zoomFocusDayIndex === route.days.length - 1) positions.push(start)
     return positions.map(
       (point) => [point.lat, point.lon] as [number, number],
@@ -585,8 +588,9 @@ function DayHighlightLine({
 
     // No road geometry: straight legs between stops, matching the estimate line.
     const previousDay = route.days[dayIndex - 1]
-    const previousStop = previousDay?.visits.at(-1)?.station.position ?? start
+    const previousStop = previousDay?.overnight?.position ?? previousDay?.visits.at(-1)?.station.position ?? start
     const stops = [previousStop, ...day.visits.map((visit) => visit.station.position)]
+    if (day.overnight) stops.push(day.overnight.position)
     if (dayIndex === route.days.length - 1) stops.push(start)
     return stops.map((point) => [point.lat, point.lon] as [number, number])
   }, [dayIndex, route.days, start, roadPositions])
@@ -676,7 +680,7 @@ function matchDayBoundaryIndices(
   const boundaries: Coordinate[] = [start]
   for (const day of days) {
     boundaries.push(
-      day.visits.at(-1)?.station.position ?? boundaries[boundaries.length - 1],
+      day.overnight?.position ?? day.visits.at(-1)?.station.position ?? boundaries[boundaries.length - 1],
     )
   }
 

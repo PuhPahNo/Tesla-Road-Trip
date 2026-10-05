@@ -1,3 +1,4 @@
+import { dayDestination, stayLabel, suggestedVisits } from '../domain/reviewedItinerary'
 import type { ReactNode } from 'react'
 import type { DayPlan, PlaceRating, RoutePlan } from '../domain/types'
 import { DRIVE_TIME_NOTE } from '../domain/driveTime'
@@ -109,11 +110,12 @@ export function OverviewSection({
   const readiness = route ? routeRangeReadiness(route) : undefined
   return (
     <div className="flex flex-col gap-3">
+      {route?.dailyChargeSuggestions ? <NoteCard tone="info">One suggested new Supercharger per day; charge at additional sites as needed. Keep each new unique-site session within 24 hours of the previous qualifying session. Overnight areas are separate from charging stops. Corridor times include those areas; park drives and sightseeing take additional time.</NoteCard> : null}
       {route?.driveTimeMultiplier ? <NoteCard tone="info">{DRIVE_TIME_NOTE}</NoteCard> : null}
       <div className="grid grid-cols-2 gap-2">
         <StatTile
-          label={isLongestTrip ? 'Streak stops' : 'Unique sites'}
-          value={route ? route.uniqueStations.toLocaleString() : dash}
+          label={route?.dailyChargeSuggestions ? 'Daily charge suggestions' : isLongestTrip ? 'Streak stops' : 'Unique sites'}
+          value={route ? (route.dailyChargeSuggestions ?? route.uniqueStations).toLocaleString() : dash}
         />
         <StatTile
           label={readiness?.distanceSource === 'road' ? 'Road miles' : 'Est. miles'}
@@ -121,7 +123,7 @@ export function OverviewSection({
           unit={route ? 'mi' : undefined}
         />
         <StatTile
-          label={isLongestTrip ? 'Streak days' : 'Days'}
+          label={route?.dailyChargeSuggestions ? 'Trip days' : isLongestTrip ? 'Streak days' : 'Days'}
           value={route ? route.totalDays : dash}
         />
         <StatTile
@@ -150,7 +152,7 @@ export function OverviewSection({
           )}
         >
           <div className="text-[12.5px] font-semibold">
-            {availability.open}/{availability.total} route sites currently open
+            {availability.open}/{availability.total} {route?.dailyChargeSuggestions ? 'charging options' : 'route sites'} currently open
           </div>
           <div className="mt-1 font-mono text-[9.5px] leading-[1.45] opacity-80">
             Current Supercharge.info snapshot · refresh before travel
@@ -183,7 +185,9 @@ export function OverviewSection({
           </div>
           <div className="mt-1 font-mono text-[9.5px] leading-[1.45] opacity-80">
             {readiness.status === 'road_ready'
-              ? 'No road-measured leg exceeds your configured practical range · verify conditions in the Tesla app'
+              ? route?.dailyChargeSuggestions
+                ? 'Range check includes additional charging options; the highlighted daily sites alone may be too far apart. Verify range and availability in Tesla navigation.'
+                : 'No road-measured leg exceeds your configured practical range · verify conditions in the Tesla app'
               : readiness.status === 'road_gaps'
                 ? 'Add a closer Supercharger or auxiliary charging stop before relying on this route'
                 : readiness.status === 'estimate_gaps'
@@ -372,7 +376,7 @@ export function DaysSection({
                 {day.rating.score}
               </span>
               <span className="min-w-0 flex-1 truncate text-left text-[12px] text-dim">
-                {cityLabel || 'Open road'}
+                {day.overnight ? dayDestination(day) : cityLabel || 'Open road'}
               </span>
             </div>
             {calendarDate ? (
@@ -392,7 +396,7 @@ export function DaysSection({
             {day.stay && (
               <div className="mt-1 flex items-center gap-2 pl-11 font-mono text-[10.5px] text-accent2">
                 <span className="truncate">
-                  ⛺ {day.stay.label} · night {day.stay.night}/{day.stay.totalNights}
+                  ⛺ {day.stay.label} · {stayLabel(day)}
                 </span>
                 {stayFreeHours(day) > 0 && (
                   <span className="flex-none">~{stayFreeHours(day)}h free</span>
@@ -401,7 +405,7 @@ export function DaysSection({
             )}
             {day.visits.length > 0 ? (
               <div className="mt-2 flex flex-col gap-1.5 pl-11">
-                {day.visits.map((visit) => (
+                {suggestedVisits(day).map((visit) => (
                   <div
                     key={`${visit.sequence}-${visit.station.id}`}
                     className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-start gap-x-1.5"
@@ -424,8 +428,9 @@ export function DaysSection({
                 ))}
               </div>
             ) : null}
+            {day.primaryChargeIndex !== undefined ? <p className="mt-2 pl-11 text-[10px] leading-[1.45] text-dim">{day.note ? `${day.note} ` : ''}Extra charging is flexible; use Tesla navigation for current range and availability.</p> : null}
             <div className="mt-1.5 flex items-center gap-3 pl-11 font-mono text-[10.5px] text-faint">
-              <span>{day.uniqueStations} sites</span>
+              <span>{day.primaryChargeIndex === undefined ? `${day.uniqueStations} sites` : '1 charge suggestion'}</span>
               <span>{day.miles.toLocaleString()} mi</span>
               <span>{day.driveHours.toFixed(1)}h</span>
               {badgeCount > 0 && (

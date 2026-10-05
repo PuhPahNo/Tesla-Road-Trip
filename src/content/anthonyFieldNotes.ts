@@ -54,7 +54,7 @@ export const PUBLISHED_ANTHONY_FIELD_NOTES: readonly AnthonyFieldNote[] = [
         afterBullets: [
           ['Day 5 is still flexible. St. Joseph gives me a museum stop on the way north from Kansas City to Omaha, without sending me off in another direction.'],
           ['The rest of the loop stays in the plan for now. The map has the current day count, dates and mileage; those numbers will change if I change the itinerary again.'],
-          ['The latest revision combines short charging hops into shared travel days. The Rockies and Grand Canyon each get two nights, and the return stretch uses longer transit days through Texas, Louisiana, Mississippi and Alabama. I am targeting a late-November return while keeping the priority destinations. Superchargers are charging stops; I can choose overnight stays elsewhere along the route. Driving times use a 10% planning adjustment, with charging time kept separate.'],
+          ['The latest plan targets a November 21 return. The Rockies and Grand Canyon each get two actual nights, with a full visit day between arrival and departure. I am combining transfer days around Spokane and San Francisco, smoothing out the California loop, and taking I-20 home instead of the San Antonio detour. The map highlights one suggested new Supercharger per day. I will charge at other stations as needed; the specific charger and my overnight stop do not have to be in the same place. Driving times use a 10% planning adjustment, with charging and sightseeing time kept separate.'],
         ],
       },
       {
@@ -71,6 +71,7 @@ export const PUBLISHED_ANTHONY_FIELD_NOTES: readonly AnthonyFieldNote[] = [
         heading: 'What still needs checking on the road',
         paragraphs: [
           ['A route on a map leaves out weather, traffic, road closures, a station going offline, and a hotel charger that turns out to be unavailable. I need to keep checking the actual charging options as I go.'],
+          ['Glacier stays in the route for one overnight, with an afternoon and morning around Apgar and Lake McDonald. I am planning for limited fall access, not counting on Logan Pass or the full Going-to-the-Sun Road. ', {label: 'The park’s winter access guidance', href: 'https://www.nps.gov/glac/planyourvisit/winter.htm', external: true}, ' is the reference to check as I approach.'],
           ['A hotel advertising EV charging is not the same as a verified, working charger I can use overnight. I want a useful charge in the morning, but I am not counting on it until the individual stay is checked.'],
           ['I also need to keep checking Tesla’s ', { label: 'official competition rules', href: 'https://www.tesla.com/support/tesla-app/charging-badges/contest', external: true }, ' and my session records. A planned stop is not proof that a charge happened or that Tesla counted it.'],
         ],

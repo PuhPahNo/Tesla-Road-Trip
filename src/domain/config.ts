@@ -102,13 +102,34 @@ export const dailyStationIdsSchema = z.array(z.string().min(1).max(96))
 
 export const reviewedDayStopCountsSchema = z.array(z.number().int().min(1).max(365)).min(1).max(365)
 
-export function validReviewedDayStops(route: { dailyStationIds?: string[]; reviewedDayStopCounts?: number[] }) {
-  return !route.reviewedDayStopCounts || route.reviewedDayStopCounts.reduce((sum, count) => sum + count, 0) === route.dailyStationIds?.length
+export const reviewedDayDetailsSchema = z.array(z.object({
+  overnight: z.object({
+    label: z.string().min(1).max(96),
+    position: z.object({lat: z.number().min(-90).max(90), lon: z.number().min(-180).max(180)}),
+  }),
+  primaryChargeIndex: z.number().int().min(0).max(364),
+  note: z.string().max(480).optional(),
+  stay: z.object({
+    placeId: z.string().min(1).max(96), label: z.string().min(1).max(96),
+    rating: z.number().min(0).max(100), night: z.number().int().min(1).max(21),
+    totalNights: z.number().int().min(1).max(21), isOvernight: z.boolean().optional(),
+  }).refine(stay => stay.night <= stay.totalNights).optional(),
+})).min(1).max(365)
+
+export function validReviewedDayStops(route: {
+  dailyStationIds?: string[]; reviewedDayStopCounts?: number[];
+  reviewedDayDetails?: Array<{primaryChargeIndex: number}>;
+}) {
+  const counts = route.reviewedDayStopCounts ?? route.dailyStationIds?.map(() => 1)
+  return (!route.reviewedDayStopCounts || counts?.reduce((sum, count) => sum + count, 0) === route.dailyStationIds?.length) &&
+    (!route.reviewedDayDetails || (counts?.length === route.reviewedDayDetails.length &&
+      route.reviewedDayDetails.every((day, index) => day.primaryChargeIndex < counts[index])))
 }
 
 const savedCustomRouteSchema = z.object({
   dailyStationIds: dailyStationIdsSchema.optional(),
   reviewedDayStopCounts: reviewedDayStopCountsSchema.optional(),
+  reviewedDayDetails: reviewedDayDetailsSchema.optional(),
   id: z.string().min(1).max(96),
   name: z.string().min(1).max(80),
   color: z.string().min(1).max(32),
@@ -142,7 +163,7 @@ const savedCustomRouteSchema = z.object({
     .optional(),
   createdAt: z.string().min(1).max(48),
   updatedAt: z.string().min(1).max(48),
-}).refine(validReviewedDayStops, 'Reviewed day counts must include every reviewed charging stop exactly once.')
+}).refine(validReviewedDayStops, 'Reviewed day counts must include every reviewed charging stop exactly once; overnight details must match those days and their charge indices.')
 
 const longestTripVisitTargetSchema = z.object({
   id: z.string().min(1).max(80),

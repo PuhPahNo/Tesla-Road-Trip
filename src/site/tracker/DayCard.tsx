@@ -60,7 +60,7 @@ export function DayCard({
           <Clock size={14} aria-hidden="true" /> {formatHours(day.driveHours)}
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <Zap size={14} aria-hidden="true" /> {day.visits.length} Supercharger{day.visits.length === 1 ? '' : 's'}
+          <Zap size={14} aria-hidden="true" /> {day.primaryChargeIndex === undefined ? `${day.visits.length} Supercharger${day.visits.length === 1 ? '' : 's'}` : '1 charge suggestion'}
         </span>
         {energyKwh != null ? <span className="font-medium text-good">{Math.round(energyKwh)} kWh added</span> : null}
       </div>

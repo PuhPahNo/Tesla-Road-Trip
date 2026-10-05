@@ -121,3 +121,15 @@ describe('daily station addresses', () => {
     expect(screen.getByText(/refresh before travel/i)).toBeTruthy()
   })
 })
+
+it('shows one suggested charge and an independent overnight destination', () => {
+  const optional = {...route.days[0].visits[0], sequence: 2, station: {...station, id: 'optional', name: 'Optional charging connector'}}
+  const day = {...route.days[0], primaryChargeIndex: 0, overnight: {label: 'West Glacier overnight area', position: {lat: 48.49, lon: -113.97}}, visits: [...route.days[0].visits, optional], uniqueStations: 2}
+  const flexible = {...route, dailyChargeSuggestions: 1, days: [day], visits: day.visits, uniqueStations: 2}
+  render(<DaysSection route={flexible} onOpenDay={vi.fn()} />)
+  expect(screen.getByText('West Glacier overnight area')).toBeTruthy()
+  expect(screen.getByText('Kalispell Supercharger')).toBeTruthy()
+  expect(screen.queryByText('Optional charging connector')).toBeNull()
+  expect(screen.getByText('1 charge suggestion')).toBeTruthy()
+  expect(screen.getByText(/Extra charging is flexible/)).toBeTruthy()
+})
