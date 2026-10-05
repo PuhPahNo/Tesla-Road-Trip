@@ -15,9 +15,6 @@ const NEW_OPENING = [
 
 /** One-time correction of the published, reviewed itinerary, with a rollback snapshot. */
 export function applyDepartureRevision(): boolean {
-  db.exec(`CREATE TABLE IF NOT EXISTS data_revisions (
-    id TEXT PRIMARY KEY, applied_at TEXT NOT NULL, before_json TEXT NOT NULL
-  )`)
   return transaction(() => {
     if (db.prepare('SELECT id FROM data_revisions WHERE id = ?').get(REVISION_ID)) return false
     const trip = db.prepare('SELECT * FROM anthony_trip WHERE id = 1').get() as

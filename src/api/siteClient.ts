@@ -335,14 +335,14 @@ export async function savePreferences(config: PlannerConfig) {
 }
 
 export async function fetchCommunity() {
-  return request<CommunitySnapshot>('/api/community')
+  return request<CommunitySnapshot>('/api/community', { cache: 'no-cache' })
 }
 
 export async function fetchAnthonyRoute() {
   return request<{
     selectedRouteId: string | null
     route: PublishedAnthonyRoute | null
-  }>('/api/community/anthony-route')
+  }>('/api/community/anthony-route', { cache: 'no-cache' })
 }
 
 export async function saveStateVote(input: { stateCode: string; note?: string }) {

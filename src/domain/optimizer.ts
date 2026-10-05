@@ -1,4 +1,5 @@
 import { defaultPlannerConfig, sanitizePlannerConfig } from './config'
+import { DRIVE_TIME_MULTIPLIER, planningDriveHours } from './driveTime'
 import {
   haversineMiles,
   polylineLengthMiles,
@@ -2274,7 +2275,7 @@ function buildDayPlans(
         scoredStation.station.position,
         config.roadDistanceFactor,
       )
-    const driveHours = precomputedDriveHours?.[index] ?? legMiles / config.averageMph
+    const driveHours = planningDriveHours(legMiles, config.averageMph, precomputedDriveHours?.[index])
 
     const projectedDriveHours = day.driveHours + driveHours
     const longDayOpportunity = evaluateLongDayOpportunity(
@@ -2351,9 +2352,7 @@ function buildDayPlans(
   const returnLegMiles =
     precomputedLegMiles?.[selectedStations.length] ??
     roadLegMiles(previous.position, config.start, config.roadDistanceFactor)
-  const returnDriveHours =
-    precomputedDriveHours?.[selectedStations.length] ??
-    returnLegMiles / config.averageMph
+  const returnDriveHours = planningDriveHours(returnLegMiles, config.averageMph, precomputedDriveHours?.[selectedStations.length])
 
   if (
     day.visits.length > 0 &&
@@ -2445,6 +2444,7 @@ function buildLongestTripDayPlans(
   /** Real per-leg drive hours. */
   precomputedDriveHours?: number[],
   ratingTargets: RatingPlaceTarget[] = [],
+  reviewedDayStopCounts?: number[],
 ) {
   const days: DayPlan[] = []
   const visits: RouteStationVisit[] = []
@@ -2457,6 +2457,8 @@ function buildLongestTripDayPlans(
     distanceMiles: 0,
   }
   let previousStopMinutes = 0
+  let day = emptyDay(1)
+  let dayStopTarget = reviewedDayStopCounts?.[0] ?? 1
 
   for (let index = 0; index < selectedStations.length; index += 1) {
     const scoredStation = selectedStations[index]
@@ -2467,7 +2469,7 @@ function buildLongestTripDayPlans(
         scoredStation.station.position,
         config.roadDistanceFactor,
       )
-    const driveHours = precomputedDriveHours?.[index] ?? legMiles / config.averageMph
+    const driveHours = planningDriveHours(legMiles, config.averageMph, precomputedDriveHours?.[index])
     const nextPosition = selectedStations[index + 1]?.station.position
     const nextLegMiles = nextPosition
       ? precomputedLegMiles?.[index + 1] ??
@@ -2484,7 +2486,6 @@ function buildLongestTripDayPlans(
       config,
     )
 
-    const day = emptyDay(index + 1)
     const visit: RouteStationVisit = {
       sequence: index + 1,
       day: day.day,
@@ -2515,7 +2516,11 @@ function buildLongestTripDayPlans(
     }
 
     visits.push(visit)
-    days.push(finalizeDay(day, config, ratingTargets))
+    if (day.visits.length === dayStopTarget || index === selectedStations.length - 1) {
+      days.push(finalizeDay(day, config, ratingTargets))
+      day = emptyDay(day.day + 1)
+      dayStopTarget = reviewedDayStopCounts?.[days.length] ?? 1
+    }
     previous = {
       position: scoredStation.station.position,
       order: scoredStation.order,
@@ -2534,7 +2539,9 @@ function buildLongestTripDayPlans(
     {
       severity: 'info',
       message:
-        `${routeName} targets one new unique Supercharger per streak day. Repeat Superchargers should be treated as backup charging only.`,
+        reviewedDayStopCounts
+          ? `${routeName} has a reviewed calendar schedule with one or more unique Superchargers per day. Multiple charges on one date still count as one streak day.`
+          : `${routeName} targets one new unique Supercharger per streak day. Repeat Superchargers should be treated as backup charging only.`,
     },
   ]
   const overRangeCount = visits.filter((visit) => visit.rangeWarning).length
@@ -2603,6 +2610,7 @@ function buildRouteDayPlans(
   precomputedLegMiles?: number[],
   precomputedDriveHours?: number[],
   ratingTargets: RatingPlaceTarget[] = [],
+  reviewedDayStopCounts?: number[],
 ) {
   const plans =
     config.plannerMode === 'longest_trip'
@@ -2613,6 +2621,7 @@ function buildRouteDayPlans(
           precomputedLegMiles,
           precomputedDriveHours,
           ratingTargets,
+          reviewedDayStopCounts,
         )
       : buildDayPlans(
           selectedStations,
@@ -2680,8 +2689,7 @@ function evaluateLongDayOpportunity(
         station.station.position,
         config.roadDistanceFactor,
       )
-    const legDriveHours =
-      precomputedDriveHours?.[index] ?? legMiles / config.averageMph
+    const legDriveHours = planningDriveHours(legMiles, config.averageMph, precomputedDriveHours?.[index])
 
     if (simulatedDriveHours + legDriveHours > config.longDayMaxHours) {
       break
@@ -3776,7 +3784,7 @@ function plannerConfigForRoute(config: PlannerConfig, routeId: string) {
         ...config,
         ...savedRoute.travelPreferences,
         ...(savedRoute.dailyStationIds?.length
-          ? { longestTripDays: savedRoute.dailyStationIds.length }
+          ? { longestTripDays: savedRoute.reviewedDayStopCounts?.length ?? savedRoute.dailyStationIds.length }
           : {}),
       })
     : config
@@ -3792,7 +3800,7 @@ export function refineRouteWithRoadLegs(
   partialConfig: Partial<PlannerConfig>,
   meta: { id: string; name: string; strategy: string; color: string },
   legMiles: number[],
-  /** Optional real drive hours per leg (e.g. ORS speed-limit durations). */
+  /** Raw provider drive hours per leg; the shared planning proxy is applied once. */
   driveHours?: number[],
   distanceSource: RoutePlan['distanceSource'] = 'road',
 ): RoutePlan {
@@ -3813,6 +3821,7 @@ export function refineRouteWithRoadLegs(
     legMiles,
     driveHours,
     ratingTargets,
+    config.savedCustomRoutes.find((route) => route.id === meta.id)?.reviewedDayStopCounts,
   )
   const totalDays = Math.max(1, plans.days.length)
   const uniqueStations = plans.totals.uniqueStationCount
@@ -3823,6 +3832,7 @@ export function refineRouteWithRoadLegs(
     id: meta.id,
     plannerMode: config.plannerMode,
     distanceSource,
+    driveTimeMultiplier: DRIVE_TIME_MULTIPLIER,
     tripStartDate: tripStartDateForRoute(config, meta.id),
     name: meta.name,
     strategy: meta.strategy,
@@ -3890,9 +3900,8 @@ export function optimizeRoutes(
       routeConfig.plannerMode === 'longest_trip'
         ? variant.targetDays ?? defaultRouteTarget
         : defaultRouteTarget
-    const dailyStationIds = config.savedCustomRoutes.find(
-      (route) => route.id === variant.id,
-    )?.dailyStationIds
+    const reviewedRoute = config.savedCustomRoutes.find((route) => route.id === variant.id)
+    const dailyStationIds = reviewedRoute?.dailyStationIds
     if (routeConfig.plannerMode === 'longest_trip' && dailyStationIds?.length) {
       const byId = new Map(allStations.map((station) => [station.id, station]))
       const reviewedStations = dailyStationIds.map((id) => {
@@ -3905,7 +3914,7 @@ export function optimizeRoutes(
       const reviewed = refineRouteWithRoadLegs(
         reviewedStations,
         routeConfig,
-        { ...variant, strategy: `Reviewed daily itinerary: ${dailyStationIds.length} unique Superchargers in saved order.` },
+        { ...variant, strategy: `Reviewed daily itinerary: ${dailyStationIds.length} unique Superchargers across ${reviewedRoute?.reviewedDayStopCounts?.length ?? dailyStationIds.length} days in saved order.` },
         [],
         undefined,
         'estimate',
@@ -4027,6 +4036,7 @@ export function optimizeRoutes(
       id: variant.id,
       plannerMode: routeConfig.plannerMode,
       distanceSource: 'estimate',
+      driveTimeMultiplier: DRIVE_TIME_MULTIPLIER,
       tripStartDate: variant.startDate ?? routeConfig.tripStartDate,
       name: variant.name,
       strategy: variant.strategy,

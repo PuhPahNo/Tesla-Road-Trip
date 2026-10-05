@@ -54,6 +54,7 @@ export const PUBLISHED_ANTHONY_FIELD_NOTES: readonly AnthonyFieldNote[] = [
         afterBullets: [
           ['Day 5 is still flexible. St. Joseph gives me a museum stop on the way north from Kansas City to Omaha, without sending me off in another direction.'],
           ['The rest of the loop stays in the plan for now. The map has the current day count, dates and mileage; those numbers will change if I change the itinerary again.'],
+          ['The latest revision combines short charging hops into shared travel days and uses Sioux Falls between Omaha and Badlands. Basecamps retain two or three days and all priority destinations stay in the plan. Driving times use a 10% planning adjustment, with charging time kept separate.'],
         ],
       },
       {

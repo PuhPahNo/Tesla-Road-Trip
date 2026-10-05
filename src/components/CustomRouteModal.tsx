@@ -71,6 +71,7 @@ export interface CustomRouteDraft {
   travelPreferences?: RouteTravelPreferences | null
   stayDayCaps: RouteStayDayCap[]
   dailyStationIds?: string[]
+  reviewedDayStopCounts?: number[]
 }
 
 export interface CustomRouteModalProps {
@@ -261,7 +262,7 @@ export function CustomRouteModal({
           : undefined,
       stayDayCaps,
       ...(route?.dailyStationIds?.length
-        ? { dailyStationIds: preserveDailyItinerary ? route.dailyStationIds : [] }
+        ? { dailyStationIds: preserveDailyItinerary ? route.dailyStationIds : [], ...(preserveDailyItinerary && route.reviewedDayStopCounts ? { reviewedDayStopCounts: route.reviewedDayStopCounts } : {}) }
         : {}),
     })
   }
@@ -298,7 +299,7 @@ export function CustomRouteModal({
       <Overlay open={open} onClose={onClose} size="wide" labelledBy={titleId}>
         <OverlayHeader titleId={titleId} kicker="Route builder" title="Reviewed daily itinerary" onClose={onClose} />
         <div className="space-y-4 p-5 text-sm text-dim">
-          <p>{route.dailyStationIds.length} daily stops are saved in order. Refreshing the station feed updates availability and driving estimates while keeping this itinerary.</p>
+          <p>{route.dailyStationIds.length} charging stops across {route.reviewedDayStopCounts?.length ?? route.dailyStationIds.length} days are saved in order. Refreshing the station feed updates availability and driving estimates while keeping this itinerary.</p>
           <label className="block">Route name
             <input aria-label="Route name" value={name} onChange={(event) => setName(event.target.value)} className="mt-2 block w-full rounded-lg border border-edge bg-panel2 p-3 text-ink" />
           </label>

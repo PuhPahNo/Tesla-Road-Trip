@@ -961,7 +961,8 @@ describe('reviewed daily itineraries', () => {
     expect(result.distanceSource).toBe('estimate')
     const road = refineRouteWithRoadLegs(result.visits.map((v) => v.station), config, result, [150, 90, 310, 0], [2.5, 1.5, 5.2, 0])
     expect(road.visits.map((v) => v.station.id)).toEqual(route.dailyStationIds)
-    expect(road.days.map((d) => d.driveHours)).toEqual([2.5, 1.5, 5.2])
+    expect(road.days.map((d) => d.driveHours)).toEqual([2.25, 1.35, 4.68])
+    expect(road.driveTimeMultiplier).toBe(0.9)
     expect(road.visits[2].rangeWarning).toBe(true)
     expect(road.warnings.some((w) => w.includes('60-day'))).toBe(false)
   })
@@ -975,5 +976,56 @@ describe('reviewed daily itineraries', () => {
     expect(result.visits[0].station.status).toBe('CLOSED')
     const road = refineRouteWithRoadLegs(result.visits.map((v) => v.station), config, result, [50, 50, 50, 0])
     expect(road.warnings.some((w) => w.includes('CLOSED'))).toBe(true)
+  })
+})
+
+describe('shared driving-time planning proxy', () => {
+  const stations = [makeStation(100, 36, -85), makeStation(101, 37, -85)]
+  const meta = { id: 'proxy', name: 'Proxy', strategy: 'Test', color: '#e82127' }
+  const config = { ...mostUniqueConfig, dailyDriveTargetHours: 3, dailyDriveMaxHours: 4 }
+
+  it('uses adjusted driving for day boundaries and the return leg without changing mileage or charging', () => {
+    const route = refineRouteWithRoadLegs(stations, config, meta, [90, 90, 60], [1.6, 1.6, 1])
+    // Raw outbound driving exceeds the target; adjusted 2.88 hours fits one day.
+    expect(route.days).toHaveLength(2)
+    expect(route.days[0].visits).toHaveLength(2)
+    expect(route.days[0].driveHours).toBe(2.88)
+    expect(route.days[1].driveHours).toBe(0.9)
+    expect(route.totalDriveHours).toBe(3.8)
+    expect(route.totalMiles).toBe(240)
+    const slower = refineRouteWithRoadLegs(stations, config, meta, [90, 90, 60], [3, 3, 2])
+    expect(route.visits.map((v) => v.stopMinutes)).toEqual(slower.visits.map((v) => v.stopMinutes))
+  })
+
+  it('also adjusts mileage-based fallback times and respects a valid zero provider duration', () => {
+    const estimated = refineRouteWithRoadLegs(stations, config, meta, [120, 60, 0])
+    expect(estimated.visits.map((v) => v.driveHours)).toEqual([1.8, 0.9])
+    const provider = refineRouteWithRoadLegs(stations, config, meta, [120, 60, 0], [0, 2, 0])
+    expect(provider.visits.map((v) => v.driveHours)).toEqual([0, 1.8])
+  })
+})
+
+
+describe('reviewed calendar day grouping', () => {
+  it('keeps all charging visits while combining days, including road refinement', () => {
+    const stations = [makeStation(101, 35, -85), makeStation(102, 35.1, -85), makeStation(103, 35.2, -85)]
+    const saved: SavedCustomRoute = {
+      id: 'reviewed-groups', name: 'Reviewed schedule', color: '#e82127',
+      dailyStationIds: stations.map(s => s.id), reviewedDayStopCounts: [2, 1], targetDays: 2,
+      waypoints: [{id: 'priority', label: 'Priority park', position: stations[2].position, radiusMiles: 35}],
+      createdAt: '2026-10-04', updatedAt: '2026-10-04', startDate: '2026-10-04',
+    }
+    const config = {...defaultPlannerConfig, savedCustomRoutes: [saved]}
+    const estimate = optimizeRoutes(stations, config).routes.find(r => r.id === saved.id)!
+    expect(estimate.days.map(d => d.visits.map(v => v.station.id))).toEqual([[stations[0].id, stations[1].id], [stations[2].id]])
+    const road = refineRouteWithRoadLegs(stations, config, {...saved, strategy: 'Reviewed order'}, [70, 80, 90, 100], [1, 2, 3, 4])
+    expect(road.totalDays).toBe(2)
+    expect(road.uniqueStations).toBe(3)
+    expect(road.days.map(d => d.driveHours)).toEqual([2.7, 2.7])
+    expect(road.visits.map(v => v.day)).toEqual([1, 1, 2])
+    expect(road.days.map(d => d.miles)).toEqual([150, 90])
+    expect(road.totalDriveHours).toBe(5.4)
+    expect(road.totalStopHours).toBeCloseTo(road.visits.reduce((sum, v) => sum + v.stopMinutes, 0) / 60, 1)
+    expect(road.days[0].visits.at(-1)?.station.id).toBe(stations[1].id)
   })
 })

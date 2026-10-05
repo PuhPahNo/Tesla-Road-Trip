@@ -20,6 +20,7 @@ import {
 import { registerCommunityRoutes } from './community'
 import { databaseIsHealthy, databasePath, db } from './database'
 import { applyDepartureRevision } from './departureRevision'
+import { applyItineraryCompression } from './itineraryCompression'
 import {
   defaultPlannerConfig,
   plannerConfigSchema,
@@ -61,7 +62,7 @@ const MAX_ORS_COORDINATES = 48 // ORS free directions waypoint cap is ~50
 const MAX_ORS_CHUNK_METERS = 4_000_000
 
 // Road-accurate distances/times are only fetched when a real engine is set:
-// OpenRouteService (preferred — true speed-limit durations) or a real OSRM.
+// OpenRouteService (preferred) or a real OSRM. Day plans apply the shared proxy.
 // Otherwise the app uses fast, free estimates.
 const ROAD_PROVIDER: 'ors' | 'osrm' | 'none' = ORS_API_KEY
   ? 'ors'
@@ -499,7 +500,7 @@ interface RoadSegment {
   geometry: LatLon[]
   /** Miles per leg, length = coordinates.length - 1. */
   legMiles: number[]
-  /** Real drive hours per leg (speed-limit aware), same length as legMiles. */
+  /** Raw provider drive hours per leg, same length as legMiles. */
   legDriveHours: number[]
 }
 
@@ -521,7 +522,7 @@ async function fetchRoadProvider(coordinates: LatLon[]) {
   return { provider: 'osrm' as const, ...(await fetchOsrmRoute(coordinates)) }
 }
 
-/* ---- OpenRouteService (true speed-limit durations) ---- */
+/* ---- OpenRouteService (conservative provider durations) ---- */
 
 /** Carries the HTTP status so callers can tell auth/quota failures apart. */
 class OrsError extends Error {
@@ -906,6 +907,7 @@ if (anthonyAdmin) {
 }
 
 if (applyDepartureRevision()) console.log('Applied October 4 departure revision · 69 reviewed days')
+if (applyItineraryCompression()) console.log('Applied reviewed calendar schedule · 59 days, 67 charging stops')
 
 const server = app.listen(PORT, () => {
   const address = server.address()

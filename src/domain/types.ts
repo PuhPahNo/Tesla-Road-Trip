@@ -105,6 +105,8 @@ export interface SavedCustomRoute {
   stayDayCaps?: RouteStayDayCap[]
   /** Reviewed daily charging stops, in order. Empty/absent uses automatic planning. */
   dailyStationIds?: string[]
+  /** Visits per reviewed calendar day; absent means one charging stop per day. */
+  reviewedDayStopCounts?: number[]
   createdAt: string
   updatedAt: string
 }
@@ -202,6 +204,8 @@ export interface RoutePlan {
   id: string
   plannerMode: PlannerMode
   distanceSource?: 'estimate' | 'road'
+  /** Multiplier applied once to raw driving durations; charging stays separate. */
+  driveTimeMultiplier?: number
   tripStartDate?: string
   name: string
   strategy: string

@@ -11,7 +11,8 @@ const directory = mkdtempSync(path.join(os.tmpdir(), 'cq-departure-'))
 const previousPath = process.env.CHARGE_QUEST_DB_PATH
 let database: typeof import('./database')
 let revision: typeof import('./departureRevision')
-const reviewed = JSON.parse(readFileSync(new URL('../scripts/data/2026-competition-reviewed-stops.json', import.meta.url), 'utf8')) as { dailyStationIds: string[] }
+const consolidation = JSON.parse(readFileSync(new URL('../scripts/data/2026-competition-consolidation.json', import.meta.url), 'utf8')) as { beforeDailyStationIds: string[] }
+const reviewed = { dailyStationIds: consolidation.beforeDailyStationIds }
 const oldIds = ['sci-5990', 'sci-4039', 'sci-6051', 'sci-657', 'sci-3382', 'sci-1734', 'sci-4033', ...reviewed.dailyStationIds.slice(6)]
 const oldRoute: SavedCustomRoute = {
   id: 'saved-2026-competition', name: '2026 Competition', color: '#e82127',

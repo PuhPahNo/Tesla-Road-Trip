@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import type { DayPlan, PlaceRating, RoutePlan } from '../domain/types'
+import { DRIVE_TIME_NOTE } from '../domain/driveTime'
 import type { StateRouteStats } from '../domain/routeStats'
 import type { ContestStatus } from '../domain/rules'
 import { stationHighlights } from '../domain/highlights'
@@ -108,6 +109,7 @@ export function OverviewSection({
   const readiness = route ? routeRangeReadiness(route) : undefined
   return (
     <div className="flex flex-col gap-3">
+      {route?.driveTimeMultiplier ? <NoteCard tone="info">{DRIVE_TIME_NOTE}</NoteCard> : null}
       <div className="grid grid-cols-2 gap-2">
         <StatTile
           label={isLongestTrip ? 'Streak stops' : 'Unique sites'}
@@ -329,6 +331,7 @@ export function DaysSection({
   const badgeOpportunities = badgeOpportunitiesForRoute(route)
   return (
     <div className="flex flex-col gap-1.5">
+      {route.driveTimeMultiplier ? <p className="mb-2 text-[11px] leading-[1.45] text-dim">{DRIVE_TIME_NOTE}</p> : null}
       {route.days.map((day, index) => {
         const cities = [...new Set(day.visits.map((visit) => visit.station.address.city))]
         const cityLabel =

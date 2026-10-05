@@ -100,8 +100,15 @@ export const dailyStationIdsSchema = z.array(z.string().min(1).max(96))
   .max(365)
   .refine((ids) => new Set(ids).size === ids.length, 'Each daily stop must be a unique Supercharger.')
 
+export const reviewedDayStopCountsSchema = z.array(z.number().int().min(1).max(365)).min(1).max(365)
+
+export function validReviewedDayStops(route: { dailyStationIds?: string[]; reviewedDayStopCounts?: number[] }) {
+  return !route.reviewedDayStopCounts || route.reviewedDayStopCounts.reduce((sum, count) => sum + count, 0) === route.dailyStationIds?.length
+}
+
 const savedCustomRouteSchema = z.object({
   dailyStationIds: dailyStationIdsSchema.optional(),
+  reviewedDayStopCounts: reviewedDayStopCountsSchema.optional(),
   id: z.string().min(1).max(96),
   name: z.string().min(1).max(80),
   color: z.string().min(1).max(32),
@@ -135,7 +142,7 @@ const savedCustomRouteSchema = z.object({
     .optional(),
   createdAt: z.string().min(1).max(48),
   updatedAt: z.string().min(1).max(48),
-})
+}).refine(validReviewedDayStops, 'Reviewed day counts must include every reviewed charging stop exactly once.')
 
 const longestTripVisitTargetSchema = z.object({
   id: z.string().min(1).max(80),

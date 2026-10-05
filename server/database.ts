@@ -189,6 +189,12 @@ db.exec(`
     note TEXT,
     updated_at TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS data_revisions (
+    id TEXT PRIMARY KEY,
+    applied_at TEXT NOT NULL,
+    before_json TEXT NOT NULL
+  );
 `)
 
 ensureColumn('anthony_trip', 'departure_date', 'TEXT')

@@ -1,0 +1,733 @@
+{
+  "reviewedAt": "2026-10-04",
+  "routeId": "saved-2026-competition",
+  "startDate": "2026-10-04",
+  "beforeDailyStationIds": [
+    "sci-9323",
+    "sci-748",
+    "sci-4230",
+    "sci-1601",
+    "sci-1734",
+    "sci-4033",
+    "sci-7723",
+    "sci-1296",
+    "sci-180",
+    "sci-1851",
+    "sci-206",
+    "sci-5633",
+    "sci-1439",
+    "sci-1596",
+    "sci-1158",
+    "sci-1029",
+    "sci-901",
+    "sci-857",
+    "sci-2376",
+    "sci-332",
+    "sci-6073",
+    "sci-9115",
+    "sci-2099",
+    "sci-7714",
+    "sci-3643",
+    "sci-853",
+    "sci-7645",
+    "sci-170",
+    "sci-9795",
+    "sci-1373",
+    "sci-1854",
+    "sci-1980",
+    "sci-1899",
+    "sci-6071",
+    "sci-3380",
+    "sci-8178",
+    "sci-1725",
+    "sci-7603",
+    "sci-513",
+    "sci-738",
+    "sci-2052",
+    "sci-2566",
+    "sci-4272",
+    "sci-993",
+    "sci-4301",
+    "sci-1509",
+    "sci-8607",
+    "sci-2027",
+    "sci-918",
+    "sci-10636",
+    "sci-2627",
+    "sci-7772",
+    "sci-189",
+    "sci-4511",
+    "sci-190",
+    "sci-8090",
+    "sci-10113",
+    "sci-8903",
+    "sci-7745",
+    "sci-9794",
+    "sci-9501",
+    "sci-6902",
+    "sci-5923",
+    "sci-4073",
+    "sci-1263",
+    "sci-4421",
+    "sci-4424",
+    "sci-1081",
+    "sci-6164"
+  ],
+  "consolidations": [
+    {
+      "removedId": "sci-7723",
+      "removedOriginalDay": 7
+    },
+    {
+      "removedId": "sci-1296",
+      "removedOriginalDay": 8
+    },
+    {
+      "removedId": "sci-9501",
+      "removedOriginalDay": 61
+    }
+  ],
+  "reviewedDayStopCounts": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    2,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1
+  ],
+  "dailyStationIds": [
+    "sci-9323",
+    "sci-748",
+    "sci-4230",
+    "sci-1601",
+    "sci-1734",
+    "sci-4033",
+    "sci-1209",
+    "sci-180",
+    "sci-1851",
+    "sci-206",
+    "sci-5633",
+    "sci-1439",
+    "sci-1596",
+    "sci-1158",
+    "sci-1029",
+    "sci-901",
+    "sci-857",
+    "sci-2376",
+    "sci-332",
+    "sci-6073",
+    "sci-9115",
+    "sci-2099",
+    "sci-7714",
+    "sci-3643",
+    "sci-853",
+    "sci-7645",
+    "sci-170",
+    "sci-9795",
+    "sci-1373",
+    "sci-1854",
+    "sci-1980",
+    "sci-1899",
+    "sci-6071",
+    "sci-3380",
+    "sci-8178",
+    "sci-1725",
+    "sci-7603",
+    "sci-513",
+    "sci-738",
+    "sci-2052",
+    "sci-2566",
+    "sci-4272",
+    "sci-993",
+    "sci-4301",
+    "sci-1509",
+    "sci-8607",
+    "sci-2027",
+    "sci-918",
+    "sci-10636",
+    "sci-2627",
+    "sci-7772",
+    "sci-189",
+    "sci-4511",
+    "sci-190",
+    "sci-8090",
+    "sci-10113",
+    "sci-8903",
+    "sci-7745",
+    "sci-9794",
+    "sci-6902",
+    "sci-5923",
+    "sci-4073",
+    "sci-1263",
+    "sci-4421",
+    "sci-4424",
+    "sci-1081",
+    "sci-6164"
+  ],
+  "dayGroups": [
+    {
+      "originalDays": [
+        1
+      ],
+      "stationIds": [
+        "sci-9323"
+      ]
+    },
+    {
+      "originalDays": [
+        2
+      ],
+      "stationIds": [
+        "sci-748"
+      ]
+    },
+    {
+      "originalDays": [
+        3
+      ],
+      "stationIds": [
+        "sci-4230"
+      ]
+    },
+    {
+      "originalDays": [
+        4
+      ],
+      "stationIds": [
+        "sci-1601"
+      ]
+    },
+    {
+      "originalDays": [
+        5
+      ],
+      "stationIds": [
+        "sci-1734"
+      ]
+    },
+    {
+      "originalDays": [
+        6
+      ],
+      "stationIds": [
+        "sci-4033"
+      ]
+    },
+    {
+      "originalDays": [
+        7,
+        8
+      ],
+      "stationIds": [
+        "sci-1209"
+      ],
+      "reason": "Use Sioux Falls as the overnight between Omaha and Badlands; remove Norfolk/Oacoma transfer detour."
+    },
+    {
+      "originalDays": [
+        9
+      ],
+      "stationIds": [
+        "sci-180"
+      ]
+    },
+    {
+      "originalDays": [
+        10
+      ],
+      "stationIds": [
+        "sci-1851"
+      ]
+    },
+    {
+      "originalDays": [
+        11
+      ],
+      "stationIds": [
+        "sci-206"
+      ]
+    },
+    {
+      "originalDays": [
+        12
+      ],
+      "stationIds": [
+        "sci-5633"
+      ]
+    },
+    {
+      "originalDays": [
+        13
+      ],
+      "stationIds": [
+        "sci-1439"
+      ]
+    },
+    {
+      "originalDays": [
+        14
+      ],
+      "stationIds": [
+        "sci-1596"
+      ]
+    },
+    {
+      "originalDays": [
+        15
+      ],
+      "stationIds": [
+        "sci-1158"
+      ]
+    },
+    {
+      "originalDays": [
+        16,
+        17
+      ],
+      "stationIds": [
+        "sci-1029",
+        "sci-901"
+      ]
+    },
+    {
+      "originalDays": [
+        18
+      ],
+      "stationIds": [
+        "sci-857"
+      ]
+    },
+    {
+      "originalDays": [
+        19
+      ],
+      "stationIds": [
+        "sci-2376"
+      ]
+    },
+    {
+      "originalDays": [
+        20
+      ],
+      "stationIds": [
+        "sci-332"
+      ]
+    },
+    {
+      "originalDays": [
+        21
+      ],
+      "stationIds": [
+        "sci-6073"
+      ]
+    },
+    {
+      "originalDays": [
+        22
+      ],
+      "stationIds": [
+        "sci-9115"
+      ]
+    },
+    {
+      "originalDays": [
+        23
+      ],
+      "stationIds": [
+        "sci-2099"
+      ]
+    },
+    {
+      "originalDays": [
+        24
+      ],
+      "stationIds": [
+        "sci-7714"
+      ]
+    },
+    {
+      "originalDays": [
+        25
+      ],
+      "stationIds": [
+        "sci-3643"
+      ]
+    },
+    {
+      "originalDays": [
+        26
+      ],
+      "stationIds": [
+        "sci-853"
+      ]
+    },
+    {
+      "originalDays": [
+        27,
+        28
+      ],
+      "stationIds": [
+        "sci-7645",
+        "sci-170"
+      ]
+    },
+    {
+      "originalDays": [
+        29
+      ],
+      "stationIds": [
+        "sci-9795"
+      ]
+    },
+    {
+      "originalDays": [
+        30,
+        31
+      ],
+      "stationIds": [
+        "sci-1373",
+        "sci-1854"
+      ]
+    },
+    {
+      "originalDays": [
+        32
+      ],
+      "stationIds": [
+        "sci-1980"
+      ]
+    },
+    {
+      "originalDays": [
+        33
+      ],
+      "stationIds": [
+        "sci-1899"
+      ]
+    },
+    {
+      "originalDays": [
+        34
+      ],
+      "stationIds": [
+        "sci-6071"
+      ]
+    },
+    {
+      "originalDays": [
+        35
+      ],
+      "stationIds": [
+        "sci-3380"
+      ]
+    },
+    {
+      "originalDays": [
+        36
+      ],
+      "stationIds": [
+        "sci-8178"
+      ]
+    },
+    {
+      "originalDays": [
+        37
+      ],
+      "stationIds": [
+        "sci-1725"
+      ]
+    },
+    {
+      "originalDays": [
+        38
+      ],
+      "stationIds": [
+        "sci-7603"
+      ]
+    },
+    {
+      "originalDays": [
+        39
+      ],
+      "stationIds": [
+        "sci-513"
+      ]
+    },
+    {
+      "originalDays": [
+        40
+      ],
+      "stationIds": [
+        "sci-738"
+      ]
+    },
+    {
+      "originalDays": [
+        41
+      ],
+      "stationIds": [
+        "sci-2052"
+      ]
+    },
+    {
+      "originalDays": [
+        42,
+        43
+      ],
+      "stationIds": [
+        "sci-2566",
+        "sci-4272"
+      ]
+    },
+    {
+      "originalDays": [
+        44
+      ],
+      "stationIds": [
+        "sci-993"
+      ]
+    },
+    {
+      "originalDays": [
+        45
+      ],
+      "stationIds": [
+        "sci-4301"
+      ]
+    },
+    {
+      "originalDays": [
+        46
+      ],
+      "stationIds": [
+        "sci-1509"
+      ]
+    },
+    {
+      "originalDays": [
+        47,
+        48
+      ],
+      "stationIds": [
+        "sci-8607",
+        "sci-2027"
+      ]
+    },
+    {
+      "originalDays": [
+        49
+      ],
+      "stationIds": [
+        "sci-918"
+      ]
+    },
+    {
+      "originalDays": [
+        50
+      ],
+      "stationIds": [
+        "sci-10636"
+      ]
+    },
+    {
+      "originalDays": [
+        51,
+        52
+      ],
+      "stationIds": [
+        "sci-2627",
+        "sci-7772"
+      ]
+    },
+    {
+      "originalDays": [
+        53
+      ],
+      "stationIds": [
+        "sci-189"
+      ]
+    },
+    {
+      "originalDays": [
+        54,
+        55
+      ],
+      "stationIds": [
+        "sci-4511",
+        "sci-190"
+      ]
+    },
+    {
+      "originalDays": [
+        56
+      ],
+      "stationIds": [
+        "sci-8090"
+      ]
+    },
+    {
+      "originalDays": [
+        57
+      ],
+      "stationIds": [
+        "sci-10113"
+      ]
+    },
+    {
+      "originalDays": [
+        58
+      ],
+      "stationIds": [
+        "sci-8903"
+      ]
+    },
+    {
+      "originalDays": [
+        59
+      ],
+      "stationIds": [
+        "sci-7745"
+      ]
+    },
+    {
+      "originalDays": [
+        60
+      ],
+      "stationIds": [
+        "sci-9794"
+      ]
+    },
+    {
+      "originalDays": [
+        62
+      ],
+      "stationIds": [
+        "sci-6902"
+      ]
+    },
+    {
+      "originalDays": [
+        63
+      ],
+      "stationIds": [
+        "sci-5923"
+      ]
+    },
+    {
+      "originalDays": [
+        64
+      ],
+      "stationIds": [
+        "sci-4073"
+      ]
+    },
+    {
+      "originalDays": [
+        65,
+        66
+      ],
+      "stationIds": [
+        "sci-1263",
+        "sci-4421"
+      ]
+    },
+    {
+      "originalDays": [
+        67
+      ],
+      "stationIds": [
+        "sci-4424"
+      ]
+    },
+    {
+      "originalDays": [
+        68
+      ],
+      "stationIds": [
+        "sci-1081"
+      ]
+    },
+    {
+      "originalDays": [
+        69
+      ],
+      "stationIds": [
+        "sci-6164"
+      ]
+    }
+  ],
+  "transferEvidence": [
+    {
+      "from": "Omaha",
+      "via": "Sioux Falls",
+      "to": "Murdo",
+      "planningDriveHours": [
+        2.6742,
+        2.8518
+      ],
+      "roadMiles": [
+        186.29572049232482,
+        212.48999592380497
+      ]
+    },
+    {
+      "from": "Carlsbad",
+      "to": "Ozona",
+      "planningDriveHours": 3.60345,
+      "roadMiles": 243.66766831702853
+    }
+  ]
+}

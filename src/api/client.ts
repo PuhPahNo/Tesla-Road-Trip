@@ -73,6 +73,7 @@ export interface CreateCustomRouteRequest {
   reverseLoop?: boolean
   stayDayCaps?: SavedCustomRoute['stayDayCaps']
   dailyStationIds?: string[]
+  reviewedDayStopCounts?: number[]
   startMonth?: number
   startDate?: string
   directionPreference?: SavedCustomRoute['directionPreference']

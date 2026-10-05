@@ -44,3 +44,20 @@ describe('reviewed route persistence', () => {
     expect(released.route.targetDays).toBe(4)
   })
 })
+
+
+it('preserves reviewed day boundaries through metadata edits and validates explicit rebuilds', () => {
+  const route: SavedCustomRoute = {
+    id: 'grouped', name: 'Grouped', color: '#e82127',
+    waypoints: [{ id: 'park', label: 'Park', position: { lat: 35, lon: -85 }, radiusMiles: 50 }],
+    targetDays: 2, dailyStationIds: ['sci-1', 'sci-2', 'sci-3'], reviewedDayStopCounts: [2, 1],
+    createdAt: '2026-10-04', updatedAt: '2026-10-04',
+  }
+  routes.writeSavedCustomRoutes('owner', [route])
+  expect(routes.updateSavedCustomRoute(route.id, { name: 'Updated', dailyStationIds: route.dailyStationIds }, 'owner')?.route).toMatchObject({targetDays: 2, reviewedDayStopCounts: [2, 1]})
+  expect(() => routes.updateSavedCustomRoute(route.id, {reviewedDayStopCounts: [1, 1]}, 'owner')).toThrow('every reviewed charging stop')
+  expect(routes.readSavedCustomRoutes('owner')[0].reviewedDayStopCounts).toEqual([2, 1])
+  const rebuilt = routes.updateSavedCustomRoute(route.id, {dailyStationIds: [], targetDays: 4}, 'owner')!.route
+  expect(rebuilt.reviewedDayStopCounts).toBeUndefined()
+  expect(rebuilt.targetDays).toBe(4)
+})
