@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { sanitizePlannerConfig } from '../src/domain/config'
 import type { RouteStayDayCap, SavedCustomRoute } from '../src/domain/types'
 import { db, transaction } from './database'
 import { savedRouteSchema } from './customRoutes'
@@ -12,9 +13,11 @@ interface ReviewedRevisionPlan {
   dailyStationIds: string[]
   reviewedDayStopCounts: number[]
   stayDayCaps?: RouteStayDayCap[]
+  driveLimits?: { dailyDriveTargetHours: number; dailyDriveMaxHours: number }
 }
 const plan = JSON.parse(readFileSync(new URL('../scripts/data/2026-competition-consolidation.json', import.meta.url), 'utf8')) as ReviewedRevisionPlan
 export const NOVEMBER_REVISION_ID = '2026-10-04-november-25-return'
+export const NOVEMBER_DRIVE_CAP_REVISION_ID = '2026-10-04-reviewed-five-hour-drive-cap'
 const novemberPlan = JSON.parse(readFileSync(new URL('../scripts/data/2026-competition-november-return.json', import.meta.url), 'utf8')) as ReviewedRevisionPlan
 export const NOVEMBER_RETURN_IDS = novemberPlan.dailyStationIds
 export const NOVEMBER_DAY_COUNTS = novemberPlan.reviewedDayStopCounts
@@ -43,6 +46,20 @@ function applyReviewedRevision(revisionId: string, plan: ReviewedRevisionPlan, f
       db.prepare('SELECT id FROM trip_updates WHERE day_number >= ? LIMIT 1').get(firstChangedDay)) return false
 
     const now = new Date().toISOString()
+    let travelPreferences = current.travelPreferences
+    if (plan.driveLimits) {
+      const row = db.prepare('SELECT config_json FROM user_preferences WHERE user_id = ?')
+        .get(trip.selected_route_user_id) as { config_json: string } | undefined
+      const config = sanitizePlannerConfig(row ? JSON.parse(row.config_json) : {})
+      travelPreferences = {
+        vehicleProfileId: config.vehicleProfileId,
+        practicalRangeMiles: config.practicalRangeMiles,
+        manualPracticalRange: config.manualPracticalRange,
+        tripPace: config.tripPace,
+        ...current.travelPreferences,
+        ...plan.driveLimits,
+      }
+    }
     // Retain every waypoint, unrelated preference, and already-travelled opening day.
     const revised = savedRouteSchema.parse({
       ...current, dailyStationIds: plan.dailyStationIds, reviewedDayStopCounts: plan.reviewedDayStopCounts,
@@ -51,6 +68,7 @@ function applyReviewedRevision(revisionId: string, plan: ReviewedRevisionPlan, f
         ...plan.stayDayCaps,
       ]} : {}),
       targetDays: plan.reviewedDayStopCounts.length, updatedAt: now,
+      ...(plan.driveLimits ? {travelPreferences} : {}),
     })
     db.prepare('INSERT INTO data_revisions (id, applied_at, before_json) VALUES (?, ?, ?)')
       .run(revisionId, now, JSON.stringify({ trip, route: current }))
@@ -68,4 +86,15 @@ export function applyItineraryCompression(): boolean {
 
 export function applyNovemberReturnRevision(): boolean {
   return applyReviewedRevision(NOVEMBER_REVISION_ID, novemberPlan, 12)
+}
+
+/** Align this reviewed route's warning threshold with the authorized return pace. */
+export function applyNovemberDriveCapRevision(): boolean {
+  return applyReviewedRevision(NOVEMBER_DRIVE_CAP_REVISION_ID, {
+    ...novemberPlan,
+    beforeDailyStationIds: novemberPlan.dailyStationIds,
+    beforeReviewedDayStopCounts: novemberPlan.reviewedDayStopCounts,
+    stayDayCaps: undefined,
+    driveLimits: {dailyDriveTargetHours: 4, dailyDriveMaxHours: 5},
+  }, 12)
 }

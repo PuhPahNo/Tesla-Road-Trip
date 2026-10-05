@@ -20,7 +20,7 @@ import {
 import { registerCommunityRoutes } from './community'
 import { databaseIsHealthy, databasePath, db } from './database'
 import { applyDepartureRevision } from './departureRevision'
-import { applyItineraryCompression, applyNovemberReturnRevision } from './itineraryCompression'
+import { applyItineraryCompression, applyNovemberReturnRevision, applyNovemberDriveCapRevision } from './itineraryCompression'
 import {
   defaultPlannerConfig,
   plannerConfigSchema,
@@ -909,6 +909,7 @@ if (anthonyAdmin) {
 if (applyDepartureRevision()) console.log('Applied October 4 departure revision · 69 reviewed days')
 if (applyItineraryCompression()) console.log('Applied reviewed calendar schedule · 59 days, 67 charging stops')
 if (applyNovemberReturnRevision()) console.log('Applied November return revision · 53 days, 71 charging stops')
+if (applyNovemberDriveCapRevision()) console.log('Updated reviewed route driving preferences · 4-hour target, 5-hour maximum')
 
 const server = app.listen(PORT, () => {
   const address = server.address()

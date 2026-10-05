@@ -42,4 +42,6 @@ Additional changes:
 
 Charging locations are routing and charging anchors; overnight lodging does not need to be beside a Supercharger. Hours describe the driving corridor and exclude charging, attraction side trips, and detours to chosen lodging. Most ordinary driving days remain around 3–4 hours; this is not a strict four-hour cap.
 
+The reviewed route's travel preferences use a four-hour target and five-hour maximum, matching the authorized transit pace. A separate guarded revision applies this to the exact 53-day schedule, preserves vehicle/range/pace preferences and all global settings, and backs up the route before changing its warning threshold.
+
 The separate `2026-competition-november-return.json` preserves the exact 59-day station sequence and day boundaries plus measured ORS transfer evidence. Both revisions use one guarded transaction helper. The second revision checks both station IDs and calendar boundaries, refuses to renumber progress/history from its first changed day (12), backs up the 59-day route/tracker, updates only the three authorized basecamp caps, and preserves unrelated preferences. The original 59-day migration remains unchanged as a release baseline.

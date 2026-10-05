@@ -29,7 +29,7 @@ beforeAll(async () => {
   }
 })
 beforeEach(() => {
-  database.db.exec('DELETE FROM data_revisions; DELETE FROM custom_routes; DELETE FROM trip_day_log; DELETE FROM trip_updates;')
+  database.db.exec('DELETE FROM data_revisions; DELETE FROM custom_routes; DELETE FROM trip_day_log; DELETE FROM trip_updates; DELETE FROM user_preferences;')
   database.db.prepare(`UPDATE anthony_trip SET selected_route_id = ?, selected_route_user_id = 'owner',
     departure_date = '2026-10-04', total_days = 69, day_number = 2,
     current_location = 'Louisville, KY', latitude = 38.2, longitude = -85.6 WHERE id = 1`).run(before.id)
@@ -129,5 +129,37 @@ describe('November return revision', () => {
     expect(revision.applyNovemberReturnRevision()).toBe(false)
     expect(database.db.prepare('SELECT route_json FROM custom_routes').get()).toEqual(unchanged)
     expect(database.db.prepare('SELECT id FROM data_revisions WHERE id = ?').get(revision.NOVEMBER_REVISION_ID)).toBeUndefined()
+  })
+
+  it('aligns the reviewed driving cap while preserving vehicle/range settings and global preferences', () => {
+    prepare59DayRoute()
+    expect(revision.applyNovemberDriveCapRevision()).toBe(false)
+    expect(revision.applyNovemberReturnRevision()).toBe(true)
+    const preferences = {vehicleProfileId: 'model-y-long-range-awd', practicalRangeMiles: 280, manualPracticalRange: true, tripPace: 'savor', dailyDriveTargetHours: 3, dailyDriveMaxHours: 4}
+    database.db.prepare("INSERT INTO user_preferences (user_id,config_json,updated_at) VALUES ('owner',?,'2026-10-04')").run(JSON.stringify(preferences))
+    const globalBefore = database.db.prepare('SELECT * FROM user_preferences').get()
+    const routeBefore = JSON.parse((database.db.prepare('SELECT route_json FROM custom_routes').get() as {route_json: string}).route_json)
+    const vehiclePreferences = {...preferences, practicalRangeMiles: 250}
+    database.db.prepare('UPDATE custom_routes SET route_json = ?').run(JSON.stringify({...routeBefore,travelPreferences:vehiclePreferences}))
+    expect(revision.applyNovemberDriveCapRevision()).toBe(true)
+    const after = JSON.parse((database.db.prepare('SELECT route_json FROM custom_routes').get() as {route_json: string}).route_json)
+    expect(after.travelPreferences).toEqual({...vehiclePreferences,dailyDriveTargetHours:4,dailyDriveMaxHours:5})
+    expect(after.dailyStationIds).toEqual(routeBefore.dailyStationIds)
+    expect(after.reviewedDayStopCounts).toEqual(routeBefore.reviewedDayStopCounts)
+    expect(after.waypoints).toEqual(routeBefore.waypoints)
+    expect(database.db.prepare('SELECT * FROM user_preferences').get()).toEqual(globalBefore)
+    const backup = database.db.prepare('SELECT before_json FROM data_revisions WHERE id = ?').get(revision.NOVEMBER_DRIVE_CAP_REVISION_ID) as {before_json: string}
+    expect(JSON.parse(backup.before_json).route.travelPreferences).toEqual(vehiclePreferences)
+    expect(revision.applyNovemberDriveCapRevision()).toBe(false)
+  })
+
+  it('snapshots existing global vehicle preferences when the route has no travel override', () => {
+    prepare59DayRoute()
+    expect(revision.applyNovemberReturnRevision()).toBe(true)
+    database.db.prepare("INSERT INTO user_preferences (user_id,config_json,updated_at) VALUES ('owner',?,'2026-10-04')")
+      .run(JSON.stringify({vehicleProfileId:'model-s-awd',practicalRangeMiles:300,manualPracticalRange:true,tripPace:'savor'}))
+    expect(revision.applyNovemberDriveCapRevision()).toBe(true)
+    const after = JSON.parse((database.db.prepare('SELECT route_json FROM custom_routes').get() as {route_json: string}).route_json)
+    expect(after.travelPreferences).toEqual({vehicleProfileId:'model-s-awd',practicalRangeMiles:300,manualPracticalRange:true,tripPace:'savor',dailyDriveTargetHours:4,dailyDriveMaxHours:5})
   })
 })
