@@ -40,6 +40,7 @@
     "sci-8178",
     "sci-1725",
     "sci-7603",
+    "sci-6076",
     "sci-513",
     "sci-738",
     "sci-2052",
@@ -63,12 +64,15 @@
     "sci-7745",
     "sci-9794",
     "sci-6902",
+    "sci-965",
     "sci-5923",
     "sci-4073",
     "sci-1263",
     "sci-4421",
+    "sci-897",
     "sci-4424",
-    "sci-1081",
+    "sci-9534",
+    "sci-11236",
     "sci-6164"
   ],
   "stayDayCaps": [
@@ -86,7 +90,7 @@
     },
     {
       "placeId": "landmark-az-grand-canyon",
-      "maxDays": 3
+      "maxDays": 2
     },
     {
       "placeId": "landmark-wa-mount-rainier",
@@ -94,11 +98,11 @@
     },
     {
       "placeId": "landmark-co-rocky-mountain",
-      "maxDays": 3
+      "maxDays": 2
     },
     {
       "placeId": "landmark-wy-yellowstone",
-      "maxDays": 3
+      "maxDays": 2
     },
     {
       "placeId": "landmark-ut-zion",
@@ -149,18 +153,7 @@
     1,
     1,
     1,
-    1,
-    1,
-    1,
     2,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
     1,
     2,
     1,
@@ -169,17 +162,6 @@
     1,
     1,
     1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    2,
-    1,
-    1,
-    1,
-    2,
     1,
     1,
     2,
@@ -191,11 +173,27 @@
     1,
     1,
     1,
-    1,
+    2,
+    2,
     1,
     2,
     1,
     1,
+    1,
+    3,
+    1,
+    2,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    2,
+    3,
+    3,
     1
   ]
 }

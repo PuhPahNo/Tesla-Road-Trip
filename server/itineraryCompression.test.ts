@@ -82,3 +82,52 @@ describe('transfer-day consolidation', () => {
     expect(database.db.prepare('SELECT id FROM data_revisions').all()).toHaveLength(0)
   })
 })
+
+describe('November return revision', () => {
+  function prepare59DayRoute() {
+    expect(revision.applyItineraryCompression()).toBe(true)
+    return JSON.parse((database.db.prepare('SELECT route_json FROM custom_routes').get() as {route_json: string}).route_json) as SavedCustomRoute
+  }
+
+  it('packs the route to November 25, retains priority stops and progress, and backs up the 59-day plan', () => {
+    const baseline = prepare59DayRoute()
+    database.db.prepare("INSERT INTO trip_day_log (day_number,completed,note,updated_at) VALUES (1,1,'Mammoth Cave','2026-10-04')").run()
+    const progress = database.db.prepare('SELECT day_number,current_location,latitude,longitude,departure_date FROM anthony_trip').get()
+    expect(revision.applyNovemberReturnRevision()).toBe(true)
+    const after = JSON.parse((database.db.prepare('SELECT route_json FROM custom_routes').get() as {route_json: string}).route_json) as SavedCustomRoute
+    expect(after.dailyStationIds).toEqual(revision.NOVEMBER_RETURN_IDS)
+    expect(after.reviewedDayStopCounts).toEqual(revision.NOVEMBER_DAY_COUNTS)
+    expect(after.targetDays).toBe(53)
+    expect(after.dailyStationIds!.length).toBe(71)
+    expect(after.reviewedDayStopCounts!.reduce((sum, count) => sum + count, 0)).toBe(71)
+    expect(after.dailyStationIds!.slice(0, 6)).toEqual(baseline.dailyStationIds!.slice(0, 6))
+    expect(after.waypoints).toEqual(baseline.waypoints)
+    expect(baseline.dailyStationIds!.filter(id => !after.dailyStationIds!.includes(id))).toEqual(['sci-1081'])
+    expect(after.stayDayCaps).toEqual(expect.arrayContaining([
+      {placeId: 'landmark-co-rocky-mountain', maxDays: 2},
+      {placeId: 'landmark-az-grand-canyon', maxDays: 2},
+      {placeId: 'landmark-wy-yellowstone', maxDays: 2},
+      {placeId: 'landmark-ut-arches', maxDays: 3},
+    ]))
+    expect(tripDateForDay(after.startDate!, 53)).toBe('2026-11-25')
+    expect(tripDateForDay(after.startDate!, 6)).toBe('2026-10-09')
+    expect(database.db.prepare('SELECT day_number,current_location,latitude,longitude,departure_date FROM anthony_trip').get()).toEqual(progress)
+    expect(database.db.prepare('SELECT total_days FROM anthony_trip').get()).toMatchObject({total_days: 53})
+    const backup = database.db.prepare('SELECT before_json FROM data_revisions WHERE id = ?').get(revision.NOVEMBER_REVISION_ID) as {before_json: string}
+    expect(JSON.parse(backup.before_json).route).toEqual(baseline)
+    expect(revision.applyNovemberReturnRevision()).toBe(false)
+  })
+
+  it.each(['regrouped', 'replanned', 'travelled', 'future-log', 'future-journal'])('protects %s itinerary/history from renumbering', scenario => {
+    const baseline = prepare59DayRoute()
+    if (scenario === 'regrouped') database.db.prepare('UPDATE custom_routes SET route_json = ?').run(JSON.stringify({...baseline, reviewedDayStopCounts: [2, ...Array(65).fill(1)]}))
+    if (scenario === 'replanned') database.db.prepare('UPDATE custom_routes SET route_json = ?').run(JSON.stringify({...baseline, dailyStationIds: [...baseline.dailyStationIds!].reverse()}))
+    if (scenario === 'travelled') database.db.prepare('UPDATE anthony_trip SET day_number = 12').run()
+    if (scenario === 'future-log') database.db.prepare("INSERT INTO trip_day_log (day_number,completed,updated_at) VALUES (12,1,'2026-10-15')").run()
+    if (scenario === 'future-journal') database.db.prepare("INSERT INTO trip_updates (id,day_number,location,title,body,created_at,updated_at) VALUES ('future',12,'Colorado','Journal','Keep numbering','2026-10-04','2026-10-04')").run()
+    const unchanged = database.db.prepare('SELECT route_json FROM custom_routes').get()
+    expect(revision.applyNovemberReturnRevision()).toBe(false)
+    expect(database.db.prepare('SELECT route_json FROM custom_routes').get()).toEqual(unchanged)
+    expect(database.db.prepare('SELECT id FROM data_revisions WHERE id = ?').get(revision.NOVEMBER_REVISION_ID)).toBeUndefined()
+  })
+})

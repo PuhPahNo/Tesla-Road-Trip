@@ -1,25 +1,31 @@
 import { readFileSync } from 'node:fs'
-import type { SavedCustomRoute } from '../src/domain/types'
+import type { RouteStayDayCap, SavedCustomRoute } from '../src/domain/types'
 import { db, transaction } from './database'
 import { savedRouteSchema } from './customRoutes'
 
 export const CONSOLIDATION_REVISION_ID = '2026-10-04-reviewed-59-day-schedule'
-const plan = JSON.parse(readFileSync(new URL('../scripts/data/2026-competition-consolidation.json', import.meta.url), 'utf8')) as {
+interface ReviewedRevisionPlan {
   routeId: string
   startDate: string
   beforeDailyStationIds: string[]
+  beforeReviewedDayStopCounts?: number[]
   dailyStationIds: string[]
   reviewedDayStopCounts: number[]
-  consolidations: Array<{ removedId: string; removedOriginalDay: number }>
+  stayDayCaps?: RouteStayDayCap[]
 }
+const plan = JSON.parse(readFileSync(new URL('../scripts/data/2026-competition-consolidation.json', import.meta.url), 'utf8')) as ReviewedRevisionPlan
+export const NOVEMBER_REVISION_ID = '2026-10-04-november-25-return'
+const novemberPlan = JSON.parse(readFileSync(new URL('../scripts/data/2026-competition-november-return.json', import.meta.url), 'utf8')) as ReviewedRevisionPlan
+export const NOVEMBER_RETURN_IDS = novemberPlan.dailyStationIds
+export const NOVEMBER_DAY_COUNTS = novemberPlan.reviewedDayStopCounts
 export const BEFORE_CONSOLIDATION_IDS = plan.beforeDailyStationIds
 export const CONSOLIDATED_IDS = plan.dailyStationIds
 export const CONSOLIDATED_DAY_COUNTS = plan.reviewedDayStopCounts
 
 /** Only shorten the exact reviewed future itinerary; never renumber trip history. */
-export function applyItineraryCompression(): boolean {
+function applyReviewedRevision(revisionId: string, plan: ReviewedRevisionPlan, firstChangedDay: number): boolean {
   return transaction(() => {
-    if (db.prepare('SELECT id FROM data_revisions WHERE id = ?').get(CONSOLIDATION_REVISION_ID)) return false
+    if (db.prepare('SELECT id FROM data_revisions WHERE id = ?').get(revisionId)) return false
     const trip = db.prepare('SELECT * FROM anthony_trip WHERE id = 1').get() as
       | { selected_route_id: string | null; selected_route_user_id: string | null; day_number: number | null }
       | undefined
@@ -28,26 +34,38 @@ export function applyItineraryCompression(): boolean {
       .get(trip.selected_route_user_id, plan.routeId) as { route_json: string } | undefined
     if (!row) return false
     const current = JSON.parse(row.route_json) as SavedCustomRoute
-    const firstChangedDay = Math.min(...plan.consolidations.map((stop) => stop.removedOriginalDay))
-    if (current.name !== '2026 Competition' || current.startDate !== plan.startDate || current.reviewedDayStopCounts ||
-      current.dailyStationIds?.length !== BEFORE_CONSOLIDATION_IDS.length ||
-      !BEFORE_CONSOLIDATION_IDS.every((id, index) => current.dailyStationIds?.[index] === id) ||
+    if (current.name !== '2026 Competition' || current.startDate !== plan.startDate ||
+      JSON.stringify(current.reviewedDayStopCounts) !== JSON.stringify(plan.beforeReviewedDayStopCounts) ||
+      current.dailyStationIds?.length !== plan.beforeDailyStationIds.length ||
+      !plan.beforeDailyStationIds.every((id, index) => current.dailyStationIds?.[index] === id) ||
       (trip.day_number ?? 1) >= firstChangedDay ||
       db.prepare('SELECT day_number FROM trip_day_log WHERE day_number >= ? LIMIT 1').get(firstChangedDay) ||
       db.prepare('SELECT id FROM trip_updates WHERE day_number >= ? LIMIT 1').get(firstChangedDay)) return false
 
     const now = new Date().toISOString()
-    // Retain every waypoint, visit/stay preference, and already-travelled opening day.
+    // Retain every waypoint, unrelated preference, and already-travelled opening day.
     const revised = savedRouteSchema.parse({
-      ...current, dailyStationIds: CONSOLIDATED_IDS, reviewedDayStopCounts: CONSOLIDATED_DAY_COUNTS,
-      targetDays: CONSOLIDATED_DAY_COUNTS.length, updatedAt: now,
+      ...current, dailyStationIds: plan.dailyStationIds, reviewedDayStopCounts: plan.reviewedDayStopCounts,
+      ...(plan.stayDayCaps ? {stayDayCaps: [
+        ...(current.stayDayCaps ?? []).filter((cap) => !plan.stayDayCaps!.some((update) => update.placeId === cap.placeId)),
+        ...plan.stayDayCaps,
+      ]} : {}),
+      targetDays: plan.reviewedDayStopCounts.length, updatedAt: now,
     })
     db.prepare('INSERT INTO data_revisions (id, applied_at, before_json) VALUES (?, ?, ?)')
-      .run(CONSOLIDATION_REVISION_ID, now, JSON.stringify({ trip, route: current }))
+      .run(revisionId, now, JSON.stringify({ trip, route: current }))
     db.prepare('UPDATE custom_routes SET route_json = ?, updated_at = ? WHERE user_id = ? AND id = ?')
       .run(JSON.stringify(revised), now, trip.selected_route_user_id, plan.routeId)
     db.prepare('UPDATE anthony_trip SET total_days = ?, updated_at = ? WHERE id = 1')
-      .run(CONSOLIDATED_DAY_COUNTS.length, now)
+      .run(plan.reviewedDayStopCounts.length, now)
     return true
   })
+}
+
+export function applyItineraryCompression(): boolean {
+  return applyReviewedRevision(CONSOLIDATION_REVISION_ID, plan, 7)
+}
+
+export function applyNovemberReturnRevision(): boolean {
+  return applyReviewedRevision(NOVEMBER_REVISION_ID, novemberPlan, 12)
 }
