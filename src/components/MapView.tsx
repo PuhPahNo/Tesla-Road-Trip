@@ -21,6 +21,7 @@ import type {
   Station,
 } from '../domain/types'
 import { haversineMiles, simplifyPolyline } from '../domain/geo'
+import { routeDayWindowPositions } from '../domain/routeViewport'
 import { stationHighlights } from '../domain/highlights'
 import { formatStationAddress } from '../domain/stationAddress'
 import { resolveBasemap } from '../domain/basemap'
@@ -51,6 +52,8 @@ interface MapViewProps {
   /** Optional per-day progress colors for the public tracker. */
   dayColors?: ReadonlyMap<number, string>
   zoomFocusDayIndex?: number
+  /** Opt in to fitting nearby days on load instead of the entire route. */
+  initialFocusDayCount?: number
   scrollWheelZoom?: boolean
   pageScrollOnMobile?: boolean
   fitPadding: FitPadding
@@ -84,6 +87,7 @@ export const MapView = memo(function MapView({
   activeDayIndex,
   dayColors,
   zoomFocusDayIndex,
+  initialFocusDayCount,
   scrollWheelZoom = true,
   pageScrollOnMobile = false,
   fitPadding,
@@ -129,22 +133,14 @@ export const MapView = memo(function MapView({
   )
   const zoomFocusPositions = useMemo(() => {
     if (!route || zoomFocusDayIndex == null) return []
-    const day = route.days[zoomFocusDayIndex]
-    if (!day?.visits.length) return []
-    const previousStop =
-      route.days[zoomFocusDayIndex - 1]?.overnight?.position ??
-      route.days[zoomFocusDayIndex - 1]?.visits.at(-1)?.station.position ??
-      start
-    const positions = [
-      previousStop,
-      ...day.visits.map((visit) => visit.station.position),
-    ]
-    if (day.overnight) positions.push(day.overnight.position)
-    if (zoomFocusDayIndex === route.days.length - 1) positions.push(start)
-    return positions.map(
-      (point) => [point.lat, point.lon] as [number, number],
-    )
+    return routeDayWindowPositions(route, start, zoomFocusDayIndex, 1)
   }, [route, start, zoomFocusDayIndex])
+  const initialFitPositions = useMemo(
+    () => route && initialFocusDayCount != null
+      ? routeDayWindowPositions(route, start, zoomFocusDayIndex ?? 0, initialFocusDayCount)
+      : routeFitPositions,
+    [route, start, zoomFocusDayIndex, initialFocusDayCount, routeFitPositions],
+  )
 
   return (
     <MapContainer
@@ -219,7 +215,7 @@ export const MapView = memo(function MapView({
       {route && (
         <>
           <FitRoute
-            positions={routeFitPositions}
+            positions={initialFitPositions}
             routeKey={`${route.id}-${roadLine?.length ? 'road' : 'estimate'}`}
             fitPadding={fitPadding}
           />

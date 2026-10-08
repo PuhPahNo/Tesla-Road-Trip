@@ -65,7 +65,8 @@ export function TrackerHomePage() {
               start={CHATTANOOGA_37405_START}
               showAllStations={false}
               dayColors={dayColors}
-              zoomFocusDayIndex={currentDayIndex >= 0 ? currentDayIndex : undefined}
+              zoomFocusDayIndex={progress.phase === 'finished' ? route.days.length - 1 : Math.max(0, currentDayIndex)}
+              initialFocusDayCount={5}
               scrollWheelZoom={false}
               pageScrollOnMobile
               fitPadding={{ topLeft: [32, 32], bottomRight: [32, 72] }}
