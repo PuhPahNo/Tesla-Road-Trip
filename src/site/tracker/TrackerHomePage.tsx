@@ -25,6 +25,8 @@ import {
   formatLongDate,
   formatMiles,
   formatRelativeTime,
+  tripMapDayColors,
+  TRIP_MAP_COLORS,
   type TripProgress,
 } from './tripProgress'
 
@@ -35,6 +37,10 @@ export function TrackerHomePage() {
   const trip = community?.trip
 
   const focusDays = useMemo(() => (route ? pickFocusDays(route, progress) : []), [route, progress])
+  const dayColors = useMemo(
+    () => route ? tripMapDayColors(route, progress.completedDays) : undefined,
+    [route, progress.completedDays],
+  )
   const currentDayIndex =
     progress.currentDay && route ? route.days.findIndex((day) => day.day === progress.currentDay) : -1
 
@@ -58,12 +64,24 @@ export function TrackerHomePage() {
               roadLine={published?.road?.line}
               start={CHATTANOOGA_37405_START}
               showAllStations={false}
-              activeDayIndex={currentDayIndex >= 0 ? currentDayIndex : undefined}
+              dayColors={dayColors}
               zoomFocusDayIndex={currentDayIndex >= 0 ? currentDayIndex : undefined}
               scrollWheelZoom={false}
               pageScrollOnMobile
               fitPadding={{ topLeft: [32, 32], bottomRight: [32, 72] }}
             />
+            <div aria-label="Route progress legend" className="glass absolute left-3 top-3 z-[500] flex flex-wrap gap-x-4 gap-y-2 rounded-2xl px-3 py-2 text-[12px] font-semibold text-ink">
+              {[
+                ['Completed', TRIP_MAP_COLORS.completed],
+                ['Next leg', TRIP_MAP_COLORS.next],
+                ['Upcoming', route.color],
+              ].map(([label, color]) => (
+                <span key={label} className="inline-flex items-center gap-1.5">
+                  <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
+                  {label}
+                </span>
+              ))}
+            </div>
             <Link
               to={progress.currentDay ? `/route?day=${progress.currentDay}` : '/route'}
               className="glass absolute bottom-3 right-3 z-[500] inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-[13.5px] font-semibold text-ink no-underline"

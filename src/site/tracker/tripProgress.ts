@@ -84,6 +84,19 @@ export function dayStatus(progress: TripProgress, dayNumber: number): DayStatus 
   return 'upcoming'
 }
 
+// Reuse the site's light blue info and green calendar highlight palette.
+export const TRIP_MAP_COLORS = { completed: '#5bc8f0', next: '#42d392' } as const
+
+export function tripMapDayColors(route: RoutePlan, completedDays: ReadonlySet<number>) {
+  const nextDay = route.days.find((day) => !completedDays.has(day.day))?.day
+  return new Map(route.days.map((day) => [
+    day.day,
+    completedDays.has(day.day)
+      ? TRIP_MAP_COLORS.completed
+      : day.day === nextDay ? TRIP_MAP_COLORS.next : route.color,
+  ]))
+}
+
 export function countStates(route: RoutePlan) {
   return new Set(route.visits.map((visit) => visit.station.address.state).filter(Boolean)).size
 }

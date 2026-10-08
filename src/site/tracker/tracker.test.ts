@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { AnthonyTrip, TripDayLogEntry } from '../../api/siteClient'
 import type { DayPlan, RoutePlan, RouteStationVisit } from '../../domain/types'
 import { buildJournal, classifyMedia } from './journal'
-import { buildTripProgress, dayStatus } from './tripProgress'
+import { buildTripProgress, dayStatus, tripMapDayColors, TRIP_MAP_COLORS } from './tripProgress'
 
 function visit(id: string, state: string, day: number): RouteStationVisit {
   return {
@@ -38,6 +38,7 @@ const days = [
   day(3, 300, [visit('d', 'IL', 3)]),
 ]
 const route = {
+  color: '#e82127',
   totalDays: 3,
   totalMiles: 600,
   uniqueStations: 4,
@@ -133,5 +134,29 @@ describe('journal media', () => {
     ])
     expect(journal[0]).toMatchObject({ id: 'u1', label: 'Day 2', media: { kind: 'instagram' } })
     expect(journal.some((entry) => entry.fieldNote)).toBe(true)
+  })
+})
+
+
+describe('tracker map progress colors', () => {
+  it('colors logged days blue, the first unfinished day green and later days red', () => {
+    expect([...tripMapDayColors(route, new Set([1]))]).toEqual([
+      [1, TRIP_MAP_COLORS.completed], [2, TRIP_MAP_COLORS.next], [3, route.color],
+    ])
+  })
+
+  it('shows the first leg green before departure and every leg blue when finished', () => {
+    expect([...tripMapDayColors(route, new Set()).values()]).toEqual([
+      TRIP_MAP_COLORS.next, route.color, route.color,
+    ])
+    expect([...tripMapDayColors(route, new Set([1, 2, 3])).values()]).toEqual([
+      TRIP_MAP_COLORS.completed, TRIP_MAP_COLORS.completed, TRIP_MAP_COLORS.completed,
+    ])
+  })
+
+  it('does not mark unlogged earlier days complete or count unrelated log entries', () => {
+    expect([...tripMapDayColors(route, new Set([2, 99])).values()]).toEqual([
+      TRIP_MAP_COLORS.next, TRIP_MAP_COLORS.completed, route.color,
+    ])
   })
 })

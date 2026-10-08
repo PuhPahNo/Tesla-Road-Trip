@@ -48,6 +48,8 @@ interface MapViewProps {
   highlightedState?: string
   highlightedDayIndex?: number
   activeDayIndex?: number
+  /** Optional per-day progress colors for the public tracker. */
+  dayColors?: ReadonlyMap<number, string>
   zoomFocusDayIndex?: number
   scrollWheelZoom?: boolean
   pageScrollOnMobile?: boolean
@@ -80,6 +82,7 @@ export const MapView = memo(function MapView({
   highlightedState,
   highlightedDayIndex,
   activeDayIndex,
+  dayColors,
   zoomFocusDayIndex,
   scrollWheelZoom = true,
   pageScrollOnMobile = false,
@@ -117,6 +120,12 @@ export const MapView = memo(function MapView({
           )
         : [],
     [route],
+  )
+  const dayBoundaryIndices = useMemo(
+    () => route && roadLine?.length
+      ? matchDayBoundaryIndices(roadLine, route.days, start)
+      : undefined,
+    [roadLine, route, start],
   )
   const zoomFocusPositions = useMemo(() => {
     if (!route || zoomFocusDayIndex == null) return []
@@ -209,17 +218,37 @@ export const MapView = memo(function MapView({
 
       {route && (
         <>
-          <RouteLine
-            route={route}
-            roadLine={roadLine}
-            isDark={isDark}
+          <FitRoute
+            positions={routeFitPositions}
+            routeKey={`${route.id}-${roadLine?.length ? 'road' : 'estimate'}`}
             fitPadding={fitPadding}
           />
+          {!dayColors && <RouteLine route={route} roadLine={roadLine} isDark={isDark} />}
+          {dayColors && route.days.map((day, dayIndex) => {
+            const color = dayColors.get(day.day)
+            if (!color) return null
+            return (
+              <DayHighlightLine
+                key={day.day}
+                route={route}
+                start={start}
+                dayIndex={dayIndex}
+                roadLine={roadLine}
+                dayBoundaryIndices={dayBoundaryIndices}
+                isDark={isDark}
+                color={color}
+                labelPrefix="Day"
+                showEndpoint={false}
+                compact
+              />
+            )
+          })}
           <RouteStopMarkers
             route={route}
             visits={routeVisits}
             nodeColor={node}
             connectorColor={connector}
+            dayColors={dayColors}
           />
           {activeDayIndex != null ? (
             <DayHighlightLine
@@ -227,6 +256,7 @@ export const MapView = memo(function MapView({
               start={start}
               dayIndex={activeDayIndex}
               roadLine={roadLine}
+              dayBoundaryIndices={dayBoundaryIndices}
               isDark={isDark}
               color={ACTIVE_DAY_COLOR}
               labelPrefix="Current day"
@@ -240,6 +270,7 @@ export const MapView = memo(function MapView({
               start={start}
               dayIndex={highlightedDayIndex}
               roadLine={roadLine}
+              dayBoundaryIndices={dayBoundaryIndices}
               isDark={isDark}
               color={
                 activeDayIndex == null ? route.color : PREVIEW_DAY_COLOR
@@ -372,7 +403,9 @@ function RouteStopMarkers({
   visits,
   nodeColor,
   connectorColor,
+  dayColors,
 }: {
+  dayColors?: ReadonlyMap<number, string>
   route: RoutePlan
   visits: RouteStationVisit[]
   nodeColor: string
@@ -391,6 +424,7 @@ function RouteStopMarkers({
           scale={scale}
           nodeColor={nodeColor}
           connectorColor={connectorColor}
+          progressColor={dayColors?.get(visit.day)}
         />
       ))}
     </>
@@ -403,7 +437,9 @@ function RouteStopMarker({
   scale,
   nodeColor,
   connectorColor,
+  progressColor,
 }: {
+  progressColor?: string
   route: RoutePlan
   visit: RouteStationVisit
   scale: number
@@ -420,11 +456,11 @@ function RouteStopMarker({
       radius={(hasBadges ? Math.max(baseRadius, 6) : baseRadius) * scale}
       pathOptions={{
         color: hasBadges ? BADGE_MARKER_STROKE : nodeColor,
-        fillColor: hasBadges
+        fillColor: progressColor ?? (hasBadges
           ? BADGE_MARKER_FILL
           : visit.connectorStop
             ? connectorColor
-            : route.color,
+            : route.color),
         fillOpacity: hasBadges ? 1 : 0.95,
         opacity: 0.95,
         weight: Math.max(hasBadges ? 2 : 0.75, (hasBadges ? 2.5 : 1.5) * scale),
@@ -469,12 +505,10 @@ function RouteLine({
   route,
   roadLine,
   isDark,
-  fitPadding,
 }: {
   route: RoutePlan
   roadLine?: Coordinate[]
   isDark: boolean
-  fitPadding: FitPadding
 }) {
   const zoom = useMapZoom()
   const hasRoadLine = Boolean(roadLine?.length)
@@ -489,22 +523,10 @@ function RouteLine({
       ).map((point) => [point.lat, point.lon] as [number, number]),
     [hasRoadLine, sourceLine, zoom],
   )
-  const fitPositions = useMemo(
-    () =>
-      downsampleLine(route.routeLine, MAX_POLYLINE_POINTS).map(
-        (point) => [point.lat, point.lon] as [number, number],
-      ),
-    [route.routeLine],
-  )
   const smoothFactor = hasRoadLine ? roadSmoothFactorForZoom(zoom) : 1
 
   return (
     <>
-      <FitRoute
-        positions={fitPositions}
-        routeKey={`${route.id}-${hasRoadLine ? 'road' : 'estimate'}`}
-        fitPadding={fitPadding}
-      />
       {isDark && (
         <Polyline
           positions={routePositions}
@@ -545,29 +567,25 @@ function DayHighlightLine({
   start,
   dayIndex,
   roadLine,
+  dayBoundaryIndices,
   isDark,
   color,
   labelPrefix,
   showEndpoint,
+  compact = false,
 }: {
   route: RoutePlan
   start: Coordinate
   dayIndex?: number
   roadLine?: Coordinate[]
+  dayBoundaryIndices?: number[]
   isDark: boolean
   color: string
   labelPrefix: string
   showEndpoint: boolean
+  compact?: boolean
 }) {
   const zoom = useMapZoom()
-
-  // Map each day boundary (start, then every day's last stop) onto an index in
-  // the road geometry so a day's highlight traces the same drawn road line.
-  const dayBoundaryIndices = useMemo(
-    () =>
-      roadLine?.length ? matchDayBoundaryIndices(roadLine, route.days, start) : undefined,
-    [roadLine, route.days, start],
-  )
 
   const roadPositions = useMemo(() => {
     if (dayIndex == null || !roadLine?.length || !dayBoundaryIndices) return undefined
@@ -609,7 +627,7 @@ function DayHighlightLine({
           pathOptions={{
             color,
             opacity: 0.34,
-            weight: 22,
+            weight: compact ? 16 : 22,
             lineCap: 'round',
             lineJoin: 'round',
           }}
@@ -621,7 +639,7 @@ function DayHighlightLine({
         pathOptions={{
           color: '#ffffff',
           opacity: 0.98,
-          weight: 14,
+          weight: compact ? 9 : 14,
           lineCap: 'round',
           lineJoin: 'round',
         }}
@@ -632,7 +650,7 @@ function DayHighlightLine({
         pathOptions={{
           color,
           opacity: 1,
-          weight: 8,
+          weight: compact ? 4 : 8,
           lineCap: 'round',
           lineJoin: 'round',
         }}
